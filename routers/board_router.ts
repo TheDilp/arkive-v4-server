@@ -1,9 +1,12 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
+import { SelectExpression } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
+import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
 import { InsertBoardSchema, InsertBoardType, UpdateBoardSchema, UpdateBoardType } from "../database/validation/boards";
 import { RequestBodyType } from "../types/requestTypes";
+import { constructFilter } from "../utils/filterConstructor";
 import { CreateTagRelations, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 
 export function board_router(server: FastifyInstance, _: any, done: any) {
@@ -25,6 +28,18 @@ export function board_router(server: FastifyInstance, _: any, done: any) {
 
   // #endregion create_routes
   // #region read_routes
+  server.post("/", async (req: FastifyRequest<{ Body: RequestBodyType }>, rep) => {
+    const data = await db
+      .selectFrom("boards")
+      .$if(!req.body.fields.length, (qb) => qb.selectAll())
+      .$if(!!req.body.fields.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "boards">[]))
+      .$if(!!req.body?.filters?.and?.length || !!req.body?.filters?.or?.length, (qb) => {
+        qb = constructFilter("boards", qb, req.body.filters);
+        return qb;
+      })
+      .execute();
+    rep.send({ data, message: "Success", ok: true });
+  });
   server.post("/:id", async (req: FastifyRequest<{ Params: { id: string }; Body: RequestBodyType }>, rep) => {
     const data = await db
       .selectFrom("boards")
