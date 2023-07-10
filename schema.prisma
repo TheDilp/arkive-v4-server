@@ -1,0 +1,618 @@
+generator client {
+  provider = "prisma-kysely"
+
+  output       = "./database"
+  fileName     = "types.ts"
+  // Optionally generate runtime enums to a separate file
+  enumFileName = "enums.ts"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model users {
+  id       String     @id @default(dbgenerated("gen_random_uuid()"))
+  auth_id  String     @unique
+  nickname String
+  email    String     @unique
+  image    String?
+  webhooks webhooks[]
+
+  creatorOf projects[] @relation("project_owner")
+}
+
+model projects {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  created_at DateTime @default(now())
+  title      String   @default("New Project")
+
+  image    images? @relation("project_image")
+  image_id String?
+
+  images images[] @relation("projects_images")
+
+  owner_id String
+  owner    users  @relation("project_owner", fields: [owner_id], references: [id], onDelete: Cascade)
+
+  documents                  documents[]
+  maps                       maps[]
+  boards                     boards[]
+  screens                    screens[]
+  dictionaries               dictionaries[]
+  calendars                  calendars[]
+  random_tables              random_tables[]
+  tags                       tags[]
+  swatches                   swatches[]
+  timelines                  timelines[]
+  alter_names                alter_names[]
+  characters                 characters[]
+  character_fields           character_fields[]
+  character_fields_templates character_fields_templates[]
+}
+
+model images {
+  id    String @id @default(dbgenerated("gen_random_uuid()"))
+  title String
+
+  project    projects? @relation("projects_images", fields: [project_id], references: [id])
+  project_id String?
+
+  project_image    projects? @relation("project_image", fields: [project_image_id], references: [id])
+  project_image_id String?   @unique
+
+  characters characters[] @relation("characters_to_images")
+  documents  documents[]
+  maps       maps[]
+  map_pins   map_pins[]
+  map_layers map_layers[]
+  nodes      nodes[]
+  events     events[]
+
+  character_portraits characters[] @relation("character_portraits")
+  character_id        String?
+}
+
+model characters {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @map("updated_at")
+
+  project    projects @relation(fields: [project_id], references: [id])
+  project_id String
+
+  first_name String
+  last_name  String?
+  nickname   String?
+  age        Int?
+
+  portrait    images? @relation("character_portraits", fields: [portrait_id], references: [id])
+  portrait_id String?
+
+  images                         images[]                         @relation("characters_to_images")
+  characters_to_character_fields characters_to_character_fields[]
+
+  location   map_pins? @relation(fields: [map_pin_id], references: [id])
+  map_pin_id String?
+
+  documents documents[]
+  nodes     nodes[]
+  tags      tags[]
+}
+
+model character_fields {
+  id    String @id @default(dbgenerated("gen_random_uuid()"))
+  title String
+
+  project    projects @relation(fields: [project_id], references: [id])
+  project_id String
+
+  /// @kyselyType('text' | 'textarea' | 'select' | 'select_multiple')
+  field_type String
+  options    String[]
+
+  character_fields_templates     character_fields_templates[]
+  characters_to_character_fields characters_to_character_fields[]
+}
+
+model character_fields_templates {
+  id    String @id @default(dbgenerated("gen_random_uuid()"))
+  title String
+
+  project          projects           @relation(fields: [project_id], references: [id])
+  project_id       String
+  character_fields character_fields[]
+}
+
+model characters_to_character_fields {
+  character    characters @relation(fields: [character_id], references: [id])
+  character_id String
+
+  character_field    character_fields @relation(fields: [character_field_id], references: [id])
+  character_field_id String
+
+  value Json?
+
+  @@id([character_id, character_field_id])
+}
+
+model documents {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @map("updated_at")
+
+  title     String   @default("New Document")
+  content   Json?    @db.JsonB
+  icon      String?  @default("ph:files-thin")
+  is_folder Boolean?
+  is_public Boolean?
+
+  is_template Boolean?
+  properties  Json?
+  image       images?  @relation(fields: [image_id], references: [id])
+
+  // Relations
+  project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  project_id String
+  nodes      nodes[]
+
+  parent_id String?
+  parent    documents?  @relation("parentChildDocuments", fields: [parent_id], references: [id], onDelete: Cascade)
+  children  documents[] @relation("parentChildDocuments")
+
+  tags        tags[]
+  alter_names alter_names[]
+
+  cards      cards[]
+  events     events[]
+  characters characters[]
+  image_id   String?
+}
+
+model alter_names {
+  id    String @id @default(dbgenerated("gen_random_uuid()"))
+  title String @default("New Document")
+
+  project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  project_id String
+
+  document  documents @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  parent_id String
+
+  @@unique([title, parent_id])
+}
+
+model maps {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  title        String   @default("New Map")
+  is_folder    Boolean?
+  is_public    Boolean?
+  cluster_pins Boolean?
+
+  image images? @relation(fields: [image_id], references: [id])
+  icon  String? @default("ph:map-trifold")
+
+  project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  project_id String
+
+  map_pins   map_pins[]
+  map_layers map_layers[]
+
+  parent_id String?
+  parent    maps?   @relation("parentChildMaps", fields: [parent_id], references: [id], onDelete: Cascade)
+  children  maps[]  @relation("parentChildMaps")
+  tags      tags[]
+  image_id  String?
+  nodes     nodes[]
+}
+
+model map_pins {
+  id               String   @id @default(dbgenerated("gen_random_uuid()"))
+  text             String?
+  parent           maps?    @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  parent_id        String
+  lat              Float
+  lng              Float
+  color            String?
+  border_color     String?
+  background_color String?
+  icon             String?
+  image            images?  @relation(fields: [image_id], references: [id])
+  show_background  Boolean  @default(true)
+  show_border      Boolean  @default(true)
+  is_public        Boolean?
+  tags             tags[]
+
+  map_link   String?
+  doc_id     String?
+  image_id   String?
+  characters characters[]
+  nodes      nodes[]
+}
+
+model map_layers {
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  title     String   @default("New Layer")
+  image     images   @relation(fields: [image_id], references: [id])
+  parent_id String
+  is_public Boolean?
+  maps      maps?    @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  image_id  String
+}
+
+model boards {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  title     String   @default("New Board")
+  is_folder Boolean?
+  is_public Boolean?
+
+  icon String? @default("ph:graph-light")
+
+  default_node_shape String @default("rectangle")
+  default_node_color String @default("#595959")
+  default_edge_color String @default("#595959")
+
+  project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  project_id String
+  parent_id  String?
+  parent     boards?  @relation("parentChildBoards", fields: [parent_id], references: [id], onDelete: Cascade)
+  children   boards[] @relation("parentChildBoards")
+  nodes      nodes[]
+  edges      edges[]
+  tags       tags[]
+}
+
+model nodes {
+  id    String  @id @default(dbgenerated("gen_random_uuid()"))
+  label String?
+
+  type   String?
+  width  Int?
+  height Int?
+  x      Float?
+  y      Float?
+
+  font_size    Int?
+  font_color   String?
+  font_family  String?
+  text_v_align String?
+  text_h_align String?
+
+  background_color   String?
+  background_opacity Float?
+
+  locked      Boolean?
+  is_template Boolean?
+  z_index     Int?
+
+  board        boards  @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  image        images? @relation(fields: [image_id], references: [id])
+  parent_id    String
+  edges_source edges[] @relation("edges_source")
+  edges_target edges[] @relation("edges_target")
+  tags         tags[]
+  image_id     String?
+
+  document     documents?  @relation(fields: [doc_id], references: [id])
+  doc_id       String?
+  character    characters? @relation(fields: [character_id], references: [id])
+  character_id String?
+  event        events?     @relation(fields: [event_id], references: [id])
+  event_id     String?
+  map          maps?       @relation(fields: [map_id], references: [id])
+  map_id       String?
+  map_pin      map_pins?   @relation(fields: [map_pin_id], references: [id])
+  map_pin_id   String?
+}
+
+model edges {
+  id    String  @id @default(dbgenerated("gen_random_uuid()"))
+  label String?
+
+  curve_style  String?
+  line_style   String?
+  line_color   String?
+  line_fill    String?
+  line_opacity Float?
+  width        Int?
+
+  control_point_distances Int?
+  control_point_weights   Float?
+
+  taxi_direction String?
+  taxi_turn      Int?
+
+  arrow_scale Int?
+
+  target_arrow_shape String?
+  target_arrow_fill  String?
+  target_arrow_color String?
+
+  source_arrow_shape String?
+  source_arrow_fill  String?
+  source_arrow_color String?
+
+  mid_target_arrow_shape  String?
+  mid_target_arrlow_fill  String?
+  mid_target_arrlow_color String?
+
+  mid_source_arrow_shape String?
+  mid_source_arrow_fill  String?
+  mid_source_arrow_color String?
+
+  font_size   Int?
+  font_color  String?
+  font_family String?
+
+  z_index Int?
+
+  board     boards @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  source    nodes  @relation("edges_source", fields: [source_id], references: [id], onDelete: Cascade)
+  target    nodes  @relation("edges_target", fields: [target_id], references: [id], onDelete: Cascade)
+  source_id String
+  target_id String
+  parent_id String
+  tags      tags[]
+
+  @@unique([source_id, target_id])
+}
+
+model screens {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  title      String   @default("New Screen")
+  project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  project_id String
+
+  parent_id String?
+  parent    screens?  @relation("parentChildScreens", fields: [parent_id], references: [id], onDelete: Cascade)
+  children  screens[] @relation("parentChildScreens")
+
+  icon      String  @default("fluent:board-24-regular")
+  is_folder Boolean @default(false)
+  is_public Boolean @default(false)
+
+  section_size String     @default("md")
+  sections     sections[]
+  tags         tags[]
+}
+
+model sections {
+  id        String @id @default(dbgenerated("gen_random_uuid()"))
+  title     String
+  sort      Int    @default(0)
+  card_size String @default("md")
+
+  screens   screens? @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  parent_id String?
+
+  cards cards[]
+}
+
+model cards {
+  id   String @id @default(dbgenerated("gen_random_uuid()"))
+  sort Int    @default(0)
+
+  document    documents @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  document_id String
+
+  sections  sections? @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  parent_id String?
+
+  tags tags[]
+
+  @@unique([parent_id, document_id])
+}
+
+model dictionaries {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  title String
+
+  project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  project_id String
+
+  icon      String  @default("ph:book-bookmark-light")
+  is_folder Boolean @default(false)
+  is_public Boolean @default(false)
+
+  parent_id String?
+  parent    dictionaries?  @relation("parentChildDictionaries", fields: [parent_id], references: [id], onDelete: Cascade)
+  children  dictionaries[] @relation("parentChildDictionaries")
+
+  tags  tags[]
+  words words[]
+
+  @@unique([project_id, title])
+}
+
+model words {
+  id          String  @id @default(dbgenerated("gen_random_uuid()"))
+  title       String
+  description String?
+
+  translation String
+
+  dictionary dictionaries @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  parent_id  String
+
+  @@unique([title, translation, parent_id])
+}
+
+model calendars {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  title String
+
+  project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  project_id String
+
+  parent_id String?
+  parent    calendars?  @relation("parentChildCalendar", fields: [parent_id], references: [id], onDelete: Cascade)
+  children  calendars[] @relation("parentChildCalendar")
+
+  icon      String   @default("ph:calendar-blank-light")
+  is_folder Boolean?
+  is_public Boolean?
+
+  offset  Int  @default(0)
+  hours   Int?
+  minutes Int?
+
+  months months[]
+  days   String[]
+  events events[]
+
+  tags      tags[]
+  timelines timelines[]
+}
+
+model months {
+  id    String @id @default(dbgenerated("gen_random_uuid()"))
+  title String
+  days  Int
+
+  calendar  calendars @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  sort      Int       @default(0)
+  parent_id String
+  events    events[]
+}
+
+model events {
+  id               String  @id @default(dbgenerated("gen_random_uuid()"))
+  title            String
+  description      String?
+  background_image images? @relation(fields: [image_id], references: [id])
+
+  is_public Boolean @default(false)
+
+  document documents? @relation(fields: [document_id], references: [id])
+
+  background_color String?
+  text_color       String?
+
+  calendar calendars? @relation(fields: [calendar_id], references: [id], onDelete: Cascade)
+  year     Int
+  month    months     @relation(fields: [month_id], references: [id], onDelete: Cascade)
+  day      Int
+  hours    Int?
+  minutes  Int?
+
+  tags tags[]
+
+  calendar_id String?
+  document_id String?
+  month_id    String
+  image_id    String?
+  nodes       nodes[]
+}
+
+model timelines {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  title String
+
+  project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  project_id String
+
+  parent_id String?
+  parent    timelines?  @relation("parentChildTimeline", fields: [parent_id], references: [id], onDelete: Cascade)
+  children  timelines[] @relation("parentChildTimeline")
+
+  icon      String   @default("mdi:timeline-clock-outline")
+  is_folder Boolean?
+  is_public Boolean?
+
+  calendars calendars[]
+}
+
+model random_tables {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  title       String
+  description String?
+
+  project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  project_id String
+
+  parent    random_tables?  @relation("parentChildRandomTables", fields: [parent_id], references: [id], onDelete: Cascade)
+  children  random_tables[] @relation("parentChildRandomTables")
+  parent_id String?
+
+  icon                 String                 @default("game-icons:perspective-dice-six-faces-random")
+  is_folder            Boolean?
+  is_public            Boolean?
+  random_table_options random_table_options[]
+}
+
+model random_table_options {
+  id           String        @id @default(dbgenerated("gen_random_uuid()"))
+  title        String
+  description  String?
+  random_table random_tables @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  parent_id    String
+  icon         String?
+  icon_color   String?
+}
+
+model tags {
+  id    String @id @default(dbgenerated("gen_random_uuid()"))
+  title String
+
+  project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  project_id String
+
+  documents    documents[]
+  maps         maps[]
+  map_pins     map_pins[]
+  boards       boards[]
+  nodes        nodes[]
+  edges        edges[]
+  screens      screens[]
+  cards        cards[]
+  dictionaries dictionaries[]
+  calendars    calendars[]
+  events       events[]
+  characters   characters[]
+
+  @@unique([title, project_id])
+}
+
+model swatches {
+  id    String  @id @default(dbgenerated("gen_random_uuid()"))
+  title String?
+  color String  @default("#595959")
+
+  project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  project_id String
+
+  @@unique([color, project_id])
+}
+
+model webhooks {
+  id    String @id @default(dbgenerated("gen_random_uuid()"))
+  title String
+  url   String
+  user  users  @relation(fields: [user_id], references: [id])
+
+  user_id String
+
+  @@unique([id, user_id])
+}

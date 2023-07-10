@@ -1,0 +1,62 @@
+import { ExpressionBuilder, Transaction } from "kysely";
+import { jsonArrayFrom } from "kysely/helpers/postgres";
+import { DB } from "kysely-codegen";
+
+import { EntitiesWithTags, TagsRelationTables } from "../database/types";
+
+export function TagQuery(eb: ExpressionBuilder<DB, any>, relationalTable: TagsRelationTables, table: EntitiesWithTags) {
+  return jsonArrayFrom(
+    eb
+      .selectFrom(relationalTable)
+      .whereRef(`${table}.id`, "=", `${relationalTable}.A`)
+      .leftJoin("tags", "tags.id", `${relationalTable}.B`)
+      .select(["tags.id", "tags.title"]),
+  ).as("tags");
+}
+
+export async function CreateTagRelations({
+  tx,
+  relationalTable,
+  id,
+  tags,
+}: {
+  tx: Transaction<DB>;
+  relationalTable: TagsRelationTables;
+  id: string;
+  tags: string[];
+}) {
+  await tx
+    .insertInto(relationalTable)
+    .values(tags.map((tag) => ({ A: id, B: tag })))
+    .execute();
+}
+
+export async function UpdateTagRelations({
+  relationalTable,
+  newTags,
+  id,
+  tx,
+}: {
+  relationalTable: TagsRelationTables;
+  newTags: string[];
+  tx: Transaction<DB>;
+  id: string;
+}) {
+  const existingTags = await tx
+    .selectFrom(relationalTable)
+    .select(`${relationalTable}.B`)
+    .where(`${relationalTable}.A`, "=", id)
+    .execute();
+
+  const existingTagIds = existingTags.map((tag) => tag.B);
+  const tagsToDelete = existingTagIds.filter((tag) => !newTags.includes(tag));
+  const tagsToInsert = newTags.filter((tag) => !existingTagIds.includes(tag));
+
+  if (tagsToDelete.length) await tx.deleteFrom(relationalTable).where(`${relationalTable}.B`, "in", tagsToDelete).execute();
+
+  if (tagsToInsert.length)
+    await tx
+      .insertInto(relationalTable)
+      .values(tagsToInsert.map((tag) => ({ A: id, B: tag })))
+      .execute();
+}

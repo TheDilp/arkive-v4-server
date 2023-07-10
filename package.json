@@ -1,0 +1,41 @@
+{
+  "name": "arkive-v4-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsx watch index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fastify": "^4.19.2",
+    "kysely": "^0.26.0",
+    "pg": "^8.11.1",
+    "prisma": "3.15.2",
+    "prisma-kysely": "1.0.8",
+    "sharp": "^0.32.1",
+    "zod": "^3.21.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.4.1",
+    "@types/pg": "^8.10.2",
+    "@typescript-eslint/eslint-plugin": "^5.61.0",
+    "@typescript-eslint/parser": "^5.61.0",
+    "dotenv": "^16.3.1",
+    "dotenv-cli": "^7.2.1",
+    "eslint": "^8.44.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-import-resolver-alias": "^1.1.2",
+    "eslint-import-resolver-typescript": "^3.5.5",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-simple-import-sort": "^10.0.0",
+    "kysely-codegen": "^0.10.1",
+    "nodemon": "^3.0.0",
+    "prettier": "^2.8.0",
+    "ts-node": "^10.9.1",
+    "tsx": "^3.12.7",
+    "typescript": "^5.1.6"
+  }
+}
