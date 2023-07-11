@@ -22,7 +22,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
             character_fields?: { id: string; value: string }[];
             tags?: { id: string }[];
             documents?: { id: string }[];
-            image?: { id: string };
+            images?: { id: string }[];
           };
         };
       }>,
@@ -33,9 +33,12 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
         const character = await tx.insertInto("characters").values(parsedData).returning("id").executeTakeFirstOrThrow();
 
         if (req.body?.relations) {
-          if (req.body.relations?.image) {
-            const { image } = req.body.relations;
-            await tx.insertInto("_characters_to_images").values({ A: character.id, B: image.id }).execute();
+          if (req.body.relations?.images) {
+            const { images } = req.body.relations;
+            await tx
+              .insertInto("_characters_to_images")
+              .values(images.map((img) => ({ A: character.id, B: img.id })))
+              .execute();
           }
           if (req.body.relations?.character_fields) {
             const { character_fields } = req.body.relations;
@@ -113,8 +116,8 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
   server.post("/:id", async (req: FastifyRequest<{ Params: { id: string }; Body: RequestBodyType }>, rep) => {
     const data = await db
       .selectFrom("characters")
-      .$if(!req.body.fields.length, (qb) => qb.selectAll())
-      .$if(!!req.body.fields.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "characters">[]))
+      .$if(!req.body.fields?.length, (qb) => qb.selectAll())
+      .$if(!!req.body.fields?.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "characters">[]))
       .where("characters.id", "=", req.params.id)
       .$if(!!req.body.relations, (qb) => {
         if (req.body?.relations?.character_fields) {
@@ -132,7 +135,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
         }
         return qb;
       })
-      .execute();
+      .executeTakeFirstOrThrow();
     rep.send({ data, message: "Success", ok: true });
   });
   // #endregion read_routes
