@@ -7,6 +7,7 @@ import { db } from "../database/db";
 import { InsertCharacterSchema, InsertCharacterType, UpdateCharacterSchema, UpdateCharacterType } from "../database/validation";
 import { RequestBodyType } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
+import { constructOrderBy } from "../utils/orderByConstructor";
 import { TagQuery } from "../utils/relationalQueryHelpers";
 
 export function character_router(server: FastifyInstance, _: any, done: any) {
@@ -85,6 +86,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
         qb = constructFilter("characters", qb, req.body.filters);
         return qb;
       })
+      .$if(!!req.body.orderBy, (qb) => constructOrderBy(qb, req.body.orderBy?.field as string, req.body.orderBy?.sort))
       .execute();
     rep.send({ data, message: "Success", ok: true });
   });

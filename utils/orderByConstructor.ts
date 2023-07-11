@@ -1,15 +1,6 @@
-import { AvailableEntityType, RequestOrderByType } from "@thearkive/types";
+import { SelectQueryBuilder } from "kysely";
+import { DB } from "kysely-codegen";
 
-export function getEntityOrderBy(order: RequestOrderByType, type: AvailableEntityType) {
-  const entity = getEntityModel(type);
-  const finalSort = [];
-  if (entity) {
-    const { model } = entity;
-    // @ts-ignore
-    const sort = order.sort === "asc" ? asc(model[order.field]) : desc(model[order.field]);
-    finalSort.push(sort);
-
-    return finalSort;
-  }
-  return undefined;
+export function constructOrderBy(queryBuilder: SelectQueryBuilder<DB, any, any>, field: string, sort?: "asc" | "desc") {
+  return queryBuilder.orderBy(field, sort || "asc");
 }
