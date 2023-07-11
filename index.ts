@@ -1,16 +1,19 @@
 import cors from "@fastify/cors";
 import fastify, { errorCodes } from "fastify";
 
-import { authentication_router } from "./routers/authentication_router";
-import { board_router } from "./routers/board_router";
-import { character_fields_templates_router } from "./routers/character_fields_templates_router";
-import { character_router } from "./routers/character_router";
-import { document_router } from "./routers/document_router";
-import { map_pin_router } from "./routers/map_pin_router";
-import { map_router } from "./routers/map_router";
-import { project_router } from "./routers/project_router";
-import { tag_router } from "./routers/tags_router";
-import { user_router } from "./routers/user_router";
+import {
+  asset_router,
+  authentication_router,
+  board_router,
+  character_fields_templates_router,
+  character_router,
+  document_router,
+  map_pin_router,
+  map_router,
+  project_router,
+  tag_router,
+  user_router,
+} from "./routers";
 
 const server = fastify();
 
@@ -35,6 +38,7 @@ server.register(authentication_router, { prefix: "/api/v1/auth" });
 server.register(
   (instance, _, done) => {
     // instance.addHook("onRequest", async (request, reply) => {});
+    instance.register(asset_router, { prefix: "/assets" });
     instance.register(user_router, { prefix: "/users" });
     instance.register(project_router, { prefix: "/projects" });
     instance.register(tag_router, { prefix: "/tags" });

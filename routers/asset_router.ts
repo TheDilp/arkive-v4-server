@@ -13,7 +13,7 @@ function createFile(data: any, filePath: string, name: string, rep: FastifyReply
     });
 }
 
-export function assetRouter(server: FastifyInstance, _: any, done: any) {
+export function asset_router(server: FastifyInstance, _: any, done: any) {
   server.get(
     "/:project_id/:type",
     async (req: FastifyRequest<{ Params: { project_id: string; type: string } }>, rep: FastifyReply) => {
@@ -45,7 +45,7 @@ export function assetRouter(server: FastifyInstance, _: any, done: any) {
   );
 
   server.post(
-    "/:project_id/:type/upload",
+    "/upload/:project_id/:type",
     async (
       req: FastifyRequest<{
         Params: { type: "images" | "maps"; project_id: string };
