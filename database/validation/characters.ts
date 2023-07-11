@@ -14,6 +14,7 @@ export const InsertCharacterSchema = z
     age: z.number().nullable().optional(),
     portrait_id: z.string().nullable().optional(),
     map_pin_id: z.string().nullable().optional(),
+    is_favorite: z.boolean().nullable().optional(),
   })
   .strict();
 export const UpdateCharacterSchema = z
@@ -22,6 +23,7 @@ export const UpdateCharacterSchema = z
     last_name: z.string().nullable().optional(),
     nickname: z.string().nullable().optional(),
     age: z.number().nullable().optional(),
+    is_favorite: z.boolean().nullable().optional(),
     portrait_id: z.string().nullable().optional(),
     map_pin_id: z.string().nullable().optional(),
   })
