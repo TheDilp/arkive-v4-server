@@ -128,10 +128,10 @@ model character_fields_templates {
 }
 
 model characters_to_character_fields {
-  character    characters @relation(fields: [character_id], references: [id])
+  character    characters @relation(fields: [character_id], references: [id], onDelete: Cascade)
   character_id String
 
-  character_field    character_fields @relation(fields: [character_field_id], references: [id])
+  character_field    character_fields @relation(fields: [character_field_id], references: [id], onDelete: Cascade)
   character_field_id String
 
   value Json?
@@ -146,7 +146,7 @@ model documents {
 
   title     String   @default("New Document")
   content   Json?    @db.JsonB
-  icon      String?  @default("ph:files-thin")
+  icon      String?
   is_folder Boolean?
   is_public Boolean?
 
@@ -196,7 +196,7 @@ model maps {
   cluster_pins Boolean?
 
   image images? @relation(fields: [image_id], references: [id])
-  icon  String? @default("ph:map-trifold")
+  icon  String?
 
   project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
   project_id String
@@ -255,7 +255,7 @@ model boards {
   is_folder Boolean?
   is_public Boolean?
 
-  icon String? @default("ph:graph-light")
+  icon String?
 
   default_node_shape String @default("rectangle")
   default_node_color String @default("#595959")
@@ -379,7 +379,7 @@ model screens {
   parent    screens?  @relation("parentChildScreens", fields: [parent_id], references: [id], onDelete: Cascade)
   children  screens[] @relation("parentChildScreens")
 
-  icon      String  @default("fluent:board-24-regular")
+  icon      String
   is_folder Boolean @default(false)
   is_public Boolean @default(false)
 
@@ -425,7 +425,7 @@ model dictionaries {
   project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
   project_id String
 
-  icon      String  @default("ph:book-bookmark-light")
+  icon      String?
   is_folder Boolean @default(false)
   is_public Boolean @default(false)
 
@@ -466,7 +466,7 @@ model calendars {
   parent    calendars?  @relation("parentChildCalendar", fields: [parent_id], references: [id], onDelete: Cascade)
   children  calendars[] @relation("parentChildCalendar")
 
-  icon      String   @default("ph:calendar-blank-light")
+  icon      String?
   is_folder Boolean?
   is_public Boolean?
 
@@ -536,7 +536,7 @@ model timelines {
   parent    timelines?  @relation("parentChildTimeline", fields: [parent_id], references: [id], onDelete: Cascade)
   children  timelines[] @relation("parentChildTimeline")
 
-  icon      String   @default("mdi:timeline-clock-outline")
+  icon      String?
   is_folder Boolean?
   is_public Boolean?
 
@@ -558,7 +558,7 @@ model random_tables {
   children  random_tables[] @relation("parentChildRandomTables")
   parent_id String?
 
-  icon                 String                 @default("game-icons:perspective-dice-six-faces-random")
+  icon                 String?
   is_folder            Boolean?
   is_public            Boolean?
   random_table_options random_table_options[]

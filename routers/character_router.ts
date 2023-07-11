@@ -27,7 +27,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
       }>,
       rep,
     ) => {
-      db.transaction().execute(async (tx) => {
+      await db.transaction().execute(async (tx) => {
         const parsedData = InsertCharacterSchema.parse(req.body.data);
         const character = await tx.insertInto("characters").values(parsedData).returning("id").executeTakeFirstOrThrow();
 
@@ -80,6 +80,8 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
     const data = await db
       .selectFrom("characters")
       .where("characters.project_id", "=", req.body?.data?.project_id)
+      .limit(req.body?.pagination?.limit || 10)
+      .offset((req.body?.pagination?.page ?? 0) * (req.body?.pagination?.limit || 10))
       .$if(!req.body.fields?.length, (qb) => qb.selectAll())
       .$if(!!req.body.fields?.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "characters">[]))
       .$if(!!req.body?.filters?.and?.length || !!req.body?.filters?.or?.length, (qb) => {

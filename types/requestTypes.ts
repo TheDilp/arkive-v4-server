@@ -18,10 +18,16 @@ export interface RequestOrderByType {
   sort: SortType;
 }
 
+export interface RequestPaginationType {
+  limit?: number;
+  page?: number;
+}
+
 export interface RequestBodyType {
   data?: any;
   fields: string[];
   orderBy?: RequestOrderByType;
+  pagination?: RequestPaginationType;
   relations?: {
     [key: string]:
       | boolean
