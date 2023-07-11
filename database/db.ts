@@ -4,11 +4,7 @@ import { Pool } from "pg";
 
 const dialect = new PostgresDialect({
   pool: new Pool({
-    database: "the_arkive",
-    host: "localhost",
-    user: "admin",
-    password: "admin",
-    port: 5432,
+    connectionString: process.env.DATABASE_URL,
     max: 10,
   }),
 });

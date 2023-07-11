@@ -13,12 +13,15 @@ export function project_router(server: FastifyInstance, _: any, done: any) {
   // #endregion create_routes
   // #region read_routes
   server.post("/", async (req: FastifyRequest<{ Body: RequestBodyType }>, rep) => {
-    const data = await db
-      .selectFrom("projects")
-      .select(["projects.id", "projects.title"])
-      .where("owner_id", "=", req.body.data?.owner_id)
-      .execute();
-    rep.send({ data, message: "Success", ok: true });
+    if (req.body.data?.owner_id) {
+      const data = await db
+        .selectFrom("projects")
+        .select(["projects.id", "projects.title"])
+        .where("owner_id", "=", req.body.data.owner_id)
+        .execute();
+      rep.send({ data, message: "Success", ok: true });
+    }
+    rep.send({ data: [], message: "No projects found.", ok: false });
   });
   // #endregion read_routes
   // #region update_routes

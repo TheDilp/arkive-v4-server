@@ -82,6 +82,8 @@ model characters {
   project    projects @relation(fields: [project_id], references: [id])
   project_id String
 
+  is_favorite Boolean?
+
   first_name String
   last_name  String?
   nickname   String?

@@ -4,7 +4,7 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertCharacterType, UpdateCharacterType } from "../database/validation";
+import { InsertCharacterSchema, InsertCharacterType, UpdateCharacterSchema, UpdateCharacterType } from "../database/validation";
 import { RequestBodyType } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { TagQuery } from "../utils/relationalQueryHelpers";
@@ -27,7 +27,8 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
       rep,
     ) => {
       db.transaction().execute(async (tx) => {
-        const character = await tx.insertInto("characters").values(req.body.data).returning("id").executeTakeFirstOrThrow();
+        const parsedData = InsertCharacterSchema.parse(req.body.data);
+        const character = await tx.insertInto("characters").values(parsedData).returning("id").executeTakeFirstOrThrow();
 
         if (req.body?.relations) {
           if (req.body.relations.character_fields) {
@@ -78,8 +79,8 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
     const data = await db
       .selectFrom("characters")
       .where("characters.project_id", "=", req.body?.data?.project_id)
-      .$if(!req.body.fields.length, (qb) => qb.selectAll())
-      .$if(!!req.body.fields.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "characters">[]))
+      .$if(!req.body.fields?.length, (qb) => qb.selectAll())
+      .$if(!!req.body.fields?.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "characters">[]))
       .$if(!!req.body?.filters?.and?.length || !!req.body?.filters?.or?.length, (qb) => {
         qb = constructFilter("characters", qb, req.body.filters);
         return qb;
@@ -123,7 +124,8 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
       }>,
       rep,
     ) => {
-      await db.updateTable("characters").where("characters.id", "=", req.params.id).set(req.body.data).execute();
+      const parsedData = UpdateCharacterSchema.parse(req.body.data);
+      await db.updateTable("characters").where("characters.id", "=", req.params.id).set(parsedData).execute();
       rep.send({ message: "Character successfully updated.", ok: true });
     },
   );

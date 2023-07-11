@@ -1,3 +1,4 @@
+import cors from "@fastify/cors";
 import fastify, { errorCodes } from "fastify";
 
 import { authentication_router } from "./routers/authentication_router";
@@ -23,6 +24,10 @@ server.setErrorHandler(function (error, request, reply) {
     // fastify will use parent error handler to handle this
     reply.send(error);
   }
+});
+
+server.register(cors, {
+  origin: process.env.NODE_ENV === "development" ? "*" : "https://thearkive.app",
 });
 
 server.register(authentication_router, { prefix: "/api/v1/auth" });
