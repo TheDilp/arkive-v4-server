@@ -1,5 +1,6 @@
 import fastify, { errorCodes } from "fastify";
 
+import { authentication_router } from "./routers/authentication_router";
 import { board_router } from "./routers/board_router";
 import { character_fields_templates_router } from "./routers/character_fields_templates_router";
 import { character_router } from "./routers/character_router";
@@ -24,8 +25,11 @@ server.setErrorHandler(function (error, request, reply) {
   }
 });
 
+server.register(authentication_router, { prefix: "/api/v1/auth" });
+
 server.register(
   (instance, _, done) => {
+    // instance.addHook("onRequest", async (request, reply) => {});
     instance.register(user_router, { prefix: "/users" });
     instance.register(project_router, { prefix: "/projects" });
     instance.register(tag_router, { prefix: "/tags" });
@@ -44,7 +48,7 @@ server.get("/ping", async () => {
   return "pong\n";
 });
 
-server.listen({ port: 3000 }, (err, address) => {
+server.listen({ port: parseInt(process.env.PORT as string, 10) || 3000 }, (err, address) => {
   if (err) {
     console.error(err);
     process.exit(1);
