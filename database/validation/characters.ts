@@ -11,7 +11,6 @@ export const InsertCharacterSchema = z
     project_id: z.string(),
     last_name: z.string().nullable().optional(),
     nickname: z.string().nullable().optional(),
-
     age: z.number().nullable().optional(),
     portrait_id: z.string().nullable().optional(),
     map_pin_id: z.string().nullable().optional(),

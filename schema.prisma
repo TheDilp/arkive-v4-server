@@ -89,7 +89,7 @@ model characters {
   nickname   String?
   age        Int?
 
-  portrait    images? @relation("character_portraits", fields: [portrait_id], references: [id])
+  portrait    images? @relation("character_portraits", fields: [portrait_id], references: [id], onDelete: SetNull)
   portrait_id String?
 
   images                         images[]                         @relation("characters_to_images")

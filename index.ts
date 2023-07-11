@@ -1,5 +1,8 @@
 import cors from "@fastify/cors";
+import fastifyStatic from "@fastify/static";
 import fastify, { errorCodes } from "fastify";
+import fileUpload from "fastify-file-upload";
+import path from "path";
 
 import {
   asset_router,
@@ -28,6 +31,11 @@ server.setErrorHandler(function (error, request, reply) {
     reply.send(error);
   }
 });
+
+server.register(fastifyStatic, {
+  root: path.join(__dirname, "assets"),
+});
+server.register(fileUpload);
 
 server.register(cors, {
   origin: process.env.NODE_ENV === "development" ? "*" : "https://thearkive.app",

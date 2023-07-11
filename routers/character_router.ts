@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
 import { SelectExpression } from "kysely";
-import { jsonArrayFrom } from "kysely/helpers/postgres";
+import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
@@ -22,6 +22,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
             character_fields?: { id: string; value: string }[];
             tags?: { id: string }[];
             documents?: { id: string }[];
+            image?: { id: string };
           };
         };
       }>,
@@ -32,7 +33,11 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
         const character = await tx.insertInto("characters").values(parsedData).returning("id").executeTakeFirstOrThrow();
 
         if (req.body?.relations) {
-          if (req.body.relations.character_fields) {
+          if (req.body.relations?.image) {
+            const { image } = req.body.relations;
+            await tx.insertInto("_characters_to_images").values({ A: character.id, B: image.id }).execute();
+          }
+          if (req.body.relations?.character_fields) {
             const { character_fields } = req.body.relations;
             await tx
               .insertInto("characters_to_character_fields")
@@ -45,7 +50,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
               )
               .executeTakeFirst();
           }
-          if (req.body.relations.tags) {
+          if (req.body.relations?.tags) {
             const { tags } = req.body.relations;
             await tx
               .insertInto("_charactersTotags")
@@ -57,7 +62,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
               )
               .executeTakeFirst();
           }
-          if (req.body.relations.documents) {
+          if (req.body.relations?.documents) {
             const { documents } = req.body.relations;
             await tx
               .insertInto("_charactersTodocuments")
@@ -89,6 +94,19 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
         return qb;
       })
       .$if(!!req.body.orderBy, (qb) => constructOrderBy(qb, req.body.orderBy?.field as string, req.body.orderBy?.sort))
+      .$if(!!req?.body?.relations, (qb) => {
+        if (req?.body?.relations?.portrait) {
+          qb = qb.select((eb) =>
+            jsonObjectFrom(
+              eb
+                .selectFrom("images")
+                .whereRef("images.id", "=", "characters.portrait_id")
+                .select(["images.id", "images.title"]),
+            ).as("portrait"),
+          );
+        }
+        return qb;
+      })
       .execute();
     rep.send({ data, message: "Success", ok: true });
   });
