@@ -7,7 +7,7 @@ export const FilterEnum: { [key: string]: ComparisonOperatorExpression } = {
   gte: ">=",
   lt: "<",
   lte: "<=",
-  search: "ilike",
+  ilike: "ilike",
   in: "in",
   notIn: "not in",
 };
