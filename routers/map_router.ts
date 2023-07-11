@@ -79,8 +79,6 @@ export function map_router(server: FastifyInstance, _: any, done: any) {
       req: FastifyRequest<{ Params: { id: string }; Body: { data: UpdateMapType; relations?: { tags?: string[] } } }>,
       rep,
     ) => {
-      const data = UpdateMapSchema.parse(req.body.data);
-
       await db.transaction().execute(async (tx) => {
         if (req.body.data) {
           const parsedData = UpdateMapSchema.parse(req.body.data);
@@ -92,7 +90,7 @@ export function map_router(server: FastifyInstance, _: any, done: any) {
         }
       });
 
-      rep.send({ data, message: "Success.", ok: true });
+      rep.send({ message: "Map successfully updated.", ok: true });
     },
   );
   // #endregion update_routes
