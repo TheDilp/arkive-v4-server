@@ -40,7 +40,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
               .values(images.map((img) => ({ A: character.id, B: img.id })))
               .execute();
           }
-          if (req.body.relations?.character_fields) {
+          if (req.body.relations?.character_fields?.length) {
             const { character_fields } = req.body.relations;
             await tx
               .insertInto("characters_to_character_fields")
@@ -53,7 +53,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
               )
               .executeTakeFirst();
           }
-          if (req.body.relations?.tags) {
+          if (req.body.relations?.tags?.length) {
             const { tags } = req.body.relations;
             await tx
               .insertInto("_charactersTotags")
@@ -65,7 +65,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
               )
               .executeTakeFirst();
           }
-          if (req.body.relations?.documents) {
+          if (req.body.relations?.documents?.length) {
             const { documents } = req.body.relations;
             await tx
               .insertInto("_charactersTodocuments")
