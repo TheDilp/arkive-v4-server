@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest } from "fastify";
 import { SelectExpression } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
+import omit from "lodash.omit";
 
 import { db } from "../database/db";
 import { insertCharacterFieldsSchema, InsertCharacterFieldsType } from "../database/validation/character_fields";
@@ -99,7 +100,13 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
             eb
               .selectFrom("_character_fieldsTocharacter_fields_templates")
               .whereRef("character_fields_templates.id", "=", "_character_fieldsTocharacter_fields_templates.B")
-              .leftJoin("character_fields", "character_fields.id", "_character_fieldsTocharacter_fields_templates.A"),
+              .leftJoin("character_fields", "character_fields.id", "_character_fieldsTocharacter_fields_templates.A")
+              .select([
+                "character_fields.id",
+                "character_fields.title",
+                "character_fields.options",
+                "character_fields.field_type",
+              ]),
           ).as("character_fields"),
         ),
       )
@@ -114,13 +121,59 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
     async (
       req: FastifyRequest<{
         Params: { id: string };
-        Body: { data: UpdateCharacterFieldsTemplateType };
+        Body: {
+          data: UpdateCharacterFieldsTemplateType;
+          relations?: { character_fields?: { id: string; title?: string; field_type?: string; options?: string[] }[] };
+        };
       }>,
       rep,
     ) => {
       if (req.body.data) {
-        const parsedData = UpdateCharacterFieldsTemplateSchema.parse(req.body.data);
-        await db.updateTable("character_fields_templates").set(parsedData).executeTakeFirstOrThrow();
+        await db.transaction().execute(async (tx) => {
+          if (req.body.data) {
+            const parsedData = UpdateCharacterFieldsTemplateSchema.parse(req.body.data);
+            await tx.updateTable("character_fields_templates").set(parsedData).executeTakeFirstOrThrow();
+          }
+          if (req.body?.relations?.character_fields) {
+            const { character_fields } = req.body.relations;
+            const existingCharacterFields = await tx
+              .selectFrom("_character_fieldsTocharacter_fields_templates")
+              .select(["_character_fieldsTocharacter_fields_templates.A"])
+              .where("_character_fieldsTocharacter_fields_templates.B", "=", req.params.id)
+              .execute();
+
+            const existingIds = existingCharacterFields.map((field) => field.A);
+            const newIds = character_fields.map((field) => field.id);
+
+            const idsToRemove = existingIds.filter((id) => !newIds.includes(id));
+            const itemsToAdd = character_fields.filter((field) => !existingIds.includes(field.id));
+            const itemsToUpdate = character_fields.filter((field) => existingIds.includes(field.id));
+
+            if (idsToRemove.length) {
+              await tx.deleteFrom("character_fields").where("id", "in", idsToRemove).execute();
+            }
+            if (itemsToAdd.length) {
+              const parsedFields = insertCharacterFieldsSchema.array().parse(itemsToAdd.map((field) => omit(field, ["id"])));
+              const newFields = await tx.insertInto("character_fields").values(parsedFields).returning("id").execute();
+
+              await tx
+                .insertInto("_character_fieldsTocharacter_fields_templates")
+                .values(newFields.map((field) => ({ A: field.id, B: req.params.id })))
+                .execute();
+            }
+            if (itemsToUpdate.length) {
+              await Promise.all(
+                itemsToUpdate.map(async (item) =>
+                  tx
+                    .updateTable("character_fields")
+                    .where("character_fields.id", "=", item.id)
+                    .set(omit(item, ["id"]))
+                    .execute(),
+                ),
+              );
+            }
+          }
+        });
       }
 
       rep.send({ message: "Template successfully updated.", ok: true });

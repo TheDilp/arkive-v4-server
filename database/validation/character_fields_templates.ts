@@ -7,6 +7,7 @@ export type UpdateCharacterFieldsTemplateType = Updateable<CharacterFieldsTempla
 
 export const UpdateCharacterFieldsTemplateSchema = z
   .object({
+    id: z.string().optional(),
     title: z.string().optional(),
   })
   .strict();
