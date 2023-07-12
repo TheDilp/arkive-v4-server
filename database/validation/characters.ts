@@ -19,6 +19,7 @@ export const InsertCharacterSchema = z
   .strict();
 export const UpdateCharacterSchema = z
   .object({
+    id: z.string().optional(),
     first_name: z.string().optional(),
     last_name: z.string().nullable().optional(),
     nickname: z.string().nullable().optional(),

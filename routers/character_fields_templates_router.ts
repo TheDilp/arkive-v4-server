@@ -4,7 +4,7 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertCharacterFieldsType } from "../database/validation/character_fields";
+import { insertCharacterFieldsSchema, InsertCharacterFieldsType } from "../database/validation/character_fields";
 import {
   InsertCharacterFieldsTemplateType,
   UpdateCharacterFieldsTemplateSchema,
@@ -34,15 +34,15 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
           .returning("id")
           .executeTakeFirstOrThrow();
 
-        const newFields = await tx
-          .insertInto("character_fields")
-          .values(req.body.relations.character_fields)
-          .returning("id")
-          .execute();
+        if (req.body.relations?.character_fields) {
+          const parsedFields = insertCharacterFieldsSchema.array().parse(req.body.relations.character_fields);
+          const newFields = await tx.insertInto("character_fields").values(parsedFields).returning("id").execute();
 
-        tx.insertInto("_character_fieldsTocharacter_fields_templates").values(
-          newFields.map((field) => ({ A: field.id, B: newTemplate.id })),
-        );
+          await tx
+            .insertInto("_character_fieldsTocharacter_fields_templates")
+            .values(newFields.map((field) => ({ A: field.id, B: newTemplate.id })))
+            .execute();
+        }
       });
 
       rep.send({ message: "Template and fields successfully created.", ok: true });
@@ -54,12 +54,31 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
   server.post("/", async (req: FastifyRequest<{ Body: RequestBodyType }>, rep) => {
     const data = await db
       .selectFrom("character_fields_templates")
-      .$if(!req.body.fields.length, (qb) => qb.selectAll())
-      .$if(!!req.body.fields.length, (qb) =>
+      .$if(!req.body.fields?.length, (qb) => qb.selectAll())
+      .$if(!!req.body.fields?.length, (qb) =>
         qb.clearSelect().select(req.body.fields as SelectExpression<DB, "character_fields_templates">[]),
       )
       .$if(!!req.body?.filters?.and?.length || !!req.body?.filters?.or?.length, (qb) => {
         qb = constructFilter("character_fields_templates", qb, req.body.filters);
+        return qb;
+      })
+      .$if(!!req?.body?.relations, (qb) => {
+        if (req?.body?.relations?.character_fields) {
+          qb = qb.select((eb) =>
+            jsonArrayFrom(
+              eb
+                .selectFrom("_character_fieldsTocharacter_fields_templates")
+                .whereRef("character_fields_templates.id", "=", "_character_fieldsTocharacter_fields_templates.B")
+                .leftJoin("character_fields", "id", "_character_fieldsTocharacter_fields_templates.A")
+                .select([
+                  "character_fields.id",
+                  "character_fields.title",
+                  "character_fields.field_type",
+                  "character_fields.options",
+                ]),
+            ).as("character_fields"),
+          );
+        }
         return qb;
       })
       .execute();
@@ -68,8 +87,8 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
   server.post("/:id", async (req: FastifyRequest<{ Params: { id: string }; Body: RequestBodyType }>, rep) => {
     const data = await db
       .selectFrom("character_fields_templates")
-      .$if(!req.body.fields.length, (qb) => qb.selectAll())
-      .$if(!!req.body.fields.length, (qb) =>
+      .$if(!req.body.fields?.length, (qb) => qb.selectAll())
+      .$if(!!req.body.fields?.length, (qb) =>
         qb.clearSelect().select(req.body.fields as SelectExpression<DB, "character_fields_templates">[]),
       )
       .where("character_fields_templates.id", "=", req.params.id)
