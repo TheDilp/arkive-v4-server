@@ -101,6 +101,9 @@ model characters {
   documents documents[]
   nodes     nodes[]
   tags      tags[]
+
+  related_from characters_relations[] @relation("characters_character_relations_a")
+  related_to   characters_relations[] @relation("characters_character_relations_b")
 }
 
 model character_fields {
@@ -141,6 +144,16 @@ model characters_to_character_fields {
   value Json?
 
   @@id([character_id, character_field_id])
+}
+
+model characters_relations {
+  character_a    characters @relation(name: "characters_character_relations_a", fields: [character_a_id], references: [id], onDelete: Cascade)
+  character_a_id String
+
+  character_b    characters @relation(name: "characters_character_relations_b", fields: [character_b_id], references: [id], onDelete: Cascade)
+  character_b_id String
+
+  @@id([character_a_id, character_b_id])
 }
 
 model documents {
