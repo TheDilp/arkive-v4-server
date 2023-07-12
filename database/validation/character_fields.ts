@@ -9,6 +9,7 @@ export const insertCharacterFieldsSchema = z
   .object({
     title: z.string(),
     project_id: z.string(),
+    sort: z.number().optional(),
     field_type: z.string(),
     options: z.string().array().optional(),
   })

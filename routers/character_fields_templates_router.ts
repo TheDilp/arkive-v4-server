@@ -106,6 +106,7 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
                 "character_fields.title",
                 "character_fields.options",
                 "character_fields.field_type",
+                "character_fields.sort",
               ]),
           ).as("character_fields"),
         ),
@@ -132,7 +133,11 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
         await db.transaction().execute(async (tx) => {
           if (req.body.data) {
             const parsedData = UpdateCharacterFieldsTemplateSchema.parse(req.body.data);
-            await tx.updateTable("character_fields_templates").set(parsedData).executeTakeFirstOrThrow();
+            await tx
+              .updateTable("character_fields_templates")
+              .set(parsedData)
+              .where("character_fields_templates.id", "=", parsedData.id as string)
+              .executeTakeFirstOrThrow();
           }
           if (req.body?.relations?.character_fields) {
             const { character_fields } = req.body.relations;
