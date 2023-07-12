@@ -110,6 +110,8 @@ model character_fields {
   project    projects @relation(fields: [project_id], references: [id])
   project_id String
 
+  sort Int @default(0)
+
   /// @kyselyType('text' | 'textarea' | 'select' | 'select_multiple')
   field_type String
   options    String[]
@@ -125,6 +127,8 @@ model character_fields_templates {
   project          projects           @relation(fields: [project_id], references: [id])
   project_id       String
   character_fields character_fields[]
+
+  sort Int @default(0)
 }
 
 model characters_to_character_fields {
