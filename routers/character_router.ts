@@ -125,8 +125,14 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
             jsonArrayFrom(
               eb
                 .selectFrom("characters_to_character_fields")
-                .select(["characters_to_character_fields.character_field_id", "characters_to_character_fields.value"])
-                .whereRef("characters_to_character_fields.character_id", "=", "characters.id"),
+                .select(["characters_to_character_fields.character_field_id as id", "characters_to_character_fields.value"])
+                .whereRef("characters_to_character_fields.character_id", "=", "characters.id")
+                .leftJoin(
+                  "_character_fieldsTocharacter_fields_templates",
+                  "_character_fieldsTocharacter_fields_templates.A",
+                  "character_field_id",
+                )
+                .select(["_character_fieldsTocharacter_fields_templates.B as template_id"]),
             ).as("character_fields"),
           );
         }
@@ -145,12 +151,58 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
     async (
       req: FastifyRequest<{
         Params: { id: string };
-        Body: { data: UpdateCharacterType };
+        Body: { data?: UpdateCharacterType; relations?: { character_fields?: { id: string; value: string }[] } };
       }>,
       rep,
     ) => {
-      const parsedData = UpdateCharacterSchema.parse(req.body.data);
-      await db.updateTable("characters").where("characters.id", "=", req.params.id).set(parsedData).execute();
+      await db.transaction().execute(async (tx) => {
+        if (req.body.data) {
+          const parsedData = UpdateCharacterSchema.parse(req.body.data);
+          await tx.updateTable("characters").where("characters.id", "=", req.params.id).set(parsedData).execute();
+        }
+        if (req.body.relations?.character_fields) {
+          const existingCharacterFields = await tx
+            .selectFrom("characters_to_character_fields")
+            .select(["characters_to_character_fields.character_field_id as id", "characters_to_character_fields.value"])
+            .where("characters_to_character_fields.character_id", "=", req.params.id)
+            .execute();
+
+          const existingIds = existingCharacterFields.map((field) => field.id);
+          const newIds = req.body.relations.character_fields.map((field) => field.id);
+
+          const idsToRemove = existingIds.filter((id) => !newIds.includes(id));
+          const itemsToAdd = req.body.relations.character_fields.filter((field) => !existingIds.includes(field.id));
+          const itemsToUpdate = req.body.relations.character_fields.filter((field) => existingIds.includes(field.id));
+
+          if (idsToRemove.length) {
+            await tx.deleteFrom("characters_to_character_fields").where("character_field_id", "in", idsToRemove).execute();
+          }
+          if (itemsToAdd.length) {
+            await tx
+              .insertInto("characters_to_character_fields")
+              .values(
+                itemsToAdd.map((item) => ({
+                  character_id: req.params.id,
+                  character_field_id: item.id,
+                  value: JSON.stringify(item.value),
+                })),
+              )
+              .execute();
+          }
+          if (itemsToUpdate.length) {
+            await Promise.all(
+              itemsToUpdate.map(async (item) =>
+                tx
+                  .updateTable("characters_to_character_fields")
+                  .where("character_id", "=", req.params.id)
+                  .where("character_field_id", "=", item.id)
+                  .set({ value: JSON.stringify(item.value) })
+                  .execute(),
+              ),
+            );
+          }
+        }
+      });
       rep.send({ message: "Character successfully updated.", ok: true });
     },
   );
