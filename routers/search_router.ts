@@ -25,17 +25,18 @@ export function search_router(server: FastifyInstance, _: any, done: any) {
       if (type === "characters") fields.push("first_name", "nickname", "last_name");
       else fields.push("title");
 
-      const formattedSearchTerm = req.body.data.search_term.replace(" ", " & ").toLowerCase();
       const result = await db
         .selectFrom(type)
         .select(fields as SelectExpression<DB, SearchableEntities>[])
         .where("project_id", "=", req.params.project_id)
         .where((eb) =>
-          eb.or([
-            eb("first_name", "ilike", `%${req.body.data.search_term}%`),
-            eb("nickname", "ilike", `%${req.body.data.search_term}%`),
-            eb("last_name", "ilike", `%${req.body.data.search_term}%`),
-          ]),
+          type === "characters"
+            ? eb.or([
+                eb("first_name", "ilike", `%${req.body.data.search_term}%`),
+                eb("nickname", "ilike", `%${req.body.data.search_term}%`),
+                eb("last_name", "ilike", `%${req.body.data.search_term}%`),
+              ])
+            : eb("title", "ilike", `%${req.body.data.search_term}%`),
         )
         .execute();
 
