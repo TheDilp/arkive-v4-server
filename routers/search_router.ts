@@ -12,21 +12,44 @@ export function search_router(server: FastifyInstance, _: any, done: any) {
       req: FastifyRequest<{
         Params: { type: SearchableEntities; project_id: string };
         Body: {
-          search_term: string;
-          fields: SelectExpression<DB, SearchableEntities>[];
+          data: {
+            search_term: string;
+          };
         };
       }>,
       rep,
     ) => {
-      const formattedSearchTerm = req.body.search_term.replace(" ", " & ").toLowerCase();
+      const { type } = req.params;
+      const fields = ["id"];
+
+      if (type === "characters") fields.push("first_name", "nickname", "last_name");
+      else fields.push("title");
+
+      const formattedSearchTerm = req.body.data.search_term.replace(" ", " & ").toLowerCase();
       const result = await db
-        .selectFrom(req.params.type)
-        .select(req.body.fields?.length ? req.body.fields : "id")
+        .selectFrom(type)
+        .select(fields as SelectExpression<DB, SearchableEntities>[])
         .where("project_id", "=", req.params.project_id)
-        .where("tsvector_column", "@@", `${formattedSearchTerm}:*`)
+        .where((eb) =>
+          eb.or([
+            eb("first_name", "ilike", `%${req.body.data.search_term}%`),
+            eb("nickname", "ilike", `%${req.body.data.search_term}%`),
+            eb("last_name", "ilike", `%${req.body.data.search_term}%`),
+          ]),
+        )
         .execute();
 
-      rep.send(result);
+      rep.send({
+        data: result.map((item) => ({
+          value: item.id,
+          label:
+            type === "characters"
+              ? `${item.first_name} ${item?.nickname ? `(${item.nickname})` : ""} ${item?.last_name || ""}`
+              : item?.title || "",
+        })),
+        message: "Success",
+        ok: true,
+      });
     },
   );
 
