@@ -7,10 +7,10 @@ import { SearchableEntities } from "../types/requestTypes";
 
 export function search_router(server: FastifyInstance, _: any, done: any) {
   server.post(
-    "/:type",
+    "/:project_id/:type",
     async (
       req: FastifyRequest<{
-        Params: { type: SearchableEntities };
+        Params: { type: SearchableEntities; project_id: string };
         Body: {
           search_term: string;
           fields: SelectExpression<DB, SearchableEntities>[];
@@ -22,6 +22,7 @@ export function search_router(server: FastifyInstance, _: any, done: any) {
       const result = await db
         .selectFrom(req.params.type)
         .select(req.body.fields?.length ? req.body.fields : "id")
+        .where("project_id", "=", req.params.project_id)
         .where("tsvector_column", "@@", `${formattedSearchTerm}:*`)
         .execute();
 
