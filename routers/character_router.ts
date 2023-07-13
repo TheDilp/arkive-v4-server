@@ -53,6 +53,9 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
               )
               .executeTakeFirst();
           }
+
+          // .leftJoin("characters", "characters.id", "character_b_id")
+          // .select(["first_name", "nickname", "last_name"])
           if (req.body.relations?.tags?.length) {
             const { tags } = req.body.relations;
             await tx
@@ -138,6 +141,38 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
             ).as("character_fields"),
           );
         }
+        if (req.body?.relations?.relationships) {
+          qb = qb.select((eb) =>
+            jsonArrayFrom(
+              eb
+                .selectFrom("characters_relationships")
+                .select(["character_a_id as id"])
+                .where("character_a_id", "=", req.params.id)
+                .leftJoin("characters", "characters.id", "character_b_id")
+                .select([
+                  "characters.first_name",
+                  "characters.nickname",
+                  "characters.last_name",
+                  "characters_relationships.relation_type",
+                ]),
+            ).as("related_to"),
+          );
+          qb = qb.select((eb) =>
+            jsonArrayFrom(
+              eb
+                .selectFrom("characters_relationships")
+                .select(["character_b_id as id"])
+                .where("character_b_id", "=", req.params.id)
+                .leftJoin("characters", "characters.id", "character_a_id")
+                .select([
+                  "characters.first_name",
+                  "characters.nickname",
+                  "characters.last_name",
+                  "characters_relationships.relation_type",
+                ]),
+            ).as("related_from"),
+          );
+        }
         if (req.body?.relations?.tags) {
           qb = qb.select((eb) => TagQuery(eb, "_charactersTotags", "characters"));
         }
@@ -217,11 +252,16 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
 
           const existingIds = existingCharacterRelationships.map((relation) => relation.id);
 
-          const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(existingIds, existingCharacterRelationships);
+          const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+            existingIds,
+            req.body.relations?.relationships,
+          );
 
+          console.log(req.body.relations.relationships, itemsToAdd);
           if (idsToRemove.length) {
             await tx.deleteFrom("characters_relationships").where("character_a_id", "in", idsToRemove).execute();
           }
+          console.log(existingIds);
           if (itemsToAdd.length) {
             await tx
               .insertInto("characters_relationships")
