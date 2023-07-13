@@ -17,6 +17,7 @@ import {
   tag_router,
   user_router,
 } from "./routers";
+import { search_router } from "./routers/search_router";
 
 const server = fastify();
 
@@ -56,6 +57,7 @@ server.register(
     instance.register(map_router, { prefix: "/maps" });
     instance.register(map_pin_router, { prefix: "/map_pins" });
     instance.register(board_router, { prefix: "/boards" });
+    instance.register(search_router, { prefix: "/search" });
     done();
   },
   { prefix: "/api/v1" },

@@ -103,8 +103,8 @@ model characters {
   nodes     nodes[]
   tags      tags[]
 
-  related_from characters_relations[] @relation("characters_character_relations_a")
-  related_to   characters_relations[] @relation("characters_character_relations_b")
+  related_from characters_relationships[] @relation("characters_character_relations_a")
+  related_to   characters_relationships[] @relation("characters_character_relations_b")
 }
 
 model character_fields {
@@ -154,7 +154,7 @@ model character_relationship_types {
   project_id String
 }
 
-model characters_relations {
+model characters_relationships {
   character_a    characters @relation(name: "characters_character_relations_a", fields: [character_a_id], references: [id], onDelete: Cascade)
   character_a_id String
 

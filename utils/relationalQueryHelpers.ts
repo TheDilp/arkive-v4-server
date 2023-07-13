@@ -60,3 +60,16 @@ export async function UpdateTagRelations({
       .values(tagsToInsert.map((tag) => ({ A: id, B: tag })))
       .execute();
 }
+
+export function GetRelationsForUpdating(
+  existingIds: string[],
+  newData: { id: string }[],
+): [string[], { [key: string]: any }[], { [key: string]: any }[]] {
+  const newIds = newData.map((field) => field.id);
+
+  const idsToRemove = existingIds.filter((id) => !newIds.includes(id));
+  const itemsToAdd = newData.filter((field) => !existingIds.includes(field.id));
+  const itemsToUpdate = newData.filter((field) => existingIds.includes(field.id));
+
+  return [idsToRemove, itemsToAdd, itemsToUpdate];
+}

@@ -8,7 +8,7 @@ import { InsertCharacterSchema, InsertCharacterType, UpdateCharacterSchema, Upda
 import { RequestBodyType } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrderBy } from "../utils/orderByConstructor";
-import { TagQuery } from "../utils/relationalQueryHelpers";
+import { GetRelationsForUpdating, TagQuery } from "../utils/relationalQueryHelpers";
 
 export function character_router(server: FastifyInstance, _: any, done: any) {
   // #region create_routes
@@ -83,7 +83,9 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
     },
   );
   // #endregion create_routes
+
   // #region read_routes
+
   server.post("/", async (req: FastifyRequest<{ Body: RequestBodyType }>, rep) => {
     const data = await db
       .selectFrom("characters")
@@ -145,13 +147,20 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
     rep.send({ data, message: "Success", ok: true });
   });
   // #endregion read_routes
+
   // #region update_routes
   server.post(
     "/update/:id",
     async (
       req: FastifyRequest<{
         Params: { id: string };
-        Body: { data?: UpdateCharacterType; relations?: { character_fields?: { id: string; value: string }[] } };
+        Body: {
+          data?: UpdateCharacterType;
+          relations?: {
+            character_fields?: { id: string; value: string }[];
+            relationships?: { id: string; relation_type: string }[];
+          };
+        };
       }>,
       rep,
     ) => {
@@ -168,11 +177,8 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
             .execute();
 
           const existingIds = existingCharacterFields.map((field) => field.id);
-          const newIds = req.body.relations.character_fields.map((field) => field.id);
 
-          const idsToRemove = existingIds.filter((id) => !newIds.includes(id));
-          const itemsToAdd = req.body.relations.character_fields.filter((field) => !existingIds.includes(field.id));
-          const itemsToUpdate = req.body.relations.character_fields.filter((field) => existingIds.includes(field.id));
+          const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(existingIds, existingCharacterFields);
 
           if (idsToRemove.length) {
             await tx.deleteFrom("characters_to_character_fields").where("character_field_id", "in", idsToRemove).execute();
@@ -197,6 +203,45 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
                   .where("character_id", "=", req.params.id)
                   .where("character_field_id", "=", item.id)
                   .set({ value: JSON.stringify(item.value) })
+                  .execute(),
+              ),
+            );
+          }
+        }
+        if (req.body.relations?.relationships?.length) {
+          const existingCharacterRelationships = await tx
+            .selectFrom("characters_relationships")
+            .select(["character_a_id as id", "character_b_id", "relation_type"])
+            .where("character_a_id", "=", req.params.id)
+            .execute();
+
+          const existingIds = existingCharacterRelationships.map((relation) => relation.id);
+
+          const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(existingIds, existingCharacterRelationships);
+
+          if (idsToRemove.length) {
+            await tx.deleteFrom("characters_relationships").where("character_a_id", "in", idsToRemove).execute();
+          }
+          if (itemsToAdd.length) {
+            await tx
+              .insertInto("characters_relationships")
+              .values(
+                itemsToAdd.map((item) => ({
+                  character_a_id: req.params.id,
+                  character_b_id: item.id,
+                  relation_type: item.relation_type,
+                })),
+              )
+              .execute();
+          }
+          if (itemsToUpdate.length) {
+            await Promise.all(
+              itemsToUpdate.map(async (item) =>
+                tx
+                  .updateTable("characters_relationships")
+                  .where("character_a_id", "=", req.params.id)
+                  .where("character_b_id", "=", item.id)
+                  .set({ relation_type: item.relation_type })
                   .execute(),
               ),
             );
