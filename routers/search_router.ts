@@ -23,7 +23,7 @@ export function search_router(server: FastifyInstance, _: any, done: any) {
       const fields = ["id"];
 
       if (type === "characters") fields.push("first_name", "nickname", "last_name");
-      if (type === "tags") fields.push("title", "color");
+      else if (type === "tags") fields.push("title", "color");
       else fields.push("title");
 
       const result = await db
