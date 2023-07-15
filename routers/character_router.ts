@@ -150,9 +150,11 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
                 .where("character_a_id", "=", req.params.id)
                 .leftJoin("characters", "characters.id", "character_b_id")
                 .select([
+                  "character_b_id as id",
                   "characters.first_name",
                   "characters.nickname",
                   "characters.last_name",
+                  "characters.portrait_id",
                   "characters_relationships.relation_type",
                 ]),
             ).as("related_to"),
@@ -165,9 +167,11 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
                 .where("character_b_id", "=", req.params.id)
                 .leftJoin("characters", "characters.id", "character_a_id")
                 .select([
+                  "character_a_id as id",
                   "characters.first_name",
                   "characters.nickname",
                   "characters.last_name",
+                  "characters.portrait_id",
                   "characters_relationships.relation_type",
                 ]),
             ).as("related_from"),
@@ -193,7 +197,8 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
           data?: UpdateCharacterType;
           relations?: {
             character_fields?: { id: string; value: string }[];
-            relationships?: { id: string; relation_type: string }[];
+            related_to?: { id: string; relation_type: string }[];
+            related_from?: { id: string; relation_type: string }[];
           };
         };
       }>,
@@ -212,8 +217,10 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
             .execute();
 
           const existingIds = existingCharacterFields.map((field) => field.id);
-
-          const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(existingIds, existingCharacterFields);
+          const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+            existingIds,
+            req.body.relations?.character_fields,
+          );
 
           if (idsToRemove.length) {
             await tx.deleteFrom("characters_to_character_fields").where("character_field_id", "in", idsToRemove).execute();
@@ -243,25 +250,60 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
             );
           }
         }
-        if (req.body.relations?.relationships?.length) {
-          const existingCharacterRelationships = await tx
+        if (req.body.relations?.related_to?.length) {
+          const existingRelatedTo = await tx
             .selectFrom("characters_relationships")
             .select(["character_a_id as id", "character_b_id", "relation_type"])
             .where("character_a_id", "=", req.params.id)
             .execute();
 
-          const existingIds = existingCharacterRelationships.map((relation) => relation.id);
+          const existingIds = existingRelatedTo.map((relation) => relation.id);
 
-          const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
-            existingIds,
-            req.body.relations?.relationships,
-          );
-
-          console.log(req.body.relations.relationships, itemsToAdd);
+          const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(existingIds, req.body.relations?.related_to);
           if (idsToRemove.length) {
             await tx.deleteFrom("characters_relationships").where("character_a_id", "in", idsToRemove).execute();
           }
-          console.log(existingIds);
+          if (itemsToAdd.length) {
+            await tx
+              .insertInto("characters_relationships")
+              .values(
+                itemsToAdd.map((item) => ({
+                  character_a_id: req.params.id,
+                  character_b_id: item.id,
+                  relation_type: item.relation_type,
+                })),
+              )
+              .execute();
+          }
+          if (itemsToUpdate.length) {
+            await Promise.all(
+              itemsToUpdate.map(async (item) =>
+                tx
+                  .updateTable("characters_relationships")
+                  .where("character_a_id", "=", req.params.id)
+                  .where("character_b_id", "=", item.id)
+                  .set({ relation_type: item.relation_type })
+                  .execute(),
+              ),
+            );
+          }
+        }
+        if (req.body.relations?.related_from?.length) {
+          const existingRelatedTo = await tx
+            .selectFrom("characters_relationships")
+            .select(["character_b_id as id", "character_a_id", "relation_type"])
+            .where("character_b_id", "=", req.params.id)
+            .execute();
+
+          const existingIds = existingRelatedTo.map((relation) => relation.id);
+
+          const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+            existingIds,
+            req.body.relations?.related_from,
+          );
+          if (idsToRemove.length) {
+            await tx.deleteFrom("characters_relationships").where("character_b_id", "in", idsToRemove).execute();
+          }
           if (itemsToAdd.length) {
             await tx
               .insertInto("characters_relationships")
