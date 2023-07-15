@@ -28,7 +28,7 @@ export function constructFilter(
         const { field, operator, value } = filters.or[index];
         const dbOperator = FilterEnum[operator];
         // @ts-ignore
-        orFilters.push(eb(`characters.${field}`, dbOperator, value));
+        orFilters.push(eb(`${table}.${field}`, dbOperator, dbOperator === "ilike" ? `%${value}%` : value));
       }
     }
 
