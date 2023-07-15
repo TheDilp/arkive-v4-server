@@ -36,19 +36,20 @@ export function tag_router(server: FastifyInstance, _: any, done: any) {
   // #endregion read_routes
   // #region update_routes
   server.post(
-    "/update/:id?",
+    "/update/:id",
     async (req: FastifyRequest<{ Params: { id: string }; Body: { data: UpdateTagType | UpdateTagType[] } }>, rep) => {
       const parsedData = UpdateTagSchema.parse(req.body.data);
-      if (Array.isArray(parsedData)) {
-      } else {
-        await db.updateTable("tags").where("id", "=", req.params.id).set(parsedData).execute();
-      }
+      await db.updateTable("tags").where("id", "=", req.params.id).set(parsedData).execute();
 
       rep.send({ message: "Tags successfully updated.", ok: true });
     },
   );
   // #endregion update_routes
   // #region delete_routes
+  server.delete("/delete/:id", async (req: FastifyRequest<{ Params: { id: string } }>, rep) => {
+    await db.deleteFrom("tags").where("id", "=", req.params.id).execute();
+    rep.send({ message: "Tag successfully deleted.", ok: true });
+  });
   // #endregion delete_routes
 
   done();

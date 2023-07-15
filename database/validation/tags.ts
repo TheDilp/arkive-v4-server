@@ -29,5 +29,4 @@ export const UpdateTagSchema = z
     title: z.string().optional(),
     color: z.string().optional(),
   })
-  .strict()
-  .or(z.object({ id: z.string(), title: z.string().optional(), color: z.string().optional() }).strict().array());
+  .strict();
