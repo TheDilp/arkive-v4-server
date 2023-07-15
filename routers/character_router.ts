@@ -20,6 +20,8 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
           data: InsertCharacterType;
           relations?: {
             character_fields?: { id: string; value: string }[];
+            related_to?: { id: string; relation_type: string }[];
+            related_from?: { id: string; relation_type: string }[];
             tags?: { id: string }[];
             documents?: { id: string }[];
             images?: { id: string }[];
@@ -79,6 +81,18 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
                 })),
               )
               .executeTakeFirst();
+          }
+          if (req.body.relations?.related_to?.length) {
+            await tx
+              .insertInto("characters_relationships")
+              .values(
+                req.body.relations.related_to.map((item) => ({
+                  character_a_id: character.id,
+                  character_b_id: item.id,
+                  relation_type: item.relation_type,
+                })),
+              )
+              .execute();
           }
         }
       });
