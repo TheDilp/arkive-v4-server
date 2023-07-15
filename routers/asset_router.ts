@@ -62,16 +62,21 @@ export function asset_router(server: FastifyInstance, _: any, done: any) {
       const files = req.body;
       const { type, project_id } = req.params;
       const filesToSend: string[] = [];
-      Object.entries(files).forEach(async ([key, file]) => {
-        const filePath = `./assets/${project_id}/${type}`;
-        if (!existsSync(`./assets/${project_id}/${type}`)) {
-          mkdirSync(`./assets/${project_id}/${type}`, { recursive: true });
-        }
-        createFile(file.data, filePath, key, rep);
-        filesToSend.push(key);
 
-        await db.insertInto("images").values({ title: key, project_id: req.params.project_id }).execute();
-      });
+      const objectEntires = Object.entries(files);
+
+      await Promise.all(
+        objectEntires.map(async ([key, file]) => {
+          const filePath = `./assets/${project_id}/${type}`;
+          if (!existsSync(`./assets/${project_id}/${type}`)) {
+            mkdirSync(`./assets/${project_id}/${type}`, { recursive: true });
+          }
+          createFile(file.data, filePath, key, rep);
+          filesToSend.push(key);
+
+          await db.insertInto("images").values({ title: key, project_id: req.params.project_id }).execute();
+        }),
+      );
 
       rep.send({ data: filesToSend });
     },
