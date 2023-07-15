@@ -43,10 +43,7 @@ export function search_router(server: FastifyInstance, _: any, done: any) {
       rep.send({
         data: result.map((item) => ({
           value: item.id,
-          label:
-            type === "characters"
-              ? `${item.first_name} ${item?.nickname ? `(${item.nickname})` : ""} ${item?.last_name || ""}`
-              : item?.title || "",
+          label: type === "characters" ? `${item.first_name} ${item?.last_name || ""}` : item?.title || "",
         })),
         message: "Success",
         ok: true,
