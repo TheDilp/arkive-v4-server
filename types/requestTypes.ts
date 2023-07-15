@@ -1,6 +1,15 @@
 import { FilterEnum } from "../enums/requestEnums";
 
-export type SearchableEntities = "characters" | "documents" | "maps" | "map_pins" | "boards" | "nodes" | "edges";
+export type SearchableEntities =
+  | "characters"
+  | "documents"
+  | "maps"
+  | "map_pins"
+  | "boards"
+  | "nodes"
+  | "edges"
+  | "images"
+  | "tags";
 
 export type RequestFilterOperatorType = keyof typeof FilterEnum;
 

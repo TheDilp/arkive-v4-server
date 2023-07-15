@@ -10,7 +10,7 @@ export function TagQuery(eb: ExpressionBuilder<DB, any>, relationalTable: TagsRe
       .selectFrom(relationalTable)
       .whereRef(`${table}.id`, "=", `${relationalTable}.A`)
       .leftJoin("tags", "tags.id", `${relationalTable}.B`)
-      .select(["tags.id", "tags.title"]),
+      .select(["tags.id", "tags.title", "tags.color"]),
   ).as("tags");
 }
 

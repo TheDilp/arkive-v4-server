@@ -55,9 +55,6 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
               )
               .executeTakeFirst();
           }
-
-          // .leftJoin("characters", "characters.id", "character_b_id")
-          // .select(["first_name", "nickname", "last_name"])
           if (req.body.relations?.tags?.length) {
             const { tags } = req.body.relations;
             await tx
@@ -213,6 +210,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
             character_fields?: { id: string; value: string }[];
             related_to?: { id: string; relation_type: string }[];
             related_from?: { id: string; relation_type: string }[];
+            tags?: { id: string }[];
           };
         };
       }>,
@@ -341,6 +339,33 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
                   .execute(),
               ),
             );
+          }
+        }
+        if (req.body.relations?.tags?.length) {
+          const existingTags = await tx
+            .selectFrom("_charactersTotags")
+            .select("B as id")
+            .where("A", "=", req.params.id)
+            .execute();
+
+          const existingIds = existingTags.map((tag) => tag.id);
+
+          const { tags } = req.body.relations;
+          const [idsToRemove, itemsToAdd] = GetRelationsForUpdating(existingIds, tags);
+          if (idsToRemove.length) {
+            await tx.deleteFrom("_charactersTotags").where("A", "=", req.params.id).where("B", "in", idsToRemove).execute();
+          }
+
+          if (itemsToAdd.length) {
+            await tx
+              .insertInto("_charactersTotags")
+              .values(
+                itemsToAdd.map((item) => ({
+                  A: req.params.id,
+                  B: item.id,
+                })),
+              )
+              .execute();
           }
         }
       });

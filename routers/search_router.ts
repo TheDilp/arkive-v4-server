@@ -23,6 +23,7 @@ export function search_router(server: FastifyInstance, _: any, done: any) {
       const fields = ["id"];
 
       if (type === "characters") fields.push("first_name", "nickname", "last_name");
+      if (type === "tags") fields.push("title", "color");
       else fields.push("title");
 
       const result = await db
@@ -44,6 +45,7 @@ export function search_router(server: FastifyInstance, _: any, done: any) {
         data: result.map((item) => ({
           value: item.id,
           label: type === "characters" ? `${item.first_name} ${item?.last_name || ""}` : item?.title || "",
+          color: type === "tags" ? item.color : "",
         })),
         message: "Success",
         ok: true,
