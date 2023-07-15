@@ -1,7 +1,9 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
 
 import { db } from "../database/db";
-import { InsertTagSchema, InsertTagType } from "../database/validation";
+import { InsertTagSchema, InsertTagType, UpdateTagSchema, UpdateTagType } from "../database/validation";
+import { RequestBodyType } from "../types/requestTypes";
+import { constructOrderBy } from "../utils/orderByConstructor";
 
 export function tag_router(server: FastifyInstance, _: any, done: any) {
   // #region create_routes
@@ -21,8 +23,30 @@ export function tag_router(server: FastifyInstance, _: any, done: any) {
 
   // #endregion create_routes
   // #region read_routes
+  server.post("/", async (req: FastifyRequest<{ Body: RequestBodyType }>, rep) => {
+    const data = await db
+      .selectFrom("tags")
+      .select(["id", "title", "color"])
+      .$if(!!req.body.orderBy, (qb) => constructOrderBy(qb, req.body.orderBy?.field as string, req.body.orderBy?.sort))
+      .where("project_id", "=", req.body.data.project_id)
+      .execute();
+
+    rep.send({ data, message: "Success", ok: true });
+  });
   // #endregion read_routes
   // #region update_routes
+  server.post(
+    "/update/:id?",
+    async (req: FastifyRequest<{ Params: { id: string }; Body: { data: UpdateTagType | UpdateTagType[] } }>, rep) => {
+      const parsedData = UpdateTagSchema.parse(req.body.data);
+      if (Array.isArray(parsedData)) {
+      } else {
+        await db.updateTable("tags").where("id", "=", req.params.id).set(parsedData).execute();
+      }
+
+      rep.send({ message: "Tags successfully updated.", ok: true });
+    },
+  );
   // #endregion update_routes
   // #region delete_routes
   // #endregion delete_routes
