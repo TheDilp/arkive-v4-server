@@ -56,7 +56,7 @@ server.register(
     instance.register(document_router, { prefix: "/documents" });
     instance.register(map_router, { prefix: "/maps" });
     instance.register(map_pin_router, { prefix: "/map_pins" });
-    instance.register(board_router, { prefix: "/boards" });
+    instance.register(board_router, { prefix: "/graphs" });
     instance.register(search_router, { prefix: "/search" });
     done();
   },

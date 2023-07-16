@@ -14,15 +14,15 @@ export function board_router(server: FastifyInstance, _: any, done: any) {
 
   server.post(
     "/create",
-    async (req: FastifyRequest<{ Body: { data: InsertBoardType; relations?: { tags?: string[] } } }>, rep) => {
+    async (req: FastifyRequest<{ Body: { data: InsertBoardType; relations?: { tags?: { id: string }[] } } }>, rep) => {
       const data = InsertBoardSchema.parse(req.body.data);
       await db.transaction().execute(async (tx) => {
-        const map = await tx.insertInto("boards").values(data).returning("id").executeTakeFirstOrThrow();
+        const graph = await tx.insertInto("boards").values(data).returning("id").executeTakeFirstOrThrow();
 
         if (req.body?.relations?.tags)
-          await CreateTagRelations({ tx, relationalTable: "_boardsTotags", id: map.id, tags: req.body.relations.tags });
+          await CreateTagRelations({ tx, relationalTable: "_boardsTotags", id: graph.id, tags: req.body.relations.tags });
       });
-      rep.send({ message: "Board successfully created.", ok: true });
+      rep.send({ message: "Graph successfully created.", ok: true });
     },
   );
 

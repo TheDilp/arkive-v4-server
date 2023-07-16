@@ -23,11 +23,11 @@ export async function CreateTagRelations({
   tx: Transaction<DB>;
   relationalTable: TagsRelationTables;
   id: string;
-  tags: string[];
+  tags: { id: string }[];
 }) {
   await tx
     .insertInto(relationalTable)
-    .values(tags.map((tag) => ({ A: id, B: tag })))
+    .values(tags.map((tag) => ({ A: id, B: tag.id })))
     .execute();
 }
 
