@@ -8,7 +8,7 @@ import { InsertCharacterSchema, InsertCharacterType, UpdateCharacterSchema, Upda
 import { RequestBodyType } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrderBy } from "../utils/orderByConstructor";
-import { GetRelationsForUpdating, TagQuery } from "../utils/relationalQueryHelpers";
+import { CreateTagRelations, GetRelationsForUpdating, TagQuery } from "../utils/relationalQueryHelpers";
 
 export function character_router(server: FastifyInstance, _: any, done: any) {
   // #region create_routes
@@ -57,15 +57,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
           }
           if (req.body.relations?.tags?.length) {
             const { tags } = req.body.relations;
-            await tx
-              .insertInto("_charactersTotags")
-              .values(
-                tags.map((tag) => ({
-                  A: character.id,
-                  B: tag.id,
-                })),
-              )
-              .executeTakeFirst();
+            await CreateTagRelations({ tx, relationalTable: "_charactersTotags", id: character.id, tags });
           }
           if (req.body.relations?.documents?.length) {
             const { documents } = req.body.relations;
