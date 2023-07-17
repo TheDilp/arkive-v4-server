@@ -116,6 +116,9 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
             ).as("portrait"),
           );
         }
+        if (req.body?.relations?.tags) {
+          qb = qb.select((eb) => TagQuery(eb, "_charactersTotags", "characters"));
+        }
         return qb;
       })
       .execute();
@@ -182,6 +185,16 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
         }
         if (req.body?.relations?.tags) {
           qb = qb.select((eb) => TagQuery(eb, "_charactersTotags", "characters"));
+        }
+        if (req?.body?.relations?.portrait) {
+          qb = qb.select((eb) =>
+            jsonObjectFrom(
+              eb
+                .selectFrom("images")
+                .whereRef("images.id", "=", "characters.portrait_id")
+                .select(["images.id", "images.title"]),
+            ).as("portrait"),
+          );
         }
         return qb;
       })

@@ -10,7 +10,8 @@ export function TagQuery(eb: ExpressionBuilder<DB, any>, relationalTable: TagsRe
       .selectFrom(relationalTable)
       .whereRef(`${table}.id`, "=", `${relationalTable}.A`)
       .leftJoin("tags", "tags.id", `${relationalTable}.B`)
-      .select(["tags.id", "tags.title", "tags.color"]),
+      .select(["tags.id", "tags.title", "tags.color"])
+      .orderBy("title", "asc"),
   ).as("tags");
 }
 
@@ -38,7 +39,7 @@ export async function UpdateTagRelations({
   tx,
 }: {
   relationalTable: TagsRelationTables;
-  newTags: string[];
+  newTags: { id: string }[];
   tx: Transaction<DB>;
   id: string;
 }) {
@@ -49,8 +50,10 @@ export async function UpdateTagRelations({
     .execute();
 
   const existingTagIds = existingTags.map((tag) => tag.B);
-  const tagsToDelete = existingTagIds.filter((tag) => !newTags.includes(tag));
-  const tagsToInsert = newTags.filter((tag) => !existingTagIds.includes(tag));
+  const newTagIds = newTags.map((tag) => tag.id);
+
+  const tagsToDelete = existingTagIds.filter((tag) => !newTagIds.includes(tag));
+  const tagsToInsert = newTagIds.filter((tag) => !existingTagIds.includes(tag));
 
   if (tagsToDelete.length) await tx.deleteFrom(relationalTable).where(`${relationalTable}.B`, "in", tagsToDelete).execute();
 
