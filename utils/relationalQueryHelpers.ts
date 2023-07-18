@@ -1,8 +1,8 @@
-import { ExpressionBuilder, Transaction } from "kysely";
+import { ExpressionBuilder, Kysely, Transaction } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
-import { EntitiesWithTags, TagsRelationTables } from "../database/types";
+import { EntitiesWithBreadcrumbs, EntitiesWithTags, TagsRelationTables } from "../database/types";
 
 export function TagQuery(eb: ExpressionBuilder<DB, any>, relationalTable: TagsRelationTables, table: EntitiesWithTags) {
   return jsonArrayFrom(
@@ -75,4 +75,33 @@ export function GetRelationsForUpdating(
   const itemsToUpdate = newData.filter((field) => existingIds.includes(field.id));
 
   return [idsToRemove, itemsToAdd, itemsToUpdate];
+}
+
+export async function GetBreadcrumbs({
+  db,
+  id,
+  table_name,
+}: {
+  db: Kysely<DB>;
+  id: string;
+  table_name: EntitiesWithBreadcrumbs;
+}) {
+  const parents_data = await db
+    .withRecursive("entityWithParents", (d) =>
+      d
+        .selectFrom(table_name)
+        .where(`${table_name}.id`, "=", id)
+        .select([`${table_name}.id`, `${table_name}.title`, `${table_name}.parent_id`])
+        .unionAll(
+          d
+            .selectFrom(`${table_name} as parents`)
+            .select(["parents.id", "parents.title", "parents.parent_id"])
+            .innerJoin("entityWithParents", "entityWithParents.parent_id", "parents.id"),
+        ),
+    )
+    .selectFrom("entityWithParents")
+    .selectAll()
+    .execute();
+
+  return parents_data.reverse();
 }

@@ -21,11 +21,12 @@ export const InsertBoardSchema = z
 
 export const UpdateBoardSchema = z
   .object({
-    parent_id: z.string().optional(),
+    id: z.string().optional(),
+    parent_id: z.string().nullable().optional(),
     title: z.string().optional(),
-    is_folder: z.boolean().optional(),
-    is_public: z.boolean().optional(),
-    icon: z.string().optional(),
+    is_folder: z.boolean().nullable().optional(),
+    is_public: z.boolean().nullable().optional(),
+    icon: z.string().nullable().optional(),
     default_node_shape: z.string().optional(),
     default_node_color: z.string().optional(),
     default_edge_color: z.string().optional(),

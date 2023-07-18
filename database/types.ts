@@ -25,3 +25,5 @@ export type EntitiesWithTags =
   | "edges"
   | "nodes"
   | "screens";
+
+export type EntitiesWithBreadcrumbs = "documents" | "maps" | "boards";

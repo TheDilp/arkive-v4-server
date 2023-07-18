@@ -4,10 +4,11 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertBoardSchema, InsertBoardType, UpdateBoardSchema, UpdateBoardType } from "../database/validation/boards";
+import { InsertBoardSchema, InsertBoardType, UpdateBoardSchema, UpdateBoardType } from "../database/validation/graphs";
 import { RequestBodyType } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
-import { CreateTagRelations, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
+import { constructOrderBy } from "../utils/orderByConstructor";
+import { CreateTagRelations, GetBreadcrumbs, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 
 export function board_router(server: FastifyInstance, _: any, done: any) {
   // #region create_routes
@@ -31,20 +32,34 @@ export function board_router(server: FastifyInstance, _: any, done: any) {
   server.post("/", async (req: FastifyRequest<{ Body: RequestBodyType }>, rep) => {
     const data = await db
       .selectFrom("boards")
-      .$if(!req.body.fields.length, (qb) => qb.selectAll())
-      .$if(!!req.body.fields.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "boards">[]))
+      .$if(!req.body.data?.item_id, (qb) => qb.where("parent_id", "is", null))
+      .$if(!req.body.fields?.length, (qb) => qb.selectAll())
+      .$if(!!req.body.fields?.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "boards">[]))
       .$if(!!req.body?.filters?.and?.length || !!req.body?.filters?.or?.length, (qb) => {
         qb = constructFilter("boards", qb, req.body.filters);
         return qb;
       })
+      .limit(req.body?.pagination?.limit || 10)
+      .offset((req.body?.pagination?.page ?? 0) * (req.body?.pagination?.limit || 10))
+      .$if(!!req.body.orderBy, (qb) => constructOrderBy(qb, req.body.orderBy?.field as string, req.body.orderBy?.sort))
       .execute();
     rep.send({ data, message: "Success", ok: true });
   });
   server.post("/:id", async (req: FastifyRequest<{ Params: { id: string }; Body: RequestBodyType }>, rep) => {
     const data = await db
+
       .selectFrom("boards")
-      .selectAll()
       .where("boards.id", "=", req.params.id)
+      .$if(!!req.body?.relations?.children, (qb) =>
+        qb.select((eb) =>
+          jsonArrayFrom(
+            eb
+              .selectFrom("boards as children")
+              .select(["children.id", "children.title", "children.icon", "children.is_folder"])
+              .whereRef("children.parent_id", "=", "boards.id"),
+          ).as("children"),
+        ),
+      )
       .$if(!!req.body?.relations?.nodes, (qb) =>
         qb.select((eb) =>
           jsonArrayFrom(eb.selectFrom("nodes").selectAll().whereRef("nodes.parent_id", "=", "boards.id")).as("nodes"),
@@ -56,7 +71,24 @@ export function board_router(server: FastifyInstance, _: any, done: any) {
         ),
       )
       .$if(!!req.body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_boardsTotags", "boards")))
+      .select([
+        "boards.id",
+        "boards.title",
+        "boards.icon",
+        "boards.is_folder",
+        "boards.is_public",
+        "boards.parent_id",
+        "boards.default_node_shape",
+        "boards.default_node_color",
+        "boards.default_edge_color",
+      ])
       .executeTakeFirstOrThrow();
+
+    if (req.body?.relations?.parents) {
+      const parents = await GetBreadcrumbs({ db, id: req.params.id, table_name: "boards" });
+      rep.send({ data: { ...data, parents }, message: "Success.", ok: true });
+    }
+
     rep.send({ data, message: "Success.", ok: true });
   });
   // #endregion read_routes
@@ -64,13 +96,13 @@ export function board_router(server: FastifyInstance, _: any, done: any) {
   server.post(
     "/update/:id",
     async (
-      req: FastifyRequest<{ Params: { id: string }; Body: { data: UpdateBoardType; relations?: { tags?: string[] } } }>,
+      req: FastifyRequest<{ Params: { id: string }; Body: { data: UpdateBoardType; relations?: { tags?: { id: string }[] } } }>,
       rep,
     ) => {
       await db.transaction().execute(async (tx) => {
         if (req.body.data) {
           const data = UpdateBoardSchema.parse(req.body.data);
-          await tx.updateTable("boards").set(data).executeTakeFirstOrThrow();
+          await tx.updateTable("boards").where("id", "=", req.params.id).set(data).executeTakeFirstOrThrow();
         }
         if (req.body?.relations) {
           if (req.body.relations?.tags)
@@ -83,7 +115,7 @@ export function board_router(server: FastifyInstance, _: any, done: any) {
         }
       });
 
-      rep.send({ message: "Board successfully updated.", ok: true });
+      rep.send({ message: "Graph successfully updated.", ok: true });
     },
   );
   // #endregion update_routes
@@ -97,7 +129,7 @@ export function board_router(server: FastifyInstance, _: any, done: any) {
       rep,
     ) => {
       await db.deleteFrom("boards").where("boards.id", "=", req.params.id).execute();
-      rep.send({ message: "Board successfully deleted.", ok: true });
+      rep.send({ message: "Graph successfully deleted.", ok: true });
     },
   );
   // #endregion delete_routes
