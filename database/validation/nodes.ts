@@ -35,6 +35,7 @@ export const InsertNodeSchema = z
 
 export const UpdateNodeSchema = z
   .object({
+    id: z.string().optional(),
     label: z.string().nullable().optional(),
     type: z.string().nullable().optional(),
     width: z.number().optional(),
@@ -50,6 +51,7 @@ export const UpdateNodeSchema = z
     background_opacity: z.number().nullable().optional(),
     locked: z.boolean().nullable().optional(),
     is_template: z.boolean().nullable().optional(),
+    is_locked: z.boolean().nullable().optional(),
     z_index: z.number().nullable().optional(),
     doc_id: z.string().nullable().optional(),
     character_id: z.string().nullable().optional(),

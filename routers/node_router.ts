@@ -10,7 +10,7 @@ export function node_router(server: FastifyInstance, _: any, done: any) {
 
   server.post(
     "/create",
-    async (req: FastifyRequest<{ Body: { data: InsertNodeType; relations?: { tags?: string[] } } }>, rep) => {
+    async (req: FastifyRequest<{ Body: { data: InsertNodeType; relations?: { tags?: { id: string }[] } } }>, rep) => {
       await db.transaction().execute(async (tx) => {
         const data = InsertNodeSchema.parse(req.body.data);
         const node = await tx.insertInto("nodes").values(data).returning("id").executeTakeFirstOrThrow();
@@ -41,13 +41,13 @@ export function node_router(server: FastifyInstance, _: any, done: any) {
   server.post(
     "/update/:id",
     async (
-      req: FastifyRequest<{ Params: { id: string }; Body: { data: UpdateNodeType; relations?: { tags?: string[] } } }>,
+      req: FastifyRequest<{ Params: { id: string }; Body: { data: UpdateNodeType; relations?: { tags?: { id: string }[] } } }>,
       rep,
     ) => {
       await db.transaction().execute(async (tx) => {
         if (req.body.data) {
           const data = UpdateNodeSchema.parse(req.body.data);
-          await tx.updateTable("nodes").set(data).executeTakeFirstOrThrow();
+          await tx.updateTable("nodes").set(data).where("nodes.id", "=", req.params.id).executeTakeFirstOrThrow();
         }
         if (req.body?.relations) {
           if (req.body.relations?.tags)
@@ -61,6 +61,20 @@ export function node_router(server: FastifyInstance, _: any, done: any) {
       });
 
       rep.send({ message: "Node successfully updated.", ok: true });
+    },
+  );
+  server.post(
+    "/update/many/position",
+    async (req: FastifyRequest<{ Body: { data: { nodes: { id: string; x: number; y: number }[] } } }>, rep) => {
+      await db.transaction().execute(async (tx) => {
+        await Promise.all(
+          req.body.data.nodes.map((node) =>
+            tx.updateTable("nodes").where("id", "=", node.id).set({ x: node.x, y: node.y }).execute(),
+          ),
+        );
+      });
+
+      rep.send({ message: "Nodes successfully updated.", ok: true });
     },
   );
   // #endregion update_routes

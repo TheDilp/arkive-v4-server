@@ -13,6 +13,7 @@ import {
   document_router,
   map_pin_router,
   map_router,
+  node_router,
   project_router,
   tag_router,
   user_router,
@@ -57,6 +58,7 @@ server.register(
     instance.register(map_router, { prefix: "/maps" });
     instance.register(map_pin_router, { prefix: "/map_pins" });
     instance.register(board_router, { prefix: "/graphs" });
+    instance.register(node_router, { prefix: "/nodes" });
     instance.register(search_router, { prefix: "/search" });
     done();
   },
