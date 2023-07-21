@@ -1,14 +1,21 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
-import { SelectExpression } from "kysely";
+import { SelectExpression, SelectQueryBuilder } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
+import { EntitiesWithChildren } from "../database/types";
 import { InsertBoardSchema, InsertBoardType, UpdateBoardSchema, UpdateBoardType } from "../database/validation/graphs";
 import { RequestBodyType } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrderBy } from "../utils/orderByConstructor";
-import { CreateTagRelations, GetBreadcrumbs, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
+import {
+  CreateTagRelations,
+  GetBreadcrumbs,
+  GetEntityChildren,
+  TagQuery,
+  UpdateTagRelations,
+} from "../utils/relationalQueryHelpers";
 
 export function board_router(server: FastifyInstance, _: any, done: any) {
   // #region create_routes
@@ -51,15 +58,7 @@ export function board_router(server: FastifyInstance, _: any, done: any) {
       .selectFrom("boards")
       .where("boards.id", "=", req.params.id)
       .$if(!!req.body?.relations?.children, (qb) =>
-        qb.select((eb) =>
-          jsonArrayFrom(
-            eb
-              .selectFrom("boards as children")
-              .select(["children.id", "children.title", "children.icon", "children.is_folder"])
-              .whereRef("children.parent_id", "=", "boards.id")
-              .orderBy("is_folder", "asc"),
-          ).as("children"),
-        ),
+        GetEntityChildren(qb as SelectQueryBuilder<DB, EntitiesWithChildren, {}>, "boards"),
       )
       .$if(!!req.body?.relations?.nodes, (qb) =>
         qb.select((eb) =>

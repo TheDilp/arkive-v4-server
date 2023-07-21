@@ -27,3 +27,5 @@ export type EntitiesWithTags =
   | "screens";
 
 export type EntitiesWithBreadcrumbs = "documents" | "maps" | "boards";
+
+export type EntitiesWithChildren = "documents" | "maps" | "boards";

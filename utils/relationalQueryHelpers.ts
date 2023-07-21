@@ -1,8 +1,8 @@
-import { ExpressionBuilder, Kysely, Transaction } from "kysely";
+import { ExpressionBuilder, Kysely, SelectQueryBuilder, Transaction } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
-import { EntitiesWithBreadcrumbs, EntitiesWithTags, TagsRelationTables } from "../database/types";
+import { EntitiesWithBreadcrumbs, EntitiesWithChildren, EntitiesWithTags, TagsRelationTables } from "../database/types";
 
 export function TagQuery(eb: ExpressionBuilder<DB, any>, relationalTable: TagsRelationTables, table: EntitiesWithTags) {
   return jsonArrayFrom(
@@ -104,4 +104,17 @@ export async function GetBreadcrumbs({
     .execute();
 
   return parents_data.reverse();
+}
+
+export function GetEntityChildren(qb: SelectQueryBuilder<DB, EntitiesWithChildren, {}>, table_name: EntitiesWithChildren) {
+  return qb.select((eb) =>
+    jsonArrayFrom(
+      eb
+        .selectFrom(`${table_name} as children`)
+        .select(["children.id", "children.title", "children.icon", "children.is_folder"])
+        .whereRef("children.parent_id", "=", "boards.id")
+        .orderBy("is_folder", "asc")
+        .orderBy("title", "asc"),
+    ).as("children"),
+  );
 }
