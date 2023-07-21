@@ -56,7 +56,8 @@ export function board_router(server: FastifyInstance, _: any, done: any) {
             eb
               .selectFrom("boards as children")
               .select(["children.id", "children.title", "children.icon", "children.is_folder"])
-              .whereRef("children.parent_id", "=", "boards.id"),
+              .whereRef("children.parent_id", "=", "boards.id")
+              .orderBy("is_folder", "asc"),
           ).as("children"),
         ),
       )
