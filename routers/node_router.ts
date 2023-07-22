@@ -1,4 +1,5 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
+import { jsonObjectFrom } from "kysely/helpers/postgres";
 
 import { db } from "../database/db";
 import { InsertNodeSchema, InsertNodeType, UpdateNodeSchema, UpdateNodeType } from "../database/validation/nodes";
@@ -33,6 +34,23 @@ export function node_router(server: FastifyInstance, _: any, done: any) {
       .selectAll()
       .where("nodes.id", "=", req.params.id)
       .$if(!!req.body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_nodesTotags", "nodes")))
+      .$if(!!req.body?.relations?.image, (qb) =>
+        qb.select((eb) =>
+          jsonObjectFrom(eb.selectFrom("images").whereRef("images.id", "=", "nodes.image_id").select(["id", "title"])).as(
+            "image",
+          ),
+        ),
+      )
+      .$if(!!req.body?.relations?.character, (qb) =>
+        qb.select((eb) =>
+          jsonObjectFrom(
+            eb
+              .selectFrom("characters")
+              .whereRef("characters.id", "=", "nodes.character_id")
+              .select(["id", "first_name", "last_name", "portrait_id"]),
+          ).as("character"),
+        ),
+      )
       .executeTakeFirstOrThrow();
     rep.send({ data, message: "Success.", ok: true });
   });

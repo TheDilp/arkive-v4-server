@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
 import { SelectExpression, SelectQueryBuilder } from "kysely";
-import { jsonArrayFrom } from "kysely/helpers/postgres";
+import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
@@ -62,7 +62,36 @@ export function board_router(server: FastifyInstance, _: any, done: any) {
       )
       .$if(!!req.body?.relations?.nodes, (qb) =>
         qb.select((eb) =>
-          jsonArrayFrom(eb.selectFrom("nodes").selectAll().whereRef("nodes.parent_id", "=", "boards.id")).as("nodes"),
+          jsonArrayFrom(
+            eb
+              .selectFrom("nodes")
+              .whereRef("nodes.parent_id", "=", "boards.id")
+              .leftJoin("characters", (join) => join.onRef("characters.id", "=", "nodes.character_id"))
+              .select((sb) => [
+                "nodes.id",
+                "nodes.label",
+                "nodes.background_color",
+                "nodes.background_opacity",
+                "nodes.font_color",
+                "nodes.font_family",
+                "nodes.type",
+                "nodes.image_id",
+                "nodes.text_h_align",
+                "nodes.text_v_align",
+                "nodes.x",
+                "nodes.y",
+                "nodes.z_index",
+                "nodes.width",
+                "nodes.height",
+                "nodes.is_locked",
+                jsonObjectFrom(
+                  sb
+                    .selectFrom("characters")
+                    .select(["characters.first_name", "characters.last_name", "characters.portrait_id"])
+                    .whereRef("characters.id", "=", "nodes.character_id"),
+                ).as("character"),
+              ]),
+          ).as("nodes"),
         ),
       )
       .$if(!!req.body?.relations?.edges, (qb) =>

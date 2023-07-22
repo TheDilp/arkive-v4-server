@@ -22,7 +22,7 @@ export function search_router(server: FastifyInstance, _: any, done: any) {
       const { type } = req.params;
       const fields = ["id"];
 
-      if (type === "characters") fields.push("first_name", "nickname", "last_name");
+      if (type === "characters") fields.push("first_name", "nickname", "last_name", "portrait_id");
       else if (type === "tags") fields.push("title", "color");
       else fields.push("title");
 
@@ -39,13 +39,14 @@ export function search_router(server: FastifyInstance, _: any, done: any) {
               ])
             : eb("title", "ilike", `%${req.body.data.search_term}%`),
         )
-        .execute();
 
+        .execute();
       rep.send({
         data: result.map((item) => ({
           value: item.id,
           label: type === "characters" ? `${item.first_name} ${item?.last_name || ""}` : item?.title || "",
           color: type === "tags" ? item.color : "",
+          image: type === "characters" ? item.portrait_id || "" : "",
         })),
         message: "Success",
         ok: true,
