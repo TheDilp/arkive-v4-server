@@ -45,6 +45,7 @@ export const InsertEdgeSchema = z
 
 export const UpdateEdgeSchema = z
   .object({
+    id: z.string().optional(),
     label: z.string().nullable().optional(),
     curve_style: z.string().nullable().optional(),
     line_style: z.string().nullable().optional(),

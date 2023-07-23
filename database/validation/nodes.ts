@@ -5,11 +5,37 @@ import { z } from "zod";
 export type InsertNodeType = Insertable<Nodes>;
 export type UpdateNodeType = Updateable<Nodes>;
 
+const NodeShapeEnum = z
+  .enum([
+    "rectangle",
+    "ellipse",
+    "triangle",
+    "barrel",
+    "rhomboid",
+    "diamond",
+    "pentagon",
+    "hexagon",
+    "heptagon",
+    "octagon",
+    "star",
+    "cut-rectangle",
+    "round-triangle",
+    "round-rectangle",
+    "bottom-round-rectangle",
+    "round-diamond",
+    "round-pentagon",
+    "round-hexagon",
+    "round-heptagon",
+    "round-octagon",
+  ])
+  .nullable()
+  .optional();
+
 export const InsertNodeSchema = z
   .object({
     parent_id: z.string(),
     label: z.string().nullable().optional(),
-    type: z.string().nullable().optional(),
+    type: NodeShapeEnum,
     width: z.number().optional(),
     height: z.number().optional(),
     x: z.number(),
@@ -37,7 +63,7 @@ export const UpdateNodeSchema = z
   .object({
     id: z.string().optional(),
     label: z.string().nullable().optional(),
-    type: z.string().nullable().optional(),
+    type: NodeShapeEnum,
     width: z.number().optional(),
     height: z.number().optional(),
     x: z.number().optional(),
