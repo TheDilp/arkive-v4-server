@@ -11,6 +11,7 @@ import {
   character_fields_templates_router,
   character_router,
   document_router,
+  edge_router,
   map_pin_router,
   map_router,
   node_router,
@@ -59,6 +60,7 @@ server.register(
     instance.register(map_pin_router, { prefix: "/map_pins" });
     instance.register(board_router, { prefix: "/graphs" });
     instance.register(node_router, { prefix: "/nodes" });
+    instance.register(edge_router, { prefix: "/edges" });
     instance.register(search_router, { prefix: "/search" });
     done();
   },

@@ -10,7 +10,7 @@ export function edge_router(server: FastifyInstance, _: any, done: any) {
 
   server.post(
     "/create",
-    async (req: FastifyRequest<{ Body: { data: InsertEdgeType; relations?: { tags?: string[] } } }>, rep) => {
+    async (req: FastifyRequest<{ Body: { data: InsertEdgeType; relations?: { tags?: { id: string }[] } } }>, rep) => {
       await db.transaction().execute(async (tx) => {
         const data = InsertEdgeSchema.parse(req.body.data);
         const edge = await tx.insertInto("edges").values(data).returning("id").executeTakeFirstOrThrow();
@@ -41,13 +41,13 @@ export function edge_router(server: FastifyInstance, _: any, done: any) {
   server.post(
     "/update/:id",
     async (
-      req: FastifyRequest<{ Params: { id: string }; Body: { data: UpdateEdgeType; relations?: { tags?: string[] } } }>,
+      req: FastifyRequest<{ Params: { id: string }; Body: { data: UpdateEdgeType; relations?: { tags?: { id: string }[] } } }>,
       rep,
     ) => {
       await db.transaction().execute(async (tx) => {
         if (req.body.data) {
           const data = UpdateEdgeSchema.parse(req.body.data);
-          await tx.updateTable("edges").set(data).executeTakeFirstOrThrow();
+          await tx.updateTable("edges").where("id", "=", req.params.id).set(data).executeTakeFirstOrThrow();
         }
         if (req.body?.relations) {
           if (req.body.relations?.tags)
