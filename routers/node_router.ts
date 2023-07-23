@@ -95,6 +95,20 @@ export function node_router(server: FastifyInstance, _: any, done: any) {
       rep.send({ message: "Nodes successfully updated.", ok: true });
     },
   );
+  server.post(
+    "/update/many/lock",
+    async (req: FastifyRequest<{ Body: { data: { nodes: { id: string; is_locked: boolean }[] } } }>, rep) => {
+      await db.transaction().execute(async (tx) => {
+        await Promise.all(
+          req.body.data.nodes.map((node) =>
+            tx.updateTable("nodes").where("id", "=", node.id).set({ is_locked: node.is_locked }).execute(),
+          ),
+        );
+      });
+
+      rep.send({ message: "Nodes successfully updated.", ok: true });
+    },
+  );
   // #endregion update_routes
   // #region delete_routes
   server.delete(

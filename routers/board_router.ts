@@ -74,6 +74,7 @@ export function board_router(server: FastifyInstance, _: any, done: any) {
                 "nodes.background_opacity",
                 "nodes.font_color",
                 "nodes.font_family",
+                "nodes.font_size",
                 "nodes.type",
                 "nodes.image_id",
                 "nodes.text_h_align",
