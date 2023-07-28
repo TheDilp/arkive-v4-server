@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
-import { SelectExpression } from "kysely";
+import { SelectExpression, sql } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
@@ -200,6 +200,45 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
       })
       .executeTakeFirstOrThrow();
     rep.send({ data, message: "Success", ok: true });
+  });
+  server.get("/family/:id", async (req: FastifyRequest<{ Params: { id: string } }>, rep) => {
+    const { rows: parents } = await sql<{
+      id: string;
+      first_name: string;
+      relation_type: string | null;
+      related_character_id: string | null;
+      generation: 1;
+    }>`WITH RECURSIVE character_tree AS (
+      SELECT c1.id, c1.first_name, cr.relation_type, c1.id as parent_id, cr.character_a_id as related_character_id, 1 as generation
+      FROM characters c1
+      LEFT JOIN characters_relationships cr ON c1.id = cr.character_b_id
+      WHERE c1.id = ${req.params.id} 
+      
+      UNION ALL
+      
+      SELECT c2.id, c2.first_name, cr.relation_type, cr.character_b_id as parent_id, ct.id as p_id, ct.generation + 1
+      FROM characters_relationships cr
+      INNER JOIN character_tree ct ON cr.character_a_id = ct.parent_id
+      INNER JOIN characters c2 ON cr.character_b_id = c2.id
+      WHERE ct.generation < 5 AND (cr.relation_type = 'mother' OR cr.relation_type = 'father')
+  )
+  SELECT ct.id, ct.first_name, ct.relation_type, ct.related_character_id, ct.generation
+  FROM character_tree ct
+  ORDER BY ct.generation, ct.first_name;`.execute(db);
+
+    rep.send({
+      data:
+        {
+          parents: parents.map((p) => {
+            if (p.generation === 1 && p.id === req.params.id) {
+              return { ...p, relation_type: null, related_character_id: null };
+            }
+            return p;
+          }),
+        } || [],
+      message: "Success",
+      ok: true,
+    });
   });
   // #endregion read_routes
 
