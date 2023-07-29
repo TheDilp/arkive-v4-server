@@ -345,7 +345,6 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
       const nodes = Object.entries(itemsWithGen).flatMap(([generation, members]) => {
         const parsedGen = parseInt(generation, 10) + 1;
         const generationCount = members.length;
-
         return members
           .map((member, index) => {
             if (member)
@@ -451,7 +450,6 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
 
       const itemsWithGen = groupBy([...childrenWithGen, ...targetsWithGen], "generation");
       console.log(itemsWithGen);
-
       const nodes = Object.entries(itemsWithGen).flatMap(([generation, members]) => {
         const parsedGen = parseInt(generation, 10) + 1;
         const generationCount = members.length;
@@ -464,7 +462,8 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
                 x:
                   parsedGen * 150 +
                   index * (member?.relation_type === "father" ? -150 : 150) +
-                  (generationCount >= 3 ? getGenerationOffset(index, generationCount) : 0),
+                  (generationCount >= 3 ? getGenerationOffset(index, generationCount) : 0) +
+                  (parsedGen === 0 ? -150 : 0),
                 y: parsedGen * 150,
                 width: 50,
                 height: 50,
