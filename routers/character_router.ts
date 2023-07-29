@@ -1,7 +1,10 @@
+import { randomUUID } from "crypto";
 import { FastifyInstance, FastifyRequest } from "fastify";
 import { SelectExpression, sql } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
+import groupBy from "lodash.groupby";
+import uniqBy from "lodash.uniqby";
 
 import { db } from "../database/db";
 import { InsertCharacterSchema, InsertCharacterType, UpdateCharacterSchema, UpdateCharacterType } from "../database/validation";
@@ -9,6 +12,7 @@ import { RequestBodyType } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrderBy } from "../utils/orderByConstructor";
 import { CreateTagRelations, GetRelationsForUpdating, TagQuery } from "../utils/relationalQueryHelpers";
+import { getGenerationOffset } from "../utils/transform";
 
 export function character_router(server: FastifyInstance, _: any, done: any) {
   // #region create_routes
@@ -202,40 +206,149 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
     rep.send({ data, message: "Success", ok: true });
   });
   server.get("/family/:id", async (req: FastifyRequest<{ Params: { id: string } }>, rep) => {
-    const { rows: parents } = await sql<{
-      id: string;
-      first_name: string;
-      relation_type: string | null;
-      related_character_id: string | null;
-      generation: 1;
-    }>`WITH RECURSIVE character_tree AS (
-      SELECT c1.id, c1.first_name, cr.relation_type, c1.id as parent_id, cr.character_a_id as related_character_id, 1 as generation
-      FROM characters c1
-      LEFT JOIN characters_relationships cr ON c1.id = cr.character_b_id
-      WHERE c1.id = ${req.params.id} 
-      
-      UNION ALL
-      
-      SELECT c2.id, c2.first_name, cr.relation_type, cr.character_b_id as parent_id, ct.id as p_id, ct.generation + 1
-      FROM characters_relationships cr
-      INNER JOIN character_tree ct ON cr.character_a_id = ct.parent_id
-      INNER JOIN characters c2 ON cr.character_b_id = c2.id
-      WHERE ct.generation < 5 AND (cr.relation_type = 'mother' OR cr.relation_type = 'father')
-  )
-  SELECT ct.id, ct.first_name, ct.relation_type, ct.related_character_id, ct.generation
-  FROM character_tree ct
-  ORDER BY ct.generation, ct.first_name;`.execute(db);
+    // Get ids of main branch/parent characters and their generations
+    const p = await db
+      .withRecursive("character_tree", (db) =>
+        db
+          .selectFrom("characters_relationships")
+          .where((eb) =>
+            eb.and([
+              eb("character_a_id", "=", req.params.id),
+              eb.or([eb("relation_type", "=", "father"), eb("relation_type", "=", "mother")]),
+            ]),
+          )
+          .select(["character_b_id as parent_id", () => sql<number>`0`.as("generation")])
+
+          .unionAll(
+            db
+              .selectFrom("characters_relationships")
+              .innerJoin("character_tree", "character_a_id", "character_tree.parent_id")
+              .where((eb) => eb.or([eb("relation_type", "=", "father"), eb("relation_type", "=", "mother")]))
+              .select([
+                "characters_relationships.character_b_id as parent_id",
+                () => sql<number>`character_tree.generation + 1`.as("generation"),
+              ])
+              .where("generation", "<=", 5),
+          ),
+      )
+      .selectFrom("character_tree")
+      .selectAll()
+      .execute();
+    const parent_ids = p.reverse().map((p) => p.parent_id);
+
+    if (!parent_ids.length) {
+      rep.send({ data: { nodes: [], edges: [] }, message: "Success", ok: true });
+      return;
+    }
+
+    // Get parents data along with children
+    const parents = await db
+      .selectFrom("characters as sources")
+      .where("id", "in", parent_ids)
+      .leftJoin("characters_relationships", "character_b_id", "id")
+      .select([
+        "id",
+        "first_name",
+        "last_name",
+        "portrait_id",
+        "project_id",
+        "characters_relationships.relation_type",
+        (eb) =>
+          jsonArrayFrom(
+            eb
+              .selectFrom("characters_relationships")
+              .whereRef("character_b_id", "=", "sources.id")
+              .leftJoin("characters as children", "children.id", "characters_relationships.character_a_id")
+              .select([
+                "id",
+                "first_name",
+                "last_name",
+                "project_id",
+                "portrait_id",
+                "character_b_id as parent_id",
+                "characters_relationships.relation_type",
+              ]),
+          ).as("targets"),
+      ])
+      .distinctOn("id")
+      .execute();
+
+    const targetsWithGen = uniqBy(
+      parents.flatMap((p) => p.targets),
+      "id",
+    )
+      .map((t) => {
+        const generation = p.find((par) => par.parent_id === t.id || par.parent_id === t.parent_id)?.generation;
+        if (typeof generation === "number") {
+          if (t?.id && parent_ids.includes(t.id)) {
+            return { ...t, generation };
+          }
+          return { ...t, generation: generation - 1 };
+        }
+      })
+      .filter((t) => Boolean(t) && !parent_ids.includes(t?.id as string));
+
+    const parentsWithGen = parents
+      .map((parent) => {
+        const generation = p.find((par) => par.parent_id === parent.id)?.generation;
+        if (typeof generation === "number") {
+          return {
+            id: parent.id,
+            first_name: parent.first_name,
+            last_name: parent.last_name,
+            portrait_id: parent.portrait_id,
+            relation_type: parent.relation_type,
+            project_id: parent.project_id,
+            generation,
+          };
+        }
+      })
+      .filter((p) => Boolean(p));
+
+    const itemsWithGen = groupBy([...parentsWithGen, ...targetsWithGen], "generation");
+
+    const nodes = Object.entries(itemsWithGen).flatMap(([generation, members]) => {
+      const parsedGen = parseInt(generation, 10);
+      const generationCount = members.length;
+
+      return members
+        .map((member, index) => {
+          if (member)
+            return {
+              id: member.id,
+              label: `${member.first_name} ${member?.last_name || ""}`,
+              x:
+                parsedGen * 150 +
+                index * (member?.relation_type === "father" ? -300 : 150) +
+                (generationCount >= 3 ? getGenerationOffset(index, generationCount) : 0),
+              y: parsedGen * -150,
+              width: 50,
+              height: 50,
+              image_id: member.portrait_id ?? [],
+            };
+        })
+        .filter((m) => !!m);
+    });
+
+    const edges = parents
+      .filter((p) => !!p.targets.length)
+      .flatMap((par) => {
+        if (par.targets.length) {
+          return par.targets.map((target) => {
+            return {
+              id: randomUUID(),
+              source_id: target?.parent_id,
+              target_id: target.id,
+              target_arrow: "triangle",
+              curve_style: "taxi",
+              taxi_direction: "downward",
+            };
+          });
+        }
+      });
 
     rep.send({
-      data:
-        {
-          parents: parents.map((p) => {
-            if (p.generation === 1 && p.id === req.params.id) {
-              return { ...p, relation_type: null, related_character_id: null };
-            }
-            return p;
-          }),
-        } || [],
+      data: { nodes: nodes || [], edges: edges || [] },
       message: "Success",
       ok: true,
     });
@@ -306,7 +419,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
             );
           }
         }
-        if (req.body.relations?.related_to?.length) {
+        if (req.body.relations?.related_to) {
           const existingRelatedTo = await tx
             .selectFrom("characters_relationships")
             .select(["character_a_id as id", "character_b_id", "relation_type"])
@@ -344,7 +457,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
             );
           }
         }
-        if (req.body.relations?.related_from?.length) {
+        if (req.body.relations?.related_from) {
           const existingRelatedTo = await tx
             .selectFrom("characters_relationships")
             .select(["character_b_id as id", "character_a_id", "relation_type"])

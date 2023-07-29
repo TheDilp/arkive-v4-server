@@ -20,9 +20,15 @@ dependencies:
   kysely:
     specifier: ^0.26.0
     version: 0.26.0
+  lodash.groupby:
+    specifier: ^4.6.0
+    version: 4.6.0
   lodash.omit:
     specifier: ^4.5.0
     version: 4.5.0
+  lodash.uniqby:
+    specifier: ^4.7.0
+    version: 4.7.0
   pg:
     specifier: ^8.11.1
     version: 8.11.1
@@ -34,9 +40,15 @@ dependencies:
     version: 3.21.4
 
 devDependencies:
+  '@types/lodash.groupby':
+    specifier: ^4.6.7
+    version: 4.6.7
   '@types/lodash.omit':
     specifier: ^4.5.7
     version: 4.5.7
+  '@types/lodash.uniqby':
+    specifier: ^4.7.7
+    version: 4.7.7
   '@types/node':
     specifier: ^20.4.1
     version: 20.4.1
@@ -516,8 +528,20 @@ packages:
     resolution: {integrity: sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==}
     dev: true
 
+  /@types/lodash.groupby@4.6.7:
+    resolution: {integrity: sha512-dFUR1pqdMgjIBbgPJ/8axJX6M1C7zsL+HF4qdYMQeJ7XOp0Qbf37I3zh9gpXr/ks6tgEYPDRqyZRAnFYvewYHQ==}
+    dependencies:
+      '@types/lodash': 4.14.195
+    dev: true
+
   /@types/lodash.omit@4.5.7:
     resolution: {integrity: sha512-6q6cNg0tQ6oTWjSM+BcYMBhan54P/gLqBldG4AuXd3nKr0oeVekWNS4VrNEu3BhCSDXtGapi7zjhnna0s03KpA==}
+    dependencies:
+      '@types/lodash': 4.14.195
+    dev: true
+
+  /@types/lodash.uniqby@4.7.7:
+    resolution: {integrity: sha512-sv2g6vkCIvEUsK5/Vq17haoZaisfj2EWW8mP7QWlnKi6dByoNmeuHDDXHR7sabuDqwO4gvU7ModIL22MmnOocg==}
     dependencies:
       '@types/lodash': 4.14.195
     dev: true
@@ -2233,12 +2257,20 @@ packages:
       p-locate: 5.0.0
     dev: true
 
+  /lodash.groupby@4.6.0:
+    resolution: {integrity: sha512-5dcWxm23+VAoz+awKmBaiBvzox8+RqMgFhi7UvX9DHZr2HdxHXM/Wrf8cfKpsW37RNrvtPn6hSwNqurSILbmJw==}
+    dev: false
+
   /lodash.merge@4.6.2:
     resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
     dev: true
 
   /lodash.omit@4.5.0:
     resolution: {integrity: sha512-XeqSp49hNGmlkj2EJlfrQFIzQ6lXdNro9sddtQzcJY8QaoC2GO0DT7xaIokHeyM+mIT0mPMlPvkYzg2xCuHdZg==}
+    dev: false
+
+  /lodash.uniqby@4.7.0:
+    resolution: {integrity: sha512-e/zcLx6CSbmaEgFHCA7BnoQKyCtKMxnuWrJygbwPs/AIn+IMKl66L8/s+wBUn5LRw2pZx3bUHibiV1b6aTWIww==}
     dev: false
 
   /lru-cache@6.0.0:
