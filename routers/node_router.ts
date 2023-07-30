@@ -91,34 +91,25 @@ export function node_router(server: FastifyInstance, _: any, done: any) {
       rep.send({ message: "Success", ok: true });
     },
   );
-  server.post(
-    "/update/many/position",
-    async (req: FastifyRequest<{ Body: { data: { nodes: { id: string; x: number; y: number }[] } } }>, rep) => {
-      await db.transaction().execute(async (tx) => {
+  server.post("/update", async (req: FastifyRequest<{ Body: { data: UpdateNodeType[] } }>, rep) => {
+    await db.transaction().execute(async (tx) => {
+      if (req.body.data) {
         await Promise.all(
-          req.body.data.nodes.map((node) =>
-            tx.updateTable("nodes").where("id", "=", node.id).set({ x: node.x, y: node.y }).execute(),
-          ),
-        );
-      });
+          req.body.data.map((n) => {
+            const parsed = UpdateNodeSchema.parse(n);
 
-      rep.send({ message: "Nodes successfully updated.", ok: true });
-    },
-  );
-  server.post(
-    "/update/many/lock",
-    async (req: FastifyRequest<{ Body: { data: { nodes: { id: string; is_locked: boolean }[] } } }>, rep) => {
-      await db.transaction().execute(async (tx) => {
-        await Promise.all(
-          req.body.data.nodes.map((node) =>
-            tx.updateTable("nodes").where("id", "=", node.id).set({ is_locked: node.is_locked }).execute(),
-          ),
+            return tx
+              .updateTable("nodes")
+              .where("id", "=", parsed.id as string)
+              .set(parsed)
+              .execute();
+          }),
         );
-      });
+      }
+    });
+    rep.send({ message: "Success", ok: true });
+  });
 
-      rep.send({ message: "Nodes successfully updated.", ok: true });
-    },
-  );
   // #endregion update_routes
   // #region delete_routes
   server.delete(
