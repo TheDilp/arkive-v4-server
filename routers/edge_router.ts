@@ -11,16 +11,17 @@ export function edge_router(server: FastifyInstance, _: any, done: any) {
   server.post(
     "/create",
     async (req: FastifyRequest<{ Body: { data: InsertEdgeType; relations?: { tags?: { id: string }[] } } }>, rep) => {
+      let returning;
       await db.transaction().execute(async (tx) => {
         const data = InsertEdgeSchema.parse(req.body.data);
         const edge = await tx.insertInto("edges").values(data).returning("id").executeTakeFirstOrThrow();
-
+        returning = edge;
         if (req.body.relations?.tags) {
           await CreateTagRelations({ relationalTable: "_edgesTotags", tags: req.body.relations.tags, id: edge.id, tx });
         }
       });
 
-      rep.send({ message: "Edge successfully created.", ok: true });
+      rep.send({ data: returning, message: "Edge successfully created.", ok: true });
     },
   );
 
