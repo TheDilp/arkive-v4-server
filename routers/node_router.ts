@@ -12,16 +12,22 @@ export function node_router(server: FastifyInstance, _: any, done: any) {
   server.post(
     "/create",
     async (req: FastifyRequest<{ Body: { data: InsertNodeType; relations?: { tags?: { id: string }[] } } }>, rep) => {
+      let returningData;
       await db.transaction().execute(async (tx) => {
         const data = InsertNodeSchema.parse(req.body.data);
-        const node = await tx.insertInto("nodes").values(data).returning("id").executeTakeFirstOrThrow();
+        returningData = await tx.insertInto("nodes").values(data).returning("id").executeTakeFirstOrThrow();
 
         if (req.body.relations?.tags) {
-          await CreateTagRelations({ relationalTable: "_nodesTotags", tags: req.body.relations.tags, id: node.id, tx });
+          await CreateTagRelations({
+            relationalTable: "_nodesTotags",
+            tags: req.body.relations.tags,
+            id: returningData.id,
+            tx,
+          });
         }
       });
 
-      rep.send({ message: "Node successfully created.", ok: true });
+      rep.send({ data: returningData, message: "Node successfully created.", ok: true });
     },
   );
 
@@ -65,7 +71,12 @@ export function node_router(server: FastifyInstance, _: any, done: any) {
       await db.transaction().execute(async (tx) => {
         if (req.body.data) {
           const data = UpdateNodeSchema.parse(req.body.data);
-          await tx.updateTable("nodes").set(data).where("nodes.id", "=", req.params.id).executeTakeFirstOrThrow();
+          await tx
+            .updateTable("nodes")
+            .set(data)
+            .where("nodes.id", "=", req.params.id)
+
+            .executeTakeFirstOrThrow();
         }
         if (req.body?.relations) {
           if (req.body.relations?.tags)
@@ -77,8 +88,7 @@ export function node_router(server: FastifyInstance, _: any, done: any) {
             });
         }
       });
-
-      rep.send({ message: "Node successfully updated.", ok: true });
+      rep.send({ message: "Success", ok: true });
     },
   );
   server.post(
@@ -119,8 +129,33 @@ export function node_router(server: FastifyInstance, _: any, done: any) {
       }>,
       rep,
     ) => {
+      await db
+        .deleteFrom("edges")
+        .where((eb) => eb.or([eb("source_id", "=", req.params.id), eb("target_id", "=", req.params.id)]))
+        .execute();
       await db.deleteFrom("nodes").where("nodes.id", "=", req.params.id).execute();
       rep.send({ message: "Node successfully deleted.", ok: true });
+    },
+  );
+  server.delete(
+    "/",
+    async (
+      req: FastifyRequest<{
+        Body: { data: { id: string }[] };
+      }>,
+      rep,
+    ) => {
+      const node_ids = req.body.data.map((n) => n.id);
+
+      if (node_ids.length) {
+        await db
+          .deleteFrom("edges")
+          .where((eb) => eb.or([eb("source_id", "in", node_ids), eb("target_id", "in", node_ids)]))
+          .execute();
+        await db.deleteFrom("nodes").where("id", "in", node_ids).execute();
+      }
+
+      rep.send({ message: "Nodes successfully deleted.", ok: true });
     },
   );
   // #endregion delete_routes

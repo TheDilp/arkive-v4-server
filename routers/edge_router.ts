@@ -66,6 +66,20 @@ export function edge_router(server: FastifyInstance, _: any, done: any) {
   // #endregion update_routes
   // #region delete_routes
   server.delete(
+    "/",
+    async (
+      req: FastifyRequest<{
+        Body: { data: { id: string }[] };
+      }>,
+      rep,
+    ) => {
+      const edge_ids = req.body.data.map((edge) => edge.id);
+      if (edge_ids.length) await db.deleteFrom("edges").where("id", "in", edge_ids).execute();
+
+      rep.send({ message: "Edges successfully deleted.", ok: true });
+    },
+  );
+  server.delete(
     "/:id",
     async (
       req: FastifyRequest<{
