@@ -59,7 +59,7 @@ export function document_router(server: FastifyInstance, _: any, done: any) {
     async (
       req: FastifyRequest<{
         Params: { id: string };
-        Body: { data: UpdateDocumentType; relations?: { tags?: string[] } };
+        Body: { data: UpdateDocumentType; relations?: { tags?: { id: string }[] } };
       }>,
       rep,
     ) => {

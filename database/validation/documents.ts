@@ -7,28 +7,24 @@ export type UpdateDocumentType = Updateable<Documents>;
 
 export type DocumentColumns = keyof Documents;
 
-export const InsertDocumentSchema = z
-  .object({
-    project_id: z.string(),
-    title: z.string().optional(),
-    content: z.string().nullable().optional(),
-    icon: z.string().nullable().optional(),
-    is_folder: z.boolean().nullable().optional(),
-    is_public: z.boolean().nullable().optional(),
-    is_template: z.boolean().nullable().optional(),
-    parent_id: z.string().nullable().optional(),
-    image_id: z.string().nullable().optional(),
-  })
-  .strict();
-export const UpdateDocumentSchema = z
-  .object({
-    title: z.string().optional(),
-    content: z.string().nullable().optional(),
-    icon: z.string().nullable().optional(),
-    is_folder: z.boolean().nullable().optional(),
-    is_public: z.boolean().nullable().optional(),
-    is_template: z.boolean().nullable().optional(),
-    parent_id: z.string().nullable().optional(),
-    image_id: z.string().nullable().optional(),
-  })
-  .strict();
+export const InsertDocumentSchema = z.object({
+  project_id: z.string(),
+  title: z.string().optional(),
+  content: z.string().nullable().optional(),
+  icon: z.string().nullable().optional(),
+  is_folder: z.boolean().nullable().optional(),
+  is_public: z.boolean().nullable().optional(),
+  is_template: z.boolean().nullable().optional(),
+  parent_id: z.string().nullable().optional(),
+  image_id: z.string().nullable().optional(),
+});
+export const UpdateDocumentSchema = z.object({
+  title: z.string().optional(),
+  content: z.string().nullable().optional(),
+  icon: z.string().nullable().optional(),
+  is_folder: z.boolean().nullable().optional(),
+  is_public: z.boolean().nullable().optional(),
+  is_template: z.boolean().nullable().optional(),
+  parent_id: z.string().nullable().optional(),
+  image_id: z.string().nullable().optional(),
+});
