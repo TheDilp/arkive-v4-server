@@ -36,12 +36,12 @@ export function document_router(server: FastifyInstance, _: any, done: any) {
     rep.send({ data, message: "Success", ok: true });
   });
   server.post("/:id", async (req: FastifyRequest<{ Params: { id: string }; Body: RequestBodyType }>, rep) => {
-    const data = await db
+    const [data] = await db
       .selectFrom("documents")
-      .$if(!req.body.fields.length, (qb) => qb.selectAll())
-      .$if(!!req.body.fields.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "documents">[]))
+      .$if(!req.body.fields?.length, (qb) => qb.selectAll())
+      .$if(!!req.body.fields?.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "documents">[]))
       .where("documents.id", "=", req.params.id)
-      .$if(!!req.body.relations, (qb) => {
+      .$if(!!req.body?.relations, (qb) => {
         if (req.body?.relations?.tags) {
           qb = qb.select((eb) => TagQuery(eb, "_documentsTotags", "documents"));
         }
