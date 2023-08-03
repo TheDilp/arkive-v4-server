@@ -1,9 +1,10 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
-import { SelectExpression } from "kysely";
+import { SelectExpression, SelectQueryBuilder } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
+import { EntitiesWithChildren } from "../database/types";
 import {
   InsertDocumentSchema,
   InsertDocumentType,
@@ -13,7 +14,14 @@ import {
 import { RequestBodyType } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrderBy } from "../utils/orderByConstructor";
-import { CreateTagRelations, GetRelationsForUpdating, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
+import {
+  CreateTagRelations,
+  GetBreadcrumbs,
+  GetEntityChildren,
+  GetRelationsForUpdating,
+  TagQuery,
+  UpdateTagRelations,
+} from "../utils/relationalQueryHelpers";
 
 export function document_router(server: FastifyInstance, _: any, done: any) {
   // #region create_routes
@@ -57,7 +65,6 @@ export function document_router(server: FastifyInstance, _: any, done: any) {
 
   // #region read_routes
   server.post("/", async (req: FastifyRequest<{ Body: RequestBodyType }>, rep) => {
-    console.log(req.body);
     const data = await db
       .selectFrom("documents")
       .where("documents.project_id", "=", req.body?.data?.project_id)
@@ -95,7 +102,16 @@ export function document_router(server: FastifyInstance, _: any, done: any) {
 
         return qb;
       })
+      .$if(!!req.body?.relations?.children, (qb) =>
+        GetEntityChildren(qb as SelectQueryBuilder<DB, EntitiesWithChildren, {}>, "documents"),
+      )
       .execute();
+
+    if (req.body?.relations?.parents) {
+      const parents = await GetBreadcrumbs({ db, id: req.params.id, table_name: "documents" });
+      rep.send({ data: { ...data, parents }, message: "Success.", ok: true });
+    }
+
     rep.send({ data, message: "Success", ok: true });
   });
   // #endregion read_routes

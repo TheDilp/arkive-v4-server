@@ -112,7 +112,7 @@ export function GetEntityChildren(qb: SelectQueryBuilder<DB, EntitiesWithChildre
       eb
         .selectFrom(`${table_name} as children`)
         .select(["children.id", "children.title", "children.icon", "children.is_folder"])
-        .whereRef("children.parent_id", "=", "boards.id")
+        .whereRef("children.parent_id", "=", `${table_name}.id`)
         .orderBy("is_folder", "asc")
         .orderBy("title", "asc"),
     ).as("children"),
