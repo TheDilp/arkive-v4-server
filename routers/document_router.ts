@@ -12,7 +12,8 @@ import {
 } from "../database/validation/documents";
 import { RequestBodyType } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
-import { CreateTagRelations, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
+import { constructOrderBy } from "../utils/orderByConstructor";
+import { CreateTagRelations, GetRelationsForUpdating, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 
 export function document_router(server: FastifyInstance, _: any, done: any) {
   // #region create_routes
@@ -56,6 +57,7 @@ export function document_router(server: FastifyInstance, _: any, done: any) {
 
   // #region read_routes
   server.post("/", async (req: FastifyRequest<{ Body: RequestBodyType }>, rep) => {
+    console.log(req.body);
     const data = await db
       .selectFrom("documents")
       .where("documents.project_id", "=", req.body?.data?.project_id)
@@ -65,6 +67,8 @@ export function document_router(server: FastifyInstance, _: any, done: any) {
         qb = constructFilter("documents", qb, req.body.filters);
         return qb;
       })
+      .$if(!!req.body.orderBy, (qb) => constructOrderBy(qb, req.body.orderBy?.field as string, req.body.orderBy?.sort))
+
       .execute();
     rep.send({ data, message: "Success", ok: true });
   });
@@ -102,7 +106,10 @@ export function document_router(server: FastifyInstance, _: any, done: any) {
     async (
       req: FastifyRequest<{
         Params: { id: string };
-        Body: { data: UpdateDocumentType; relations?: { tags?: { id: string }[] } };
+        Body: {
+          data: UpdateDocumentType;
+          relations?: { tags?: { id: string }[]; alter_names?: { id: string; project_id: string }[] };
+        };
       }>,
       rep,
     ) => {
@@ -119,6 +126,47 @@ export function document_router(server: FastifyInstance, _: any, done: any) {
             newTags: req.body.relations.tags,
             tx,
           });
+        }
+        if (req.body.relations?.alter_names) {
+          const existingAlterNames = await tx
+            .selectFrom("alter_names")
+            .select(["id", "title"])
+            .where("parent_id", "=", req.params.id)
+            .execute();
+
+          const existingIds = existingAlterNames.map((field) => field.id);
+
+          const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+            existingIds,
+            req.body.relations?.alter_names,
+          );
+          if (idsToRemove.length) {
+            await tx.deleteFrom("alter_names").where("id", "in", idsToRemove).execute();
+          }
+          if (itemsToAdd.length) {
+            await tx
+              .insertInto("alter_names")
+              .values(
+                itemsToAdd.map((item) => ({
+                  project_id: item.project_id,
+                  parent_id: req.params.id,
+                  title: item.title,
+                })),
+              )
+              .execute();
+          }
+          if (itemsToUpdate.length) {
+            await Promise.all(
+              itemsToUpdate.map(async (item) =>
+                tx
+                  .updateTable("alter_names")
+                  .where("parent_id", "=", req.params.id)
+                  .where("id", "=", item.id)
+                  .set({ title: item.title })
+                  .execute(),
+              ),
+            );
+          }
         }
       });
       rep.send({ message: "Document successfully updated.", ok: true });
