@@ -449,7 +449,6 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
         .filter((p) => Boolean(p));
 
       const itemsWithGen = groupBy([...childrenWithGen, ...targetsWithGen], "generation");
-      console.log(itemsWithGen);
       const nodes = Object.entries(itemsWithGen).flatMap(([generation, members]) => {
         const parsedGen = parseInt(generation, 10) + 1;
         const generationCount = members.length;

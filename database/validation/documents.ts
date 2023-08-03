@@ -5,8 +5,6 @@ import { z } from "zod";
 export type InsertDocumentType = Insertable<Documents>;
 export type UpdateDocumentType = Updateable<Documents>;
 
-export type DocumentColumns = keyof Documents;
-
 export const InsertDocumentSchema = z.object({
   project_id: z.string(),
   title: z.string().optional(),
