@@ -17,6 +17,7 @@ export const InsertDocumentSchema = z.object({
   image_id: z.string().nullable().optional(),
 });
 export const UpdateDocumentSchema = z.object({
+  id: z.string(),
   title: z.string().optional(),
   content: z.string().nullable().optional(),
   icon: z.string().nullable().optional(),

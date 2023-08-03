@@ -9,5 +9,6 @@ export const FilterEnum: { [key: string]: ComparisonOperatorExpression } = {
   lte: "<=",
   ilike: "ilike",
   in: "in",
+  is: "is",
   notIn: "not in",
 };

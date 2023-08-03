@@ -17,7 +17,6 @@ export function constructFilter(
     if (filters?.and?.length) {
       for (let index = 0; index < filters.and.length; index++) {
         const { field, operator, value } = filters.and[index];
-
         const dbOperator = FilterEnum[operator];
         // @ts-ignore
         andFilters.push(eb(`${table}.${field}`, dbOperator, dbOperator === "ilike" ? `%${value}%` : value));

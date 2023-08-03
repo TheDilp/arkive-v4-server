@@ -39,7 +39,6 @@ export function board_router(server: FastifyInstance, _: any, done: any) {
   server.post("/", async (req: FastifyRequest<{ Body: RequestBodyType }>, rep) => {
     const data = await db
       .selectFrom("boards")
-      .$if(!req.body.data?.item_id, (qb) => qb.where("parent_id", "is", null))
       .$if(!req.body.fields?.length, (qb) => qb.selectAll())
       .$if(!!req.body.fields?.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "boards">[]))
       .$if(!!req.body?.filters?.and?.length || !!req.body?.filters?.or?.length, (qb) => {
