@@ -44,7 +44,8 @@ export interface RequestBodyType {
     [key: string]:
       | boolean
       | {
-          [key: string]: any;
+          and?: RequestFilterType[];
+          or?: RequestFilterType[];
         };
   };
   filters?: {

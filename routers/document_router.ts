@@ -12,7 +12,7 @@ import {
   UpdateDocumentType,
 } from "../database/validation/documents";
 import { RequestBodyType } from "../types/requestTypes";
-import { constructFilter } from "../utils/filterConstructor";
+import { constructFilter, relationConstructor } from "../utils/filterConstructor";
 import { constructOrderBy } from "../utils/orderByConstructor";
 import {
   CreateTagRelations,
@@ -56,7 +56,6 @@ export function document_router(server: FastifyInstance, _: any, done: any) {
           await CreateTagRelations({ tx, relationalTable: "_documentsTotags", id: document.id, tags });
         }
       });
-      await db.insertInto("documents").values(req.body.data).execute();
       rep.send({ message: "Document successfully created.", ok: true });
     },
   );
@@ -90,14 +89,27 @@ export function document_router(server: FastifyInstance, _: any, done: any) {
           qb = qb.select((eb) => TagQuery(eb, "_documentsTotags", "documents"));
         }
         if (req.body?.relations?.alter_names) {
-          qb = qb.select((eb) =>
-            jsonArrayFrom(
-              eb
-                .selectFrom("alter_names")
-                .select(["id", "title", "parent_id", "project_id"])
-                .where("parent_id", "=", req.params.id),
-            ).as("alter_names"),
-          );
+          if (typeof req.body?.relations?.alter_names === "boolean") {
+            qb = qb.select((eb) =>
+              jsonArrayFrom(
+                eb
+                  .selectFrom("alter_names")
+                  .select(["id", "title", "parent_id", "project_id"])
+                  .where("parent_id", "=", req.params.id),
+              ).as("alter_names"),
+            );
+          } else if (typeof req.body?.relations?.alter_names === "object") {
+            qb = qb.select((eb) => {
+              return jsonArrayFrom(
+                relationConstructor(
+                  "alter_names",
+                  eb,
+                  typeof req.body?.relations?.alter_names === "object" ? req.body?.relations?.alter_names : {},
+                  ["id", "title", "parent_id"],
+                ),
+              ).as("alter_names");
+            });
+          }
         }
 
         return qb;
@@ -111,7 +123,7 @@ export function document_router(server: FastifyInstance, _: any, done: any) {
       const parents = await GetBreadcrumbs({ db, id: req.params.id, table_name: "documents" });
       rep.send({ data: { ...data, parents }, message: "Success.", ok: true });
     }
-
+    console.log(data);
     rep.send({ data, message: "Success", ok: true });
   });
   // #endregion read_routes
