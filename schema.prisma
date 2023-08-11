@@ -57,6 +57,8 @@ model images {
   id    String @id @default(dbgenerated("gen_random_uuid()"))
   title String
 
+  type String @default("image")
+
   project    projects? @relation("projects_images", fields: [project_id], references: [id])
   project_id String?
 
@@ -318,7 +320,7 @@ model nodes {
   background_color   String?
   background_opacity Float?
 
-  locked      Boolean?
+  is_locked   Boolean?
   is_template Boolean?
   z_index     Int?
 
@@ -605,6 +607,8 @@ model random_table_options {
 model tags {
   id    String @id @default(dbgenerated("gen_random_uuid()"))
   title String
+
+  color String
 
   project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
   project_id String

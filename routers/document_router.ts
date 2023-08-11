@@ -123,7 +123,6 @@ export function document_router(server: FastifyInstance, _: any, done: any) {
       const parents = await GetBreadcrumbs({ db, id: req.params.id, table_name: "documents" });
       rep.send({ data: { ...data, parents }, message: "Success.", ok: true });
     }
-    console.log(data);
     rep.send({ data, message: "Success", ok: true });
   });
   // #endregion read_routes
