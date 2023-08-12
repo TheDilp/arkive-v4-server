@@ -123,6 +123,7 @@ model character_fields {
   /// @kyselyType('text' | 'textarea' | 'select' | 'select_multiple' | 'dice_roll')
   field_type String
   options    String[]
+  formula    String?
 
   character_fields_templates     character_fields_templates[]
   characters_to_character_fields characters_to_character_fields[]

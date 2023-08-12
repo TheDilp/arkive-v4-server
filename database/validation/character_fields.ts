@@ -12,5 +12,6 @@ export const insertCharacterFieldsSchema = z
     sort: z.number().optional(),
     field_type: z.string(),
     options: z.string().array().optional(),
+    formula: z.string().nullable().optional(),
   })
   .strict();
