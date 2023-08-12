@@ -15,6 +15,7 @@ export const InsertDocumentSchema = z.object({
   is_template: z.boolean().nullable().optional(),
   parent_id: z.string().nullable().optional(),
   image_id: z.string().nullable().optional(),
+  dice_color: z.string().nullable().optional(),
 });
 export const UpdateDocumentSchema = z.object({
   id: z.string(),
@@ -26,4 +27,5 @@ export const UpdateDocumentSchema = z.object({
   is_template: z.boolean().nullable().optional(),
   parent_id: z.string().nullable().optional(),
   image_id: z.string().nullable().optional(),
+  dice_color: z.string().nullable().optional(),
 });
