@@ -77,6 +77,7 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
                   "character_fields.field_type",
                   "character_fields.options",
                   "character_fields.sort",
+                  "character_fields.formula",
                 ]),
             ).as("character_fields"),
           );
@@ -108,6 +109,7 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
                 "character_fields.options",
                 "character_fields.field_type",
                 "character_fields.sort",
+                "character_fields.formula",
               ]),
           ).as("character_fields"),
         ),

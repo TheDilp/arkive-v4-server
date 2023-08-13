@@ -107,18 +107,18 @@ export async function GetBreadcrumbs({
 }
 
 export function GetEntityChildren(qb: SelectQueryBuilder<DB, EntitiesWithChildren, {}>, table_name: EntitiesWithChildren) {
-  if (table_name !== "boards")
+  if (table_name === "random_tables") {
     return qb.select((eb) =>
       jsonArrayFrom(
         eb
           .selectFrom(`${table_name} as children`)
-          .select(["children.id", "children.title", "children.icon", "children.is_folder", "children.image_id"])
+          .select(["children.id", "children.title", "children.icon", "children.is_folder"])
           .whereRef("children.parent_id", "=", `${table_name}.id`)
           .orderBy("is_folder", "asc")
           .orderBy("title", "asc"),
       ).as("children"),
     );
-  else {
+  } else if (table_name === "boards") {
     return qb.select((eb) =>
       jsonArrayFrom(
         eb
@@ -130,4 +130,14 @@ export function GetEntityChildren(qb: SelectQueryBuilder<DB, EntitiesWithChildre
       ).as("children"),
     );
   }
+  return qb.select((eb) =>
+    jsonArrayFrom(
+      eb
+        .selectFrom(`${table_name} as children`)
+        .select(["children.id", "children.title", "children.icon", "children.is_folder", "children.image_id"])
+        .whereRef("children.parent_id", "=", `${table_name}.id`)
+        .orderBy("is_folder", "asc")
+        .orderBy("title", "asc"),
+    ).as("children"),
+  );
 }

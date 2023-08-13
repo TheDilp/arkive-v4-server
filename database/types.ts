@@ -28,4 +28,4 @@ export type EntitiesWithTags =
 
 export type EntitiesWithBreadcrumbs = "documents" | "maps" | "boards";
 
-export type EntitiesWithChildren = "documents" | "maps" | "boards";
+export type EntitiesWithChildren = "documents" | "maps" | "boards" | "random_tables";

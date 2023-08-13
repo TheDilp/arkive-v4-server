@@ -8,7 +8,7 @@ export type UpdateTagType = Updateable<Tags>;
 export const InsertTagSchema = z
   .object({
     title: z.string(),
-    color: z.string().optional(),
+    color: z.string(),
     project_id: z.string(),
   })
   .strict()
@@ -16,7 +16,7 @@ export const InsertTagSchema = z
     z
       .object({
         title: z.string(),
-        color: z.string().optional(),
+        color: z.string(),
         project_id: z.string(),
       })
       .strict()
