@@ -10,6 +10,7 @@ import {
   UpdateRandomTableType,
 } from "../database/validation/random_tables";
 import { RequestBodyType } from "../types/requestTypes";
+import { chooseRandomItems } from "../utils/transform";
 
 export function random_table_option_router(server: FastifyInstance, _: any, done: any) {
   // #region create_routes
@@ -40,6 +41,7 @@ export function random_table_option_router(server: FastifyInstance, _: any, done
       .$if(!!req.body.fields?.length, (qb) =>
         qb.clearSelect().select(req.body.fields as SelectExpression<DB, "random_table_options">[]),
       )
+      .where("random_table_options.parent_id", "=", req.body.data.parent_id)
       .execute();
     rep.send({ data, message: "Success", ok: true });
   });
@@ -61,6 +63,24 @@ export function random_table_option_router(server: FastifyInstance, _: any, done
 
     rep.send({ data, message: "Success.", ok: true });
   });
+
+  server.post(
+    "/random/:table_id",
+    async (req: FastifyRequest<{ Params: { table_id: string }; Body: { data: { count: number } } }>, rep) => {
+      const options = await db
+        .selectFrom("random_table_options")
+        .select(["random_table_options.id", "random_table_options.title"])
+        .where("random_table_options.parent_id", "=", req.params.table_id)
+        .execute();
+
+      if (req.body.data.count > options.length) {
+        rep.send({ message: "More items requested than there are available.", ok: false });
+      }
+
+      const data = chooseRandomItems(options, req.body.data.count);
+      rep.send({ data, message: "Success.", ok: true });
+    },
+  );
   // #endregion read_routes
   // #region update_routes
   server.post(

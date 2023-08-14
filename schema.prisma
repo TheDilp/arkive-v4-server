@@ -121,9 +121,10 @@ model character_fields {
   sort Int @default(0)
 
   /// @kyselyType('text' | 'textarea' | 'select' | 'select_multiple' | 'dice_roll' | 'random_table')
-  field_type String
-  options    String[]
-  formula    String?
+  field_type      String
+  options         String[]
+  formula         String?
+  random_table_id String?
 
   character_fields_templates character_fields_templates @relation(fields: [parent_id], references: [id], onDelete: Cascade)
   parent_id                  String

@@ -13,5 +13,6 @@ export const insertCharacterFieldsSchema = z
     parent_id: z.string(),
     options: z.string().array().optional(),
     formula: z.string().nullable().optional(),
+    random_table_id: z.string().nullable().optional(),
   })
   .strict();

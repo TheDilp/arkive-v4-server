@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
 import { SelectExpression } from "kysely";
-import { jsonArrayFrom } from "kysely/helpers/postgres";
+import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 import omit from "lodash.omit";
 
@@ -105,6 +105,13 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
                 "character_fields.field_type",
                 "character_fields.sort",
                 "character_fields.formula",
+                (eb) =>
+                  jsonObjectFrom(
+                    eb
+                      .selectFrom("random_tables")
+                      .select(["id", "title"])
+                      .whereRef("random_tables.id", "=", "character_fields.random_table_id"),
+                  ).as("random_table"),
               ]),
           ).as("character_fields"),
         ),
