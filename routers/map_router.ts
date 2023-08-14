@@ -13,7 +13,7 @@ export function map_router(server: FastifyInstance, _: any, done: any) {
   // #region create_routes
   server.post(
     "/create",
-    async (req: FastifyRequest<{ Body: { data: InsertMapType; relations?: { tags?: string[] } } }>, rep) => {
+    async (req: FastifyRequest<{ Body: { data: InsertMapType; relations?: { tags?: { id: string }[] } } }>, rep) => {
       const data = InsertMapSchema.parse(req.body.data);
 
       await db.transaction().execute(async (tx) => {
@@ -76,7 +76,7 @@ export function map_router(server: FastifyInstance, _: any, done: any) {
   server.post(
     "/update/:id",
     async (
-      req: FastifyRequest<{ Params: { id: string }; Body: { data: UpdateMapType; relations?: { tags?: string[] } } }>,
+      req: FastifyRequest<{ Params: { id: string }; Body: { data: UpdateMapType; relations?: { tags?: { id: string }[] } } }>,
       rep,
     ) => {
       await db.transaction().execute(async (tx) => {

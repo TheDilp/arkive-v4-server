@@ -2,6 +2,7 @@ export * from "./alter_name_router";
 export * from "./asset_router";
 export * from "./authentication_router";
 export * from "./board_router";
+export * from "./character_fields_router";
 export * from "./character_fields_template_router";
 export * from "./character_router";
 export * from "./document_router";

@@ -142,12 +142,8 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
                 .selectFrom("characters_to_character_fields")
                 .select(["characters_to_character_fields.character_field_id as id", "characters_to_character_fields.value"])
                 .whereRef("characters_to_character_fields.character_id", "=", "characters.id")
-                .leftJoin(
-                  "_character_fieldsTocharacter_fields_templates",
-                  "_character_fieldsTocharacter_fields_templates.A",
-                  "character_field_id",
-                )
-                .select(["_character_fieldsTocharacter_fields_templates.B as template_id"]),
+                .leftJoin("character_fields", "character_fields.id", "character_field_id")
+                .select(["character_fields.parent_id as template_id"]),
             ).as("character_fields"),
           );
         }

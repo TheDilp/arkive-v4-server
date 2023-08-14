@@ -120,7 +120,7 @@ model character_fields {
 
   sort Int @default(0)
 
-  /// @kyselyType('text' | 'textarea' | 'select' | 'select_multiple' | 'dice_roll')
+  /// @kyselyType('text' | 'textarea' | 'select' | 'select_multiple' | 'dice_roll' | 'random_table')
   field_type String
   options    String[]
   formula    String?

@@ -29,10 +29,16 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
       rep,
     ) => {
       await db.transaction().execute(async (tx) => {
-        await tx.insertInto("character_fields_templates").values(req.body.data).returning("id").executeTakeFirstOrThrow();
+        const newTemplate = await tx
+          .insertInto("character_fields_templates")
+          .values(req.body.data)
+          .returning("id")
+          .executeTakeFirstOrThrow();
 
         if (req.body.relations?.character_fields) {
-          const parsedFields = insertCharacterFieldsSchema.array().parse(req.body.relations.character_fields);
+          const parsedFields = insertCharacterFieldsSchema
+            .array()
+            .parse(req.body.relations.character_fields.map((field) => ({ ...field, parent_id: newTemplate.id })));
           await tx.insertInto("character_fields").values(parsedFields).execute();
         }
       });
@@ -150,7 +156,9 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
               await tx.deleteFrom("character_fields").where("id", "in", idsToRemove).execute();
             }
             if (itemsToAdd.length) {
-              const parsedFields = insertCharacterFieldsSchema.array().parse(itemsToAdd.map((field) => omit(field, ["id"])));
+              const parsedFields = insertCharacterFieldsSchema
+                .array()
+                .parse(itemsToAdd.map((field) => ({ ...omit(field, ["id"]), parent_id: req.params.id })));
               await tx.insertInto("character_fields").values(parsedFields).execute();
             }
             if (itemsToUpdate.length) {

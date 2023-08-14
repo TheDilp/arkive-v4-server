@@ -3,11 +3,13 @@ import fastifyStatic from "@fastify/static";
 import fastify, { errorCodes } from "fastify";
 import fileUpload from "fastify-file-upload";
 import path from "path";
+import { ZodError } from "zod";
 
 import {
   asset_router,
   authentication_router,
   board_router,
+  character_fields_router,
   character_fields_templates_router,
   character_router,
   document_router,
@@ -31,6 +33,10 @@ server.setErrorHandler(function (error, request, reply) {
     this.log.error(error);
     // Send error response
     reply.status(500).send({ ok: false });
+  } else if (error instanceof ZodError) {
+    this.log.error(error);
+    // Send error response
+    reply.status(500).send({ message: "The data was not formatted correctly.", ok: false });
   } else {
     // fastify will use parent error handler to handle this
     reply.send(error);
@@ -57,6 +63,7 @@ server.register(
     instance.register(tag_router, { prefix: "/tags" });
     instance.register(character_router, { prefix: "/characters" });
     instance.register(character_fields_templates_router, { prefix: "/character_fields_templates" });
+    instance.register(character_fields_router, { prefix: "/character_fields" });
     instance.register(document_router, { prefix: "/documents" });
     instance.register(map_router, { prefix: "/maps" });
     instance.register(map_pin_router, { prefix: "/map_pins" });
