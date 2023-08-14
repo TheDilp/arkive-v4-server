@@ -1,9 +1,8 @@
 import { Insertable } from "kysely";
-import { _CharacterFieldsTocharacterFieldsTemplates, CharacterFields } from "kysely-codegen";
+import { CharacterFields } from "kysely-codegen";
 import { z } from "zod";
 
 export type InsertCharacterFieldsType = Insertable<CharacterFields>;
-export type InsertCharacterFieldsToTemplatesType = Insertable<_CharacterFieldsTocharacterFieldsTemplates>;
 
 export const insertCharacterFieldsSchema = z
   .object({
@@ -11,6 +10,7 @@ export const insertCharacterFieldsSchema = z
     project_id: z.string(),
     sort: z.number().optional(),
     field_type: z.string(),
+    parent_id: z.string(),
     options: z.string().array().optional(),
     formula: z.string().nullable().optional(),
   })

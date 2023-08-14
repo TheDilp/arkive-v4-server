@@ -16,11 +16,12 @@ import {
   map_router,
   node_router,
   project_router,
+  random_table_option_router,
   tag_router,
   user_router,
 } from "./routers";
+import { random_table_router } from "./routers/random_table_router";
 import { search_router } from "./routers/search_router";
-import { random_table_router } from "./routers/random_tables_router";
 
 const server = fastify();
 
@@ -63,6 +64,7 @@ server.register(
     instance.register(node_router, { prefix: "/nodes" });
     instance.register(edge_router, { prefix: "/edges" });
     instance.register(random_table_router, { prefix: "/random_tables" });
+    instance.register(random_table_option_router, { prefix: "/random_table_options" });
     instance.register(search_router, { prefix: "/search" });
     done();
   },

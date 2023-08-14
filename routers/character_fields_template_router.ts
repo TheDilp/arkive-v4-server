@@ -29,20 +29,11 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
       rep,
     ) => {
       await db.transaction().execute(async (tx) => {
-        const newTemplate = await tx
-          .insertInto("character_fields_templates")
-          .values(req.body.data)
-          .returning("id")
-          .executeTakeFirstOrThrow();
+        await tx.insertInto("character_fields_templates").values(req.body.data).returning("id").executeTakeFirstOrThrow();
 
         if (req.body.relations?.character_fields) {
           const parsedFields = insertCharacterFieldsSchema.array().parse(req.body.relations.character_fields);
-          const newFields = await tx.insertInto("character_fields").values(parsedFields).returning("id").execute();
-
-          await tx
-            .insertInto("_character_fieldsTocharacter_fields_templates")
-            .values(newFields.map((field) => ({ A: field.id, B: newTemplate.id })))
-            .execute();
+          await tx.insertInto("character_fields").values(parsedFields).execute();
         }
       });
 
@@ -68,9 +59,8 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
           qb = qb.select((eb) =>
             jsonArrayFrom(
               eb
-                .selectFrom("_character_fieldsTocharacter_fields_templates")
-                .whereRef("character_fields_templates.id", "=", "_character_fieldsTocharacter_fields_templates.B")
-                .leftJoin("character_fields", "id", "_character_fieldsTocharacter_fields_templates.A")
+                .selectFrom("character_fields")
+                .whereRef("character_fields_templates.id", "=", "character_fields.parent_id")
                 .select([
                   "character_fields.id",
                   "character_fields.title",
@@ -100,9 +90,8 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
         qb.select((eb) =>
           jsonArrayFrom(
             eb
-              .selectFrom("_character_fieldsTocharacter_fields_templates")
-              .whereRef("character_fields_templates.id", "=", "_character_fieldsTocharacter_fields_templates.B")
-              .leftJoin("character_fields", "character_fields.id", "_character_fieldsTocharacter_fields_templates.A")
+              .selectFrom("character_fields")
+              .whereRef("character_fields.parent_id", "=", "character_fields_templates.id")
               .select([
                 "character_fields.id",
                 "character_fields.title",
@@ -145,12 +134,12 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
           if (req.body?.relations?.character_fields) {
             const { character_fields } = req.body.relations;
             const existingCharacterFields = await tx
-              .selectFrom("_character_fieldsTocharacter_fields_templates")
-              .select(["_character_fieldsTocharacter_fields_templates.A"])
-              .where("_character_fieldsTocharacter_fields_templates.B", "=", req.params.id)
+              .selectFrom("character_fields")
+              .select(["id", "parent_id"])
+              .where("character_fields.parent_id", "=", req.params.id)
               .execute();
 
-            const existingIds = existingCharacterFields.map((field) => field.A);
+            const existingIds = existingCharacterFields.map((field) => field.id);
             const newIds = character_fields.map((field) => field.id);
 
             const idsToRemove = existingIds.filter((id) => !newIds.includes(id));
@@ -162,12 +151,7 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
             }
             if (itemsToAdd.length) {
               const parsedFields = insertCharacterFieldsSchema.array().parse(itemsToAdd.map((field) => omit(field, ["id"])));
-              const newFields = await tx.insertInto("character_fields").values(parsedFields).returning("id").execute();
-
-              await tx
-                .insertInto("_character_fieldsTocharacter_fields_templates")
-                .values(newFields.map((field) => ({ A: field.id, B: req.params.id })))
-                .execute();
+              await tx.insertInto("character_fields").values(parsedFields).execute();
             }
             if (itemsToUpdate.length) {
               await Promise.all(

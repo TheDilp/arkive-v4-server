@@ -90,7 +90,7 @@ export function random_table_router(server: FastifyInstance, _: any, done: any) 
                 "random_table_options.icon",
                 "random_table_options.icon_color",
               ]),
-          ).as("nodes"),
+          ).as("random_table_options"),
         ),
       )
 
