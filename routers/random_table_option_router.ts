@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
 import { SelectExpression } from "kysely";
 import { DB } from "kysely-codegen";
+import groupBy from "lodash.groupby";
 
 import { db } from "../database/db";
 import {
@@ -81,7 +82,37 @@ export function random_table_option_router(server: FastifyInstance, _: any, done
       rep.send({ data, message: "Success.", ok: true });
     },
   );
+  server.post(
+    "/random/many",
+    async (
+      req: FastifyRequest<{ Params: { table_id: string }; Body: { data: { table_id: string; count: number }[] } }>,
+      rep,
+    ) => {
+      const tableIdsToFetch = req.body.data.map((table) => table.table_id);
+      const tables = await db
+        .selectFrom("random_table_options")
+        .select(["id", "title", "parent_id"])
+        .where("random_table_options.parent_id", "in", tableIdsToFetch)
+        .execute();
+      const groupedOptions = groupBy(tables, "parent_id");
+
+      const formattedResult = [];
+      for (let i = 0; i < tableIdsToFetch.length; i++) {
+        const currentTableId = tableIdsToFetch[i];
+        const options = groupedOptions[currentTableId];
+        const chosenOptions = chooseRandomItems(options, req.body.data[i].count ?? 1);
+        formattedResult.push({
+          random_table_id: groupedOptions[currentTableId],
+          random_table: chosenOptions,
+        });
+      }
+
+      rep.send({ data: Object.values(groupBy(tables, "parent_id")), message: "Success.", ok: true });
+    },
+  );
   // #endregion read_routes
+  // #region update_routes
+
   // #region update_routes
   server.post(
     "/update/:id",
