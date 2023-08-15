@@ -80,9 +80,16 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
                     jsonArrayFrom(
                       eb
                         .selectFrom("random_tables")
-                        .select(["id", "title"])
+                        .select(["random_tables.id", "random_tables.title"])
                         .whereRef("random_tables.id", "=", "character_fields.random_table_id"),
                     ).as("random_table"),
+                  (eb) =>
+                    jsonArrayFrom(
+                      eb
+                        .selectFrom("random_table_options")
+                        .select(["random_table_options.id", "random_table_options.title"])
+                        .whereRef("random_table_options.parent_id", "=", "character_fields.random_table_id"),
+                    ).as("random_table_options"),
                 ]),
             ).as("character_fields"),
           );
