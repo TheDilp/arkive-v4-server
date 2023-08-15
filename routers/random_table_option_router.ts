@@ -96,18 +96,18 @@ export function random_table_option_router(server: FastifyInstance, _: any, done
         .execute();
       const groupedOptions = groupBy(tables, "parent_id");
 
-      const formattedResult = [];
+      const data = [];
       for (let i = 0; i < tableIdsToFetch.length; i++) {
         const currentTableId = tableIdsToFetch[i];
         const options = groupedOptions[currentTableId];
         const chosenOptions = chooseRandomItems(options, req.body.data[i].count ?? 1);
-        formattedResult.push({
-          random_table_id: groupedOptions[currentTableId],
+        data.push({
+          random_table_id: currentTableId,
           random_table: chosenOptions,
         });
       }
 
-      rep.send({ data: Object.values(groupBy(tables, "parent_id")), message: "Success.", ok: true });
+      rep.send({ data, message: "Success.", ok: true });
     },
   );
   // #endregion read_routes
