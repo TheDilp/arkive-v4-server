@@ -46,7 +46,7 @@ model projects {
   calendars                    calendars[]
   random_tables                random_tables[]
   tags                         tags[]
-  swatches                     swatches[]
+  // swatches                     swatches[]
   timelines                    timelines[]
   alter_names                  alter_names[]
   characters                   characters[]
@@ -636,16 +636,16 @@ model tags {
   @@unique([title, project_id])
 }
 
-model swatches {
-  id    String  @id @default(dbgenerated("gen_random_uuid()"))
-  title String?
-  color String  @default("#595959")
+// model swatches {
+//   id    String  @id @default(dbgenerated("gen_random_uuid()"))
+//   title String?
+//   color String  @default("#595959")
 
-  project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  project_id String
+//   project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+//   project_id String
 
-  @@unique([color, project_id])
-}
+//   @@unique([color, project_id])
+// }
 
 model webhooks {
   id    String @id @default(dbgenerated("gen_random_uuid()"))
