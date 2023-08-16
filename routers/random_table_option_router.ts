@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
 import { SelectExpression } from "kysely";
+import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 import groupBy from "lodash.groupby";
 
@@ -7,7 +8,7 @@ import { db } from "../database/db";
 import {
   InsertRandomTableOptionSchema,
   InsertRandomTableOptionType,
-  UpdateRandomTableSchema,
+  UpdateRandomTableOptionSchema,
   UpdateRandomTableType,
 } from "../database/validation/random_tables";
 import { RequestBodyType } from "../types/requestTypes";
@@ -60,6 +61,16 @@ export function random_table_option_router(server: FastifyInstance, _: any, done
         "random_table_options.icon",
         "random_table_options.parent_id",
       ])
+      .$if(!!req.body.relations?.suboptions, (qb) =>
+        qb.select((eb) =>
+          jsonArrayFrom(
+            eb
+              .selectFrom("random_table_suboptions")
+              .selectAll()
+              .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id"),
+          ).as("suboptions"),
+        ),
+      )
       .executeTakeFirstOrThrow();
 
     rep.send({ data, message: "Success.", ok: true });
@@ -117,10 +128,10 @@ export function random_table_option_router(server: FastifyInstance, _: any, done
   server.post(
     "/update/:id",
     async (req: FastifyRequest<{ Params: { id: string }; Body: { data: UpdateRandomTableType } }>, rep) => {
-      const parsedData = UpdateRandomTableSchema.parse(req.body.data);
-      await db.updateTable("tags").where("id", "=", req.params.id).set(parsedData).execute();
+      const parsedData = UpdateRandomTableOptionSchema.parse(req.body.data);
+      await db.updateTable("random_table_options").where("id", "=", req.params.id).set(parsedData).execute();
 
-      rep.send({ message: "Tags successfully updated.", ok: true });
+      rep.send({ message: "Random table option successfully updated.", ok: true });
     },
   );
   //   // #endregion update_routes

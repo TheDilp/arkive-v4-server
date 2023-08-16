@@ -10,7 +10,7 @@ import { db } from "../database/db";
 import { InsertCharacterSchema, InsertCharacterType, UpdateCharacterSchema, UpdateCharacterType } from "../database/validation";
 import { RequestBodyType } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
-import { constructOrderBy } from "../utils/orderByConstructor";
+import { constructOrdering } from "../utils/orderByConstructor";
 import { CreateTagRelations, GetRelationsForUpdating, TagQuery } from "../utils/relationalQueryHelpers";
 import { getGenerationOffset } from "../utils/transform";
 
@@ -109,12 +109,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
         return qb;
       })
       .$if(!!req.body.orderBy?.length, (qb) => {
-        if (req.body.orderBy?.length) {
-          for (let index = 0; index < req.body.orderBy.length; index++) {
-            const order = req.body.orderBy[index];
-            qb = constructOrderBy(qb, order?.field as string, order?.sort);
-          }
-        }
+        qb = constructOrdering(req.body.orderBy, qb);
         return qb;
       })
       .$if(!!req?.body?.relations, (qb) => {

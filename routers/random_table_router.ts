@@ -15,7 +15,7 @@ import {
 } from "../database/validation/random_tables";
 import { RequestBodyType } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
-import { constructOrderBy } from "../utils/orderByConstructor";
+import { constructOrdering } from "../utils/orderByConstructor";
 import { GetBreadcrumbs, GetEntityChildren } from "../utils/relationalQueryHelpers";
 
 export function random_table_router(server: FastifyInstance, _: any, done: any) {
@@ -64,7 +64,7 @@ export function random_table_router(server: FastifyInstance, _: any, done: any) 
       })
       .limit(req.body?.pagination?.limit || 10)
       .offset((req.body?.pagination?.page ?? 0) * (req.body?.pagination?.limit || 10))
-      .$if(!!req.body.orderBy, (qb) => constructOrderBy(qb, req.body.orderBy?.field as string, req.body.orderBy?.sort))
+      .$if(!!req.body.orderBy, (qb) => constructOrdering(req.body.orderBy, qb))
       .execute();
     rep.send({ data, message: "Success", ok: true });
   });

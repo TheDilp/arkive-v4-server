@@ -13,7 +13,7 @@ import {
 } from "../database/validation/documents";
 import { RequestBodyType } from "../types/requestTypes";
 import { constructFilter, relationConstructor } from "../utils/filterConstructor";
-import { constructOrderBy } from "../utils/orderByConstructor";
+import { constructOrdering } from "../utils/orderByConstructor";
 import {
   CreateTagRelations,
   GetBreadcrumbs,
@@ -73,7 +73,7 @@ export function document_router(server: FastifyInstance, _: any, done: any) {
         qb = constructFilter("documents", qb, req.body.filters);
         return qb;
       })
-      .$if(!!req.body.orderBy, (qb) => constructOrderBy(qb, req.body.orderBy?.field as string, req.body.orderBy?.sort))
+      .$if(!!req.body.orderBy, (qb) => constructOrdering(req.body.orderBy, qb))
 
       .execute();
     rep.send({ data, message: "Success", ok: true });

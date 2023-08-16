@@ -34,3 +34,18 @@ export const UpdateRandomTableSchema = z.object({
   is_folder: z.boolean().nullable().optional(),
   is_public: z.boolean().nullable().optional(),
 });
+
+export const RandomTableSubOptionSchema = z.object({
+  id: z.string(),
+  title: z.string().nonempty(),
+  description: z.string().optional().nullable(),
+  parent_id: z.string(),
+});
+export const UpdateRandomTableOptionSchema = z.object({
+  id: z.string(),
+  title: z.string().optional(),
+  description: z.string().nullable().optional(),
+  icon: z.string().nullable().optional(),
+  icon_color: z.string().nullable().optional(),
+  suboptions: RandomTableSubOptionSchema.array().optional(),
+});
