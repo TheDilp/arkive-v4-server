@@ -108,7 +108,15 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
         qb = constructFilter("characters", qb, req.body.filters);
         return qb;
       })
-      .$if(!!req.body.orderBy, (qb) => constructOrderBy(qb, req.body.orderBy?.field as string, req.body.orderBy?.sort))
+      .$if(!!req.body.orderBy?.length, (qb) => {
+        if (req.body.orderBy?.length) {
+          for (let index = 0; index < req.body.orderBy.length; index++) {
+            const order = req.body.orderBy[index];
+            qb = constructOrderBy(qb, order?.field as string, order?.sort);
+          }
+        }
+        return qb;
+      })
       .$if(!!req?.body?.relations, (qb) => {
         if (req?.body?.relations?.portrait) {
           qb = qb.select((eb) =>

@@ -39,7 +39,7 @@ export interface RequestPaginationType {
 export interface RequestBodyType {
   data?: any;
   fields: string[];
-  orderBy?: RequestOrderByType;
+  orderBy?: RequestOrderByType[];
   pagination?: RequestPaginationType;
   relations?: {
     [key: string]:

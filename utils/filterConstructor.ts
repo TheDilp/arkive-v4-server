@@ -20,6 +20,7 @@ export function constructFilter(
         const dbOperator = FilterEnum[operator];
         // @ts-ignore
         andFilters.push(eb(`${table}.${field}`, dbOperator, dbOperator === "ilike" ? `%${value}%` : value));
+        console.log(field, dbOperator, value);
       }
     }
     if (filters?.or?.length) {
