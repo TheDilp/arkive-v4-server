@@ -139,7 +139,18 @@ export function random_table_option_router(server: FastifyInstance, _: any, done
       const tableIdsToFetch = req.body.data.map((table) => table.table_id);
       const tables = await db
         .selectFrom("random_table_options")
-        .select(["id", "title", "parent_id"])
+        .select([
+          "id",
+          "title",
+          "parent_id",
+          (eb) =>
+            jsonArrayFrom(
+              eb
+                .selectFrom("random_table_suboptions")
+                .select(["random_table_suboptions.id", "random_table_suboptions.title"])
+                .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id"),
+            ).as("suboptions"),
+        ])
         .where("random_table_options.parent_id", "in", tableIdsToFetch)
         .execute();
       const groupedOptions = groupBy(tables, "parent_id");
