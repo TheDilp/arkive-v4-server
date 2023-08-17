@@ -106,10 +106,19 @@ export function random_table_option_router(server: FastifyInstance, _: any, done
     async (req: FastifyRequest<{ Params: { table_id: string }; Body: { data: { count: number } } }>, rep) => {
       const options = await db
         .selectFrom("random_table_options")
-        .select(["random_table_options.id", "random_table_options.title"])
+        .select([
+          "random_table_options.id",
+          "random_table_options.title",
+          (eb) =>
+            jsonArrayFrom(
+              eb
+                .selectFrom("random_table_suboptions")
+                .select(["random_table_suboptions.id", "random_table_suboptions.title"])
+                .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id"),
+            ).as("suboptions"),
+        ])
         .where("random_table_options.parent_id", "=", req.params.table_id)
         .execute();
-
       if (req.body.data.count > options.length) {
         rep.send({ message: "More items requested than there are available.", ok: false });
       }

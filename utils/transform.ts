@@ -9,18 +9,26 @@ export function getGenerationOffset(index: number, generationCount: number): num
   return startOffset + 300 * index;
 }
 
-export function chooseRandomItems<T>(arr: T[], M: number): T[] {
+type MainType = { id: string; title: string; suboptions?: { id: string; title: string }[] };
+type SubType = { id: string; title: string };
+
+export function chooseRandomItems(arr: (MainType & { suboptions?: SubType[] })[], M: number): (MainType | SubType)[] {
   if (M > arr.length) {
     return [];
   }
 
-  const randomItems: T[] = [];
-  const remainingItems: T[] = [...arr];
+  const randomItems: (MainType | SubType)[] = [];
 
   for (let i = 0; i < M; i++) {
-    const randomIndex = Math.floor(Math.random() * remainingItems.length);
-    const selectedItem = remainingItems.splice(randomIndex, 1)[0];
-    randomItems.push(selectedItem);
+    const randomIndex = Math.floor(Math.random() * arr.length);
+    const selectedItem = arr[randomIndex];
+    if (selectedItem?.suboptions?.length) {
+      const randomSubIndex = Math.floor(Math.random() * selectedItem.suboptions.length);
+      const seletedSubItem = selectedItem.suboptions[randomSubIndex];
+      randomItems.push(seletedSubItem);
+    } else {
+      randomItems.push({ id: selectedItem.id, title: selectedItem.title });
+    }
   }
 
   return randomItems;
