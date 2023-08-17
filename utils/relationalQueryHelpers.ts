@@ -66,7 +66,7 @@ export async function UpdateTagRelations({
 
 export function GetRelationsForUpdating(
   existingIds: string[],
-  newData: { id: string }[],
+  newData: { [key: string]: any }[],
 ): [string[], { [key: string]: any }[], { [key: string]: any }[]] {
   const newIds = newData.map((field) => field.id);
 

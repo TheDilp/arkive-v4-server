@@ -8,10 +8,13 @@ import { db } from "../database/db";
 import {
   InsertRandomTableOptionSchema,
   InsertRandomTableOptionType,
+  InsertRandomTableSuboptionType,
   UpdateRandomTableOptionSchema,
+  UpdateRandomTableSubOptionSchema,
   UpdateRandomTableType,
 } from "../database/validation/random_tables";
 import { RequestBodyType } from "../types/requestTypes";
+import { GetRelationsForUpdating } from "../utils/relationalQueryHelpers";
 import { chooseRandomItems } from "../utils/transform";
 
 export function random_table_option_router(server: FastifyInstance, _: any, done: any) {
@@ -21,14 +24,24 @@ export function random_table_option_router(server: FastifyInstance, _: any, done
     "/create",
     async (
       req: FastifyRequest<{
-        Body: { data: InsertRandomTableOptionType[] };
+        Body: { data: InsertRandomTableOptionType[]; relations: { suboptions: InsertRandomTableSuboptionType[] } };
       }>,
       rep,
     ) => {
       const { data } = req.body;
       const parsedData = InsertRandomTableOptionSchema.array().parse(data);
 
-      await db.insertInto("random_table_options").values(parsedData).execute();
+      await db.transaction().execute(async (tx) => {
+        await tx.insertInto("random_table_options").values(parsedData).execute();
+
+        if (req.body?.relations?.suboptions?.length) {
+          const { suboptions } = req.body.relations;
+          for (let index = 0; index < suboptions.length; index += 1) {
+            const suboption = suboptions[index];
+            await tx.insertInto("random_table_suboptions").values(suboption).execute();
+          }
+        }
+      });
 
       rep.send({ message: "Random table options successfully created.", ok: true });
     },
@@ -42,6 +55,16 @@ export function random_table_option_router(server: FastifyInstance, _: any, done
       .$if(!req.body.fields?.length, (qb) => qb.selectAll())
       .$if(!!req.body.fields?.length, (qb) =>
         qb.clearSelect().select(req.body.fields as SelectExpression<DB, "random_table_options">[]),
+      )
+      .$if(!!req.body.relations?.suboptions, (qb) =>
+        qb.select((eb) =>
+          jsonArrayFrom(
+            eb
+              .selectFrom("random_table_suboptions")
+              .select(["random_table_suboptions.id", "random_table_suboptions.title", "random_table_suboptions.description"])
+              .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id"),
+          ).as("suboptions"),
+        ),
       )
       .where("random_table_options.parent_id", "=", req.body.data.parent_id)
       .execute();
@@ -76,6 +99,8 @@ export function random_table_option_router(server: FastifyInstance, _: any, done
     rep.send({ data, message: "Success.", ok: true });
   });
 
+  // Generate random options
+
   server.post(
     "/random/:table_id",
     async (req: FastifyRequest<{ Params: { table_id: string }; Body: { data: { count: number } } }>, rep) => {
@@ -93,6 +118,9 @@ export function random_table_option_router(server: FastifyInstance, _: any, done
       rep.send({ data, message: "Success.", ok: true });
     },
   );
+
+  // Generate random options for multiple tables
+
   server.post(
     "/random/many",
     async (
@@ -127,15 +155,65 @@ export function random_table_option_router(server: FastifyInstance, _: any, done
   // #region update_routes
   server.post(
     "/update/:id",
-    async (req: FastifyRequest<{ Params: { id: string }; Body: { data: UpdateRandomTableType } }>, rep) => {
-      const parsedData = UpdateRandomTableOptionSchema.parse(req.body.data);
-      await db.updateTable("random_table_options").where("id", "=", req.params.id).set(parsedData).execute();
+    async (
+      req: FastifyRequest<{
+        Params: { id: string };
+        Body: { data: UpdateRandomTableType; relations: { suboptions: InsertRandomTableSuboptionType[] } };
+      }>,
+      rep,
+    ) => {
+      await db.transaction().execute(async (tx) => {
+        const parsedData = UpdateRandomTableOptionSchema.parse(req.body.data);
+        await tx.updateTable("random_table_options").where("id", "=", req.params.id).set(parsedData).execute();
+
+        if (req.body?.relations?.suboptions?.length) {
+          const existingIds = await tx
+            .selectFrom("random_table_suboptions")
+            .select(["id"])
+            .where("parent_id", "=", req.params.id)
+            .execute();
+
+          const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+            existingIds.map((item) => item.id),
+            req.body.relations.suboptions,
+          );
+
+          if (idsToRemove.length) {
+            await tx.deleteFrom("random_table_suboptions").where("id", "in", idsToRemove).execute();
+          }
+          if (itemsToAdd.length) {
+            await tx
+              .insertInto("random_table_suboptions")
+              .values(
+                itemsToAdd.map((item) => ({
+                  parent_id: req.params.id,
+                  title: item.title,
+                  description: item?.description,
+                })),
+              )
+              .execute();
+          }
+          if (itemsToUpdate.length) {
+            await Promise.all(
+              itemsToUpdate.map(async (item) => {
+                const parsedSuboptionData = UpdateRandomTableSubOptionSchema.parse(item);
+                await tx
+                  .updateTable("random_table_suboptions")
+                  .where("parent_id", "=", req.params.id)
+                  .where("id", "=", item.id)
+                  .set(parsedSuboptionData)
+                  .execute();
+              }),
+            );
+          }
+        }
+      });
 
       rep.send({ message: "Random table option successfully updated.", ok: true });
     },
   );
-  //   // #endregion update_routes
-  //   // #region delete_routes
+  // #endregion update_routes
+  // #region delete_routes
   //   server.delete("/delete/:id", async (req: FastifyRequest<{ Params: { id: string } }>, rep) => {
   //     await db.deleteFrom("tags").where("id", "=", req.params.id).execute();
   //     rep.send({ message: "Tag successfully deleted.", ok: true });
