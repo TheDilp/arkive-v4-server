@@ -25,7 +25,7 @@ export function chooseRandomItems(arr: (MainType & { suboptions?: SubType[] })[]
     if (selectedItem?.suboptions?.length) {
       const randomSubIndex = Math.floor(Math.random() * selectedItem.suboptions.length);
       const seletedSubItem = selectedItem.suboptions[randomSubIndex];
-      randomItems.push(seletedSubItem);
+      randomItems.push({ id: seletedSubItem.id, title: `${selectedItem.title} - ${seletedSubItem.title}` });
     } else {
       randomItems.push({ id: selectedItem.id, title: selectedItem.title });
     }
