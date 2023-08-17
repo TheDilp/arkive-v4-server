@@ -12,7 +12,7 @@ export function getGenerationOffset(index: number, generationCount: number): num
 type MainType = { id: string; title: string; suboptions?: { id: string; title: string }[] };
 type SubType = { id: string; title: string };
 
-export function chooseRandomItems(arr: (MainType & { suboptions?: SubType[] })[], M: number): (MainType | SubType)[] {
+export function chooseRandomItems(arr: MainType[], M: number): (MainType | SubType)[] {
   if (M > arr.length) {
     return [];
   }
@@ -21,10 +21,10 @@ export function chooseRandomItems(arr: (MainType & { suboptions?: SubType[] })[]
 
   for (let i = 0; i < M; i++) {
     const randomIndex = Math.floor(Math.random() * arr.length);
-    const selectedItem = arr[randomIndex];
+    const selectedItem = arr.splice(randomIndex, 1)[0];
     if (selectedItem?.suboptions?.length) {
       const randomSubIndex = Math.floor(Math.random() * selectedItem.suboptions.length);
-      const seletedSubItem = selectedItem.suboptions[randomSubIndex];
+      const seletedSubItem = selectedItem.suboptions.splice(randomSubIndex)[0];
       randomItems.push({ id: seletedSubItem.id, title: `${selectedItem.title} - ${seletedSubItem.title}` });
     } else {
       randomItems.push({ id: selectedItem.id, title: selectedItem.title });
