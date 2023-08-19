@@ -10,14 +10,13 @@ export function getGenerationOffset(index: number, generationCount: number): num
 }
 
 type MainType = { id: string; title: string; suboptions?: { id: string; title: string }[] };
-type SubType = { id: string; title: string };
 
-export function chooseRandomItems(arr: MainType[], M: number): (MainType | SubType)[] {
+export function chooseRandomItems(arr: MainType[], M: number): { id: string; subitem_id?: string; title: string }[] {
   if (M > arr.length) {
     return [];
   }
 
-  const randomItems: (MainType | SubType)[] = [];
+  const randomItems: { id: string; subitem_id?: string; title: string }[] = [];
 
   for (let i = 0; i < M; i++) {
     const randomIndex = Math.floor(Math.random() * arr.length);
@@ -25,7 +24,11 @@ export function chooseRandomItems(arr: MainType[], M: number): (MainType | SubTy
     if (selectedItem?.suboptions?.length) {
       const randomSubIndex = Math.floor(Math.random() * selectedItem.suboptions.length);
       const seletedSubItem = selectedItem.suboptions.splice(randomSubIndex)[0];
-      randomItems.push({ id: seletedSubItem.id, title: `${selectedItem.title} - ${seletedSubItem.title}` });
+      randomItems.push({
+        id: selectedItem.id,
+        subitem_id: seletedSubItem.id,
+        title: `${selectedItem.title} - ${seletedSubItem.title}`,
+      });
     } else {
       randomItems.push({ id: selectedItem.id, title: selectedItem.title });
     }

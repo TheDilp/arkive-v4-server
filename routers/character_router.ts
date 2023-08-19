@@ -553,14 +553,15 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
           }
           if (itemsToUpdate.length) {
             await Promise.all(
-              itemsToUpdate.map(async (item) =>
-                tx
+              itemsToUpdate.map(async (item) => {
+                console.log(item);
+                await tx
                   .updateTable("characters_to_character_fields")
                   .where("character_id", "=", req.params.id)
                   .where("character_field_id", "=", item.id)
                   .set({ value: JSON.stringify(item.value) })
-                  .execute(),
-              ),
+                  .execute();
+              }),
             );
           }
         }
