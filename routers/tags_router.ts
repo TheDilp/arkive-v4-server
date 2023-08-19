@@ -3,7 +3,7 @@ import { FastifyInstance, FastifyRequest } from "fastify";
 import { db } from "../database/db";
 import { InsertTagSchema, InsertTagType, UpdateTagSchema, UpdateTagType } from "../database/validation";
 import { RequestBodyType } from "../types/requestTypes";
-import { constructOrderBy } from "../utils/orderByConstructor";
+import { constructOrdering } from "../utils/orderByConstructor";
 
 export function tag_router(server: FastifyInstance, _: any, done: any) {
   // #region create_routes
@@ -27,7 +27,10 @@ export function tag_router(server: FastifyInstance, _: any, done: any) {
     const data = await db
       .selectFrom("tags")
       .select(["id", "title", "color"])
-      .$if(!!req.body.orderBy, (qb) => constructOrderBy(qb, req.body.orderBy?.field as string, req.body.orderBy?.sort))
+      .$if(!!req.body.orderBy?.length, (qb) => {
+        qb = constructOrdering(req.body.orderBy, qb);
+        return qb;
+      })
       .where("project_id", "=", req.body.data.project_id)
       .execute();
 
