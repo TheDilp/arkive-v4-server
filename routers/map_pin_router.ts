@@ -64,7 +64,7 @@ export function map_pin_router(server: FastifyInstance, _: any, done: any) {
       rep,
     ) => {
       await db.deleteFrom("map_pins").where("map_pins.id", "=", req.params.id).execute();
-      rep.send({ message: "Map pins successfully deleted.", ok: true });
+      rep.send({ message: "Map pin successfully deleted.", ok: true });
     },
   );
   // #endregion delete_routes

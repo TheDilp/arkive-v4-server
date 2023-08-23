@@ -7,6 +7,7 @@ export * from "./character_fields_template_router";
 export * from "./character_router";
 export * from "./document_router";
 export * from "./edge_router";
+export * from "./health_check";
 export * from "./map_pin_router";
 export * from "./map_router";
 export * from "./node_router";

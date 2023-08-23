@@ -14,16 +14,17 @@ import {
   character_router,
   document_router,
   edge_router,
+  health_check_router,
   map_pin_router,
   map_router,
   node_router,
   project_router,
   random_table_option_router,
+  random_table_router,
+  search_router,
   tag_router,
   user_router,
 } from "./routers";
-import { random_table_router } from "./routers/random_table_router";
-import { search_router } from "./routers/search_router";
 
 const server = fastify();
 
@@ -57,6 +58,7 @@ server.register(authentication_router, { prefix: "/api/v1/auth" });
 server.register(
   (instance, _, done) => {
     // instance.addHook("onRequest", async (request, reply) => {});
+    instance.register(health_check_router, { prefix: "/health_check" });
     instance.register(asset_router, { prefix: "/assets" });
     instance.register(user_router, { prefix: "/users" });
     instance.register(project_router, { prefix: "/projects" });
@@ -77,10 +79,6 @@ server.register(
   },
   { prefix: "/api/v1" },
 );
-
-server.get("/ping", async () => {
-  return "pong\n";
-});
 
 server.listen({ port: parseInt(process.env.PORT as string, 10) || 3000 }, (err, address) => {
   if (err) {
