@@ -32,8 +32,8 @@ export function map_router(server: FastifyInstance, _: any, done: any) {
   server.post("/", async (req: FastifyRequest<{ Body: RequestBodyType }>, rep) => {
     const data = await db
       .selectFrom("maps")
-      .$if(!req.body.fields.length, (qb) => qb.selectAll())
-      .$if(!!req.body.fields.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "maps">[]))
+      .$if(!req.body.fields?.length, (qb) => qb.selectAll())
+      .$if(!!req.body.fields?.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "maps">[]))
       .$if(!!req.body?.filters?.and?.length || !!req.body?.filters?.or?.length, (qb) => {
         qb = constructFilter("maps", qb, req.body.filters);
         return qb;
@@ -44,8 +44,8 @@ export function map_router(server: FastifyInstance, _: any, done: any) {
   server.post("/:id", async (req: FastifyRequest<{ Params: { id: string }; Body: RequestBodyType }>, rep) => {
     const data = await db
       .selectFrom("maps")
-      .$if(!req.body.fields.length, (qb) => qb.selectAll())
-      .$if(!!req.body.fields.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "maps">[]))
+      .$if(!req.body.fields?.length, (qb) => qb.selectAll())
+      .$if(!!req.body.fields?.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "maps">[]))
       .where("maps.id", "=", req.params.id)
       .$if(!!req.body?.relations?.map_pins, (qb) =>
         qb.select((eb) =>

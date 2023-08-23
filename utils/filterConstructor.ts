@@ -20,7 +20,6 @@ export function constructFilter(
         const dbOperator = FilterEnum[operator];
         // @ts-ignore
         andFilters.push(eb(`${table}.${field}`, dbOperator, dbOperator === "ilike" ? `%${value}%` : value));
-        console.log(field, dbOperator, value);
       }
     }
     if (filters?.or?.length) {
@@ -50,7 +49,6 @@ export function relationConstructor(
     .where(({ eb, and, or }) => {
       const andFilters = [];
       const orFilters = [];
-      console.log(filters);
       const finalFilters = [];
       if (filters?.and?.length) {
         for (let index = 0; index < filters.and.length; index++) {
