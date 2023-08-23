@@ -251,7 +251,7 @@ model maps {
 
 model map_pins {
   id               String   @id @default(dbgenerated("gen_random_uuid()"))
-  text             String?
+  title            String?
   parent           maps?    @relation(fields: [parent_id], references: [id], onDelete: Cascade)
   parent_id        String
   lat              Float
