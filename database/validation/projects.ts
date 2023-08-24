@@ -5,9 +5,13 @@ import { z } from "zod";
 export type InsertProjectType = Insertable<Projects>;
 export type UpdateProjectType = Pick<Updateable<Projects>, "title" | "image_id">;
 
-export const UpdateProjectSchema = z
-  .object({
-    title: z.string().optional(),
-    image: z.string().optional(),
-  })
-  .strict();
+export const InsertProjectSchema = z.object({
+  owner_id: z.string(),
+  title: z.string(),
+  image: z.string().optional(),
+});
+
+export const UpdateProjectSchema = z.object({
+  title: z.string().optional(),
+  image: z.string().optional(),
+});

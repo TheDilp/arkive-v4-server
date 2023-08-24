@@ -100,8 +100,8 @@ model characters {
   images                         images[]                         @relation("characters_to_images")
   characters_to_character_fields characters_to_character_fields[]
 
-  location   map_pins? @relation(fields: [map_pin_id], references: [id])
-  map_pin_id String?
+  location maps?   @relation(fields: [map_id], references: [id])
+  map_id   String?
 
   documents documents[]
   nodes     nodes[]
@@ -247,6 +247,8 @@ model maps {
   tags      tags[]
   image_id  String?
   nodes     nodes[]
+
+  characters characters[]
 }
 
 model map_pins {
@@ -266,11 +268,10 @@ model map_pins {
   is_public        Boolean?
   tags             tags[]
 
-  map_link   String?
-  doc_id     String?
-  image_id   String?
-  characters characters[]
-  nodes      nodes[]
+  map_link String?
+  doc_id   String?
+  image_id String?
+  nodes    nodes[]
 }
 
 model map_layers {

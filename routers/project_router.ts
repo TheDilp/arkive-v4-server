@@ -1,13 +1,19 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
 
 import { db } from "../database/db";
-import { InsertProjectType, UpdateProjectSchema, UpdateProjectType } from "../database/validation/projects";
+import {
+  InsertProjectSchema,
+  InsertProjectType,
+  UpdateProjectSchema,
+  UpdateProjectType,
+} from "../database/validation/projects";
 import { RequestBodyType } from "../types/requestTypes";
 
 export function project_router(server: FastifyInstance, _: any, done: any) {
   // #region create_routes
   server.post("/create", async (req: FastifyRequest<{ Body: { data: InsertProjectType } }>, rep) => {
-    await db.insertInto("projects").values(req.body.data).execute();
+    const parsed = InsertProjectSchema.parse(req.body.data);
+    await db.insertInto("projects").values(parsed).execute();
     rep.send({ message: "Project successfully created.", ok: true });
   });
   // #endregion create_routes
