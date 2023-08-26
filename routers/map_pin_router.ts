@@ -1,8 +1,12 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
+import { SelectExpression } from "kysely";
 import { jsonObjectFrom } from "kysely/helpers/postgres";
+import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
 import { InsertMapPinSchema, InsertMapPinType, UpdateMapPinSchema, UpdateMapPinType } from "../database/validation/map_pins";
+import { RequestBodyType } from "../types/requestTypes";
+import { constructFilter } from "../utils/filterConstructor";
 
 export function map_pin_router(server: FastifyInstance, _: any, done: any) {
   // #region create_routes
@@ -28,6 +32,29 @@ export function map_pin_router(server: FastifyInstance, _: any, done: any) {
 
   // #endregion create_routes
   // #region read_routes
+  server.post("/", async (req: FastifyRequest<{ Body: RequestBodyType }>, rep) => {
+    const data = await db
+      .selectFrom("map_pins")
+      .$if(!req.body.fields?.length, (qb) => qb.selectAll())
+      .$if(!!req.body.fields?.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "map_pins">[]))
+      .$if(!!req.body?.filters?.and?.length || !!req.body?.filters?.or?.length, (qb) => {
+        qb = constructFilter("map_pins", qb, req.body.filters);
+        return qb;
+      })
+      .$if(!!req.body?.relations?.character, (qb) =>
+        qb.select([
+          (eb) =>
+            jsonObjectFrom(
+              eb
+                .selectFrom("characters")
+                .whereRef("characters.id", "=", "map_pins.character_id")
+                .select(["id", "first_name", "last_name", "portrait_id"]),
+            ).as("character"),
+        ]),
+      )
+      .execute();
+    rep.send({ data, message: "Success", ok: true });
+  });
   server.post(
     "/:id",
     async (req: FastifyRequest<{ Params: { id: string }; Body: { relations?: { tags?: boolean } } }>, rep) => {
