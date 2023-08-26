@@ -284,6 +284,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
         .select([
           "id",
           "first_name",
+          "nickname",
           "last_name",
           "portrait_id",
           "project_id",
@@ -393,6 +394,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
         .select([
           "id",
           "first_name",
+          "nickname",
           "last_name",
           "portrait_id",
           "project_id",
@@ -651,26 +653,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
       rep.send({ message: "Character successfully updated.", ok: true });
     },
   );
-  server.post(
-    "/update/location",
-    async (req: FastifyRequest<{ Body: { data: { character_ids: { id: string }[]; map_id: string } } }>, rep) => {
-      const mapWithCharacters = await db
-        .selectFrom("_charactersTomaps")
-        .where("B", "=", req.body.data.map_id)
-        .select((eb) =>
-          jsonArrayFrom(eb.selectFrom("characters").select(["id"]).whereRef("_charactersTomaps.A", "=", "characters.id")).as(
-            "characters",
-          ),
-        )
-        .executeTakeFirstOrThrow();
 
-      const existingIds = mapWithCharacters.characters.map((char) => char.id);
-
-      const t = GetRelationsForUpdating(existingIds, req.body.data.character_ids);
-      console.log(t);
-      rep.send({ ok: true });
-    },
-  );
   // #endregion update_routes
   // #region delete_routes
   server.delete(
