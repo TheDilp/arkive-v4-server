@@ -1,4 +1,5 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
+import { jsonObjectFrom } from "kysely/helpers/postgres";
 
 import { db } from "../database/db";
 import { InsertMapPinSchema, InsertMapPinType, UpdateMapPinSchema, UpdateMapPinType } from "../database/validation/map_pins";
@@ -32,7 +33,30 @@ export function map_pin_router(server: FastifyInstance, _: any, done: any) {
     async (req: FastifyRequest<{ Params: { id: string }; Body: { relations?: { tags?: boolean } } }>, rep) => {
       const data = await db
         .selectFrom("map_pins")
-        .selectAll()
+        .select([
+          "map_pins.id",
+          "map_pins.background_color",
+          "map_pins.border_color",
+          "map_pins.color",
+          "map_pins.character_id",
+          "map_pins.doc_id",
+          "map_pins.icon",
+          "map_pins.title",
+          "map_pins.parent_id",
+          "map_pins.is_public",
+          "map_pins.lat",
+          "map_pins.lng",
+          "map_pins.map_link",
+          "map_pins.show_background",
+          "map_pins.show_border",
+          (eb) =>
+            jsonObjectFrom(
+              eb
+                .selectFrom("characters")
+                .whereRef("characters.id", "=", "map_pins.character_id")
+                .select(["id", "first_name", "last_name", "portrait_id"]),
+            ).as("character"),
+        ])
         .where("map_pins.id", "=", req.params.id)
         .executeTakeFirstOrThrow();
       rep.send({ data, message: "Success.", ok: true });
@@ -44,7 +68,10 @@ export function map_pin_router(server: FastifyInstance, _: any, done: any) {
   server.post(
     "/update/:id",
     async (
-      req: FastifyRequest<{ Params: { id: string }; Body: { data: UpdateMapPinType; relations?: { tags?: boolean } } }>,
+      req: FastifyRequest<{
+        Params: { id: string };
+        Body: { data: UpdateMapPinType; relations?: { tags?: boolean } };
+      }>,
       rep,
     ) => {
       const data = UpdateMapPinSchema.parse(req.body.data);

@@ -11,7 +11,7 @@ import { InsertCharacterSchema, InsertCharacterType, UpdateCharacterSchema, Upda
 import { RequestBodyType } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { CreateTagRelations, GetRelationsForUpdating, TagQuery } from "../utils/relationalQueryHelpers";
+import { CreateTagRelations, GetRelationsForUpdating, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 import { getGenerationOffset } from "../utils/transform";
 
 export function character_router(server: FastifyInstance, _: any, done: any) {
@@ -42,7 +42,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
           if (req.body.relations?.images) {
             const { images } = req.body.relations;
             await tx
-              .insertInto("_characters_to_images")
+              .insertInto("_charactersToimages")
               .values(images.map((img) => ({ A: character.id, B: img.id })))
               .execute();
           }
@@ -108,6 +108,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
         qb = constructFilter("characters", qb, req.body.filters);
         return qb;
       })
+
       .$if(!!req.body.orderBy?.length, (qb) => {
         qb = constructOrdering(req.body.orderBy, qb);
         return qb;
@@ -644,34 +645,30 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
           }
         }
         if (req.body.relations?.tags?.length) {
-          const existingTags = await tx
-            .selectFrom("_charactersTotags")
-            .select("B as id")
-            .where("A", "=", req.params.id)
-            .execute();
-
-          const existingIds = existingTags.map((tag) => tag.id);
-
-          const { tags } = req.body.relations;
-          const [idsToRemove, itemsToAdd] = GetRelationsForUpdating(existingIds, tags);
-          if (idsToRemove.length) {
-            await tx.deleteFrom("_charactersTotags").where("A", "=", req.params.id).where("B", "in", idsToRemove).execute();
-          }
-
-          if (itemsToAdd.length) {
-            await tx
-              .insertInto("_charactersTotags")
-              .values(
-                itemsToAdd.map((item) => ({
-                  A: req.params.id,
-                  B: item.id,
-                })),
-              )
-              .execute();
-          }
+          UpdateTagRelations({ relationalTable: "_charactersTotags", id: req.params.id, newTags: req.body.relations.tags, tx });
         }
       });
       rep.send({ message: "Character successfully updated.", ok: true });
+    },
+  );
+  server.post(
+    "/update/location",
+    async (req: FastifyRequest<{ Body: { data: { character_ids: { id: string }[]; map_id: string } } }>, rep) => {
+      const mapWithCharacters = await db
+        .selectFrom("_charactersTomaps")
+        .where("B", "=", req.body.data.map_id)
+        .select((eb) =>
+          jsonArrayFrom(eb.selectFrom("characters").select(["id"]).whereRef("_charactersTomaps.A", "=", "characters.id")).as(
+            "characters",
+          ),
+        )
+        .executeTakeFirstOrThrow();
+
+      const existingIds = mapWithCharacters.characters.map((char) => char.id);
+
+      const t = GetRelationsForUpdating(existingIds, req.body.data.character_ids);
+      console.log(t);
+      rep.send({ ok: true });
     },
   );
   // #endregion update_routes

@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
 import { SelectExpression } from "kysely";
-import { jsonArrayFrom } from "kysely/helpers/postgres";
+import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
@@ -49,7 +49,35 @@ export function map_router(server: FastifyInstance, _: any, done: any) {
       .where("maps.id", "=", req.params.id)
       .$if(!!req.body?.relations?.map_pins, (qb) =>
         qb.select((eb) =>
-          jsonArrayFrom(eb.selectFrom("map_pins").selectAll().whereRef("map_pins.parent_id", "=", "maps.id")).as("map_pins"),
+          jsonArrayFrom(
+            eb
+              .selectFrom("map_pins")
+              .select([
+                "map_pins.id",
+                "map_pins.background_color",
+                "map_pins.border_color",
+                "map_pins.color",
+                "map_pins.character_id",
+                "map_pins.doc_id",
+                "map_pins.icon",
+                "map_pins.title",
+                "map_pins.parent_id",
+                "map_pins.is_public",
+                "map_pins.lat",
+                "map_pins.lng",
+                "map_pins.map_link",
+                "map_pins.show_background",
+                "map_pins.show_border",
+                (eb) =>
+                  jsonObjectFrom(
+                    eb
+                      .selectFrom("characters")
+                      .whereRef("characters.id", "=", "map_pins.character_id")
+                      .select(["id", "first_name", "last_name", "portrait_id"]),
+                  ).as("character"),
+              ])
+              .whereRef("map_pins.parent_id", "=", "maps.id"),
+          ).as("map_pins"),
         ),
       )
       .$if(!!req.body?.relations?.map_layers, (qb) =>
@@ -66,6 +94,7 @@ export function map_router(server: FastifyInstance, _: any, done: any) {
           ),
         ),
       )
+
       .$if(!!req.body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_mapsTotags", "maps")))
       .executeTakeFirstOrThrow();
     rep.send({ data, message: "Success.", ok: true });
@@ -76,13 +105,19 @@ export function map_router(server: FastifyInstance, _: any, done: any) {
   server.post(
     "/update/:id",
     async (
-      req: FastifyRequest<{ Params: { id: string }; Body: { data: UpdateMapType; relations?: { tags?: { id: string }[] } } }>,
+      req: FastifyRequest<{
+        Params: { id: string };
+        Body: { data: UpdateMapType; relations?: { tags?: { id: string }[]; characters?: { id: string }[] } };
+      }>,
       rep,
     ) => {
       await db.transaction().execute(async (tx) => {
         if (req.body.data) {
           const parsedData = UpdateMapSchema.parse(req.body.data);
-          await tx.updateTable("maps").set(parsedData).executeTakeFirstOrThrow();
+
+          if (Object.values(parsedData).length) {
+            await tx.updateTable("maps").set(parsedData).executeTakeFirstOrThrow();
+          }
         }
         if (req.body?.relations) {
           if (req.body.relations?.tags)

@@ -46,7 +46,6 @@ model projects {
   calendars                    calendars[]
   random_tables                random_tables[]
   tags                         tags[]
-  // swatches                     swatches[]
   timelines                    timelines[]
   alter_names                  alter_names[]
   characters                   characters[]
@@ -67,7 +66,7 @@ model images {
   project_image    projects? @relation("project_image", fields: [project_image_id], references: [id])
   project_image_id String?   @unique
 
-  characters characters[] @relation("characters_to_images")
+  characters characters[] @relation("charactersToimages")
   documents  documents[]
   maps       maps[]
   map_pins   map_pins[]
@@ -97,11 +96,8 @@ model characters {
   portrait    images? @relation("character_portraits", fields: [portrait_id], references: [id], onDelete: SetNull)
   portrait_id String?
 
-  images                         images[]                         @relation("characters_to_images")
+  images                         images[]                         @relation("charactersToimages")
   characters_to_character_fields characters_to_character_fields[]
-
-  location maps?   @relation(fields: [map_id], references: [id])
-  map_id   String?
 
   documents documents[]
   nodes     nodes[]
@@ -247,8 +243,6 @@ model maps {
   tags      tags[]
   image_id  String?
   nodes     nodes[]
-
-  characters characters[]
 }
 
 model map_pins {
@@ -268,10 +262,11 @@ model map_pins {
   is_public        Boolean?
   tags             tags[]
 
-  map_link String?
-  doc_id   String?
-  image_id String?
-  nodes    nodes[]
+  map_link     String?
+  doc_id       String?
+  character_id String?
+  image_id     String?
+  nodes        nodes[]
 }
 
 model map_layers {
@@ -646,17 +641,6 @@ model tags {
 
   @@unique([title, project_id])
 }
-
-// model swatches {
-//   id    String  @id @default(dbgenerated("gen_random_uuid()"))
-//   title String?
-//   color String  @default("#595959")
-
-//   project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
-//   project_id String
-
-//   @@unique([color, project_id])
-// }
 
 model webhooks {
   id    String @id @default(dbgenerated("gen_random_uuid()"))
