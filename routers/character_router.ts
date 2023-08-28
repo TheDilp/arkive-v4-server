@@ -12,7 +12,7 @@ import { RequestBodyType } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { CreateTagRelations, GetRelationsForUpdating, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
-import { getGenerationOffset } from "../utils/transform";
+import { getCharacterFullName, getGenerationOffset } from "../utils/transform";
 
 export function character_router(server: FastifyInstance, _: any, done: any) {
   // #region create_routes
@@ -298,6 +298,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
                 .select([
                   "id",
                   "first_name",
+                  "nickname",
                   "last_name",
                   "project_id",
                   "portrait_id",
@@ -331,6 +332,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
             return {
               id: parent.id,
               first_name: parent.first_name,
+              nickname: parent.nickname,
               last_name: parent.last_name,
               portrait_id: parent.portrait_id,
               relation_type: parent.relation_type,
@@ -351,7 +353,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
             if (member)
               return {
                 id: member.id,
-                label: `${member.first_name} ${member?.last_name || ""}`,
+                label: getCharacterFullName(member.first_name as string, member?.nickname, member?.last_name),
                 x:
                   parsedGen * 150 +
                   index * (member?.relation_type === "father" ? -150 : 150) +
@@ -440,6 +442,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
             return {
               id: child.id,
               first_name: child.first_name,
+              nickname: child.nickname,
               last_name: child.last_name,
               portrait_id: child.portrait_id,
               relation_type: child.relation_type,
