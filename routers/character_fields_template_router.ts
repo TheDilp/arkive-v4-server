@@ -7,6 +7,7 @@ import omit from "lodash.omit";
 import { db } from "../database/db";
 import { insertCharacterFieldsSchema, InsertCharacterFieldsType } from "../database/validation/character_fields";
 import {
+  InsercharacterFieldsTemplateSchema,
   InsertCharacterFieldsTemplateType,
   UpdateCharacterFieldsTemplateSchema,
   UpdateCharacterFieldsTemplateType,
@@ -29,9 +30,10 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
       rep,
     ) => {
       await db.transaction().execute(async (tx) => {
+        const parsed = InsercharacterFieldsTemplateSchema.parse(req.body.data);
         const newTemplate = await tx
           .insertInto("character_fields_templates")
-          .values(req.body.data)
+          .values(parsed)
           .returning("id")
           .executeTakeFirstOrThrow();
 
