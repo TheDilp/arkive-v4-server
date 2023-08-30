@@ -14,6 +14,7 @@ import {
 } from "../database/validation/character_fields_templates";
 import { RequestBodyType } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
+import { constructOrdering } from "../utils/orderByConstructor";
 
 export function character_fields_templates_router(server: FastifyInstance, _: any, done: any) {
   // #region create_routes
@@ -62,6 +63,10 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
       )
       .$if(!!req.body?.filters?.and?.length || !!req.body?.filters?.or?.length, (qb) => {
         qb = constructFilter("character_fields_templates", qb, req.body.filters);
+        return qb;
+      })
+      .$if(!!req.body.orderBy?.length, (qb) => {
+        qb = constructOrdering(req.body.orderBy, qb);
         return qb;
       })
       .$if(!!req?.body?.relations, (qb) => {
