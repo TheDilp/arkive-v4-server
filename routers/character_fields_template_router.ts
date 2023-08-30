@@ -30,17 +30,18 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
       rep,
     ) => {
       await db.transaction().execute(async (tx) => {
-        const parsed = InsercharacterFieldsTemplateSchema.parse(req.body.data);
+        console.log(req.body.relations);
+        const parsed = InsercharacterFieldsTemplateSchema.parse(req.body);
         const newTemplate = await tx
           .insertInto("character_fields_templates")
-          .values(parsed)
+          .values(parsed.data)
           .returning("id")
           .executeTakeFirstOrThrow();
 
-        if (req.body.relations?.character_fields) {
+        if (parsed.relations?.character_fields) {
           const parsedFields = insertCharacterFieldsSchema
             .array()
-            .parse(req.body.relations.character_fields.map((field) => ({ ...field, parent_id: newTemplate.id })));
+            .parse(parsed.relations.character_fields.map((field) => ({ ...field, parent_id: newTemplate.id })));
           await tx.insertInto("character_fields").values(parsedFields).execute();
         }
       });
@@ -165,16 +166,16 @@ export function character_fields_templates_router(server: FastifyInstance, _: an
     ) => {
       if (req.body.data) {
         await db.transaction().execute(async (tx) => {
+          const parsedData = UpdateCharacterFieldsTemplateSchema.parse(req.body);
           if (req.body.data) {
-            const parsedData = UpdateCharacterFieldsTemplateSchema.parse(req.body.data);
             await tx
               .updateTable("character_fields_templates")
-              .set(parsedData)
-              .where("character_fields_templates.id", "=", parsedData.id as string)
+              .set(parsedData.data)
+              .where("character_fields_templates.id", "=", parsedData.data.id as string)
               .executeTakeFirstOrThrow();
           }
-          if (req.body?.relations?.character_fields) {
-            const { character_fields } = req.body.relations;
+          if (parsedData?.relations?.character_fields) {
+            const { character_fields } = parsedData.relations;
             const existingCharacterFields = await tx
               .selectFrom("character_fields")
               .select(["id", "parent_id"])

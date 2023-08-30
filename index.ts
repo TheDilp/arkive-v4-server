@@ -37,6 +37,7 @@ server.setErrorHandler(function (error, request, reply) {
   } else if (error instanceof ZodError) {
     this.log.error(error);
     // Send error response
+    console.log(JSON.stringify(error));
     reply.status(500).send({ message: "The data was not formatted correctly.", ok: false });
   } else {
     // fastify will use parent error handler to handle this
