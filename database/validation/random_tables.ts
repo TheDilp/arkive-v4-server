@@ -12,11 +12,13 @@ export type InsertRandomTableSuboptionType = Insertable<RandomTableSuboptions>;
 export type UpdateRandomTableSuboptionType = Updateable<RandomTableSuboptions>;
 
 export const InsertRandomTableOptionSchema = z.object({
-  title: z.string(),
-  description: z.string().nullable().optional(),
-  parent_id: z.string(),
-  icon: z.string().nullable().optional(),
-  icon_color: z.string().nullable().optional(),
+  data: z.object({
+    title: z.string(),
+    parent_id: z.string(),
+    description: z.string().nullable().optional(),
+    icon: z.string().nullable().optional(),
+    icon_color: z.string().nullable().optional(),
+  }),
 });
 
 export const InsertRandomTableSchema = z.object({

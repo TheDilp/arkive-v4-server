@@ -29,7 +29,9 @@ export function random_table_option_router(server: FastifyInstance, _: any, done
       rep,
     ) => {
       const { data } = req.body;
-      const parsedData = InsertRandomTableOptionSchema.array().parse(data);
+      const parsedData = InsertRandomTableOptionSchema.array()
+        .parse(data)
+        .map((option) => option.data);
 
       await db.transaction().execute(async (tx) => {
         await tx.insertInto("random_table_options").values(parsedData).execute();
