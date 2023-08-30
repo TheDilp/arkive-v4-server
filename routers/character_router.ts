@@ -200,6 +200,19 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
             ).as("portrait"),
           );
         }
+        if (req?.body?.relations?.locations) {
+          qb = qb.select((eb) =>
+            jsonArrayFrom(
+              eb
+                .selectFrom("map_pins")
+                .select(["map_pins.id as map_pin_id"])
+                .whereRef("map_pins.character_id", "=", "characters.id")
+                .leftJoin("maps", "maps.id", "map_pins.parent_id")
+                .select(["maps.id", "maps.title"]),
+            ).as("locations"),
+          );
+        }
+
         return qb;
       })
       .executeTakeFirstOrThrow();
