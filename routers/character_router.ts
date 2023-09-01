@@ -186,6 +186,31 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
                 ]),
             ).as("related_from"),
           );
+
+          qb = qb.select((eb) =>
+            jsonArrayFrom(
+              eb
+                .selectFrom("characters_relationships as cr")
+                .leftJoin("characters_relationships as cr2", "cr.character_b_id", "cr2.character_b_id")
+                .where((wb) =>
+                  wb.and([
+                    wb("cr.character_a_id", "=", req.params.id),
+                    wb.or([wb("cr2.relation_type", "=", "father"), wb("cr2.relation_type", "=", "mother")]),
+                  ]),
+                )
+                .leftJoin("characters", "characters.id", "cr2.character_a_id")
+                .where("characters.id", "!=", req.params.id)
+                .distinctOn("characters.id")
+                .select([
+                  "characters.id",
+                  "characters.first_name",
+                  "characters.nickname",
+                  "characters.last_name",
+                  "characters.portrait_id",
+                  "cr.relation_type",
+                ]),
+            ).as("siblings"),
+          );
         }
         if (req.body?.relations?.tags) {
           qb = qb.select((eb) => TagQuery(eb, "_charactersTotags", "characters"));
@@ -208,7 +233,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
                 .select(["map_pins.id as map_pin_id"])
                 .whereRef("map_pins.character_id", "=", "characters.id")
                 .leftJoin("maps", "maps.id", "map_pins.parent_id")
-                .select(["maps.id", "maps.title"]),
+                .select(["maps.id", "maps.title", "maps.image_id"]),
             ).as("locations"),
           );
         }
