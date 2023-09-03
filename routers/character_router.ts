@@ -108,7 +108,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
         qb = constructFilter("characters", qb, req.body.filters);
         return qb;
       })
-      .$if(!!req.body?.relationFilters?.tags, (qb) =>
+      .$if(!!req.body?.relationFilters?.tags?.length, (qb) =>
         constructTagFilter("characters", qb, "_charactersTotags", req.body?.relationFilters?.tags || [], "A", "B"),
       )
 
