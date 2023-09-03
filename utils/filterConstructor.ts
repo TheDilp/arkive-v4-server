@@ -1,7 +1,7 @@
 import { ExpressionBuilder, SelectQueryBuilder } from "kysely";
 import { DB } from "kysely-codegen";
 
-import { DBKeys } from "../database/types";
+import { DBKeys, TagsRelationTables } from "../database/types";
 import { FilterEnum } from "../enums/requestEnums";
 import { RequestBodyFiltersType } from "../types/requestTypes";
 
@@ -38,6 +38,23 @@ export function constructFilter(
     if (orFilters?.length) finalFilters.push(or(orFilters));
     return and(finalFilters);
   });
+}
+
+export function constructTagFilter(
+  table: DBKeys,
+  queryBuilder: SelectQueryBuilder<DB, any, any>,
+  relation_table: TagsRelationTables,
+  tagIds: string[],
+  relationColumn: "A" | "B",
+  tagColumn: "A" | "B",
+) {
+  return (
+    queryBuilder
+      .leftJoin(`${relation_table} as tagRelationTable`, `tagRelationTable.${relationColumn}`, `${table}.id`)
+      .select([`tagRelationTable.${relationColumn}`, `tagRelationTable.${tagColumn}`])
+      // @ts-ignore
+      .where(`tagRelationTable.${tagColumn}`, "in", tagIds)
+  );
 }
 
 export function relationConstructor(

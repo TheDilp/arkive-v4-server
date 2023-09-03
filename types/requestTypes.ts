@@ -53,4 +53,7 @@ export interface RequestBodyType {
     and?: RequestFilterType[];
     or?: RequestFilterType[];
   };
+  relationFilter?: {
+    [key: string]: string[];
+  };
 }

@@ -9,7 +9,7 @@ import uniqBy from "lodash.uniqby";
 import { db } from "../database/db";
 import { InsertCharacterSchema, InsertCharacterType, UpdateCharacterSchema, UpdateCharacterType } from "../database/validation";
 import { RequestBodyType } from "../types/requestTypes";
-import { constructFilter } from "../utils/filterConstructor";
+import { constructFilter, constructTagFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { CreateTagRelations, GetRelationsForUpdating, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 import { getCharacterFullName, getGenerationOffset } from "../utils/transform";
@@ -108,6 +108,9 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
         qb = constructFilter("characters", qb, req.body.filters);
         return qb;
       })
+      .$if(!!req.body?.relationFilter?.tags, (qb) =>
+        constructTagFilter("characters", qb, "_charactersTotags", req.body?.relationFilter?.tags || [], "A", "B"),
+      )
 
       .$if(!!req.body.orderBy?.length, (qb) => {
         qb = constructOrdering(req.body.orderBy, qb);
