@@ -108,8 +108,8 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
         qb = constructFilter("characters", qb, req.body.filters);
         return qb;
       })
-      .$if(!!req.body?.relationFilter?.tags, (qb) =>
-        constructTagFilter("characters", qb, "_charactersTotags", req.body?.relationFilter?.tags || [], "A", "B"),
+      .$if(!!req.body?.relationFilters?.tags, (qb) =>
+        constructTagFilter("characters", qb, "_charactersTotags", req.body?.relationFilters?.tags || [], "A", "B"),
       )
 
       .$if(!!req.body.orderBy?.length, (qb) => {
