@@ -237,6 +237,19 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
             ).as("locations"),
           );
         }
+        if (req?.body?.relations?.documents) {
+          qb = qb.select((eb) =>
+            jsonArrayFrom(
+              eb
+                .selectFrom("_charactersTodocuments")
+                .where("_charactersTodocuments.A", "=", req.params.id)
+                .leftJoin("documents", "_charactersTodocuments.B", "documents.id")
+                .where("documents.is_folder", "is not", true)
+                .where("documents.is_template", "is not", true)
+                .select(["documents.id", "documents.icon", "documents.title"]),
+            ).as("documents"),
+          );
+        }
 
         return qb;
       })
@@ -556,6 +569,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
             character_fields?: { id: string; value: string }[];
             related_to?: { id: string; relation_type: string }[];
             related_from?: { id: string; relation_type: string }[];
+            documents?: { id: string }[];
             tags?: { id: string }[];
           };
         };
@@ -687,11 +701,85 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
             );
           }
         }
-        if (req.body.relations?.tags?.length) {
-          UpdateTagRelations({ relationalTable: "_charactersTotags", id: req.params.id, newTags: req.body.relations.tags, tx });
+        if (req.body.relations?.documents) {
+          const existingDocuments = await tx
+            .selectFrom("_charactersTodocuments")
+            .select(["_charactersTodocuments.B"])
+            .where("_charactersTodocuments.A", "=", req.params.id)
+            .execute();
+          const existingIds = existingDocuments.map((field) => field.B);
+          const [idsToRemove, itemsToAdd] = GetRelationsForUpdating(existingIds, req.body.relations?.documents);
+
+          if (idsToRemove.length) {
+            await tx.deleteFrom("_charactersTodocuments").where("_charactersTodocuments.B", "in", idsToRemove).execute();
+          }
+          if (itemsToAdd.length) {
+            await tx
+              .insertInto("_charactersTodocuments")
+              .values(
+                itemsToAdd.map((item) => ({
+                  A: req.params.id,
+                  B: item.id,
+                })),
+              )
+              .execute();
+          }
+        }
+        if (req.body.relations?.tags) {
+          if (req.body.relations.tags.length)
+            UpdateTagRelations({
+              relationalTable: "_charactersTotags",
+              id: req.params.id,
+              newTags: req.body.relations.tags,
+              tx,
+            });
+          else await tx.deleteFrom("_charactersTotags").where("A", "=", req.params.id).execute();
         }
       });
       rep.send({ message: "Character successfully updated.", ok: true });
+    },
+  );
+
+  server.post(
+    "/add/:id",
+    async (
+      req: FastifyRequest<{
+        Params: { id: string };
+        Body: { data: { id: string }; relations: { tags: { id: string }[]; documents: { id: string }[] } };
+      }>,
+      rep,
+    ) => {
+      await db.transaction().execute(async (tx) => {
+        if (req.body.relations.documents) {
+          const existingDocumentIds = (
+            await tx.selectFrom("_charactersTodocuments").select(["B"]).where("A", "=", req.params.id).execute()
+          ).map((item) => item.B);
+          const filteredRequestIds = req.body.relations.documents
+            .map((doc) => doc.id)
+            .filter((id) => !existingDocumentIds.includes(id));
+
+          if (filteredRequestIds.length) {
+            await tx
+              .insertInto("_charactersTodocuments")
+              .values(filteredRequestIds.map((id) => ({ A: req.params.id, B: id })))
+              .execute();
+          }
+        }
+
+        if (req.body.relations.tags) {
+          const existingTagIds = (
+            await tx.selectFrom("_charactersTotags").select(["B"]).where("A", "=", req.params.id).execute()
+          ).map((item) => item.B);
+          const filteredRequestIds = req.body.relations.tags.map((tag) => tag.id).filter((id) => !existingTagIds.includes(id));
+          if (filteredRequestIds.length) {
+            await tx
+              .insertInto("_charactersTotags")
+              .values(filteredRequestIds.map((id) => ({ A: req.params.id, B: id })))
+              .execute();
+          }
+        }
+      });
+      rep.send({ message: "Items successfully added.", ok: true });
     },
   );
 
