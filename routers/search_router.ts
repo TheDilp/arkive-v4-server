@@ -97,6 +97,22 @@ export function search_router(server: FastifyInstance, _: any, done: any) {
         });
       }
 
+      if (type === "maps") {
+        const maps = await db
+          .selectFrom("maps")
+          .select(["id", "title"])
+          .where("title", "ilike", `%${req.body.data.search_term.toLowerCase()}%`)
+          .where("project_id", "=", req.params.project_id)
+          .limit(req.body.limit || 10)
+          .execute();
+
+        rep.send({
+          data: maps,
+          message: "Success",
+          ok: true,
+        });
+      }
+
       // result = await db
       //   .selectFrom(type)
       //   .select(fields as SelectExpression<DB, SearchableEntities>[])
