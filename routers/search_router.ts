@@ -3,6 +3,8 @@ import { SelectExpression } from "kysely";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
+import { EntitiesWithTags } from "../database/types";
+import { EntitiesWithTagsTables, SubEntityEnum } from "../enums/entityEnums";
 import { SearchableEntities, SearchableMentionEntities } from "../types/requestTypes";
 
 export function search_router(server: FastifyInstance, _: any, done: any) {
@@ -24,7 +26,11 @@ export function search_router(server: FastifyInstance, _: any, done: any) {
 
       if (type === "characters") fields.push("first_name", "nickname", "last_name", "portrait_id");
       else if (type === "tags") fields.push("title", "color");
-      else fields.push("title");
+
+      if (type === "nodes" || type === "edges") fields.push("label");
+      else if (type !== "characters") fields.push("title");
+
+      if (SubEntityEnum.includes(type)) fields.push("parent_id");
 
       const result = await db
         .selectFrom(type)
@@ -41,6 +47,7 @@ export function search_router(server: FastifyInstance, _: any, done: any) {
         )
 
         .execute();
+
       rep.send({
         data: result.map((item) => ({
           value: item.id,
@@ -288,29 +295,43 @@ export function search_router(server: FastifyInstance, _: any, done: any) {
       rep.send({ data: result, ok: true, message: "Success" });
     },
   );
-  // server.post(
-  //   "/:project_id/:type/tags",
-  //   async (
-  //     req: FastifyRequest<{ Params: { project_id: string; type: string }; Body: { tag_ids: string[]; fields: string[] } }>,
-  //     rep,
-  //   ) => {
-  //     const { type } = req.params;
-  //     const { tag_ids = [] } = req.body;
-  //     if (tag_ids.length) {
-  //       if (type === "characters") {
-  //         const filteredCharacters = await db
-  //           .selectFrom("_charactersTotags")
-  //           .where("_charactersTotags.B", "in", tag_ids)
-  //           .leftJoin("characters", "characters.id", "_charactersTotags.A")
-  //           .$if(!req.body.fields?.length, (qb) => qb.selectAll())
-  //           .$if(!!req.body.fields?.length, (qb) =>
-  //             qb.clearSelect().select(req.body.fields as SelectExpression<DB, "characters">[]),
-  //           )
-  //           .execute();
-  //       }
-  //     }
-  //   },
-  // );
+  server.post(
+    "/:project_id/all/tags",
+    async (req: FastifyRequest<{ Params: { project_id: string }; Body: { data: { tag_ids: string[] } } }>, rep) => {
+      const { tag_ids = [] } = req.body.data;
+      if (tag_ids.length) {
+        const requests = EntitiesWithTagsTables.map((tb) => {
+          const entity_name = tb.replace("_", "").replace("Totags", "") as EntitiesWithTags;
+
+          const fields = ["id"];
+
+          if (entity_name === "characters") fields.push("first_name", "last_name", "portrait_id");
+          else if (entity_name === "nodes" || entity_name === "edges") fields.push("label");
+          else if (entity_name !== "cards") fields.push("title");
+          if (SubEntityEnum.includes(entity_name)) fields.push("parent_id");
+
+          return {
+            name: entity_name,
+            request: db
+              .selectFrom(tb)
+              .where(`${tb}.B`, "in", tag_ids)
+              .leftJoin(entity_name, `${entity_name}.id`, `${tb}.A`)
+              // @ts-ignore
+              .select(fields as SelectExpression<DB, SearchableEntities>[])
+              .distinctOn("id"),
+          };
+        });
+        const result = await Promise.all(
+          requests.map(async (item) => ({
+            name: item.name,
+            result: await item.request.execute(),
+          })),
+        );
+
+        rep.send({ data: result, ok: true, message: "Success." });
+      }
+    },
+  );
 
   done();
 }

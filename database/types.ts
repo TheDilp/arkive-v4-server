@@ -4,13 +4,13 @@ export type DBKeys = keyof DB;
 export type DBValues = DB[DBKeys];
 
 export type TagsRelationTables =
+  | "_charactersTotags"
+  | "_documentsTotags"
   | "_boardsTotags"
   | "_mapsTotags"
   | "_calendarsTotags"
   | "_cardsTotags"
-  | "_charactersTotags"
   | "_dictionariesTotags"
-  | "_documentsTotags"
   | "_edgesTotags"
   | "_nodesTotags"
   | "_screensTotags";
