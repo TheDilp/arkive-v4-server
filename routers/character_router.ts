@@ -410,7 +410,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
                 label: getCharacterFullName(member.first_name as string, member?.nickname, member?.last_name),
                 x:
                   parsedGen * 150 +
-                  index * (member?.relation_type === "father" ? -150 : 150) +
+                  index * (member?.relation_type === "father" ? 450 : 150) +
                   (generationCount >= 3 ? getGenerationOffset(index, generationCount) : 0),
                 y: parsedGen < 0 ? parsedGen * 150 : parsedGen * -150,
                 width: 50,
