@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
-import { SelectExpression } from "kysely";
+import { SelectExpression, sql } from "kysely";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
@@ -297,30 +297,56 @@ export function search_router(server: FastifyInstance, _: any, done: any) {
   );
   server.post(
     "/:project_id/all/tags",
-    async (req: FastifyRequest<{ Params: { project_id: string }; Body: { data: { tag_ids: string[] } } }>, rep) => {
-      const { tag_ids = [] } = req.body.data;
+    async (
+      req: FastifyRequest<{ Params: { project_id: string }; Body: { data: { tag_ids: string[]; match: "all" | "any" } } }>,
+      rep,
+    ) => {
+      const { tag_ids = [], match = "any" } = req.body.data;
       if (tag_ids.length) {
         const requests = EntitiesWithTagsTables.map((tb) => {
           const entity_name = tb.replace("_", "").replace("Totags", "") as EntitiesWithTags;
 
-          const fields = ["id"];
+          const fields = [`${entity_name}.id`];
 
-          if (entity_name === "characters") fields.push("first_name", "last_name", "portrait_id");
+          if (entity_name === "characters")
+            fields.push("characters.first_name", "characters.last_name", "characters.portrait_id");
           else if (entity_name === "nodes" || entity_name === "edges") fields.push("label");
-          else if (entity_name !== "cards") fields.push("title");
+          else if (entity_name !== "cards") fields.push(`${entity_name}.title`);
           if (SubEntityEnum.includes(entity_name)) fields.push("parent_id");
+
+          // SELECT entity_name.*
+          // FROM entity_name
+          // JOIN tb ON entity_name.id = tb.A
+          // JOIN tags ON tags.id = tb.B
+          // WHERE tags.id = 'id_1' OR tags.id = 'id_2'
+          // GROUP BY entity_name.id
+          // HAVING COUNT(DISTINCT tags.id) >= 2;
 
           return {
             name: entity_name,
-            request: db
-              .selectFrom(tb)
-              .where(`${tb}.B`, "in", tag_ids)
-              .leftJoin(entity_name, `${entity_name}.id`, `${tb}.A`)
-              // @ts-ignore
-              .select(fields as SelectExpression<DB, SearchableEntities>[])
-              .distinctOn("id"),
+            request:
+              match === "any"
+                ? db
+                    .selectFrom(tb)
+                    .where(`${tb}.B`, "in", tag_ids)
+                    .leftJoin(entity_name, `${entity_name}.id`, `${tb}.A`)
+                    // @ts-ignore
+                    .select(fields as SelectExpression<DB, SearchableEntities>[])
+                    .distinctOn("id")
+                : db
+                    .selectFrom(entity_name)
+                    // @ts-ignore
+                    .select(fields as SelectExpression<DB, SearchableEntities>[])
+                    .leftJoin(tb, `${entity_name}.id`, `${tb}.A`)
+                    // @ts-ignore
+                    .leftJoin("tags", "tags.id", `${tb}.B`)
+                    // @ts-ignore
+                    .where("tags.id", "in", tag_ids)
+                    .groupBy(`${entity_name}.id`)
+                    .having(sql`count(distinct tags.id)`, "=", tag_ids.length),
           };
         });
+
         const result = await Promise.all(
           requests.map(async (item) => ({
             name: item.name,

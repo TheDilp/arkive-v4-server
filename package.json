@@ -15,7 +15,7 @@
     "@fastify/static": "^6.10.2",
     "fastify": "^4.19.2",
     "fastify-file-upload": "^4.0.0",
-    "kysely": "^0.26.0",
+    "kysely": "^0.26.3",
     "lodash.groupby": "^4.6.0",
     "lodash.omit": "^4.5.0",
     "lodash.uniqby": "^4.7.0",
