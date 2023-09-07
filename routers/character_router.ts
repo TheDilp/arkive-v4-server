@@ -519,7 +519,7 @@ export function character_router(server: FastifyInstance, _: any, done: any) {
                 label: `${member.first_name} ${member?.last_name || ""}`,
                 x:
                   parsedGen * 150 +
-                  index * (member?.relation_type === "father" ? -150 : 150) +
+                  index * (member?.relation_type === "father" ? 450 : 150) +
                   (generationCount >= 3 ? getGenerationOffset(index, generationCount) : 0) +
                   (parsedGen === 0 ? -150 : 0),
                 y: parsedGen * 150,
