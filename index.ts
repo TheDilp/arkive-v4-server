@@ -25,6 +25,7 @@ import {
   tag_router,
   user_router,
 } from "./routers";
+import { calendar_router } from "./routers/calendar_router";
 
 const server = fastify();
 
@@ -73,6 +74,7 @@ server.register(
     instance.register(board_router, { prefix: "/graphs" });
     instance.register(node_router, { prefix: "/nodes" });
     instance.register(edge_router, { prefix: "/edges" });
+    instance.register(calendar_router, { prefix: "/calendars" });
     instance.register(random_table_router, { prefix: "/random_tables" });
     instance.register(random_table_option_router, { prefix: "/random_table_options" });
     instance.register(search_router, { prefix: "/search" });
