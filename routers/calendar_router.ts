@@ -51,8 +51,15 @@ export function calendar_router(server: FastifyInstance, _: any, done: any) {
       .where("calendars.id", "=", req.params.id)
       .$if(!req.body.fields?.length, (qb) => qb.selectAll())
       .$if(!!req.body.fields?.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "calendars">[]))
-      .$if(!!req.body?.relations?.days, (qb) =>
-        qb.select((eb) => jsonArrayFrom(eb.selectFrom("months").where("months.parent_id", "=", req.params.id)).as("months")),
+      .$if(!!req.body?.relations?.months, (qb) =>
+        qb.select((eb) =>
+          jsonArrayFrom(
+            eb
+              .selectFrom("months")
+              .select(["months.id", "months.days", "months.sort", "months.title"])
+              .where("months.parent_id", "=", req.params.id),
+          ).as("months"),
+        ),
       )
       .executeTakeFirstOrThrow();
 

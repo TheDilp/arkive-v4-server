@@ -590,7 +590,6 @@ model months {
   calendar  calendars @relation(fields: [parent_id], references: [id], onDelete: Cascade)
   sort      Int       @default(0)
   parent_id String
-  events    events[]
 }
 
 model events {
@@ -607,11 +606,18 @@ model events {
   text_color       String?
 
   calendar calendars? @relation(fields: [calendar_id], references: [id], onDelete: Cascade)
-  year     Int
-  month    months     @relation(fields: [month_id], references: [id], onDelete: Cascade)
-  day      Int
-  hours    Int?
-  minutes  Int?
+
+  startDay Int
+  endDay   Int?
+
+  startMonth Int
+  endMonth   Int?
+
+  startYear Int
+  endYear   Int?
+
+  hours   Int?
+  minutes Int?
 
   tags tags[]
 
