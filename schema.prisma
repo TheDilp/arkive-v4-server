@@ -607,14 +607,14 @@ model events {
 
   calendar calendars @relation(fields: [parent_id], references: [id], onDelete: Cascade)
 
-  startDay Int
-  endDay   Int?
+  start_day Int
+  end_day   Int?
 
-  startMonth Int
-  endMonth   Int?
+  start_month Int
+  end_month   Int?
 
-  startYear Int
-  endYear   Int?
+  start_year Int
+  end_year   Int?
 
   hours   Int?
   minutes Int?

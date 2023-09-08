@@ -48,6 +48,16 @@ export function event_router(server: FastifyInstance, _: any, done: any) {
 
     rep.send({ data, message: "Success.", ok: true });
   });
+  server.post("/:id", async (req: FastifyRequest<{ Params: { id: string }; Body: RequestBodyType }>, rep) => {
+    const data = await db
+      .selectFrom("events")
+      .where("events.id", "=", req.params.id)
+      .$if(!req.body.fields?.length, (qb) => qb.selectAll())
+      .$if(!!req.body.fields?.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "events">[]))
+      .executeTakeFirstOrThrow();
+
+    rep.send({ data, message: "Success.", ok: true });
+  });
 
   done();
 }
