@@ -3,10 +3,11 @@ import { SelectExpression } from "kysely";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertEventSchema, InsertEventType } from "../database/validation";
+import { InsertEventSchema, InsertEventType, UpdateEventSchema, UpdateEventType } from "../database/validation";
 import { RequestBodyType } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
+import { TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 
 export function event_router(server: FastifyInstance, _: any, done: any) {
   server.post(
@@ -54,10 +55,39 @@ export function event_router(server: FastifyInstance, _: any, done: any) {
       .where("events.id", "=", req.params.id)
       .$if(!req.body.fields?.length, (qb) => qb.selectAll())
       .$if(!!req.body.fields?.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "events">[]))
+      .$if(!!req.body?.relations, (qb) => {
+        if (req.body?.relations?.tags) {
+          qb = qb.select((eb) => TagQuery(eb, "_eventsTotags", "events"));
+        }
+        return qb;
+      })
       .executeTakeFirstOrThrow();
 
     rep.send({ data, message: "Success.", ok: true });
   });
+  server.post(
+    "/update/:id",
+    async (
+      req: FastifyRequest<{ Params: { id: string }; Body: { data: UpdateEventType; relations?: { tags?: { id: string }[] } } }>,
+      rep,
+    ) => {
+      const parsedData = UpdateEventSchema.parse(req.body);
+      if (parsedData) {
+        await db.transaction().execute(async (tx) => {
+          await tx.updateTable("events").where("id", "=", req.params.id).set(parsedData.data).execute();
+          if (parsedData?.relations?.tags?.length) {
+            UpdateTagRelations({
+              relationalTable: "_eventsTotags",
+              id: req.params.id,
+              newTags: parsedData.relations?.tags,
+              tx,
+            });
+          } else await tx.deleteFrom("_eventsTotags").where("A", "=", req.params.id).execute();
+        });
+      }
+      rep.send({ message: "Success.", ok: true });
+    },
+  );
 
   done();
 }
