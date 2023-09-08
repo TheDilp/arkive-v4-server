@@ -2,8 +2,8 @@ import { Insertable, Updateable } from "kysely";
 import { Timelines } from "kysely-codegen";
 import { z } from "zod";
 
-export type InsertMapType = Insertable<Timelines>;
-export type UpdateMapType = Updateable<Timelines>;
+export type InsertTimelineType = Insertable<Timelines>;
+export type UpdateTimelineType = Updateable<Timelines>;
 
 export const InsertTimelineSchema = z.object({
   data: z.object({

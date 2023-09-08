@@ -480,8 +480,8 @@ model screens {
   children  screens[] @relation("parentChildScreens")
 
   icon      String
-  is_folder Boolean @default(false)
-  is_public Boolean @default(false)
+  is_folder Boolean?
+  is_public Boolean?
 
   section_size String     @default("md")
   sections     sections[]
@@ -526,8 +526,8 @@ model dictionaries {
   project_id String
 
   icon      String?
-  is_folder Boolean @default(false)
-  is_public Boolean @default(false)
+  is_folder Boolean?
+  is_public Boolean?
 
   parent_id String?
   parent    dictionaries?  @relation("parentChildDictionaries", fields: [parent_id], references: [id], onDelete: Cascade)
@@ -593,19 +593,19 @@ model months {
 }
 
 model events {
-  id               String  @id @default(dbgenerated("gen_random_uuid()"))
-  title            String
-  description      String?
-  background_image images? @relation(fields: [image_id], references: [id])
+  id          String  @id @default(dbgenerated("gen_random_uuid()"))
+  title       String
+  description String?
+  image       images? @relation(fields: [image_id], references: [id])
 
-  is_public Boolean @default(false)
+  is_public Boolean?
 
   document documents? @relation(fields: [document_id], references: [id])
 
   background_color String?
   text_color       String?
 
-  calendar calendars? @relation(fields: [calendar_id], references: [id], onDelete: Cascade)
+  calendar calendars @relation(fields: [parent_id], references: [id], onDelete: Cascade)
 
   startDay Int
   endDay   Int?
@@ -621,9 +621,8 @@ model events {
 
   tags tags[]
 
-  calendar_id String?
+  parent_id   String
   document_id String?
-  month_id    String
   image_id    String?
   nodes       nodes[]
 }

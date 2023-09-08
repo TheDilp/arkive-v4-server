@@ -25,4 +25,3 @@ export const UpdateCharacterSchema = z.object({
   portrait_id: z.string().nullable().optional(),
   map_pin_id: z.string().nullable().optional(),
 });
-export type CharacterColumns = keyof Characters;
