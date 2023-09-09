@@ -9,6 +9,7 @@ export const InsertMonthSchema = z.object({
   title: z.string(),
   days: z.number(),
   sort: z.number(),
+  // Optional because it's being attached to a calendar which will provide the parent_id
   parent_id: z.string().optional(),
 });
 export const UpdateMonthSchema = z.object({
