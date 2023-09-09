@@ -31,6 +31,8 @@ export function tag_router(server: FastifyInstance, _: any, done: any) {
         qb = constructOrdering(req.body.orderBy, qb);
         return qb;
       })
+      .limit(req.body?.pagination?.limit || 10)
+      .offset((req.body?.pagination?.page ?? 0) * (req.body?.pagination?.limit || 10))
       .where("project_id", "=", req.body.data.project_id)
       .execute();
 

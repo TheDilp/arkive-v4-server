@@ -260,7 +260,7 @@ export function search_router(server: FastifyInstance, _: any, done: any) {
           .where("label", "ilike", `%${search_term}%`)
           .leftJoin("boards", "boards.id", "nodes.parent_id")
           .where("boards.project_id", "=", project_id)
-          .select(["nodes.id", "nodes.parent_id"])
+          .select(["nodes.id", "nodes.label", "nodes.parent_id"])
           .limit(5),
       };
       const edgeSearch = {
@@ -270,10 +270,18 @@ export function search_router(server: FastifyInstance, _: any, done: any) {
           .where("label", "ilike", `%${search_term}%`)
           .leftJoin("boards", "boards.id", "edges.parent_id")
           .where("boards.project_id", "=", project_id)
-          .select(["edges.id", "edges.parent_id"])
+          .select(["edges.id", "edges.label", "edges.parent_id"])
           .limit(5),
       };
-
+      const calendarSearch = {
+        name: "calendars",
+        request: db
+          .selectFrom("calendars")
+          .where("calendars.title", "ilike", `%${search_term}%`)
+          .where("project_id", "=", project_id)
+          .select(["id", "title", "icon"])
+          .limit(5),
+      };
       const requests = [
         charactersSearch,
         documentSearch,
@@ -284,6 +292,7 @@ export function search_router(server: FastifyInstance, _: any, done: any) {
         graphSearch,
         nodeSearch,
         edgeSearch,
+        calendarSearch,
       ];
       const result = await Promise.all(
         requests.map(async (item) => ({
@@ -313,14 +322,6 @@ export function search_router(server: FastifyInstance, _: any, done: any) {
           else if (entity_name === "nodes" || entity_name === "edges") fields.push("label");
           else if (entity_name !== "cards") fields.push(`${entity_name}.title`);
           if (SubEntityEnum.includes(entity_name)) fields.push("parent_id");
-
-          // SELECT entity_name.*
-          // FROM entity_name
-          // JOIN tb ON entity_name.id = tb.A
-          // JOIN tags ON tags.id = tb.B
-          // WHERE tags.id = 'id_1' OR tags.id = 'id_2'
-          // GROUP BY entity_name.id
-          // HAVING COUNT(DISTINCT tags.id) >= 2;
 
           return {
             name: entity_name,
