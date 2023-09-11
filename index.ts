@@ -1,4 +1,4 @@
-import cors from "@fastify/cors";
+// import cors from "@fastify/cors";
 import fastifyStatic from "@fastify/static";
 import fastify, { errorCodes } from "fastify";
 import fileUpload from "fastify-file-upload";
@@ -32,7 +32,7 @@ import { month_router } from "./routers/month_router";
 import { timeline_router } from "./routers/timeline_router";
 import { word_router } from "./routers/word_router";
 import Elysia, { t } from "elysia";
-
+import { cors } from "@elysiajs/cors";
 const server = fastify();
 
 server.setErrorHandler(function (error, request, reply) {
@@ -57,9 +57,9 @@ server.register(fastifyStatic, {
 });
 server.register(fileUpload);
 
-server.register(cors, {
-  origin: process.env.NODE_ENV === "development" ? "*" : "https://thearkive.app",
-});
+// server.register(cors, {
+//  ,
+// });
 
 server.register(authentication_router, { prefix: "/api/v1/auth" });
 
@@ -68,7 +68,7 @@ server.register(
     // instance.addHook("onRequest", async (request, reply) => {});
     instance.register(asset_router, { prefix: "/assets" });
     instance.register(user_router, { prefix: "/users" });
-    instance.register(project_router, { prefix: "/projects" });
+    // instance.register(project_router, { prefix: "/projects" });
     instance.register(tag_router, { prefix: "/tags" });
     // instance.register(character_router, { prefix: "/characters" });
     instance.register(character_fields_templates_router, { prefix: "/character_fields_templates" });
@@ -102,7 +102,7 @@ server.register(
 // });
 
 const app = new Elysia()
-  .use(health_check_router)
+  .use(cors({ origin: process.env.NODE_ENV === "development" ? "*" : "https://thearkive.app" }))
   .onError(({ code, set }) => {
     if (code === "NOT_FOUND") {
       set.status = 404;
@@ -112,6 +112,13 @@ const app = new Elysia()
       set.status = 500;
       return { message: "There was an error with your request.", ok: false };
     }
+    if (code === "VALIDATION") {
+      set.status = 400;
+      return { message: "The payload was not formatted correctly.", ok: false };
+    }
+  })
+  .onParse((request, contentType) => {
+    console.log(contentType);
   })
   .guard({
     response: {
@@ -125,5 +132,5 @@ const app = new Elysia()
       }),
     },
   })
-  .group("/api/v1", (server) => server.use(character_router))
+  .group("/api/v1", (server) => server.use(health_check_router).use(project_router).use(character_router))
   .listen((process.env.PORT as string) || 3000);

@@ -265,7 +265,7 @@ export function character_router(app: Elysia) {
           response: ResponseWithDataSchema,
         },
       )
-      .post(
+      .get(
         "/family/:id",
         async ({ params }) => {
           let finalNodes: any[] = [];

@@ -4,62 +4,57 @@ import { db } from "../database/db";
 import {
   InsertProjectSchema,
   InsertProjectType,
+  ProjectistSchema,
   UpdateProjectSchema,
   UpdateProjectType,
 } from "../database/validation/projects";
-import { RequestBodyType } from "../types/requestTypes";
+import { RequestBodyType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import Elysia from "elysia";
+import { MessageEnum } from "../enums/requestEnums";
 
-export function project_router(server: FastifyInstance, _: any, done: any) {
-  // #region create_routes
-  server.post("/create", async (req: FastifyRequest<{ Body: { data: InsertProjectType } }>, rep) => {
-    const parsed = InsertProjectSchema.parse(req.body.data);
-    await db.insertInto("projects").values(parsed).execute();
-    rep.send({ message: "Project successfully created.", ok: true });
-  });
-  // #endregion create_routes
-  // #region read_routes
-  server.post("/", async (req: FastifyRequest<{ Body: RequestBodyType }>, rep) => {
-    if (req.body.data?.owner_id) {
-      const data = await db
-        .selectFrom("projects")
-        .select(["projects.id", "projects.title"])
-        .where("owner_id", "=", req.body.data.owner_id)
-        .execute();
-      rep.send({ data, message: "Success", ok: true });
-    }
-    rep.send({ data: [], message: "No projects found.", ok: false });
-  });
-  // #endregion read_routes
-  // #region update_routes
-  server.post(
-    "/update/:id",
-    async (
-      req: FastifyRequest<{
-        Params: { id: string };
-        Body: { data: UpdateProjectType };
-      }>,
-      rep,
-    ) => {
-      const data = UpdateProjectSchema.parse(req.body.data);
-      await db.updateTable("projects").where("projects.id", "=", req.params.id).set(data).execute();
-      rep.send({ message: "Project successfully updated.", ok: true });
-    },
+export function project_router(app: Elysia) {
+  return app.group("/projects", (server) =>
+    server
+      .post(
+        "/create",
+        async ({ body }) => {
+          await db.insertInto("projects").values(body.data).execute();
+          return { message: `Project ${MessageEnum.successfully_created}`, ok: true };
+        },
+        {
+          body: InsertProjectSchema,
+          response: ResponseSchema,
+        },
+      )
+      .post(
+        "/",
+        async ({ body }) => {
+          const data = await db
+            .selectFrom("projects")
+            .select(["projects.id", "projects.title"])
+            .where("owner_id", "=", body.data.owner_id)
+            .execute();
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: ProjectistSchema,
+          response: ResponseWithDataSchema,
+        },
+      )
+      .post(
+        "/update/:id",
+        async ({ params, body }) => {
+          await db.updateTable("projects").where("projects.id", "=", params.id).set(body.data).execute();
+          return { message: `Project ${MessageEnum.successfully_updated}`, ok: true };
+        },
+        {
+          body: UpdateProjectSchema,
+          response: ResponseSchema,
+        },
+      )
+      .delete("/:id", async ({ params }) => {
+        await db.deleteFrom("projects").where("projects.id", "=", params.id).execute();
+        return { message: `Project ${MessageEnum.successfully_deleted}`, ok: true };
+      }),
   );
-  // #endregion update_routes
-  // #region delete_routes
-  server.delete(
-    "/:id",
-    async (
-      req: FastifyRequest<{
-        Params: { id: string };
-      }>,
-      rep,
-    ) => {
-      await db.deleteFrom("projects").where("projects.id", "=", req.params.id).execute();
-      rep.send({ message: "Project successfully deleted.", ok: true });
-    },
-  );
-  // #endregion delete_routes
-
-  done();
 }
