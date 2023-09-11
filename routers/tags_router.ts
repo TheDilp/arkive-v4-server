@@ -1,61 +1,63 @@
-import { FastifyInstance, FastifyRequest } from "fastify";
-
+import Elysia from "elysia";
 import { db } from "../database/db";
-import { InsertTagSchema, InsertTagType, UpdateTagSchema, UpdateTagType } from "../database/validation";
-import { RequestBodyType } from "../types/requestTypes";
+import { InsertTagSchema, TagListSchema, UpdateTagSchema } from "../database/validation";
+import { MessageEnum } from "../enums/requestEnums";
+import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructOrdering } from "../utils/orderByConstructor";
 
-export function tag_router(server: FastifyInstance, _: any, done: any) {
-  // #region create_routes
+export function tag_router(app: Elysia) {
+  return app.group("/tags", (server) =>
+    server
+      .post(
+        "/create",
+        async ({ body }) => {
+          await db.insertInto("tags").values(body).execute();
+          return { message: `Tags ${MessageEnum.successfully_created}`, ok: true };
+        },
+        {
+          body: InsertTagSchema,
+          response: ResponseSchema,
+        },
+      )
+      .post(
+        "/",
+        async ({ body }) => {
+          const data = await db
+            .selectFrom("tags")
+            .select(["id", "title", "color"])
+            .$if(!!body.orderBy?.length, (qb) => {
+              qb = constructOrdering(body.orderBy, qb);
+              return qb;
+            })
+            .limit(body?.pagination?.limit || 10)
+            .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
+            .where("project_id", "=", body.data.project_id)
+            .execute();
 
-  server.post("/create", async (req: FastifyRequest<{ Body: { data: InsertTagType | InsertTagType[] } }>, rep) => {
-    const { data } = req.body;
-
-    const parsedData = InsertTagSchema.parse(data);
-
-    await db.insertInto("tags").values(parsedData).execute();
-
-    rep.send({
-      message: `${(Array.isArray(data) && data.length === 1) || !Array.isArray(data) ? "Tag" : "Tags"} successfully created.`,
-      ok: true,
-    });
-  });
-
-  // #endregion create_routes
-  // #region read_routes
-  server.post("/", async (req: FastifyRequest<{ Body: RequestBodyType }>, rep) => {
-    const data = await db
-      .selectFrom("tags")
-      .select(["id", "title", "color"])
-      .$if(!!req.body.orderBy?.length, (qb) => {
-        qb = constructOrdering(req.body.orderBy, qb);
-        return qb;
-      })
-      .limit(req.body?.pagination?.limit || 10)
-      .offset((req.body?.pagination?.page ?? 0) * (req.body?.pagination?.limit || 10))
-      .where("project_id", "=", req.body.data.project_id)
-      .execute();
-
-    rep.send({ data, message: "Success", ok: true });
-  });
-  // #endregion read_routes
-  // #region update_routes
-  server.post(
-    "/update/:id",
-    async (req: FastifyRequest<{ Params: { id: string }; Body: { data: UpdateTagType | UpdateTagType[] } }>, rep) => {
-      const parsedData = UpdateTagSchema.parse(req.body.data);
-      await db.updateTable("tags").where("id", "=", req.params.id).set(parsedData).execute();
-
-      rep.send({ message: "Tags successfully updated.", ok: true });
-    },
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        { body: TagListSchema, response: ResponseWithDataSchema },
+      )
+      .post(
+        "/update/:id",
+        async ({ params, body }) => {
+          await db.updateTable("tags").where("id", "=", params.id).set(body).execute();
+          return { message: `Tag ${MessageEnum.successfully_updated}`, ok: true };
+        },
+        {
+          body: UpdateTagSchema,
+          response: ResponseSchema,
+        },
+      )
+      .delete(
+        "/delete/:id",
+        async ({ params }) => {
+          await db.deleteFrom("tags").where("id", "=", params.id).execute();
+          return { message: `Tag ${MessageEnum.successfully_deleted}`, ok: true };
+        },
+        {
+          response: ResponseSchema,
+        },
+      ),
   );
-  // #endregion update_routes
-  // #region delete_routes
-  server.delete("/delete/:id", async (req: FastifyRequest<{ Params: { id: string } }>, rep) => {
-    await db.deleteFrom("tags").where("id", "=", req.params.id).execute();
-    rep.send({ message: "Tag successfully deleted.", ok: true });
-  });
-  // #endregion delete_routes
-
-  done();
 }

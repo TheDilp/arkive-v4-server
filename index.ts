@@ -66,9 +66,8 @@ server.register(authentication_router, { prefix: "/api/v1/auth" });
 
 server.register(
   (instance, _, done) => {
-    // instance.register(asset_router, { prefix: "/assets" });
     instance.register(user_router, { prefix: "/users" });
-    instance.register(tag_router, { prefix: "/tags" });
+    // instance.register(tag_router, { prefix: "/tags" });
     instance.register(character_fields_templates_router, { prefix: "/character_fields_templates" });
     instance.register(character_fields_router, { prefix: "/character_fields" });
     instance.register(document_router, { prefix: "/documents" });
@@ -115,7 +114,9 @@ const app = new Elysia()
       return { message: "The payload was not formatted correctly.", ok: false };
     }
   })
-  .group("/api/v1", (server) => server.use(health_check_router).use(project_router).use(asset_router).use(character_router))
+  .group("/api/v1", (server) =>
+    server.use(health_check_router).use(project_router).use(asset_router).use(tag_router).use(character_router),
+  )
   .use(swagger())
   .listen((process.env.PORT as string) || 3000);
 

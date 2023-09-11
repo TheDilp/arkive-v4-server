@@ -1,32 +1,26 @@
-import { Insertable, Updateable } from "kysely";
-import { Tags } from "kysely-codegen";
+import { t } from "elysia";
 import { z } from "zod";
+import { RequestBodySchema } from "../../types/requestTypes";
 
-export type InsertTagType = Insertable<Tags>;
-export type UpdateTagType = Updateable<Tags>;
+export const TagListSchema = t.Intersect([RequestBodySchema, t.Object({ data: t.Object({ project_id: t.String() }) })]);
 
-export const InsertTagSchema = z
-  .object({
-    title: z.string(),
-    color: z.string().nonempty(),
-    project_id: z.string(),
-  })
-  .strict()
-  .or(
-    z
-      .object({
-        title: z.string(),
-        color: z.string(),
-        project_id: z.string(),
-      })
-      .strict()
-      .array(),
-  );
+export const InsertTagSchema = t.Union([
+  t.Object({
+    title: t.String(),
+    color: t.String(),
+    project_id: t.String(),
+  }),
+  t.Array(
+    t.Object({
+      title: t.String(),
+      color: t.String(),
+      project_id: t.String(),
+    }),
+  ),
+]);
 
-export const UpdateTagSchema = z
-  .object({
-    id: z.string(),
-    title: z.string().optional(),
-    color: z.string().optional(),
-  })
-  .strict();
+export const UpdateTagSchema = t.Object({
+  id: t.String(),
+  title: t.Optional(t.String()),
+  color: t.Optional(t.String()),
+});
