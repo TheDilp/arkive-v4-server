@@ -33,6 +33,7 @@ import { timeline_router } from "./routers/timeline_router";
 import { word_router } from "./routers/word_router";
 import Elysia, { t } from "elysia";
 import { cors } from "@elysiajs/cors";
+import swagger from "@elysiajs/swagger";
 const server = fastify();
 
 server.setErrorHandler(function (error, request, reply) {
@@ -65,12 +66,9 @@ server.register(authentication_router, { prefix: "/api/v1/auth" });
 
 server.register(
   (instance, _, done) => {
-    // instance.addHook("onRequest", async (request, reply) => {});
-    instance.register(asset_router, { prefix: "/assets" });
+    // instance.register(asset_router, { prefix: "/assets" });
     instance.register(user_router, { prefix: "/users" });
-    // instance.register(project_router, { prefix: "/projects" });
     instance.register(tag_router, { prefix: "/tags" });
-    // instance.register(character_router, { prefix: "/characters" });
     instance.register(character_fields_templates_router, { prefix: "/character_fields_templates" });
     instance.register(character_fields_router, { prefix: "/character_fields" });
     instance.register(document_router, { prefix: "/documents" });
@@ -117,11 +115,8 @@ const app = new Elysia()
       return { message: "The payload was not formatted correctly.", ok: false };
     }
   })
-  .onParse((request, contentType) => {
-    console.log(contentType);
-  })
-
   .group("/api/v1", (server) => server.use(health_check_router).use(project_router).use(character_router))
+  .use(swagger())
   .listen((process.env.PORT as string) || 3000);
 
 export type App = typeof app;
