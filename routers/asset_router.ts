@@ -6,12 +6,12 @@ import { db } from "../database/db";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { s3Client } from "../utils/s3Client";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 async function createFile(data: Blob) {
   const buff = await data.arrayBuffer();
   const sharpData = sharp(buff);
   const metadata = await sharpData.metadata();
-  console.log(metadata);
   return sharpData.toFormat("webp").toBuffer();
 }
 
@@ -39,37 +39,40 @@ export function asset_router(app: Elysia) {
           const { type, project_id } = params;
           const filesToSend: string[] = [];
 
-          const objectEntires = Object.entries(body);
+          const objectEntries = Object.entries(body);
+          for (let index = 0; index < objectEntries.length; index++) {
+            const [name, file] = objectEntries[index];
+            const buffer = await createFile(file);
+            const { id: image_id } = await db
+              .insertInto("images")
+              .values({ title: file.name, project_id })
+              .returning("id")
+              .executeTakeFirstOrThrow();
+            const filePath = `assets/${project_id}/${type}`;
 
-          await Promise.all(
-            objectEntires.map(async ([key, file]) => {
-              const filePath = `assets/${project_id}/${type}`;
+            const command = new PutObjectCommand({
+              Bucket: process.env.DO_SPACES_NAME as string,
+              Key: `${filePath}/${image_id}.webp`,
+              Body: buffer,
+              ACL: "public-read",
+              ContentType: "image/webp",
+            });
+            const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
+            await fetch(url, {
+              headers: {
+                "Content-Type": "image/webp",
+                "Cache-Control": "3600",
+                "x-amz-acl": "public-read",
+              },
+              method: "PUT",
+              body: buffer,
+            });
+          }
 
-              const { id: image_id } = await db
-                .insertInto("images")
-                .values({ title: key, project_id })
-                .returning("id")
-                .executeTakeFirstOrThrow();
-
-              const fileBuffer = await createFile(file);
-              const params = {
-                Bucket: process.env.DO_SPACES_NAME as string,
-                Key: `${filePath}/${image_id}.webp`,
-                Body: fileBuffer,
-                ACL: "public-read",
-                ContentType: "image/webp",
-              };
-              console.log(params);
-              await s3Client.send(new PutObjectCommand(params));
-            }),
-          );
           return { data: [], message: MessageEnum.success, ok: true };
         },
         {
-          body: t.Record(t.String(), t.File({ type: ["image"] })),
-          beforeHandle: (ctx) => {
-            console.log(typeof ctx.body, ctx.body);
-          },
+          body: t.Record(t.String(), t.File()),
           response: ResponseWithDataSchema,
         },
       )
