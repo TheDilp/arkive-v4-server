@@ -1,49 +1,64 @@
-import { Insertable, Updateable } from "kysely";
-import { CharacterFieldsTemplates } from "kysely-codegen";
-import { z } from "zod";
+import { t } from "elysia";
+import { RequestBodySchema } from "../../types/requestTypes";
 
-export type InsertCharacterFieldsTemplateType = Insertable<CharacterFieldsTemplates>;
-export type UpdateCharacterFieldsTemplateType = Updateable<CharacterFieldsTemplates>;
+export const ListCharacterFieldsTemplateSchema = t.Intersect([
+  RequestBodySchema,
+  t.Object({
+    data: t.Object({ project_id: t.String() }),
+    relations: t.Object({ character_fields: t.Boolean() }),
+  }),
+]);
 
-export const InsercharacterFieldsTemplateSchema = z.object({
-  data: z.object({
-    project_id: z.string(),
-    title: z.string(),
-    sort: z.number().optional(),
+export const ReadCharacterFieldsTemplateSchema = t.Intersect([
+  RequestBodySchema,
+  t.Object({
+    data: t.Object({ id: t.String() }),
+    relations: t.Object({ character_fields: t.Boolean() }),
   }),
-  relations: z.object({
-    character_fields: z
-      .object({
-        title: z.string(),
-        project_id: z.string(),
-        field_type: z.string(),
-        sort: z.number(),
-        formula: z.string().nullable().optional(),
-        random_table_id: z.string().nullable().optional(),
-        options: z.string().array().optional(),
-      })
-      .array(),
+]);
+
+export const InsertCharacterFieldsTemplateSchema = t.Object({
+  data: t.Object({
+    project_id: t.String(),
+    title: t.String(),
+    sort: t.Optional(t.Number()),
   }),
+  relations: t.Optional(
+    t.Object({
+      character_fields: t.Array(
+        t.Object({
+          title: t.String(),
+          project_id: t.String(),
+          field_type: t.String(),
+          sort: t.Optional(t.Number()),
+          formula: t.Optional(t.Union([t.String(), t.Null()])),
+          options: t.Optional(t.Array(t.String())),
+          random_table_id: t.Optional(t.Union([t.String(), t.Null()])),
+        }),
+      ),
+    }),
+  ),
 });
 
-export const UpdateCharacterFieldsTemplateSchema = z.object({
-  data: z.object({
-    id: z.string(),
-    title: z.string(),
-    sort: z.number().optional(),
+export const UpdateCharacterFieldsTemplateSchema = t.Object({
+  data: t.Object({
+    title: t.Optional(t.String()),
+    sort: t.Optional(t.Number()),
   }),
-  relations: z.object({
-    character_fields: z
-      .object({
-        id: z.string(),
-        project_id: z.string(),
-        title: z.string().optional(),
-        field_type: z.string().optional(),
-        sort: z.number().optional(),
-        formula: z.string().nullable().optional(),
-        random_table_id: z.string().nullable().optional(),
-        options: z.string().array().optional(),
-      })
-      .array(),
-  }),
+  relations: t.Optional(
+    t.Object({
+      character_fields: t.Array(
+        t.Object({
+          id: t.String(),
+          title: t.String(),
+          project_id: t.String(),
+          field_type: t.String(),
+          sort: t.Optional(t.Number()),
+          formula: t.Optional(t.Union([t.String(), t.Null()])),
+          options: t.Optional(t.Array(t.String())),
+          random_table_id: t.Optional(t.Union([t.String(), t.Null()])),
+        }),
+      ),
+    }),
+  ),
 });
