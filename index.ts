@@ -120,17 +120,8 @@ const app = new Elysia()
   .onParse((request, contentType) => {
     console.log(contentType);
   })
-  .guard({
-    response: {
-      400: t.Object({
-        message: t.String(),
-        ok: t.Boolean({ default: false }),
-      }),
-      404: t.Object({
-        message: t.String(),
-        ok: t.Boolean({ default: false }),
-      }),
-    },
-  })
+
   .group("/api/v1", (server) => server.use(health_check_router).use(project_router).use(character_router))
   .listen((process.env.PORT as string) || 3000);
+
+export type App = typeof app;

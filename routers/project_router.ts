@@ -1,16 +1,8 @@
-import { FastifyInstance, FastifyRequest } from "fastify";
-
-import { db } from "../database/db";
-import {
-  InsertProjectSchema,
-  InsertProjectType,
-  ProjectistSchema,
-  UpdateProjectSchema,
-  UpdateProjectType,
-} from "../database/validation/projects";
-import { RequestBodyType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import Elysia from "elysia";
+import { db } from "../database/db";
+import { InsertProjectSchema, ProjectistSchema, UpdateProjectSchema } from "../database/validation/projects";
 import { MessageEnum } from "../enums/requestEnums";
+import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 
 export function project_router(app: Elysia) {
   return app.group("/projects", (server) =>
