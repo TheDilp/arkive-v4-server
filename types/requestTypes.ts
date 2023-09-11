@@ -61,19 +61,23 @@ export const RequestBodySchema = t.Object({
   ),
   filters: t.Optional(
     t.Object({
-      and: t.Array(
-        t.Object({
-          field: t.String(),
-          value: t.Union([t.String(), t.Number()]),
-          operator: t.Union([t.Literal("eq"), t.Literal("neq"), t.Literal("gt")]),
-        }),
+      and: t.Optional(
+        t.Array(
+          t.Object({
+            field: t.String(),
+            value: t.Union([t.String(), t.Number()]),
+            operator: t.Union([t.Literal("eq"), t.Literal("neq"), t.Literal("gt")]),
+          }),
+        ),
       ),
-      or: t.Array(
-        t.Object({
-          field: t.String(),
-          value: t.Union([t.String(), t.Number()]),
-          operator: t.Union([t.Literal("eq"), t.Literal("neq"), t.Literal("gt")]),
-        }),
+      or: t.Optional(
+        t.Array(
+          t.Object({
+            field: t.String(),
+            value: t.Union([t.String(), t.Number()]),
+            operator: t.Union([t.Literal("eq"), t.Literal("neq"), t.Literal("gt")]),
+          }),
+        ),
       ),
     }),
   ),

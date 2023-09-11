@@ -5,8 +5,12 @@ export const ListCharacterFieldsTemplateSchema = t.Intersect([
   RequestBodySchema,
   t.Object({
     data: t.Object({ project_id: t.String() }),
-    relations: t.Object({ character_fields: t.Boolean() }),
   }),
+  t.Optional(
+    t.Object({
+      relations: t.Optional(t.Object({ character_fields: t.Boolean() })),
+    }),
+  ),
 ]);
 
 export const ReadCharacterFieldsTemplateSchema = t.Intersect([

@@ -100,7 +100,7 @@ server.register(
 
 const app = new Elysia()
   .use(cors({ origin: process.env.NODE_ENV === "development" ? "*" : "https://thearkive.app" }))
-  .onError(({ code, set }) => {
+  .onError(({ code, error, set }) => {
     if (code === "NOT_FOUND") {
       set.status = 404;
       return { message: "Route not found.", ok: false };
@@ -111,6 +111,7 @@ const app = new Elysia()
     }
     if (code === "VALIDATION") {
       set.status = 400;
+      console.log(error);
       return { message: "The payload was not formatted correctly.", ok: false };
     }
   })
