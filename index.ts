@@ -115,7 +115,7 @@ const app = new Elysia()
       return { message: "The payload was not formatted correctly.", ok: false };
     }
   })
-  .group("/api/v1", (server) => server.use(health_check_router).use(project_router).use(character_router))
+  .group("/api/v1", (server) => server.use(health_check_router).use(project_router).use(asset_router).use(character_router))
   .use(swagger())
   .listen((process.env.PORT as string) || 3000);
 
