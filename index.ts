@@ -31,6 +31,7 @@ import { event_router } from "./routers/event_router";
 import { month_router } from "./routers/month_router";
 import { timeline_router } from "./routers/timeline_router";
 import { word_router } from "./routers/word_router";
+import Elysia, { t } from "elysia";
 
 const server = fastify();
 
@@ -65,12 +66,11 @@ server.register(authentication_router, { prefix: "/api/v1/auth" });
 server.register(
   (instance, _, done) => {
     // instance.addHook("onRequest", async (request, reply) => {});
-    instance.register(health_check_router, { prefix: "/health_check" });
     instance.register(asset_router, { prefix: "/assets" });
     instance.register(user_router, { prefix: "/users" });
     instance.register(project_router, { prefix: "/projects" });
     instance.register(tag_router, { prefix: "/tags" });
-    instance.register(character_router, { prefix: "/characters" });
+    // instance.register(character_router, { prefix: "/characters" });
     instance.register(character_fields_templates_router, { prefix: "/character_fields_templates" });
     instance.register(character_fields_router, { prefix: "/character_fields" });
     instance.register(document_router, { prefix: "/documents" });
@@ -93,10 +93,37 @@ server.register(
   { prefix: "/api/v1" },
 );
 
-server.listen({ port: parseInt(process.env.PORT as string, 10) || 3000 }, (err, address) => {
-  if (err) {
-    console.error(err);
-    process.exit(1);
-  }
-  console.log(`Server listening at ${address}`);
-});
+// server.listen({ port: parseInt(process.env.PORT as string, 10) || 3000 }, (err, address) => {
+//   if (err) {
+//     console.error(err);
+//     process.exit(1);
+//   }
+//   console.log(`Server listening at ${address}`);
+// });
+
+const app = new Elysia()
+  .use(health_check_router)
+  .onError(({ code, set }) => {
+    if (code === "NOT_FOUND") {
+      set.status = 404;
+      return { message: "Route not found.", ok: false };
+    }
+    if (code === "INTERNAL_SERVER_ERROR") {
+      set.status = 500;
+      return { message: "There was an error with your request.", ok: false };
+    }
+  })
+  .guard({
+    response: {
+      400: t.Object({
+        message: t.String(),
+        ok: t.Boolean({ default: false }),
+      }),
+      404: t.Object({
+        message: t.String(),
+        ok: t.Boolean({ default: false }),
+      }),
+    },
+  })
+  .group("/api/v1", (server) => server.use(character_router))
+  .listen((process.env.PORT as string) || 3000);

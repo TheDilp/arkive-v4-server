@@ -2,9 +2,9 @@
   "name": "arkive-v4-server",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "module": "index.ts",
   "scripts": {
-    "start": "dotenv -e .env -- tsx watch index.ts"
+    "start": "bun --watch index.ts"
   },
   "keywords": [],
   "author": "",
@@ -13,6 +13,8 @@
     "@aws-sdk/client-s3": "^3.388.0",
     "@fastify/cors": "^8.3.0",
     "@fastify/static": "^6.10.2",
+    "@sinclair/typebox": "^0.31.14",
+    "elysia": "^0.6.21",
     "fastify": "^4.19.2",
     "fastify-file-upload": "^4.0.0",
     "kysely": "^0.26.3",
@@ -23,6 +25,10 @@
     "sharp": "^0.32.1",
     "zod": "^3.21.4"
   },
+  "trustedDependencies": [
+    "sharp",
+    "elysia"
+  ],
   "devDependencies": {
     "@types/lodash.groupby": "^4.6.7",
     "@types/lodash.omit": "^4.5.7",
