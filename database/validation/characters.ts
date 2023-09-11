@@ -12,7 +12,7 @@ export const CharacterListSchema = t.Intersect([
 ]);
 export const CharacterReadSchema = t.Intersect([
   RequestBodySchema,
-  t.Object({ data: t.Object({ id: t.String() }) }),
+  t.Object({ data: t.Object({}) }),
   t.Optional(
     t.Object({
       relations: t.Optional(
