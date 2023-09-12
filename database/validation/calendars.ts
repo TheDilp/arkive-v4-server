@@ -1,41 +1,54 @@
-import { z } from "zod";
+import { t } from "elysia";
 
-import { InsertMonthSchema, UpdateMonthSchema } from "./months";
+import { RequestBodySchema } from "../../types/requestTypes";
+import { InsertMonthSchema, UpdateMonthSchema } from ".";
 
-export const InsertCalendarSchema = z.object({
-  data: z.object({
-    title: z.string(),
-    is_folder: z.boolean().nullable().optional(),
-    is_public: z.boolean().nullable().optional(),
-    icon: z.string().nullable().optional(),
-    project_id: z.string(),
+export const ReadCalendarSchema = t.Intersect([
+  RequestBodySchema,
+  t.Object({ data: t.Object({}) }),
+  t.Optional(
+    t.Object({
+      relations: t.Optional(
+        t.Object({
+          months: t.Optional(t.Boolean()),
+          tags: t.Optional(t.Boolean()),
+        }),
+      ),
+    }),
+  ),
+]);
+
+export const InsertCalendarSchema = t.Object({
+  data: t.Object({
+    title: t.String(),
+    is_folder: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    icon: t.Optional(t.Union([t.String(), t.Null()])),
+    project_id: t.String(),
     // offset: z.number(),
-    hours: z.number().optional().nullable(),
-    minutes: z.number().optional().nullable(),
-    parent_id: z.string().nullable().optional(),
-    days: z.string().array().min(1),
+    hours: t.Optional(t.Union([t.Number(), t.Null()])),
+    minutes: t.Optional(t.Union([t.Number(), t.Null()])),
+    parent_id: t.Optional(t.Union([t.String(), t.Null()])),
+    days: t.Array(t.String(), { minItems: 1 }),
   }),
-  relations: z.object({
-    months: InsertMonthSchema.array().min(1),
-    tags: z.object({ id: z.string() }).array().optional(),
-  }),
-});
-
-export const UpdateCalendarSchema = z.object({
-  data: z.object({
-    id: z.string(),
-    title: z.string().optional(),
-    is_folder: z.boolean().nullable().optional(),
-    is_public: z.boolean().nullable().optional(),
-    icon: z.string().nullable().optional(),
-    parent_id: z.string().nullable().optional(),
-    days: z.string().array().min(1).optional(),
-  }),
-  relations: z.object({
-    months: InsertMonthSchema.array().min(1).or(UpdateMonthSchema.array().min(1)),
-    tags: z.object({ id: z.string() }).array().optional(),
+  relations: t.Object({
+    months: t.Array(InsertMonthSchema, { minItems: 1 }),
+    tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
   }),
 });
 
-export type InsertCalendarType = z.infer<typeof InsertCalendarSchema>;
-export type UpdateCalendarType = z.infer<typeof UpdateCalendarSchema>;
+export const UpdateCalendarSchema = t.Object({
+  data: t.Object({
+    id: t.String(),
+    title: t.Optional(t.String()),
+    is_folder: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    icon: t.Optional(t.Union([t.String(), t.Null()])),
+    parent_id: t.Optional(t.Union([t.String(), t.Null()])),
+    days: t.String().array().min(1).optional(),
+  }),
+  relations: t.Object({
+    months: t.Union([t.Array(InsertMonthSchema, { minItems: 1 }), t.Array(UpdateMonthSchema, { minItems: 1 })]),
+    tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
+  }),
+});

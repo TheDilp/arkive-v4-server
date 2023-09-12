@@ -7,7 +7,7 @@ import groupBy from "lodash.groupby";
 import uniqBy from "lodash.uniqby";
 
 import { db } from "../database/db";
-import { CharacterListSchema, CharacterReadSchema, InsertCharacterSchema, UpdateCharacterSchema } from "../database/validation";
+import { ListCharacterSchema, ReadCharacterSchema, InsertCharacterSchema, UpdateCharacterSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, constructTagFilter } from "../utils/filterConstructor";
@@ -127,7 +127,7 @@ export function character_router(app: Elysia) {
           return { data, message: MessageEnum.success, ok: true };
         },
         {
-          body: CharacterListSchema,
+          body: ListCharacterSchema,
           response: ResponseWithDataSchema,
         },
       )
@@ -262,7 +262,7 @@ export function character_router(app: Elysia) {
           return { data, message: MessageEnum.success, ok: true };
         },
         {
-          body: CharacterReadSchema,
+          body: ReadCharacterSchema,
           response: ResponseWithDataSchema,
         },
       )

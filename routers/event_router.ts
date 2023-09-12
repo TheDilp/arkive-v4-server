@@ -1,93 +1,121 @@
-import { FastifyInstance, FastifyRequest } from "fastify";
+import Elysia from "elysia";
 import { SelectExpression } from "kysely";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertEventSchema, InsertEventType, UpdateEventSchema, UpdateEventType } from "../database/validation";
-import { RequestBodyType } from "../types/requestTypes";
+import { EntityListSchema, InsertEventSchema, ReadEventSchema, UpdateEventSchema } from "../database/validation";
+import { MessageEnum } from "../enums/requestEnums";
+import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 
-export function event_router(server: FastifyInstance, _: any, done: any) {
-  server.post(
-    "/create",
-    async (req: FastifyRequest<{ Body: { data: InsertEventType; relations?: { tags?: { id: string }[] } } }>, rep) => {
-      const parsedData = InsertEventSchema.parse(req.body);
+export function event_router(app: Elysia) {
+  return app
+    .group("/events", (server) =>
+      server.post(
+        "/create",
+        async ({ body }) => {
+          if (body) {
+            await db.transaction().execute(async (tx) => {
+              const { id } = await tx.insertInto("events").values(body.data).returning(["id"]).executeTakeFirstOrThrow();
 
-      if (parsedData) {
-        await db.transaction().execute(async (tx) => {
-          const { id } = await tx.insertInto("events").values(parsedData.data).returning(["id"]).executeTakeFirstOrThrow();
-
-          if (parsedData?.relations?.tags?.length) {
-            const { tags } = parsedData.relations;
-            await tx
-              .insertInto("_eventsTotags")
-              .values(tags.map((tag) => ({ A: id, B: tag.id })))
-              .execute();
-          }
-        });
-      }
-      rep.send({ message: "Success.", ok: true });
-    },
-  );
-  server.post("/", async (req: FastifyRequest<{ Body: RequestBodyType }>, rep) => {
-    const data = await db
-      .selectFrom("events")
-
-      .$if(!req.body.fields?.length, (qb) => qb.selectAll())
-      .$if(!!req.body.fields?.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "events">[]))
-      .$if(!!req.body?.filters?.and?.length || !!req.body?.filters?.or?.length, (qb) => {
-        qb = constructFilter("events", qb, req.body.filters);
-        return qb;
-      })
-      .$if(!!req.body.orderBy?.length, (qb) => {
-        qb = constructOrdering(req.body.orderBy, qb);
-        return qb;
-      })
-      .execute();
-
-    rep.send({ data, message: "Success.", ok: true });
-  });
-  server.post("/:id", async (req: FastifyRequest<{ Params: { id: string }; Body: RequestBodyType }>, rep) => {
-    const data = await db
-      .selectFrom("events")
-      .where("events.id", "=", req.params.id)
-      .$if(!req.body.fields?.length, (qb) => qb.selectAll())
-      .$if(!!req.body.fields?.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "events">[]))
-      .$if(!!req.body?.relations, (qb) => {
-        if (req.body?.relations?.tags) {
-          qb = qb.select((eb) => TagQuery(eb, "_eventsTotags", "events"));
-        }
-        return qb;
-      })
-      .executeTakeFirstOrThrow();
-
-    rep.send({ data, message: "Success.", ok: true });
-  });
-  server.post(
-    "/update/:id",
-    async (
-      req: FastifyRequest<{ Params: { id: string }; Body: { data: UpdateEventType; relations?: { tags?: { id: string }[] } } }>,
-      rep,
-    ) => {
-      const parsedData = UpdateEventSchema.parse(req.body);
-      if (parsedData) {
-        await db.transaction().execute(async (tx) => {
-          await tx.updateTable("events").where("id", "=", req.params.id).set(parsedData.data).execute();
-          if (parsedData?.relations?.tags?.length) {
-            UpdateTagRelations({
-              relationalTable: "_eventsTotags",
-              id: req.params.id,
-              newTags: parsedData.relations?.tags,
-              tx,
+              if (body?.relations?.tags?.length) {
+                const { tags } = body.relations;
+                await tx
+                  .insertInto("_eventsTotags")
+                  .values(tags.map((tag) => ({ A: id, B: tag.id })))
+                  .execute();
+              }
             });
-          } else await tx.deleteFrom("_eventsTotags").where("A", "=", req.params.id).execute();
-        });
-      }
-      rep.send({ message: "Success.", ok: true });
-    },
-  );
+          }
+          return { message: MessageEnum.success, ok: true };
+        },
+        {
+          body: InsertEventSchema,
+          response: ResponseSchema,
+        },
+      ),
+    )
+    .post(
+      "/",
+      async ({ body }) => {
+        const data = await db
+          .selectFrom("events")
 
-  done();
+          .$if(!body.fields?.length, (qb) => qb.selectAll())
+          .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "events">[]))
+          .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
+            qb = constructFilter("events", qb, body.filters);
+            return qb;
+          })
+          .$if(!!body.orderBy?.length, (qb) => {
+            qb = constructOrdering(body.orderBy, qb);
+            return qb;
+          })
+          .execute();
+
+        return { data, message: MessageEnum.success, ok: true };
+      },
+      {
+        body: EntityListSchema,
+        response: ResponseSchema,
+      },
+    )
+    .post(
+      "/:id",
+      async ({ params, body }) => {
+        const data = await db
+          .selectFrom("events")
+          .where("events.id", "=", params.id)
+          .$if(!body.fields?.length, (qb) => qb.selectAll())
+          .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "events">[]))
+          .$if(!!body?.relations, (qb) => {
+            if (body?.relations?.tags) {
+              qb = qb.select((eb) => TagQuery(eb, "_eventsTotags", "events"));
+            }
+            return qb;
+          })
+          .executeTakeFirstOrThrow();
+
+        return { data, message: MessageEnum.success, ok: true };
+      },
+      {
+        body: ReadEventSchema,
+        response: ResponseWithDataSchema,
+      },
+    )
+    .post(
+      "/update/:id",
+      async ({ params, body }) => {
+        if (body) {
+          await db.transaction().execute(async (tx) => {
+            await tx.updateTable("events").where("id", "=", params.id).set(body.data).execute();
+            if (body?.relations?.tags?.length) {
+              UpdateTagRelations({
+                relationalTable: "_eventsTotags",
+                id: params.id,
+                newTags: body.relations?.tags,
+                tx,
+              });
+            } else await tx.deleteFrom("_eventsTotags").where("A", "=", params.id).execute();
+          });
+        }
+        return { message: `Event ${MessageEnum.successfully_updated}`, ok: true };
+      },
+      {
+        body: UpdateEventSchema,
+        response: ResponseSchema,
+      },
+    )
+    .delete(
+      "/:id",
+      async ({ params }) => {
+        await db.deleteFrom("events").where("id", "=", params.id).execute();
+        return { message: `Event ${MessageEnum.successfully_deleted}`, ok: true };
+      },
+      {
+        response: ResponseSchema,
+      },
+    );
 }

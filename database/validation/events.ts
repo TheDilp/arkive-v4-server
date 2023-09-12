@@ -1,60 +1,71 @@
-import { Insertable, Updateable } from "kysely";
-import { Events } from "kysely-codegen";
-import { z } from "zod";
+import { t } from "elysia";
 
-export type InsertEventType = Insertable<Events>;
-export type UpdateEventType = Updateable<Events>;
+import { RequestBodySchema } from "../../types/requestTypes";
 
-export const InsertEventSchema = z.object({
-  data: z.object({
-    title: z.string(),
-    parent_id: z.string(),
-    description: z.string().optional().nullable(),
-    is_public: z.boolean().optional().nullable(),
-    background_color: z.string().optional().nullable(),
-    text_color: z.string().optional().nullable(),
-    start_day: z.number(),
-    start_month: z.number(),
-    start_year: z.number(),
-    end_day: z.number().optional().nullable(),
-    end_month: z.number().optional().nullable(),
-    end_year: z.number().optional().nullable(),
-    hours: z.number().optional().nullable(),
-    minutes: z.number().optional().nullable(),
+export const ReadEventSchema = t.Intersect([
+  RequestBodySchema,
+  t.Object({ data: t.Object({}) }),
+  t.Optional(
+    t.Object({
+      relations: t.Optional(
+        t.Object({
+          tags: t.Optional(t.Boolean()),
+        }),
+      ),
+    }),
+  ),
+]);
 
-    document_id: z.string().optional().nullable(),
-    image_id: z.string().optional().nullable(),
+export const InsertEventSchema = t.Object({
+  data: t.Object({
+    title: t.String(),
+    parent_id: t.String(),
+    description: t.Optional(t.Union([t.String(), t.Null()])),
+    is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    background_color: t.Optional(t.Union([t.String(), t.Null()])),
+    text_color: t.Optional(t.Union([t.String(), t.Null()])),
+    start_day: t.Number(),
+    start_month: t.Number(),
+    start_year: t.Number(),
+    end_day: t.Optional(t.Union([t.Number(), t.Null()])),
+    end_month: t.Optional(t.Union([t.Number(), t.Null()])),
+    end_year: t.Optional(t.Union([t.Number(), t.Null()])),
+    hours: t.Optional(t.Union([t.Number(), t.Null()])),
+    minutes: t.Optional(t.Union([t.Number(), t.Null()])),
+
+    document_id: t.Optional(t.Union([t.String(), t.Null()])),
+    image_id: t.Optional(t.Union([t.String(), t.Null()])),
   }),
-  relations: z
-    .object({
-      tags: z.object({ id: z.string() }).array().optional(),
-    })
-    .optional(),
+  relations: t.Optional(
+    t.Object({
+      tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
+    }),
+  ),
 });
 
-export const UpdateEventSchema = z.object({
-  data: z.object({
-    id: z.string(),
-    title: z.string().optional(),
-    description: z.string().optional().nullable(),
-    is_public: z.boolean().optional().nullable(),
-    background_color: z.string().optional().nullable(),
-    text_color: z.string().optional().nullable(),
-    start_day: z.number().optional(),
-    start_month: z.number().optional(),
-    start_year: z.number().optional(),
-    end_day: z.number().optional().nullable(),
-    end_month: z.number().optional().nullable(),
-    end_year: z.number().optional().nullable(),
-    hours: z.number().optional().nullable(),
-    minutes: z.number().optional().nullable(),
+export const UpdateEventSchema = t.Object({
+  data: t.Object({
+    id: t.String(),
+    title: t.Optional(t.String()),
+    description: t.Optional(t.Union([t.String(), t.Null()])),
+    is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    background_color: t.Optional(t.Union([t.String(), t.Null()])),
+    text_color: t.Optional(t.Union([t.String(), t.Null()])),
+    start_day: t.Optional(t.Number()),
+    start_month: t.Optional(t.Number()),
+    start_year: t.Optional(t.Number()),
+    end_day: t.Optional(t.Union([t.Number(), t.Null()])),
+    end_month: t.Optional(t.Union([t.Number(), t.Null()])),
+    end_year: t.Optional(t.Union([t.Number(), t.Null()])),
+    hours: t.Optional(t.Union([t.Number(), t.Null()])),
+    minutes: t.Optional(t.Union([t.Number(), t.Null()])),
 
-    document_id: z.string().optional().nullable(),
-    image_id: z.string().optional().nullable(),
+    document_id: t.Optional(t.Union([t.String(), t.Null()])),
+    image_id: t.Optional(t.Union([t.String(), t.Null()])),
   }),
-  relations: z
-    .object({
-      tags: z.object({ id: z.string() }).array().optional(),
-    })
-    .optional(),
+  relations: t.Optional(
+    t.Object({
+      tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
+    }),
+  ),
 });

@@ -2,7 +2,7 @@ import { t } from "elysia";
 
 import { RequestBodySchema } from "../../types/requestTypes";
 
-export const CharacterListSchema = t.Intersect([
+export const ListCharacterSchema = t.Intersect([
   RequestBodySchema,
   t.Object({ data: t.Object({ project_id: t.String() }) }),
   t.Optional(
@@ -11,7 +11,7 @@ export const CharacterListSchema = t.Intersect([
     }),
   ),
 ]);
-export const CharacterReadSchema = t.Intersect([
+export const ReadCharacterSchema = t.Intersect([
   RequestBodySchema,
   t.Object({ data: t.Object({}) }),
   t.Optional(
