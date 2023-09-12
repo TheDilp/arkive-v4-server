@@ -25,9 +25,8 @@ export function graph_router(app: Elysia) {
       .post(
         "/create",
         async ({ body }) => {
-          const data = InsertGraphSchema.parse(body.data);
           await db.transaction().execute(async (tx) => {
-            const graph = await tx.insertInto("boards").values(data).returning("id").executeTakeFirstOrThrow();
+            const graph = await tx.insertInto("boards").values(body.data).returning("id").executeTakeFirstOrThrow();
 
             if (body?.relations?.tags)
               await CreateTagRelations({ tx, relationalTable: "_boardsTotags", id: graph.id, tags: body.relations.tags });
@@ -44,7 +43,7 @@ export function graph_router(app: Elysia) {
         async ({ body }) => {
           const data = await db
             .selectFrom("boards")
-            .where("project_id", "=", body.d)
+            .where("project_id", "=", body.data.project_id)
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "boards">[]))
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
@@ -146,8 +145,7 @@ export function graph_router(app: Elysia) {
         async ({ params, body }) => {
           await db.transaction().execute(async (tx) => {
             if (body.data) {
-              const data = UpdateGraphSchema.parse(body.data);
-              await tx.updateTable("boards").where("id", "=", params.id).set(data).executeTakeFirstOrThrow();
+              await tx.updateTable("boards").where("id", "=", params.id).set(body.data).executeTakeFirstOrThrow();
             }
             if (body?.relations) {
               if (body.relations?.tags)
