@@ -21,8 +21,7 @@ export function node_router(app: Elysia) {
         async ({ body }) => {
           let returningData;
           await db.transaction().execute(async (tx) => {
-            const data = InsertNodeSchema.parse(body.data);
-            returningData = await tx.insertInto("nodes").values(data).returning("id").executeTakeFirstOrThrow();
+            returningData = await tx.insertInto("nodes").values(body.data).returning("id").executeTakeFirstOrThrow();
 
             if (body.relations?.tags) {
               await CreateTagRelations({

@@ -14,8 +14,7 @@ export function edge_router(app: Elysia) {
         async ({ body }) => {
           let returning;
           await db.transaction().execute(async (tx) => {
-            const data = InsertEdgeSchema.parse(body.data);
-            const edge = await tx.insertInto("edges").values(data).returning("id").executeTakeFirstOrThrow();
+            const edge = await tx.insertInto("edges").values(body.data).returning("id").executeTakeFirstOrThrow();
             returning = edge;
             if (body.relations?.tags) {
               await CreateTagRelations({ relationalTable: "_edgesTotags", tags: body.relations.tags, id: edge.id, tx });
@@ -50,8 +49,7 @@ export function edge_router(app: Elysia) {
         async ({ params, body }) => {
           await db.transaction().execute(async (tx) => {
             if (body.data) {
-              const data = UpdateEdgeSchema.parse(body.data);
-              await tx.updateTable("edges").where("id", "=", params.id).set(data).executeTakeFirstOrThrow();
+              await tx.updateTable("edges").where("id", "=", params.id).set(body.data).executeTakeFirstOrThrow();
             }
             if (body?.relations) {
               if (body.relations?.tags)
