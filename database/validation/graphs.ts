@@ -6,6 +6,7 @@ import { RequestBodySchema } from "../../types/requestTypes";
 export const ListGraphSchema = RequestBodySchema;
 export const ReadGraphSchema = t.Intersect([
   RequestBodySchema,
+  t.Object({ data: t.Object({ project_id: t.String() }) }),
   t.Optional(
     t.Object({
       relations: t.Optional(

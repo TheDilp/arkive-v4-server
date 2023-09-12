@@ -36,6 +36,7 @@ export function map_router(app: Elysia) {
         async ({ body }) => {
           const data = await db
             .selectFrom("maps")
+            .where("project_id", "=", body.data.project_id)
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "maps">[]))
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
