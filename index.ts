@@ -6,12 +6,12 @@ import fastify from "fastify";
 import {
   asset_router,
   authentication_router,
-  board_router,
   character_fields_router,
   character_fields_templates_router,
   character_router,
   document_router,
   edge_router,
+  graph_router,
   health_check_router,
   map_pin_router,
   map_router,
@@ -37,8 +37,7 @@ server.register(authentication_router, { prefix: "/api/v1/auth" });
 server.register(
   (instance, _, done) => {
     instance.register(user_router, { prefix: "/users" });
-    instance.register(board_router, { prefix: "/graphs" });
-    instance.register(node_router, { prefix: "/nodes" });
+    // instance.register(node_router, { prefix: "/nodes" });
     instance.register(edge_router, { prefix: "/edges" });
     instance.register(calendar_router, { prefix: "/calendars" });
     instance.register(month_router, { prefix: "/months" });
@@ -82,7 +81,9 @@ const app = new Elysia()
       .use(character_fields_router)
       .use(document_router)
       .use(map_router)
-      .use(map_pin_router),
+      .use(map_pin_router)
+      .use(graph_router)
+      .use(node_router),
   )
   .use(swagger())
   .listen((process.env.PORT as string) || 3000);

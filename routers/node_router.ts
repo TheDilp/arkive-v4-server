@@ -1,155 +1,160 @@
-import { FastifyInstance, FastifyRequest } from "fastify";
+import Elysia from "elysia";
 import { jsonObjectFrom } from "kysely/helpers/postgres";
 
 import { db } from "../database/db";
-import { InsertNodeSchema, InsertNodeType, UpdateNodeSchema, UpdateNodeType } from "../database/validation/nodes";
-import { RequestBodyType } from "../types/requestTypes";
+import {
+  DeleteManyNodesSchema,
+  InsertNodeSchema,
+  ReadNodeSchema,
+  UpdateManyNodesSchema,
+  UpdateNodeSchema,
+} from "../database/validation/nodes";
+import { MessageEnum } from "../enums/requestEnums";
+import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { CreateTagRelations, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 
-export function node_router(server: FastifyInstance, _: any, done: any) {
-  // #region create_routes
+export function node_router(app: Elysia) {
+  return app.group("/nodes", (server) =>
+    server
+      .post(
+        "/create",
+        async ({ body }) => {
+          let returningData;
+          await db.transaction().execute(async (tx) => {
+            const data = InsertNodeSchema.parse(body.data);
+            returningData = await tx.insertInto("nodes").values(data).returning("id").executeTakeFirstOrThrow();
 
-  server.post(
-    "/create",
-    async (req: FastifyRequest<{ Body: { data: InsertNodeType; relations?: { tags?: { id: string }[] } } }>, rep) => {
-      let returningData;
-      await db.transaction().execute(async (tx) => {
-        const data = InsertNodeSchema.parse(req.body.data);
-        returningData = await tx.insertInto("nodes").values(data).returning("id").executeTakeFirstOrThrow();
-
-        if (req.body.relations?.tags) {
-          await CreateTagRelations({
-            relationalTable: "_nodesTotags",
-            tags: req.body.relations.tags,
-            id: returningData.id,
-            tx,
+            if (body.relations?.tags) {
+              await CreateTagRelations({
+                relationalTable: "_nodesTotags",
+                tags: body.relations.tags,
+                id: returningData.id,
+                tx,
+              });
+            }
           });
-        }
-      });
 
-      rep.send({ data: returningData, message: "Node successfully created.", ok: true });
-    },
-  );
-
-  // #endregion create_routes
-
-  // #region read_routes
-  server.post("/:id", async (req: FastifyRequest<{ Params: { id: string }; Body: RequestBodyType }>, rep) => {
-    const data = await db
-      .selectFrom("nodes")
-      .selectAll()
-      .where("nodes.id", "=", req.params.id)
-      .$if(!!req.body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_nodesTotags", "nodes")))
-      .$if(!!req.body?.relations?.image, (qb) =>
-        qb.select((eb) =>
-          jsonObjectFrom(eb.selectFrom("images").whereRef("images.id", "=", "nodes.image_id").select(["id", "title"])).as(
-            "image",
-          ),
-        ),
+          return { data: returningData, message: `Node ${MessageEnum.successfully_created}`, ok: true };
+        },
+        {
+          body: InsertNodeSchema,
+          response: ResponseSchema,
+        },
       )
-      .$if(!!req.body?.relations?.character, (qb) =>
-        qb.select((eb) =>
-          jsonObjectFrom(
-            eb
-              .selectFrom("characters")
-              .whereRef("characters.id", "=", "nodes.character_id")
-              .select(["id", "first_name", "last_name", "portrait_id"]),
-          ).as("character"),
-        ),
-      )
-      .executeTakeFirstOrThrow();
-    rep.send({ data, message: "Success.", ok: true });
-  });
-  // #endregion read_routes
-  // #region update_routes
-  server.post(
-    "/update/:id",
-    async (
-      req: FastifyRequest<{ Params: { id: string }; Body: { data: UpdateNodeType; relations?: { tags?: { id: string }[] } } }>,
-      rep,
-    ) => {
-      await db.transaction().execute(async (tx) => {
-        if (req.body.data) {
-          const data = UpdateNodeSchema.parse(req.body.data);
-          await tx
-            .updateTable("nodes")
-            .set(data)
-            .where("nodes.id", "=", req.params.id)
-
+      .post(
+        "/:id",
+        async ({ params, body }) => {
+          const data = await db
+            .selectFrom("nodes")
+            .selectAll()
+            .where("nodes.id", "=", params.id)
+            .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_nodesTotags", "nodes")))
+            .$if(!!body?.relations?.image, (qb) =>
+              qb.select((eb) =>
+                jsonObjectFrom(eb.selectFrom("images").whereRef("images.id", "=", "nodes.image_id").select(["id", "title"])).as(
+                  "image",
+                ),
+              ),
+            )
+            .$if(!!body?.relations?.character, (qb) =>
+              qb.select((eb) =>
+                jsonObjectFrom(
+                  eb
+                    .selectFrom("characters")
+                    .whereRef("characters.id", "=", "nodes.character_id")
+                    .select(["id", "first_name", "last_name", "portrait_id"]),
+                ).as("character"),
+              ),
+            )
             .executeTakeFirstOrThrow();
-        }
-        if (req.body?.relations) {
-          if (req.body.relations?.tags)
-            await UpdateTagRelations({
-              relationalTable: "_nodesTotags",
-              id: req.params.id,
-              newTags: req.body.relations.tags,
-              tx,
-            });
-        }
-      });
-      rep.send({ message: "Success", ok: true });
-    },
-  );
-  server.post("/update", async (req: FastifyRequest<{ Body: { data: UpdateNodeType[] } }>, rep) => {
-    await db.transaction().execute(async (tx) => {
-      if (req.body.data) {
-        await Promise.all(
-          req.body.data.map((n) => {
-            const parsed = UpdateNodeSchema.parse(n);
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: ReadNodeSchema,
+          response: ResponseWithDataSchema,
+        },
+      )
+      .post(
+        "/update/:id",
+        async ({ params, body }) => {
+          await db.transaction().execute(async (tx) => {
+            if (body.data) {
+              await tx
+                .updateTable("nodes")
+                .set(body.data)
+                .where("nodes.id", "=", params.id)
 
-            return tx
-              .updateTable("nodes")
-              .where("id", "=", parsed.id as string)
-              .set(parsed)
+                .executeTakeFirstOrThrow();
+            }
+            if (body?.relations) {
+              if (body.relations?.tags)
+                await UpdateTagRelations({
+                  relationalTable: "_nodesTotags",
+                  id: params.id,
+                  newTags: body.relations.tags,
+                  tx,
+                });
+            }
+          });
+          return { message: MessageEnum.success, ok: true };
+        },
+        { body: UpdateNodeSchema, response: ResponseSchema },
+      )
+      .post(
+        "/update",
+        async ({ body }) => {
+          await db.transaction().execute(async (tx) => {
+            if (body.data) {
+              await Promise.all(
+                body.data.map((n) => {
+                  return tx
+                    .updateTable("nodes")
+                    .where("id", "=", n.data.id as string)
+                    .set(n.data)
+                    .execute();
+                }),
+              );
+            }
+          });
+          return { message: MessageEnum.success, ok: true };
+        },
+        {
+          body: UpdateManyNodesSchema,
+        },
+      )
+      .delete(
+        "/:id",
+        async ({ params }) => {
+          await db
+            .deleteFrom("edges")
+            .where((eb) => eb.or([eb("source_id", "=", params.id), eb("target_id", "=", params.id)]))
+            .execute();
+          await db.deleteFrom("nodes").where("nodes.id", "=", params.id).execute();
+          return { message: `Node ${MessageEnum.successfully_deleted}`, ok: true };
+        },
+        {
+          response: ResponseSchema,
+        },
+      )
+      .delete(
+        "/",
+        async ({ body }) => {
+          const node_ids = body.data.map((n) => n.id);
+
+          if (node_ids.length) {
+            await db
+              .deleteFrom("edges")
+              .where((eb) => eb.or([eb("source_id", "in", node_ids), eb("target_id", "in", node_ids)]))
               .execute();
-          }),
-        );
-      }
-    });
-    rep.send({ message: "Success", ok: true });
-  });
+            await db.deleteFrom("nodes").where("id", "in", node_ids).execute();
+          }
 
-  // #endregion update_routes
-  // #region delete_routes
-  server.delete(
-    "/:id",
-    async (
-      req: FastifyRequest<{
-        Params: { id: string };
-      }>,
-      rep,
-    ) => {
-      await db
-        .deleteFrom("edges")
-        .where((eb) => eb.or([eb("source_id", "=", req.params.id), eb("target_id", "=", req.params.id)]))
-        .execute();
-      await db.deleteFrom("nodes").where("nodes.id", "=", req.params.id).execute();
-      rep.send({ message: "Node successfully deleted.", ok: true });
-    },
+          return { message: `Nodes ${MessageEnum.successfully_deleted}`, ok: true };
+        },
+        {
+          body: DeleteManyNodesSchema,
+          response: ResponseSchema,
+        },
+      ),
   );
-  server.delete(
-    "/",
-    async (
-      req: FastifyRequest<{
-        Body: { data: { id: string }[] };
-      }>,
-      rep,
-    ) => {
-      const node_ids = req.body.data.map((n) => n.id);
-
-      if (node_ids.length) {
-        await db
-          .deleteFrom("edges")
-          .where((eb) => eb.or([eb("source_id", "in", node_ids), eb("target_id", "in", node_ids)]))
-          .execute();
-        await db.deleteFrom("nodes").where("id", "in", node_ids).execute();
-      }
-
-      rep.send({ message: "Nodes successfully deleted.", ok: true });
-    },
-  );
-  // #endregion delete_routes
-
-  done();
 }
