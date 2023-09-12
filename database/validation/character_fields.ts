@@ -1,26 +1,33 @@
-import { Insertable } from "kysely";
-import { CharacterFields } from "kysely-codegen";
-import { z } from "zod";
+import { t } from "elysia";
 
-export type InsertCharacterFieldsType = Insertable<CharacterFields>;
+import { RequestBodySchema } from "../../types/requestTypes";
 
-export const insertCharacterFieldsSchema = z.object({
-  title: z.string(),
-  project_id: z.string(),
-  sort: z.number().optional(),
-  field_type: z.string(),
-  parent_id: z.string(),
-  options: z.string().array().optional(),
-  formula: z.string().nullable().optional(),
-  random_table_id: z.string().nullable().optional(),
+export const ListCharacterFieldsSchema = t.Intersect([
+  RequestBodySchema,
+  t.Object({ data: t.Object({ parent_id: t.String() }) }),
+]);
+
+export const insertCharacterFieldsSchema = t.Object({
+  data: t.Object({
+    title: t.String(),
+    project_id: t.String(),
+    sort: t.Optional(t.Number()),
+    field_type: t.String(),
+    parent_id: t.String(),
+    options: t.Optional(t.Array(t.String())),
+    formula: t.Optional(t.Union([t.String(), t.Null()])),
+    random_table_id: t.Optional(t.Union([t.String(), t.Null()])),
+  }),
 });
 
-export const UpdateCharacterFieldsSchema = z.object({
-  title: z.string(),
-  sort: z.number().optional(),
-  field_type: z.string(),
-  parent_id: z.string(),
-  options: z.string().array().optional(),
-  formula: z.string().nullable().optional(),
-  random_table_id: z.string().nullable().optional(),
+export const UpdateCharacterFieldsSchema = t.Object({
+  data: t.Object({
+    title: t.String(),
+    sort: t.Optional(t.Number()),
+    field_type: t.String(),
+    parent_id: t.String(),
+    options: t.String().array().optional(),
+    formula: t.Optional(t.Union([t.String(), t.Null()])),
+    random_table_id: t.Optional(t.Union([t.String(), t.Null()])),
+  }),
 });

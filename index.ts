@@ -1,9 +1,7 @@
-// import cors from "@fastify/cors";
-import fastifyStatic from "@fastify/static";
-import fastify, { errorCodes } from "fastify";
-import fileUpload from "fastify-file-upload";
-import path from "path";
-import { ZodError } from "zod";
+import { cors } from "@elysiajs/cors";
+import { swagger } from "@elysiajs/swagger";
+import { Elysia } from "elysia";
+import fastify from "fastify";
 
 import {
   asset_router,
@@ -31,45 +29,14 @@ import { event_router } from "./routers/event_router";
 import { month_router } from "./routers/month_router";
 import { timeline_router } from "./routers/timeline_router";
 import { word_router } from "./routers/word_router";
-import Elysia, { t } from "elysia";
-import { cors } from "@elysiajs/cors";
-import swagger from "@elysiajs/swagger";
+
 const server = fastify();
-
-server.setErrorHandler(function (error, request, reply) {
-  if (error instanceof errorCodes.FST_ERR_BAD_STATUS_CODE) {
-    // Log error
-    this.log.error(error);
-    // Send error response
-    reply.status(500).send({ ok: false });
-  } else if (error instanceof ZodError) {
-    this.log.error(error);
-    // Send error response
-    console.log(JSON.stringify(error));
-    reply.status(500).send({ message: "The data was not formatted correctly.", ok: false });
-  } else {
-    // fastify will use parent error handler to handle this
-    reply.send(error);
-  }
-});
-
-server.register(fastifyStatic, {
-  root: path.join(__dirname, "assets"),
-});
-server.register(fileUpload);
-
-// server.register(cors, {
-//  ,
-// });
 
 server.register(authentication_router, { prefix: "/api/v1/auth" });
 
 server.register(
   (instance, _, done) => {
     instance.register(user_router, { prefix: "/users" });
-    // instance.register(tag_router, { prefix: "/tags" });
-    // instance.register(character_fields_templates_router, { prefix: "/character_fields_templates" });
-    instance.register(character_fields_router, { prefix: "/character_fields" });
     instance.register(document_router, { prefix: "/documents" });
     instance.register(map_router, { prefix: "/maps" });
     instance.register(map_pin_router, { prefix: "/map_pins" });
@@ -122,7 +89,8 @@ const app = new Elysia()
       .use(asset_router)
       .use(tag_router)
       .use(character_router)
-      .use(character_fields_templates_router),
+      .use(character_fields_templates_router)
+      .use(character_fields_router),
   )
   .use(swagger())
   .listen((process.env.PORT as string) || 3000);
