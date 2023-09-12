@@ -6,15 +6,13 @@
   },
   "settings": {
     "import/parsers": {
-      "@typescript-eslint/parser": [".ts", ".tsx"]
+      "@typescript-eslint/parser": [".ts"]
     },
     "import/resolver": {
-      "node": {
-        "extensions": [".js", ".jsx", ".ts", ".tsx"]
-      }
+      "typescript": {}
     }
   },
-  "extends": ["plugin:prettier/recommended", "eslint:recommended", "plugin:import/recommended"],
+  "extends": ["plugin:prettier/recommended", "eslint:recommended", "plugin:import/recommended", "plugin:import/typescript"],
   "overrides": [],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
