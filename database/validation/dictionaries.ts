@@ -1,23 +1,23 @@
-import { Insertable, Updateable } from "kysely";
-import { Dictionaries } from "kysely-codegen";
-import { z } from "zod";
+import { t } from "elysia";
 
-export type InserDictionaryType = Insertable<Dictionaries>;
-export type UpdateDictionaryType = Updateable<Dictionaries>;
-
-export const InsertDictionarySchema = z.object({
-  title: z.string(),
-  project_id: z.string(),
-  icon: z.string().nullable().optional(),
-  is_folder: z.boolean().nullable().optional(),
-  is_public: z.boolean().nullable().optional(),
-  parent_id: z.string().nullable().optional(),
+export const InsertDictionarySchema = t.Object({
+  data: t.Object({
+    title: t.String(),
+    project_id: t.String(),
+    icon: t.Optional(t.Union([t.String(), t.Null()])),
+    is_folder: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    parent_id: t.Optional(t.Union([t.String(), t.Null()])),
+  }),
 });
-export const UpdateDictionarySchema = z.object({
-  id: z.string(),
-  title: z.string().optional(),
-  icon: z.string().nullable().optional(),
-  is_folder: z.boolean().nullable().optional(),
-  is_public: z.boolean().nullable().optional(),
-  parent_id: z.string().nullable().optional(),
+
+export const UpdateDictionarySchema = t.Object({
+  data: t.Object({
+    id: t.String(),
+    title: t.Optional(t.String()),
+    icon: t.Optional(t.Union([t.String(), t.Null()])),
+    is_folder: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    parent_id: t.Optional(t.Union([t.String(), t.Null()])),
+  }),
 });

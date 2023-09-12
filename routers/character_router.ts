@@ -7,7 +7,7 @@ import groupBy from "lodash.groupby";
 import uniqBy from "lodash.uniqby";
 
 import { db } from "../database/db";
-import { ListCharacterSchema, ReadCharacterSchema, InsertCharacterSchema, UpdateCharacterSchema } from "../database/validation";
+import { InsertCharacterSchema, ListCharacterSchema, ReadCharacterSchema, UpdateCharacterSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, constructTagFilter } from "../utils/filterConstructor";
