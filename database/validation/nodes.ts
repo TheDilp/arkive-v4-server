@@ -70,7 +70,6 @@ export const InsertNodeSchema = t.Object({
 
 export const UpdateNodeSchema = t.Object({
   data: t.Object({
-    id: t.Optional(t.String()),
     label: t.Optional(t.Union([t.String(), t.Null()])),
     type: NodeShapeEnum,
     width: t.Optional(t.Number()),

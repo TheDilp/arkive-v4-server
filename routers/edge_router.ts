@@ -1,98 +1,92 @@
-import { FastifyInstance, FastifyRequest } from "fastify";
+import Elysia from "elysia";
 
 import { db } from "../database/db";
-import { InsertEdgeSchema, InsertEdgeType, UpdateEdgeSchema, UpdateEdgeType } from "../database/validation/edges";
-import { RequestBodyType } from "../types/requestTypes";
+import { DeleteManyEdgeSchema, InsertEdgeSchema, ReadEdgeSchema, UpdateEdgeSchema } from "../database/validation/edges";
+import { MessageEnum } from "../enums/requestEnums";
+import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { CreateTagRelations, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 
-export function edge_router(server: FastifyInstance, _: any, done: any) {
-  // #region create_routes
+export function edge_router(app: Elysia) {
+  return app.group("/edges", (server) =>
+    server
+      .post(
+        "/create",
+        async ({ body }) => {
+          let returning;
+          await db.transaction().execute(async (tx) => {
+            const data = InsertEdgeSchema.parse(body.data);
+            const edge = await tx.insertInto("edges").values(data).returning("id").executeTakeFirstOrThrow();
+            returning = edge;
+            if (body.relations?.tags) {
+              await CreateTagRelations({ relationalTable: "_edgesTotags", tags: body.relations.tags, id: edge.id, tx });
+            }
+          });
 
-  server.post(
-    "/create",
-    async (req: FastifyRequest<{ Body: { data: InsertEdgeType; relations?: { tags?: { id: string }[] } } }>, rep) => {
-      let returning;
-      await db.transaction().execute(async (tx) => {
-        const data = InsertEdgeSchema.parse(req.body.data);
-        const edge = await tx.insertInto("edges").values(data).returning("id").executeTakeFirstOrThrow();
-        returning = edge;
-        if (req.body.relations?.tags) {
-          await CreateTagRelations({ relationalTable: "_edgesTotags", tags: req.body.relations.tags, id: edge.id, tx });
-        }
-      });
+          return { data: returning, message: `Edge ${MessageEnum.successfully_created}`, ok: true };
+        },
+        {
+          body: InsertEdgeSchema,
+          response: ResponseWithDataSchema,
+        },
+      )
+      .post(
+        "/:id",
+        async ({ params, body }) => {
+          const data = await db
+            .selectFrom("edges")
+            .selectAll()
+            .where("edges.id", "=", params.id)
+            .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_edgesTotags", "edges")))
+            .executeTakeFirstOrThrow();
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: ReadEdgeSchema,
+          response: ResponseWithDataSchema,
+        },
+      )
+      .post(
+        "/update/:id",
+        async ({ params, body }) => {
+          await db.transaction().execute(async (tx) => {
+            if (body.data) {
+              const data = UpdateEdgeSchema.parse(body.data);
+              await tx.updateTable("edges").where("id", "=", params.id).set(data).executeTakeFirstOrThrow();
+            }
+            if (body?.relations) {
+              if (body.relations?.tags)
+                await UpdateTagRelations({
+                  relationalTable: "_edgesTotags",
+                  id: params.id,
+                  newTags: body.relations.tags,
+                  tx,
+                });
+            }
+          });
 
-      rep.send({ data: returning, message: "Edge successfully created.", ok: true });
-    },
+          return { message: `Edge ${MessageEnum.successfully_updated}`, ok: true };
+        },
+        {
+          body: UpdateEdgeSchema,
+          response: ResponseSchema,
+        },
+      )
+      .delete(
+        "/",
+        async ({ body }) => {
+          const edge_ids = body.data.map((edge) => edge.id);
+          if (edge_ids.length) await db.deleteFrom("edges").where("id", "in", edge_ids).execute();
+
+          return { message: `Edges ${MessageEnum.successfully_deleted}`, ok: true };
+        },
+        {
+          body: DeleteManyEdgeSchema,
+          response: ResponseSchema,
+        },
+      )
+      .delete("/:id", async ({ params }) => {
+        await db.deleteFrom("edges").where("edges.id", "=", params.id).execute();
+        return { message: "Edge successfully deleted.", ok: true };
+      }),
   );
-
-  // #endregion create_routes
-
-  // #region read_routes
-  server.post("/:id", async (req: FastifyRequest<{ Params: { id: string }; Body: RequestBodyType }>, rep) => {
-    const data = await db
-      .selectFrom("edges")
-      .selectAll()
-      .where("edges.id", "=", req.params.id)
-      .$if(!!req.body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_edgesTotags", "edges")))
-      .executeTakeFirstOrThrow();
-    rep.send({ data, message: "Success.", ok: true });
-  });
-  // #endregion read_routes
-  // #region update_routes
-  server.post(
-    "/update/:id",
-    async (
-      req: FastifyRequest<{ Params: { id: string }; Body: { data: UpdateEdgeType; relations?: { tags?: { id: string }[] } } }>,
-      rep,
-    ) => {
-      await db.transaction().execute(async (tx) => {
-        if (req.body.data) {
-          const data = UpdateEdgeSchema.parse(req.body.data);
-          await tx.updateTable("edges").where("id", "=", req.params.id).set(data).executeTakeFirstOrThrow();
-        }
-        if (req.body?.relations) {
-          if (req.body.relations?.tags)
-            await UpdateTagRelations({
-              relationalTable: "_edgesTotags",
-              id: req.params.id,
-              newTags: req.body.relations.tags,
-              tx,
-            });
-        }
-      });
-
-      rep.send({ message: "Edge successfully updated.", ok: true });
-    },
-  );
-  // #endregion update_routes
-  // #region delete_routes
-  server.delete(
-    "/",
-    async (
-      req: FastifyRequest<{
-        Body: { data: { id: string }[] };
-      }>,
-      rep,
-    ) => {
-      const edge_ids = req.body.data.map((edge) => edge.id);
-      if (edge_ids.length) await db.deleteFrom("edges").where("id", "in", edge_ids).execute();
-
-      rep.send({ message: "Edges successfully deleted.", ok: true });
-    },
-  );
-  server.delete(
-    "/:id",
-    async (
-      req: FastifyRequest<{
-        Params: { id: string };
-      }>,
-      rep,
-    ) => {
-      await db.deleteFrom("edges").where("edges.id", "=", req.params.id).execute();
-      rep.send({ message: "Edge successfully deleted.", ok: true });
-    },
-  );
-  // #endregion delete_routes
-
-  done();
 }

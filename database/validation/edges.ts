@@ -1,78 +1,94 @@
-import { Insertable, Updateable } from "kysely";
-import { Edges } from "kysely-codegen";
-import { z } from "zod";
+import { t } from "elysia";
 
-export type InsertEdgeType = Insertable<Edges>;
-export type UpdateEdgeType = Updateable<Edges>;
-
-export const InsertEdgeSchema = z.object({
-  parent_id: z.string(),
-  source_id: z.string(),
-  target_id: z.string(),
-  label: z.string().nullable().optional(),
-  curve_style: z.string().nullable().optional(),
-  line_style: z.string().nullable().optional(),
-  line_color: z.string().nullable().optional(),
-  line_fill: z.string().nullable().optional(),
-  line_opacity: z.number().nullable().optional(),
-  width: z.number().nullable().optional(),
-  control_point_distances: z.number().nullable().optional(),
-  control_point_weights: z.number().nullable().optional(),
-  taxi_direction: z.string().nullable().optional(),
-  taxi_turn: z.number().nullable().optional(),
-  arrow_scale: z.number().nullable().optional(),
-
-  target_arrow_shape: z.string().nullable().optional(),
-  target_arrow_fill: z.string().nullable().optional(),
-  target_arrow_color: z.string().nullable().optional(),
-  source_arrow_shape: z.string().nullable().optional(),
-  source_arrow_fill: z.string().nullable().optional(),
-  source_arrow_color: z.string().nullable().optional(),
-  mid_target_arrow_shape: z.string().nullable().optional(),
-  mid_target_arrlow_fill: z.string().nullable().optional(),
-  mid_target_arrlow_color: z.string().nullable().optional(),
-  mid_source_arrow_shape: z.string().nullable().optional(),
-  mid_source_arrow_fill: z.string().nullable().optional(),
-  mid_source_arrow_color: z.string().nullable().optional(),
-
-  font_size: z.number().nullable().optional(),
-  font_color: z.string().nullable().optional(),
-  font_family: z.string().nullable().optional(),
-  z_index: z.number().nullable().optional(),
+export const ReadEdgeSchema = t.Object({
+  relations: t.Optional(
+    t.Object({
+      tags: t.Optional(t.Boolean()),
+    }),
+  ),
 });
 
-export const UpdateEdgeSchema = z.object({
-  id: z.string().optional(),
-  label: z.string().nullable().optional(),
-  curve_style: z.string().nullable().optional(),
-  line_style: z.string().nullable().optional(),
-  line_color: z.string().nullable().optional(),
-  line_fill: z.string().nullable().optional(),
-  line_opacity: z.number().nullable().optional(),
-  width: z.number().nullable().optional(),
-  control_point_distances: z.number().nullable().optional(),
-  control_point_weights: z.number().nullable().optional(),
-  taxi_direction: z.string().nullable().optional(),
-  taxi_turn: z.number().nullable().optional(),
-  arrow_scale: z.number().nullable().optional(),
+export const InsertEdgeSchema = t.Object({
+  data: t.Object({
+    parent_id: t.String(),
+    source_id: t.String(),
+    target_id: t.String(),
+    label: t.Optional(t.Union([t.String(), t.Null()])),
+    curve_style: t.Optional(t.Union([t.String(), t.Null()])),
+    line_style: t.Optional(t.Union([t.String(), t.Null()])),
+    line_color: t.Optional(t.Union([t.String(), t.Null()])),
+    line_fill: t.Optional(t.Union([t.String(), t.Null()])),
+    line_opacity: t.Optional(t.Union([t.Number(), t.Null()])),
+    width: t.Optional(t.Union([t.Number(), t.Null()])),
+    control_point_distances: t.Optional(t.Union([t.Number(), t.Null()])),
+    control_point_weights: t.Optional(t.Union([t.Number(), t.Null()])),
+    taxi_direction: t.Optional(t.Union([t.String(), t.Null()])),
+    taxi_turn: t.Optional(t.Union([t.Number(), t.Null()])),
+    arrow_scale: t.Optional(t.Union([t.Number(), t.Null()])),
 
-  target_arrow_shape: z.string().nullable().optional(),
-  target_arrow_fill: z.string().nullable().optional(),
-  target_arrow_color: z.string().nullable().optional(),
-  source_arrow_shape: z.string().nullable().optional(),
-  source_arrow_fill: z.string().nullable().optional(),
-  source_arrow_color: z.string().nullable().optional(),
-  mid_target_arrow_shape: z.string().nullable().optional(),
-  mid_target_arrlow_fill: z.string().nullable().optional(),
-  mid_target_arrlow_color: z.string().nullable().optional(),
-  mid_source_arrow_shape: z.string().nullable().optional(),
-  mid_source_arrow_fill: z.string().nullable().optional(),
-  mid_source_arrow_color: z.string().nullable().optional(),
+    target_arrow_shape: t.Optional(t.Union([t.String(), t.Null()])),
+    target_arrow_fill: t.Optional(t.Union([t.String(), t.Null()])),
+    target_arrow_color: t.Optional(t.Union([t.String(), t.Null()])),
+    source_arrow_shape: t.Optional(t.Union([t.String(), t.Null()])),
+    source_arrow_fill: t.Optional(t.Union([t.String(), t.Null()])),
+    source_arrow_color: t.Optional(t.Union([t.String(), t.Null()])),
+    mid_target_arrow_shape: t.Optional(t.Union([t.String(), t.Null()])),
+    mid_target_arrlow_fill: t.Optional(t.Union([t.String(), t.Null()])),
+    mid_target_arrlow_color: t.Optional(t.Union([t.String(), t.Null()])),
+    mid_source_arrow_shape: t.Optional(t.Union([t.String(), t.Null()])),
+    mid_source_arrow_fill: t.Optional(t.Union([t.String(), t.Null()])),
+    mid_source_arrow_color: t.Optional(t.Union([t.String(), t.Null()])),
 
-  font_size: z.number().nullable().optional(),
-  font_color: z.string().nullable().optional(),
-  font_family: z.string().nullable().optional(),
-  z_index: z.number().nullable().optional(),
+    font_size: t.Optional(t.Union([t.Number(), t.Null()])),
+    font_color: t.Optional(t.Union([t.String(), t.Null()])),
+    font_family: t.Optional(t.Union([t.String(), t.Null()])),
+    z_index: t.Optional(t.Union([t.Number(), t.Null()])),
+  }),
+  relations: t.Optional(
+    t.Object({
+      tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
+    }),
+  ),
 });
 
-export type EdgeColumns = keyof Edges;
+export const UpdateEdgeSchema = t.Object({
+  data: t.Object({
+    label: t.Optional(t.Union([t.String(), t.Null()])),
+    curve_style: t.Optional(t.Union([t.String(), t.Null()])),
+    line_style: t.Optional(t.Union([t.String(), t.Null()])),
+    line_color: t.Optional(t.Union([t.String(), t.Null()])),
+    line_fill: t.Optional(t.Union([t.String(), t.Null()])),
+    line_opacity: t.Optional(t.Union([t.Number(), t.Null()])),
+    width: t.Optional(t.Union([t.Number(), t.Null()])),
+    control_point_distances: t.Optional(t.Union([t.Number(), t.Null()])),
+    control_point_weights: t.Optional(t.Union([t.Number(), t.Null()])),
+    taxi_direction: t.Optional(t.Union([t.String(), t.Null()])),
+    taxi_turn: t.Optional(t.Union([t.Number(), t.Null()])),
+    arrow_scale: t.Optional(t.Union([t.Number(), t.Null()])),
+
+    target_arrow_shape: t.Optional(t.Union([t.String(), t.Null()])),
+    target_arrow_fill: t.Optional(t.Union([t.String(), t.Null()])),
+    target_arrow_color: t.Optional(t.Union([t.String(), t.Null()])),
+    source_arrow_shape: t.Optional(t.Union([t.String(), t.Null()])),
+    source_arrow_fill: t.Optional(t.Union([t.String(), t.Null()])),
+    source_arrow_color: t.Optional(t.Union([t.String(), t.Null()])),
+    mid_target_arrow_shape: t.Optional(t.Union([t.String(), t.Null()])),
+    mid_target_arrlow_fill: t.Optional(t.Union([t.String(), t.Null()])),
+    mid_target_arrlow_color: t.Optional(t.Union([t.String(), t.Null()])),
+    mid_source_arrow_shape: t.Optional(t.Union([t.String(), t.Null()])),
+    mid_source_arrow_fill: t.Optional(t.Union([t.String(), t.Null()])),
+    mid_source_arrow_color: t.Optional(t.Union([t.String(), t.Null()])),
+
+    font_size: t.Optional(t.Union([t.Number(), t.Null()])),
+    font_color: t.Optional(t.Union([t.String(), t.Null()])),
+    font_family: t.Optional(t.Union([t.String(), t.Null()])),
+    z_index: t.Optional(t.Union([t.Number(), t.Null()])),
+  }),
+  relations: t.Optional(
+    t.Object({
+      tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
+    }),
+  ),
+});
+
+export const DeleteManyEdgeSchema = t.Object({ data: t.Array(t.Object({ id: t.String() })) });
