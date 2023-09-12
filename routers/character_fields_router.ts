@@ -3,6 +3,7 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 
 import { db } from "../database/db";
 import { ListCharacterFieldsSchema } from "../database/validation";
+import { MessageEnum } from "../enums/requestEnums";
 import { ResponseWithDataSchema } from "../types/requestTypes";
 
 export function character_fields_router(app: Elysia) {
@@ -34,7 +35,7 @@ export function character_fields_router(app: Elysia) {
           .where("character_fields.parent_id", "=", body.data.parent_id)
           .execute();
 
-        return { data: character_fields, message: "Success.", ok: true };
+        return { data: character_fields, message: MessageEnum.success, ok: true };
       },
       {
         body: ListCharacterFieldsSchema,

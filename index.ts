@@ -37,7 +37,7 @@ server.register(authentication_router, { prefix: "/api/v1/auth" });
 server.register(
   (instance, _, done) => {
     instance.register(user_router, { prefix: "/users" });
-    instance.register(document_router, { prefix: "/documents" });
+    // instance.register(document_router, { prefix: "/documents" });
     instance.register(map_router, { prefix: "/maps" });
     instance.register(map_pin_router, { prefix: "/map_pins" });
     instance.register(board_router, { prefix: "/graphs" });
@@ -90,7 +90,8 @@ const app = new Elysia()
       .use(tag_router)
       .use(character_router)
       .use(character_fields_templates_router)
-      .use(character_fields_router),
+      .use(character_fields_router)
+      .use(document_router),
   )
   .use(swagger())
   .listen((process.env.PORT as string) || 3000);

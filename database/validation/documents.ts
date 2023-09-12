@@ -1,31 +1,89 @@
-import { Insertable, Updateable } from "kysely";
-import { Documents } from "kysely-codegen";
-import { z } from "zod";
+import { t } from "elysia";
 
-export type InsertDocumentType = Insertable<Documents>;
-export type UpdateDocumentType = Updateable<Documents>;
+import { RequestBodySchema } from "../../types/requestTypes";
 
-export const InsertDocumentSchema = z.object({
-  project_id: z.string(),
-  title: z.string().optional(),
-  content: z.string().nullable().optional(),
-  icon: z.string().nullable().optional(),
-  is_folder: z.boolean().nullable().optional(),
-  is_public: z.boolean().nullable().optional(),
-  is_template: z.boolean().nullable().optional(),
-  parent_id: z.string().nullable().optional(),
-  image_id: z.string().nullable().optional(),
-  dice_color: z.string().nullable().optional(),
+export const ReadDocumentSchema = t.Intersect([
+  RequestBodySchema,
+  t.Optional(
+    t.Object({
+      relations: t.Optional(
+        t.Object({
+          alter_names: t.Optional(t.Boolean()),
+          tags: t.Optional(t.Boolean()),
+          children: t.Optional(t.Boolean()),
+          parents: t.Optional(t.Boolean()),
+        }),
+      ),
+    }),
+  ),
+]);
+export const ListDocumentSchema = t.Intersect([RequestBodySchema, t.Object({ data: t.Object({ project_id: t.String() }) })]);
+
+export const InsertDocumentSchema = t.Object({
+  data: t.Object({
+    project_id: t.String(),
+    title: t.Optional(t.String()),
+    content: t.Optional(t.Union([t.String(), t.Null()])),
+    icon: t.Optional(t.Union([t.String(), t.Null()])),
+    is_folder: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    is_template: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    parent_id: t.Optional(t.Union([t.String(), t.Null()])),
+    image_id: t.Optional(t.Union([t.String(), t.Null()])),
+    dice_color: t.Optional(t.Union([t.String(), t.Null()])),
+  }),
+  relations: t.Optional(
+    t.Object({
+      alter_names: t.Optional(
+        t.Array(
+          t.Object({
+            title: t.String(),
+            project_id: t.String(),
+            parent_id: t.String(),
+          }),
+        ),
+      ),
+      tags: t.Optional(
+        t.Array(
+          t.Object({
+            id: t.String(),
+          }),
+        ),
+      ),
+    }),
+  ),
 });
-export const UpdateDocumentSchema = z.object({
-  id: z.string(),
-  title: z.string().optional(),
-  content: z.string().nullable().optional(),
-  icon: z.string().nullable().optional(),
-  is_folder: z.boolean().nullable().optional(),
-  is_public: z.boolean().nullable().optional(),
-  is_template: z.boolean().nullable().optional(),
-  parent_id: z.string().nullable().optional(),
-  image_id: z.string().nullable().optional(),
-  dice_color: z.string().nullable().optional(),
+export const UpdateDocumentSchema = t.Object({
+  data: t.Object({
+    id: t.String(),
+    title: t.Optional(t.String()),
+    content: t.Optional(t.Union([t.String(), t.Null()])),
+    icon: t.Optional(t.Union([t.String(), t.Null()])),
+    is_folder: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    is_template: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    parent_id: t.Optional(t.Union([t.String(), t.Null()])),
+    image_id: t.Optional(t.Union([t.String(), t.Null()])),
+    dice_color: t.Optional(t.Union([t.String(), t.Null()])),
+  }),
+  relations: t.Optional(
+    t.Object({
+      alter_names: t.Optional(
+        t.Array(
+          t.Object({
+            title: t.String(),
+            project_id: t.String(),
+            parent_id: t.String(),
+          }),
+        ),
+      ),
+      tags: t.Optional(
+        t.Array(
+          t.Object({
+            id: t.String(),
+          }),
+        ),
+      ),
+    }),
+  ),
 });

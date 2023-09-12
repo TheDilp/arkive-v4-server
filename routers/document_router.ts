@@ -1,4 +1,4 @@
-import { FastifyInstance, FastifyRequest } from "fastify";
+import Elysia from "elysia";
 import { SelectExpression, SelectQueryBuilder } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
@@ -7,12 +7,13 @@ import { db } from "../database/db";
 import { EntitiesWithChildren } from "../database/types";
 import {
   InsertDocumentSchema,
-  InsertDocumentType,
+  ListDocumentSchema,
+  ReadDocumentSchema,
   UpdateDocumentSchema,
-  UpdateDocumentType,
 } from "../database/validation/documents";
-import { RequestBodyType } from "../types/requestTypes";
-import { constructFilter, relationConstructor } from "../utils/filterConstructor";
+import { MessageEnum } from "../enums/requestEnums";
+import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import {
   CreateTagRelations,
@@ -23,198 +24,165 @@ import {
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
 
-export function document_router(server: FastifyInstance, _: any, done: any) {
-  // #region create_routes
+export function document_router(app: Elysia) {
+  return app.group("/documents", (server) =>
+    server
+      .post(
+        "/create",
+        async ({ body }) => {
+          await db.transaction().execute(async (tx) => {
+            const [document] = await tx.insertInto("documents").values(body.data).returning("id").execute();
 
-  server.post(
-    "/create",
-    async (
-      req: FastifyRequest<{
-        Body: { data: InsertDocumentType; relations?: { tags?: { id: string }[]; alter_names?: { title: string }[] } };
-      }>,
-      rep,
-    ) => {
-      await db.transaction().execute(async (tx) => {
-        const parsedData = InsertDocumentSchema.parse(req.body.data);
-        const [document] = await tx.insertInto("documents").values(parsedData).returning("id").execute();
+            if (body.relations?.alter_names?.length) {
+              const { alter_names } = body.relations;
+              await tx
+                .insertInto("alter_names")
+                .values(
+                  alter_names.map((alter_name) => ({
+                    title: alter_name.title,
+                    project_id: body.data.project_id,
+                    parent_id: document.id,
+                  })),
+                )
+                .execute();
+            }
+            if (body.relations?.tags?.length) {
+              const { tags } = body.relations;
+              await CreateTagRelations({ tx, relationalTable: "_documentsTotags", id: document.id, tags });
+            }
+          });
+          return { message: `Document ${MessageEnum.successfully_created}`, ok: true };
+        },
+        {
+          body: InsertDocumentSchema,
+          response: ResponseSchema,
+        },
+      )
+      .post(
+        "/",
+        async ({ body }) => {
+          const data = await db
+            .selectFrom("documents")
+            .where("documents.project_id", "=", body?.data?.project_id)
+            .$if(!body?.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body?.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "documents">[]))
+            .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
+              qb = constructFilter("documents", qb, body.filters);
+              return qb;
+            })
+            .$if(!!body.orderBy, (qb) => constructOrdering(body.orderBy, qb))
 
-        if (req.body.relations?.alter_names?.length) {
-          const { alter_names } = req.body.relations;
-          await tx
-            .insertInto("alter_names")
-            .values(
-              alter_names.map((alter_name) => ({
-                title: alter_name.title,
-                project_id: req.body.data.project_id,
-                parent_id: document.id,
-              })),
+            .execute();
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: ListDocumentSchema,
+          response: ResponseWithDataSchema,
+        },
+      )
+      .post(
+        "/:id",
+        async ({ params, body }) => {
+          const [data] = await db
+            .selectFrom("documents")
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "documents">[]))
+            .where("documents.id", "=", params.id)
+            .$if(!!body?.relations, (qb) => {
+              if (body?.relations?.tags) {
+                qb = qb.select((eb) => TagQuery(eb, "_documentsTotags", "documents"));
+              }
+              if (body?.relations?.alter_names) {
+                qb = qb.select((eb) => {
+                  return jsonArrayFrom(eb.selectFrom("alter_names").where("parent_id", "=", params.id)).as("alter_names");
+                });
+              }
+
+              return qb;
+            })
+            .$if(!!body?.relations?.children, (qb) =>
+              GetEntityChildren(qb as SelectQueryBuilder<DB, EntitiesWithChildren, {}>, "documents"),
             )
             .execute();
-        }
-        if (req.body.relations?.tags?.length) {
-          const { tags } = req.body.relations;
-          await CreateTagRelations({ tx, relationalTable: "_documentsTotags", id: document.id, tags });
-        }
-      });
-      rep.send({ message: "Document successfully created.", ok: true });
-    },
-  );
 
-  // #endregion create_routes
-
-  // #region read_routes
-  server.post("/", async (req: FastifyRequest<{ Body: RequestBodyType }>, rep) => {
-    const data = await db
-      .selectFrom("documents")
-      .where("documents.project_id", "=", req.body?.data?.project_id)
-      .$if(!req.body.fields.length, (qb) => qb.selectAll())
-      .$if(!!req.body.fields.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "documents">[]))
-      .$if(!!req.body?.filters?.and?.length || !!req.body?.filters?.or?.length, (qb) => {
-        qb = constructFilter("documents", qb, req.body.filters);
-        return qb;
-      })
-      .$if(!!req.body.orderBy, (qb) => constructOrdering(req.body.orderBy, qb))
-
-      .execute();
-    rep.send({ data, message: "Success", ok: true });
-  });
-  server.post("/:id", async (req: FastifyRequest<{ Params: { id: string }; Body: RequestBodyType }>, rep) => {
-    const [data] = await db
-      .selectFrom("documents")
-      .$if(!req.body.fields?.length, (qb) => qb.selectAll())
-      .$if(!!req.body.fields?.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "documents">[]))
-      .where("documents.id", "=", req.params.id)
-      .$if(!!req.body?.relations, (qb) => {
-        if (req.body?.relations?.tags) {
-          qb = qb.select((eb) => TagQuery(eb, "_documentsTotags", "documents"));
-        }
-        if (req.body?.relations?.alter_names) {
-          if (typeof req.body?.relations?.alter_names === "boolean") {
-            qb = qb.select((eb) =>
-              jsonArrayFrom(
-                eb
-                  .selectFrom("alter_names")
-                  .select(["id", "title", "parent_id", "project_id"])
-                  .where("parent_id", "=", req.params.id),
-              ).as("alter_names"),
-            );
-          } else if (typeof req.body?.relations?.alter_names === "object") {
-            qb = qb.select((eb) => {
-              return jsonArrayFrom(
-                relationConstructor(
-                  "alter_names",
-                  eb,
-                  typeof req.body?.relations?.alter_names === "object" ? req.body?.relations?.alter_names : {},
-                  ["id", "title", "parent_id"],
-                ),
-              ).as("alter_names");
-            });
+          if (body?.relations?.parents) {
+            const parents = await GetBreadcrumbs({ db, id: params.id, table_name: "documents" });
+            return { data: { ...data, parents }, message: MessageEnum.success, ok: true };
           }
-        }
-
-        return qb;
-      })
-      .$if(!!req.body?.relations?.children, (qb) =>
-        GetEntityChildren(qb as SelectQueryBuilder<DB, EntitiesWithChildren, {}>, "documents"),
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: ReadDocumentSchema,
+          response: ResponseWithDataSchema,
+        },
       )
-      .execute();
+      .post(
+        "/update/:id",
+        async ({ params, body }) => {
+          await db.transaction().execute(async (tx) => {
+            if (body.data) {
+              await tx.updateTable("documents").where("documents.id", "=", params.id).set(body.data).execute();
+            }
+            if (body.relations?.tags) {
+              await UpdateTagRelations({
+                relationalTable: "_documentsTotags",
+                id: params.id,
+                newTags: body.relations.tags,
+                tx,
+              });
+            }
+            if (body.relations?.alter_names) {
+              const existingAlterNames = await tx
+                .selectFrom("alter_names")
+                .select(["id", "title"])
+                .where("parent_id", "=", params.id)
+                .execute();
 
-    if (req.body?.relations?.parents) {
-      const parents = await GetBreadcrumbs({ db, id: req.params.id, table_name: "documents" });
-      rep.send({ data: { ...data, parents }, message: "Success.", ok: true });
-    }
-    rep.send({ data, message: "Success", ok: true });
-  });
-  // #endregion read_routes
+              const existingIds = existingAlterNames.map((field) => field.id);
 
-  // #region update_routes
-  server.post(
-    "/update/:id",
-    async (
-      req: FastifyRequest<{
-        Params: { id: string };
-        Body: {
-          data: UpdateDocumentType;
-          relations?: { tags?: { id: string }[]; alter_names?: { id: string; project_id: string }[] };
-        };
-      }>,
-      rep,
-    ) => {
-      await db.transaction().execute(async (tx) => {
-        if (req.body.data) {
-          const parsedData = UpdateDocumentSchema.parse(req.body.data);
-
-          await tx.updateTable("documents").where("documents.id", "=", req.params.id).set(parsedData).execute();
-        }
-        if (req.body.relations?.tags) {
-          await UpdateTagRelations({
-            relationalTable: "_documentsTotags",
-            id: req.params.id,
-            newTags: req.body.relations.tags,
-            tx,
+              const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+                existingIds,
+                body.relations?.alter_names,
+              );
+              if (idsToRemove.length) {
+                await tx.deleteFrom("alter_names").where("id", "in", idsToRemove).execute();
+              }
+              if (itemsToAdd.length) {
+                await tx
+                  .insertInto("alter_names")
+                  .values(
+                    itemsToAdd.map((item) => ({
+                      project_id: item.project_id,
+                      parent_id: params.id,
+                      title: item.title,
+                    })),
+                  )
+                  .execute();
+              }
+              if (itemsToUpdate.length) {
+                await Promise.all(
+                  itemsToUpdate.map(async (item) =>
+                    tx
+                      .updateTable("alter_names")
+                      .where("parent_id", "=", params.id)
+                      .where("id", "=", item.id)
+                      .set({ title: item.title })
+                      .execute(),
+                  ),
+                );
+              }
+            }
           });
-        }
-        if (req.body.relations?.alter_names) {
-          const existingAlterNames = await tx
-            .selectFrom("alter_names")
-            .select(["id", "title"])
-            .where("parent_id", "=", req.params.id)
-            .execute();
-
-          const existingIds = existingAlterNames.map((field) => field.id);
-
-          const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
-            existingIds,
-            req.body.relations?.alter_names,
-          );
-          if (idsToRemove.length) {
-            await tx.deleteFrom("alter_names").where("id", "in", idsToRemove).execute();
-          }
-          if (itemsToAdd.length) {
-            await tx
-              .insertInto("alter_names")
-              .values(
-                itemsToAdd.map((item) => ({
-                  project_id: item.project_id,
-                  parent_id: req.params.id,
-                  title: item.title,
-                })),
-              )
-              .execute();
-          }
-          if (itemsToUpdate.length) {
-            await Promise.all(
-              itemsToUpdate.map(async (item) =>
-                tx
-                  .updateTable("alter_names")
-                  .where("parent_id", "=", req.params.id)
-                  .where("id", "=", item.id)
-                  .set({ title: item.title })
-                  .execute(),
-              ),
-            );
-          }
-        }
-      });
-      rep.send({ message: "Document successfully updated.", ok: true });
-    },
+          return { message: `Document ${MessageEnum.successfully_updated}.`, ok: true };
+        },
+        {
+          body: UpdateDocumentSchema,
+          response: ResponseSchema,
+        },
+      )
+      .delete("/:id", async ({ params }) => {
+        await db.deleteFrom("documents").where("documents.id", "=", params.id).execute();
+        return { message: `Document ${MessageEnum.successfully_deleted}.`, ok: true };
+      }),
   );
-  // #endregion update_routes
-
-  // #region delete_routes
-  server.delete(
-    "/:id",
-    async (
-      req: FastifyRequest<{
-        Params: { id: string };
-      }>,
-      rep,
-    ) => {
-      await db.deleteFrom("documents").where("documents.id", "=", req.params.id).execute();
-      rep.send({ message: "Document successfully deleted.", ok: true });
-    },
-  );
-  // #endregion delete_routes
-
-  done();
 }

@@ -1,6 +1,6 @@
-import { getSchemaValidator, t } from "elysia";
+import { t } from "elysia";
+
 import { FilterEnum } from "../enums/requestEnums";
-import { TSchema, TypeBuilder } from "@sinclair/typebox";
 
 export type SearchableEntities =
   | "characters"
@@ -19,7 +19,7 @@ export type RequestFilterOperatorType = keyof typeof FilterEnum;
 
 export interface RequestFilterType {
   field: string;
-  value: string | number;
+  value: string | number | null;
   operator: RequestFilterOperatorType;
 }
 
@@ -50,6 +50,20 @@ export interface RequestBodyType<T extends { data: any; relations: any }> {
   };
   relationFilters?: Record<string, string[]>;
 }
+
+export const FilterEnumSchema = t.Union([
+  t.Literal("eq"),
+  t.Literal("neq"),
+  t.Literal("gt"),
+  t.Literal("gte"),
+  t.Literal("lt"),
+  t.Literal("lte"),
+  t.Literal("ilike"),
+  t.Literal("in"),
+  t.Literal("is"),
+  t.Literal("notIn"),
+]);
+
 export const RequestBodySchema = t.Object({
   fields: t.Optional(t.Array(t.String())),
   orderBy: t.Optional(t.Array(t.Object({ field: t.String(), sort: t.Union([t.Literal("asc"), t.Literal("desc")]) }))),
@@ -65,8 +79,8 @@ export const RequestBodySchema = t.Object({
         t.Array(
           t.Object({
             field: t.String(),
-            value: t.Union([t.String(), t.Number()]),
-            operator: t.Union([t.Literal("eq"), t.Literal("neq"), t.Literal("gt")]),
+            value: t.Union([t.String(), t.Number(), t.Null()]),
+            operator: FilterEnumSchema,
           }),
         ),
       ),
@@ -74,8 +88,8 @@ export const RequestBodySchema = t.Object({
         t.Array(
           t.Object({
             field: t.String(),
-            value: t.Union([t.String(), t.Number()]),
-            operator: t.Union([t.Literal("eq"), t.Literal("neq"), t.Literal("gt")]),
+            value: t.Union([t.String(), t.Number(), t.Null()]),
+            operator: FilterEnumSchema,
           }),
         ),
       ),

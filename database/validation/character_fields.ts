@@ -26,7 +26,7 @@ export const UpdateCharacterFieldsSchema = t.Object({
     sort: t.Optional(t.Number()),
     field_type: t.String(),
     parent_id: t.String(),
-    options: t.String().array().optional(),
+    options: t.Optional(t.Array(t.String())),
     formula: t.Optional(t.Union([t.String(), t.Null()])),
     random_table_id: t.Optional(t.Union([t.String(), t.Null()])),
   }),
