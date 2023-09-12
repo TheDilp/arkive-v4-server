@@ -1,10 +1,11 @@
 import { randomUUID } from "crypto";
 import Elysia from "elysia";
 import { SelectExpression, sql } from "kysely";
-import { DB } from "kysely-codegen";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
+import { DB } from "kysely-codegen";
 import groupBy from "lodash.groupby";
 import uniqBy from "lodash.uniqby";
+
 import { db } from "../database/db";
 import { CharacterListSchema, CharacterReadSchema, InsertCharacterSchema, UpdateCharacterSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";

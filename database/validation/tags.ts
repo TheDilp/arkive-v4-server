@@ -1,8 +1,4 @@
 import { t } from "elysia";
-import { z } from "zod";
-import { RequestBodySchema } from "../../types/requestTypes";
-
-export const TagListSchema = t.Intersect([RequestBodySchema, t.Object({ data: t.Object({ project_id: t.String() }) })]);
 
 export const InsertTagSchema = t.Union([
   t.Object({

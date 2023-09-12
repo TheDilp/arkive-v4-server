@@ -9,6 +9,7 @@ export * from "./dictionaries";
 export * from "./documents";
 export * from "./edges";
 export * from "./events";
+export * from "./generic";
 export * from "./graphs";
 export * from "./map_pins";
 export * from "./maps";

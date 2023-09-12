@@ -11,7 +11,7 @@ export const UpdateProjectSchema = t.Object({
   }),
 });
 
-export const ProjectistSchema = t.Object({
+export const ProjectListSchema = t.Object({
   data: t.Object({
     owner_id: t.String(),
   }),

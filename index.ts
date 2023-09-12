@@ -27,7 +27,7 @@ import { calendar_router } from "./routers/calendar_router";
 import { dictionary_router } from "./routers/dictionary_router";
 import { event_router } from "./routers/event_router";
 import { month_router } from "./routers/month_router";
-import { timeline_router } from "./routers/timeline_router";
+// import { timeline_router } from "./routers/timeline_router";
 import { word_router } from "./routers/word_router";
 
 const server = fastify();
@@ -37,8 +37,7 @@ server.register(authentication_router, { prefix: "/api/v1/auth" });
 server.register(
   (instance, _, done) => {
     instance.register(user_router, { prefix: "/users" });
-    // instance.register(document_router, { prefix: "/documents" });
-    instance.register(map_router, { prefix: "/maps" });
+    // instance.register(map_router, { prefix: "/maps" });
     instance.register(map_pin_router, { prefix: "/map_pins" });
     instance.register(board_router, { prefix: "/graphs" });
     instance.register(node_router, { prefix: "/nodes" });
@@ -46,7 +45,7 @@ server.register(
     instance.register(calendar_router, { prefix: "/calendars" });
     instance.register(month_router, { prefix: "/months" });
     instance.register(event_router, { prefix: "/events" });
-    instance.register(timeline_router, { prefix: "/timelines" });
+    // instance.register(timeline_router, { prefix: "/timelines" });
     instance.register(dictionary_router, { prefix: "/dictionaries" });
     instance.register(word_router, { prefix: "/words" });
     instance.register(random_table_router, { prefix: "/random_tables" });
@@ -91,7 +90,8 @@ const app = new Elysia()
       .use(character_router)
       .use(character_fields_templates_router)
       .use(character_fields_router)
-      .use(document_router),
+      .use(document_router)
+      .use(map_router),
   )
   .use(swagger())
   .listen((process.env.PORT as string) || 3000);

@@ -1,4 +1,5 @@
 import { t } from "elysia";
+
 import { RequestBodySchema } from "../../types/requestTypes";
 
 export const ListCharacterFieldsTemplateSchema = t.Intersect([

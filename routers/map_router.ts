@@ -1,151 +1,146 @@
-import { FastifyInstance, FastifyRequest } from "fastify";
+import { Elysia } from "elysia";
 import { SelectExpression } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertMapSchema, InsertMapType, UpdateMapSchema, UpdateMapType } from "../database/validation/maps";
-import { RequestBodyType } from "../types/requestTypes";
+import { EntityListSchema } from "../database/validation";
+import { InsertMapSchema, ReadMapSchema, UpdateMapSchema } from "../database/validation/maps";
+import { MessageEnum } from "../enums/requestEnums";
+import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { CreateTagRelations, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 
-export function map_router(server: FastifyInstance, _: any, done: any) {
-  // #region create_routes
-  server.post(
-    "/create",
-    async (req: FastifyRequest<{ Body: { data: InsertMapType; relations?: { tags?: { id: string }[] } } }>, rep) => {
-      const data = InsertMapSchema.parse(req.body.data);
+export function map_router(app: Elysia) {
+  return app.group("/maps", (server) =>
+    server
+      .post(
+        "/create",
+        async ({ body }) => {
+          await db.transaction().execute(async (tx) => {
+            const map = await tx.insertInto("maps").values(body.data).returning("id").executeTakeFirstOrThrow();
 
-      await db.transaction().execute(async (tx) => {
-        const map = await tx.insertInto("maps").values(data).returning("id").executeTakeFirstOrThrow();
+            if (body?.relations?.tags)
+              await CreateTagRelations({ tx, relationalTable: "_mapsTotags", id: map.id, tags: body.relations.tags });
+          });
 
-        if (req.body?.relations?.tags)
-          await CreateTagRelations({ tx, relationalTable: "_mapsTotags", id: map.id, tags: req.body.relations.tags });
-      });
-
-      rep.send({ message: "Map successfully created.", ok: true });
-    },
-  );
-  // #endregion create_routes
-
-  // #region read_routes
-  server.post("/", async (req: FastifyRequest<{ Body: RequestBodyType }>, rep) => {
-    const data = await db
-      .selectFrom("maps")
-      .$if(!req.body.fields?.length, (qb) => qb.selectAll())
-      .$if(!!req.body.fields?.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "maps">[]))
-      .$if(!!req.body?.filters?.and?.length || !!req.body?.filters?.or?.length, (qb) => {
-        qb = constructFilter("maps", qb, req.body.filters);
-        return qb;
-      })
-      .execute();
-    rep.send({ data, message: "Success", ok: true });
-  });
-  server.post("/:id", async (req: FastifyRequest<{ Params: { id: string }; Body: RequestBodyType }>, rep) => {
-    const data = await db
-      .selectFrom("maps")
-      .$if(!req.body.fields?.length, (qb) => qb.selectAll())
-      .$if(!!req.body.fields?.length, (qb) => qb.clearSelect().select(req.body.fields as SelectExpression<DB, "maps">[]))
-      .where("maps.id", "=", req.params.id)
-      .$if(!!req.body?.relations?.map_pins, (qb) =>
-        qb.select((eb) =>
-          jsonArrayFrom(
-            eb
-              .selectFrom("map_pins")
-              .select([
-                "map_pins.id",
-                "map_pins.background_color",
-                "map_pins.border_color",
-                "map_pins.color",
-                "map_pins.character_id",
-                "map_pins.doc_id",
-                "map_pins.icon",
-                "map_pins.title",
-                "map_pins.parent_id",
-                "map_pins.is_public",
-                "map_pins.lat",
-                "map_pins.lng",
-                "map_pins.map_link",
-                "map_pins.show_background",
-                "map_pins.show_border",
-                (eb) =>
-                  jsonObjectFrom(
-                    eb
-                      .selectFrom("characters")
-                      .whereRef("characters.id", "=", "map_pins.character_id")
-                      .select(["id", "first_name", "last_name", "portrait_id"]),
-                  ).as("character"),
-              ])
-              .whereRef("map_pins.parent_id", "=", "maps.id"),
-          ).as("map_pins"),
-        ),
+          return { message: `Map ${MessageEnum.successfully_created}`, ok: true };
+        },
+        {
+          body: InsertMapSchema,
+          response: ResponseSchema,
+        },
       )
-      .$if(!!req.body?.relations?.map_layers, (qb) =>
-        qb.select((eb) =>
-          jsonArrayFrom(eb.selectFrom("map_layers").selectAll().whereRef("map_layers.parent_id", "=", "maps.id")).as(
-            "map_layers",
-          ),
-        ),
+      .post(
+        "/",
+        async ({ body }) => {
+          const data = await db
+            .selectFrom("maps")
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "maps">[]))
+            .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
+              qb = constructFilter("maps", qb, body.filters);
+              return qb;
+            })
+            .execute();
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: EntityListSchema,
+          response: ResponseWithDataSchema,
+        },
       )
-      .$if(!!req.body?.relations?.images, (qb) =>
-        qb.select((eb) =>
-          jsonArrayFrom(eb.selectFrom("images").select(["id", "title"]).whereRef("maps.image_id", "=", "images.id")).as(
-            "images",
-          ),
-        ),
+      .post(
+        "/:id",
+        async ({ params, body }) => {
+          const data = await db
+            .selectFrom("maps")
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "maps">[]))
+            .where("maps.id", "=", params.id)
+            .$if(!!body?.relations?.map_pins, (qb) =>
+              qb.select((eb) =>
+                jsonArrayFrom(
+                  eb
+                    .selectFrom("map_pins")
+                    .select([
+                      "map_pins.id",
+                      "map_pins.background_color",
+                      "map_pins.border_color",
+                      "map_pins.color",
+                      "map_pins.character_id",
+                      "map_pins.doc_id",
+                      "map_pins.icon",
+                      "map_pins.title",
+                      "map_pins.parent_id",
+                      "map_pins.is_public",
+                      "map_pins.lat",
+                      "map_pins.lng",
+                      "map_pins.map_link",
+                      "map_pins.show_background",
+                      "map_pins.show_border",
+                      (eb) =>
+                        jsonObjectFrom(
+                          eb
+                            .selectFrom("characters")
+                            .whereRef("characters.id", "=", "map_pins.character_id")
+                            .select(["id", "first_name", "last_name", "portrait_id"]),
+                        ).as("character"),
+                    ])
+                    .whereRef("map_pins.parent_id", "=", "maps.id"),
+                ).as("map_pins"),
+              ),
+            )
+            .$if(!!body?.relations?.map_layers, (qb) =>
+              qb.select((eb) =>
+                jsonArrayFrom(eb.selectFrom("map_layers").selectAll().whereRef("map_layers.parent_id", "=", "maps.id")).as(
+                  "map_layers",
+                ),
+              ),
+            )
+            .$if(!!body?.relations?.images, (qb) =>
+              qb.select((eb) =>
+                jsonArrayFrom(eb.selectFrom("images").select(["id", "title"]).whereRef("maps.image_id", "=", "images.id")).as(
+                  "images",
+                ),
+              ),
+            )
+
+            .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_mapsTotags", "maps")))
+            .executeTakeFirstOrThrow();
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        { body: ReadMapSchema, response: ResponseWithDataSchema },
       )
+      .post(
+        "/update/:id",
+        async ({ params, body }) => {
+          await db.transaction().execute(async (tx) => {
+            if (body.data) {
+              await tx.updateTable("maps").set(body.data).executeTakeFirstOrThrow();
+            }
+            if (body?.relations) {
+              if (body.relations?.tags)
+                UpdateTagRelations({ relationalTable: "_mapsTotags", id: params.id, newTags: body.relations.tags, tx });
+            }
+          });
 
-      .$if(!!req.body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_mapsTotags", "maps")))
-      .executeTakeFirstOrThrow();
-    rep.send({ data, message: "Success.", ok: true });
-  });
-  // #endregion read_routes
-
-  // #region update_routes
-  server.post(
-    "/update/:id",
-    async (
-      req: FastifyRequest<{
-        Params: { id: string };
-        Body: { data: UpdateMapType; relations?: { tags?: { id: string }[]; characters?: { id: string }[] } };
-      }>,
-      rep,
-    ) => {
-      await db.transaction().execute(async (tx) => {
-        if (req.body.data) {
-          const parsedData = UpdateMapSchema.parse(req.body.data);
-
-          if (Object.values(parsedData).length) {
-            await tx.updateTable("maps").set(parsedData).executeTakeFirstOrThrow();
-          }
-        }
-        if (req.body?.relations) {
-          if (req.body.relations?.tags)
-            UpdateTagRelations({ relationalTable: "_mapsTotags", id: req.params.id, newTags: req.body.relations.tags, tx });
-        }
-      });
-
-      rep.send({ message: "Map successfully updated.", ok: true });
-    },
+          return { message: `Map ${MessageEnum.successfully_updated}`, ok: true };
+        },
+        {
+          body: UpdateMapSchema,
+          response: ResponseSchema,
+        },
+      )
+      .delete(
+        "/:id",
+        async ({ params }) => {
+          await db.deleteFrom("maps").where("maps.id", "=", params.id).execute();
+          return { message: `Map ${MessageEnum.successfully_deleted}`, ok: true };
+        },
+        {
+          response: ResponseSchema,
+        },
+      ),
   );
-  // #endregion update_routes
-
-  // #region delete_routes
-
-  server.delete(
-    "/:id",
-    async (
-      req: FastifyRequest<{
-        Params: { id: string };
-      }>,
-      rep,
-    ) => {
-      await db.deleteFrom("maps").where("maps.id", "=", req.params.id).execute();
-      rep.send({ message: "Map successfully deleted.", ok: true });
-    },
-  );
-
-  // #endregion delete_routes
-
-  done();
 }

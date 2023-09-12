@@ -1,22 +1,20 @@
-import { FastifyInstance, FastifyRequest } from "fastify";
+import Elysia from "elysia";
 import { SelectExpression } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 import omit from "lodash.omit";
 
 import { db } from "../database/db";
-import { insertCharacterFieldsSchema, InsertCharacterFieldsType } from "../database/validation/character_fields";
 import {
   InsertCharacterFieldsTemplateSchema,
   ListCharacterFieldsTemplateSchema,
   ReadCharacterFieldsTemplateSchema,
   UpdateCharacterFieldsTemplateSchema,
 } from "../database/validation/character_fields_templates";
-import { RequestBodyType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { MessageEnum } from "../enums/requestEnums";
+import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import Elysia from "elysia";
-import { MessageEnum } from "../enums/requestEnums";
 
 export function character_fields_templates_router(app: Elysia) {
   return app.group("/character_fields_templates", (server) =>

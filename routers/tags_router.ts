@@ -1,7 +1,7 @@
 import Elysia from "elysia";
 
 import { db } from "../database/db";
-import { InsertTagSchema, TagListSchema, UpdateTagSchema } from "../database/validation";
+import { EntityListSchema, InsertTagSchema, UpdateTagSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -37,7 +37,7 @@ export function tag_router(app: Elysia) {
 
           return { data, message: MessageEnum.success, ok: true };
         },
-        { body: TagListSchema, response: ResponseWithDataSchema },
+        { body: EntityListSchema, response: ResponseWithDataSchema },
       )
       .post(
         "/update/:id",
