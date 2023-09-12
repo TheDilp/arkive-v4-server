@@ -37,8 +37,6 @@ server.register(authentication_router, { prefix: "/api/v1/auth" });
 server.register(
   (instance, _, done) => {
     instance.register(user_router, { prefix: "/users" });
-    // instance.register(map_router, { prefix: "/maps" });
-    instance.register(map_pin_router, { prefix: "/map_pins" });
     instance.register(board_router, { prefix: "/graphs" });
     instance.register(node_router, { prefix: "/nodes" });
     instance.register(edge_router, { prefix: "/edges" });
@@ -55,14 +53,6 @@ server.register(
   },
   { prefix: "/api/v1" },
 );
-
-// server.listen({ port: parseInt(process.env.PORT as string, 10) || 3000 }, (err, address) => {
-//   if (err) {
-//     console.error(err);
-//     process.exit(1);
-//   }
-//   console.log(`Server listening at ${address}`);
-// });
 
 const app = new Elysia()
   .use(cors({ origin: process.env.NODE_ENV === "development" ? "*" : "https://thearkive.app" }))
@@ -91,7 +81,8 @@ const app = new Elysia()
       .use(character_fields_templates_router)
       .use(character_fields_router)
       .use(document_router)
-      .use(map_router),
+      .use(map_router)
+      .use(map_pin_router),
   )
   .use(swagger())
   .listen((process.env.PORT as string) || 3000);
