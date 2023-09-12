@@ -5,7 +5,8 @@ import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
 import { EntitiesWithChildren } from "../database/types";
-import { InsertGraphSchema, ListGraphSchema, ReadGraphSchema, UpdateGraphSchema } from "../database/validation/graphs";
+import { EntityListSchema } from "../database/validation";
+import { InsertGraphSchema, ReadGraphSchema, UpdateGraphSchema } from "../database/validation/graphs";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
@@ -43,6 +44,7 @@ export function graph_router(app: Elysia) {
         async ({ body }) => {
           const data = await db
             .selectFrom("boards")
+            .where("project_id", "=", body.d)
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "boards">[]))
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
@@ -59,7 +61,7 @@ export function graph_router(app: Elysia) {
           return { data, message: MessageEnum.success, ok: true };
         },
         {
-          body: ListGraphSchema,
+          body: EntityListSchema,
           response: ResponseWithDataSchema,
         },
       )
