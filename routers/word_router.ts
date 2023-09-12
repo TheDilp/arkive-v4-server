@@ -1,26 +1,34 @@
-import { FastifyInstance, FastifyRequest } from "fastify";
+import Elysia from "elysia";
 
 import { db } from "../database/db";
-import { InserWordSchema, InserWordType } from "../database/validation";
+import { InserWordSchema } from "../database/validation";
+import { MessageEnum } from "../enums/requestEnums";
+import { ResponseSchema } from "../types/requestTypes";
 
-export function word_router(server: FastifyInstance, _: any, done: any) {
-  // #region create_routes
-  server.post("/create", async (req: FastifyRequest<{ Body: { data: InserWordType } }>, rep) => {
-    const parsedData = InserWordSchema.parse(req.body.data);
-    await db.insertInto("words").values(parsedData).execute();
-    rep.send({ ok: true, message: "Success" });
-  });
-  // #endregion create_routes
-  // #region read_routes
-  // #endregion read_routes
-  // #region update_routes
-  // #endregion update_routes
-  // #region delete_routes
-  server.post("/delete/:id", async (req: FastifyRequest<{ Params: { id: string } }>, rep) => {
-    await db.deleteFrom("words").where("id", "=", req.params.id).execute();
-    rep.send({ ok: true, message: "Success" });
-  });
-  // #endregion delete_routes
+export function word_router(app: Elysia) {
+  return app.group("/words", (server) =>
+    server
+      .post(
+        "/create",
+        async ({ body }) => {
+          await db.insertInto("words").values(body).execute();
+          return { ok: true, message: `Word ${MessageEnum.successfully_created}` };
+        },
+        {
+          body: InserWordSchema,
+          response: ResponseSchema,
+        },
+      )
 
-  done();
+      .delete(
+        "/delete/:id",
+        async ({ params }) => {
+          await db.deleteFrom("words").where("id", "=", params.id).execute();
+          return { ok: true, message: MessageEnum.success };
+        },
+        {
+          response: ResponseSchema,
+        },
+      ),
+  );
 }

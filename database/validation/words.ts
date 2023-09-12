@@ -1,19 +1,14 @@
-import { Insertable, Updateable } from "kysely";
-import { Words } from "kysely-codegen";
-import { z } from "zod";
+import { t } from "elysia";
 
-export type InserWordType = Insertable<Words>;
-export type UpdateWordType = Updateable<Words>;
-
-export const InserWordSchema = z.object({
-  title: z.string(),
-  parent_id: z.string(),
-  translation: z.string(),
-  description: z.string().nullable().optional(),
+export const InserWordSchema = t.Object({
+  title: t.String(),
+  parent_id: t.String(),
+  translation: t.String(),
+  description: t.Optional(t.Union([t.String(), t.Null()])),
 });
-export const UpdateWordSchema = z.object({
-  id: z.string(),
-  title: z.string().nullable().optional(),
-  translation: z.string().optional(),
-  description: z.string().nullable().optional(),
+
+export const UpdateWordSchema = t.Object({
+  title: t.Optional(t.String()),
+  transaltion: t.Optional(t.String()),
+  description: t.Optional(t.Union([t.String(), t.Null()])),
 });
