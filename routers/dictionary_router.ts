@@ -62,7 +62,7 @@ export function dictionary_router(app: Elysia) {
                     .where("words.parent_id", "=", params.id),
                 ).as("words"),
             ])
-            .execute();
+            .executeTakeFirstOrThrow();
           return { data, message: MessageEnum.success, ok: true };
         },
         {
