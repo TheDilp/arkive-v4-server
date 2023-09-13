@@ -83,7 +83,7 @@ export function document_router(app: Elysia) {
       .post(
         "/:id",
         async ({ params, body }) => {
-          const [data] = await db
+          const data = await db
             .selectFrom("documents")
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "documents">[]))
@@ -103,7 +103,7 @@ export function document_router(app: Elysia) {
             .$if(!!body?.relations?.children, (qb) =>
               GetEntityChildren(qb as SelectQueryBuilder<DB, EntitiesWithChildren, {}>, "documents"),
             )
-            .execute();
+            .executeTakeFirstOrThrow();
 
           if (body?.relations?.parents) {
             const parents = await GetBreadcrumbs({ db, id: params.id, table_name: "documents" });

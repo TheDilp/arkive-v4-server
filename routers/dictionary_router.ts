@@ -1,14 +1,16 @@
 import Elysia from "elysia";
-import { SelectExpression } from "kysely";
+import { SelectExpression, SelectQueryBuilder } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
+import { EntitiesWithChildren } from "../database/types";
 import { EntityListSchema } from "../database/validation";
-import { InsertDictionarySchema, UpdateDictionarySchema } from "../database/validation/dictionaries";
+import { InsertDictionarySchema, ReadDictionarySchema, UpdateDictionarySchema } from "../database/validation/dictionaries";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructOrdering } from "../utils/orderByConstructor";
+import { GetBreadcrumbs, GetEntityChildren } from "../utils/relationalQueryHelpers";
 
 export function dictionary_router(app: Elysia) {
   return app.group("/dictionaries", (server) =>
@@ -46,10 +48,13 @@ export function dictionary_router(app: Elysia) {
       )
       .post(
         "/:id",
-        async ({ params }) => {
+        async ({ params, body }) => {
           const data = await db
             .selectFrom("dictionaries")
             .where("id", "=", params.id)
+            .$if(!!body?.relations?.children, (qb) =>
+              GetEntityChildren(qb as SelectQueryBuilder<DB, EntitiesWithChildren, {}>, "dictionaries"),
+            )
             .select([
               "dictionaries.id",
               "dictionaries.title",
@@ -62,10 +67,16 @@ export function dictionary_router(app: Elysia) {
                     .where("words.parent_id", "=", params.id),
                 ).as("words"),
             ])
+
             .executeTakeFirstOrThrow();
+          if (body?.relations?.parents) {
+            const parents = await GetBreadcrumbs({ db, id: params.id, table_name: "dictionaries" });
+            return { data: { ...data, parents }, message: MessageEnum.success, ok: true };
+          }
           return { data, message: MessageEnum.success, ok: true };
         },
         {
+          body: ReadDictionarySchema,
           response: ResponseWithDataSchema,
         },
       )

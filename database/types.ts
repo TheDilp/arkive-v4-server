@@ -28,6 +28,6 @@ export type EntitiesWithTags =
   | "nodes"
   | "screens";
 
-export type EntitiesWithBreadcrumbs = "documents" | "maps" | "boards" | "random_tables";
+export type EntitiesWithBreadcrumbs = "documents" | "maps" | "boards" | "dictionaries" | "random_tables";
 
-export type EntitiesWithChildren = "documents" | "maps" | "boards" | "random_tables";
+export type EntitiesWithChildren = "documents" | "maps" | "boards" | "dictionaries" | "random_tables";
