@@ -1,7 +1,7 @@
 import { t } from "elysia";
 
 import { RequestBodySchema } from "../../types/requestTypes";
-import { InsertRandomTableOptionSchema } from ".";
+import { InsertRandomTableOptionItemSchema } from ".";
 
 export const ReadRandomTableSchema = t.Intersect([
   RequestBodySchema,
@@ -30,7 +30,7 @@ export const InsertRandomTableSchema = t.Object({
     is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
   }),
   relations: t.Object({
-    random_table_options: t.Array(InsertRandomTableOptionSchema),
+    random_table_options: t.Array(t.Object({ data: InsertRandomTableOptionItemSchema })),
   }),
 });
 export const UpdateRandomTableSchema = t.Object({
