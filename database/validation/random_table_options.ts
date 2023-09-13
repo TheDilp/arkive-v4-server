@@ -57,8 +57,8 @@ export const InsertRandomTableOptionItemSchema = t.Object({
 });
 
 export const InsertRandomTableOptionSchema = t.Object({
-  data: t.Array(InsertRandomTableOptionItemSchema),
-  relations: t.Object({ suboptions: t.Optional(t.Array(InsertRandomTableSubOptionSchema)) }),
+  data: t.Array(t.Object({ data: InsertRandomTableOptionItemSchema })),
+  relations: t.Optional(t.Object({ suboptions: t.Optional(t.Array(InsertRandomTableSubOptionSchema)) })),
 });
 
 export const UpdateRandomTableOptionSchema = t.Object({

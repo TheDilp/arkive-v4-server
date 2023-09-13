@@ -27,7 +27,7 @@ export function random_table_option_router(app: Elysia) {
           await db.transaction().execute(async (tx) => {
             await tx
               .insertInto("random_table_options")
-              .values(body.data.map((opt) => opt))
+              .values(body.data.map((opt) => opt.data))
               .execute();
 
             if (body?.relations?.suboptions?.length) {

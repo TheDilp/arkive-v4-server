@@ -14,7 +14,7 @@ export function word_router(app: Elysia) {
       .post(
         "/create",
         async ({ body }) => {
-          await db.insertInto("words").values(body).execute();
+          await db.insertInto("words").values(body.data).execute();
           return { ok: true, message: `Word ${MessageEnum.successfully_created}` };
         },
         {
