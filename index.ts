@@ -29,6 +29,7 @@ import {
 
 const app = new Elysia()
   .use(cors({ origin: process.env.NODE_ENV === "development" ? "*" : "https://thearkive.app" }))
+  .use(swagger())
   .onError(({ code, error, set }) => {
     if (code === "NOT_FOUND") {
       set.status = 404;
@@ -69,7 +70,7 @@ const app = new Elysia()
       .use(random_table_option_router)
       .use(search_router),
   )
-  .use(swagger())
+
   .listen((process.env.PORT as string) || 3000);
 
 export type App = typeof app;
