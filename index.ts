@@ -1,20 +1,22 @@
 import { cors } from "@elysiajs/cors";
 import { swagger } from "@elysiajs/swagger";
 import { Elysia } from "elysia";
-import fastify from "fastify";
 
 import {
   asset_router,
-  authentication_router,
+  calendar_router,
   character_fields_router,
   character_fields_templates_router,
   character_router,
+  dictionary_router,
   document_router,
   edge_router,
+  event_router,
   graph_router,
   health_check_router,
   map_pin_router,
   map_router,
+  month_router,
   node_router,
   project_router,
   random_table_option_router,
@@ -22,26 +24,8 @@ import {
   search_router,
   tag_router,
   user_router,
+  word_router,
 } from "./routers";
-import { calendar_router } from "./routers/calendar_router";
-import { dictionary_router } from "./routers/dictionary_router";
-import { event_router } from "./routers/event_router";
-import { month_router } from "./routers/month_router";
-// import { timeline_router } from "./routers/timeline_router";
-import { word_router } from "./routers/word_router";
-
-const server = fastify();
-
-server.register(authentication_router, { prefix: "/api/v1/auth" });
-
-server.register(
-  (instance, _, done) => {
-    instance.register(user_router, { prefix: "/users" });
-    instance.register(search_router, { prefix: "/search" });
-    done();
-  },
-  { prefix: "/api/v1" },
-);
 
 const app = new Elysia()
   .use(cors({ origin: process.env.NODE_ENV === "development" ? "*" : "https://thearkive.app" }))
@@ -63,6 +47,7 @@ const app = new Elysia()
   .group("/api/v1", (server) =>
     server
       .use(health_check_router)
+      .use(user_router)
       .use(project_router)
       .use(asset_router)
       .use(tag_router)
@@ -81,7 +66,8 @@ const app = new Elysia()
       .use(dictionary_router)
       .use(word_router)
       .use(random_table_router)
-      .use(random_table_option_router),
+      .use(random_table_option_router)
+      .use(search_router),
   )
   .use(swagger())
   .listen((process.env.PORT as string) || 3000);

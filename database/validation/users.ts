@@ -1,7 +1,3 @@
-import { Insertable } from "kysely";
-import { Users } from "kysely-codegen";
-import { z } from "zod";
+import { t } from "elysia";
 
-export type InsertUserType = Insertable<Users>;
-
-export const InsertUserSchema = z.object({});
+export const InsertUserSchema = t.Object({});
