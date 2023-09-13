@@ -1,24 +1,23 @@
-import { FastifyInstance, FastifyRequest } from "fastify";
+import Elysia from "elysia";
 
 import { db } from "../database/db";
-import { InsertAlterNamesSchema, InsertAlterNamesType } from "../database/validation/alter_names";
+import { InsertAlterNamesSchema } from "../database/validation/alter_names";
+import { MessageEnum } from "../enums/requestEnums";
+import { ResponseSchema } from "../types/requestTypes";
 
-export function alter_name_router(server: FastifyInstance, _: any, done: any) {
-  // #region create_routes
-  server.post("/create", async (req: FastifyRequest<{ Body: { data: InsertAlterNamesType } }>, rep) => {
-    const parsedData = InsertAlterNamesSchema.parse(req.body.data);
+export function alter_name_router(app: Elysia) {
+  app.group("/alter_names", (server) =>
+    server.post(
+      "/create",
+      async ({ body }) => {
+        const data = await db.insertInto("alter_names").values(body.data).returning("id").executeTakeFirstOrThrow();
 
-    const data = await db.insertInto("alter_names").values(parsedData).returning("id").executeTakeFirstOrThrow();
-
-    rep.send({ data, message: "Success", ok: true });
-  });
-  // #endregion create_routes
-  // #region read_routes
-  // #endregion read_routes
-  // #region update_routes
-  // #endregion update_routes
-  // #region delete_routes
-  // #endregion delete_routes
-
-  done();
+        return { data, message: MessageEnum.success, ok: true };
+      },
+      {
+        body: InsertAlterNamesSchema,
+        response: ResponseSchema,
+      },
+    ),
+  );
 }
