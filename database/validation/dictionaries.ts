@@ -9,6 +9,11 @@ export const InsertDictionarySchema = t.Object({
     is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
     parent_id: t.Optional(t.Union([t.String(), t.Null()])),
   }),
+  relations: t.Optional(
+    t.Object({
+      tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
+    }),
+  ),
 });
 
 export const UpdateDictionarySchema = t.Object({
@@ -20,4 +25,9 @@ export const UpdateDictionarySchema = t.Object({
     is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
     parent_id: t.Optional(t.Union([t.String(), t.Null()])),
   }),
+  relations: t.Optional(
+    t.Object({
+      tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
+    }),
+  ),
 });
