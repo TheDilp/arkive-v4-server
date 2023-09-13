@@ -4,7 +4,6 @@ import { RequestBodySchema } from "../../types/requestTypes";
 
 export const ReadMapSchema = t.Intersect([
   RequestBodySchema,
-  t.Object({ data: t.Object({ project_id: t.String() }) }),
   t.Object({
     relations: t.Optional(
       t.Object({
