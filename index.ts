@@ -37,7 +37,6 @@ server.register(authentication_router, { prefix: "/api/v1/auth" });
 server.register(
   (instance, _, done) => {
     instance.register(user_router, { prefix: "/users" });
-    instance.register(random_table_router, { prefix: "/random_tables" });
     instance.register(random_table_option_router, { prefix: "/random_table_options" });
     instance.register(search_router, { prefix: "/search" });
     done();
@@ -81,7 +80,8 @@ const app = new Elysia()
       .use(month_router)
       .use(event_router)
       .use(dictionary_router)
-      .use(word_router),
+      .use(word_router)
+      .use(random_table_router),
   )
   .use(swagger())
   .listen((process.env.PORT as string) || 3000);

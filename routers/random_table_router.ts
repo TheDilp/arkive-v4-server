@@ -1,135 +1,136 @@
-import { FastifyInstance, FastifyRequest } from "fastify";
+import Elysia from "elysia";
 import { SelectExpression, SelectQueryBuilder } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
 import { EntitiesWithChildren } from "../database/types";
-import {
-  InsertRandomTableOptionSchema,
-  InsertRandomTableOptionType,
-  InsertRandomTableSchema,
-  InsertRandomTableType,
-  UpdateRandomTableSchema,
-  UpdateRandomTableType,
-} from "../database/validation/random_tables";
-import { RequestBodyType } from "../types/requestTypes";
+import { EntityListSchema } from "../database/validation";
+import { InsertRandomTableSchema, ReadRandomTableSchema, UpdateRandomTableSchema } from "../database/validation/random_tables";
+import { MessageEnum } from "../enums/requestEnums";
+import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { GetBreadcrumbs, GetEntityChildren } from "../utils/relationalQueryHelpers";
 
-export function random_table_router(server: FastifyInstance, _: any, done: any) {
-  // #region create_routes
+export function random_table_router(app: Elysia) {
+  return app.group("/random_tables", (server) =>
+    server
+      .post(
+        "/create",
+        async ({ body }) => {
+          await db.transaction().execute(async (tx) => {
+            const { id } = await tx.insertInto("random_tables").values(body.data).returning("id").executeTakeFirstOrThrow();
 
-  server.post(
-    "/create",
-    async (
-      req: FastifyRequest<{
-        Body: { data: InsertRandomTableType; relations: { random_table_options?: InsertRandomTableOptionType[] } };
-      }>,
-      rep,
-    ) => {
-      const { data } = req.body;
+            if (body?.relations) {
+              if (body.relations?.random_table_options) {
+                const { random_table_options } = body.relations;
+                const withParentId = random_table_options.map((opt) => {
+                  opt.data.parent_id = id;
+                  return opt.data;
+                });
+                await tx.insertInto("random_table_options").values(withParentId).execute();
+              }
+            }
+          });
+          return { message: `Random table ${MessageEnum.successfully_created}`, ok: true };
+        },
+        {
+          body: InsertRandomTableSchema,
+          response: ResponseSchema,
+        },
+      )
+      .post(
+        "/",
+        async ({ body }) => {
+          const data = await db
+            .selectFrom("random_tables")
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "random_tables">[]))
+            .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
+              qb = constructFilter("random_tables", qb, body.filters);
+              return qb;
+            })
+            .limit(body?.pagination?.limit || 10)
+            .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
+            .$if(!!body.orderBy, (qb) => constructOrdering(body.orderBy, qb))
+            .execute();
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: EntityListSchema,
+          response: ResponseWithDataSchema,
+        },
+      )
+      .post(
+        "/:id",
+        async ({ params, body }) => {
+          const data = await db
 
-      await db.transaction().execute(async (tx) => {
-        const parsedData = InsertRandomTableSchema.parse(data);
-        const random_table = await tx.insertInto("random_tables").values(parsedData).returning("id").executeTakeFirstOrThrow();
+            .selectFrom("random_tables")
+            .where("random_tables.id", "=", params.id)
+            .$if(!!body?.relations?.children, (qb) =>
+              GetEntityChildren(qb as SelectQueryBuilder<DB, EntitiesWithChildren, {}>, "random_tables"),
+            )
+            .$if(!!body?.relations?.random_table_options, (qb) =>
+              qb.select((eb) =>
+                jsonArrayFrom(
+                  eb
+                    .selectFrom("random_table_options")
+                    .whereRef("random_table_options.parent_id", "=", "random_tables.id")
+                    .select([
+                      "random_table_options.id",
+                      "random_table_options.title",
+                      "random_table_options.description",
+                      "random_table_options.icon",
+                      "random_table_options.icon_color",
+                    ]),
+                ).as("random_table_options"),
+              ),
+            )
 
-        if (req.body?.relations) {
-          if (req.body.relations?.random_table_options) {
-            const { random_table_options } = req.body.relations;
-            const parsedOptions = InsertRandomTableOptionSchema.array().parse(
-              random_table_options.map((opt) => ({ ...opt, parent_id: random_table.id })),
-            );
-            await tx.insertInto("random_table_options").values(parsedOptions).execute();
+            .select([
+              "random_tables.id",
+              "random_tables.title",
+              "random_tables.icon",
+              "random_tables.is_folder",
+              "random_tables.is_public",
+              "random_tables.parent_id",
+              "random_tables.description",
+            ])
+            .executeTakeFirstOrThrow();
+
+          if (body?.relations?.parents) {
+            const parents = await GetBreadcrumbs({ db, id: params.id, table_name: "random_tables" });
+            return { data: { ...data, parents }, message: "Success.", ok: true };
           }
-        }
-      });
-      rep.send({ message: "Random table successfully created.", ok: true });
-    },
+
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: ReadRandomTableSchema,
+          response: ResponseWithDataSchema,
+        },
+      )
+      .post(
+        "/update/:id",
+        async ({ params, body }) => {
+          await db.updateTable("random_tables").where("id", "=", params.id).set(body.data).execute();
+
+          return { message: `Random table ${MessageEnum.successfully_updated}.`, ok: true };
+        },
+        {
+          body: UpdateRandomTableSchema,
+          response: ResponseSchema,
+        },
+      )
+      .delete(
+        "/:id",
+        async ({ params }) => {
+          await db.deleteFrom("random_tables").where("id", "=", params.id).execute();
+          return { message: `Random table ${MessageEnum.successfully_deleted}`, ok: true };
+        },
+        { response: ResponseSchema },
+      ),
   );
-
-  // #endregion create_routes
-  // #region read_routes
-  server.post("/", async (req: FastifyRequest<{ Body: RequestBodyType }>, rep) => {
-    const data = await db
-      .selectFrom("random_tables")
-      .$if(!req.body.fields?.length, (qb) => qb.selectAll())
-      .$if(!!req.body.fields?.length, (qb) =>
-        qb.clearSelect().select(req.body.fields as SelectExpression<DB, "random_tables">[]),
-      )
-      .$if(!!req.body?.filters?.and?.length || !!req.body?.filters?.or?.length, (qb) => {
-        qb = constructFilter("random_tables", qb, req.body.filters);
-        return qb;
-      })
-      .limit(req.body?.pagination?.limit || 10)
-      .offset((req.body?.pagination?.page ?? 0) * (req.body?.pagination?.limit || 10))
-      .$if(!!req.body.orderBy, (qb) => constructOrdering(req.body.orderBy, qb))
-      .execute();
-    rep.send({ data, message: "Success", ok: true });
-  });
-
-  server.post("/:id", async (req: FastifyRequest<{ Params: { id: string }; Body: RequestBodyType }>, rep) => {
-    const data = await db
-
-      .selectFrom("random_tables")
-      .where("random_tables.id", "=", req.params.id)
-      .$if(!!req.body?.relations?.children, (qb) =>
-        GetEntityChildren(qb as SelectQueryBuilder<DB, EntitiesWithChildren, {}>, "random_tables"),
-      )
-      .$if(!!req.body?.relations?.random_table_options, (qb) =>
-        qb.select((eb) =>
-          jsonArrayFrom(
-            eb
-              .selectFrom("random_table_options")
-              .whereRef("random_table_options.parent_id", "=", "random_tables.id")
-              .select([
-                "random_table_options.id",
-                "random_table_options.title",
-                "random_table_options.description",
-                "random_table_options.icon",
-                "random_table_options.icon_color",
-              ]),
-          ).as("random_table_options"),
-        ),
-      )
-
-      .select([
-        "random_tables.id",
-        "random_tables.title",
-        "random_tables.icon",
-        "random_tables.is_folder",
-        "random_tables.is_public",
-        "random_tables.parent_id",
-        "random_tables.description",
-      ])
-      .executeTakeFirstOrThrow();
-
-    if (req.body?.relations?.parents) {
-      const parents = await GetBreadcrumbs({ db, id: req.params.id, table_name: "random_tables" });
-      rep.send({ data: { ...data, parents }, message: "Success.", ok: true });
-    }
-
-    rep.send({ data, message: "Success.", ok: true });
-  });
-  // #endregion read_routes
-  // #region update_routes
-  server.post(
-    "/update/:id",
-    async (req: FastifyRequest<{ Params: { id: string }; Body: { data: UpdateRandomTableType } }>, rep) => {
-      const parsedData = UpdateRandomTableSchema.parse(req.body.data);
-      await db.updateTable("tags").where("id", "=", req.params.id).set(parsedData).execute();
-
-      rep.send({ message: "Tags successfully updated.", ok: true });
-    },
-  );
-  //   // #endregion update_routes
-  //   // #region delete_routes
-  //   server.delete("/delete/:id", async (req: FastifyRequest<{ Params: { id: string } }>, rep) => {
-  //     await db.deleteFrom("tags").where("id", "=", req.params.id).execute();
-  //     rep.send({ message: "Tag successfully deleted.", ok: true });
-  //   });
-  // #endregion delete_routes
-
-  done();
 }

@@ -1,60 +1,46 @@
-import { Insertable, Updateable } from "kysely";
-import { RandomTableOptions, RandomTables, RandomTableSuboptions } from "kysely-codegen";
-import { z } from "zod";
+import { t } from "elysia";
 
-export type InsertRandomTableType = Insertable<RandomTables>;
-export type UpdateRandomTableType = Updateable<RandomTables>;
+import { RequestBodySchema } from "../../types/requestTypes";
+import { InsertRandomTableOptionSchema } from ".";
 
-export type InsertRandomTableOptionType = Insertable<RandomTableOptions>;
-export type UpdateRandomTableOptionType = Updateable<RandomTableOptions>;
+export const ReadRandomTableSchema = t.Intersect([
+  RequestBodySchema,
+  t.Object({ data: t.Object({}) }),
+  t.Optional(
+    t.Object({
+      relations: t.Optional(
+        t.Object({
+          children: t.Optional(t.Boolean()),
+          parents: t.Optional(t.Boolean()),
+          random_table_options: t.Optional(t.Boolean()),
+        }),
+      ),
+    }),
+  ),
+]);
 
-export type InsertRandomTableSuboptionType = Insertable<RandomTableSuboptions>;
-export type UpdateRandomTableSuboptionType = Updateable<RandomTableSuboptions>;
-
-export const InsertRandomTableOptionSchema = z.object({
-  data: z.object({
-    title: z.string(),
-    parent_id: z.string(),
-    description: z.string().nullable().optional(),
-    icon: z.string().nullable().optional(),
-    icon_color: z.string().nullable().optional(),
+export const InsertRandomTableSchema = t.Object({
+  data: t.Object({
+    title: t.String(),
+    description: t.Optional(t.Union([t.String(), t.Null()])),
+    project_id: t.String(),
+    parent_id: t.Optional(t.Union([t.String(), t.Null()])),
+    icon: t.Optional(t.Union([t.String(), t.Null()])),
+    is_folder: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
+  }),
+  relations: t.Object({
+    random_table_options: t.Array(InsertRandomTableOptionSchema),
   }),
 });
-
-export const InsertRandomTableSchema = z.object({
-  title: z.string(),
-  description: z.string().nullable().optional(),
-  project_id: z.string(),
-  parent_id: z.string().nullable().optional(),
-  icon: z.string().nullable().optional(),
-  is_folder: z.boolean().nullable().optional(),
-  is_public: z.boolean().nullable().optional(),
-});
-export const UpdateRandomTableSchema = z.object({
-  title: z.string(),
-  description: z.string().nullable().optional(),
-  project_id: z.string(),
-  parent_id: z.string().nullable().optional(),
-  icon: z.string().nullable().optional(),
-  is_folder: z.boolean().nullable().optional(),
-  is_public: z.boolean().nullable().optional(),
-});
-
-export const RandomTableSubOptionSchema = z.object({
-  id: z.string(),
-  title: z.string().nonempty(),
-  description: z.string().optional().nullable(),
-  parent_id: z.string(),
-});
-export const UpdateRandomTableSubOptionSchema = z.object({
-  title: z.string().nonempty(),
-  description: z.string().optional().nullable(),
-});
-export const UpdateRandomTableOptionSchema = z.object({
-  id: z.string(),
-  title: z.string().optional(),
-  description: z.string().nullable().optional(),
-  icon: z.string().nullable().optional(),
-  icon_color: z.string().nullable().optional(),
-  suboptions: RandomTableSubOptionSchema.array().optional(),
+export const UpdateRandomTableSchema = t.Object({
+  data: t.Object({
+    title: t.String(),
+    description: t.Optional(t.Union([t.String(), t.Null()])),
+    project_id: t.String(),
+    parent_id: t.Optional(t.Union([t.String(), t.Null()])),
+    icon: t.Optional(t.Union([t.String(), t.Null()])),
+    is_folder: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
+  }),
 });
