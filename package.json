@@ -16,7 +16,7 @@
     "@elysiajs/cors": "^0.6.0",
     "@elysiajs/swagger": "^0.6.2",
     "@sinclair/typebox": "^0.31.14",
-    "elysia": "^0.6.21",
+    "elysia": "^0.6.23",
     "kysely": "^0.26.3",
     "lodash.groupby": "^4.6.0",
     "lodash.omit": "^4.5.0",
