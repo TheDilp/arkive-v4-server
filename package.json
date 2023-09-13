@@ -15,19 +15,14 @@
     "@aws-sdk/s3-request-presigner": "^3.409.0",
     "@elysiajs/cors": "^0.6.0",
     "@elysiajs/swagger": "^0.6.2",
-    "@fastify/cors": "^8.3.0",
-    "@fastify/static": "^6.10.2",
     "@sinclair/typebox": "^0.31.14",
     "elysia": "^0.6.21",
-    "fastify": "^4.19.2",
-    "fastify-file-upload": "^4.0.0",
     "kysely": "^0.26.3",
     "lodash.groupby": "^4.6.0",
     "lodash.omit": "^4.5.0",
     "lodash.uniqby": "^4.7.0",
     "pg": "^8.11.1",
-    "sharp": "^0.32.1",
-    "zod": "^3.21.4"
+    "sharp": "^0.32.1"
   },
   "trustedDependencies": [
     "sharp",
@@ -41,8 +36,6 @@
     "@types/pg": "^8.10.2",
     "@typescript-eslint/eslint-plugin": "^5.61.0",
     "@typescript-eslint/parser": "^5.61.0",
-    "dotenv": "^16.3.1",
-    "dotenv-cli": "^7.2.1",
     "eslint": "^8.44.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-import-resolver-alias": "^1.1.2",
@@ -51,10 +44,7 @@
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-simple-import-sort": "^10.0.0",
     "kysely-codegen": "^0.10.1",
-    "nodemon": "^3.0.0",
     "prettier": "^2.8.0",
-    "ts-node": "^10.9.1",
-    "tsx": "^3.12.7",
     "typescript": "^5.1.6"
   }
 }
