@@ -84,7 +84,25 @@ export function edge_router(app: Elysia) {
       )
       .delete("/:id", async ({ params }) => {
         await db.deleteFrom("edges").where("edges.id", "=", params.id).execute();
-        return { message: "Edge successfully deleted.", ok: true };
-      }),
+        return { message: `Edge ${MessageEnum.successfully_deleted}`, ok: true };
+      })
+      .delete(
+        "/",
+        async ({ body }) => {
+          await db
+            .deleteFrom("edges")
+            .where(
+              "edges.id",
+              "=",
+              body.data.map((i) => i.id),
+            )
+            .execute();
+          return { message: `Edges ${MessageEnum.successfully_deleted}`, ok: true };
+        },
+        {
+          body: DeleteManyEdgeSchema,
+          response: ResponseSchema,
+        },
+      ),
   );
 }
