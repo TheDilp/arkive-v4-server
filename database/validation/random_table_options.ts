@@ -68,7 +68,7 @@ export const UpdateRandomTableOptionSchema = t.Object({
     description: t.Optional(t.Union([t.String(), t.Null()])),
     icon: t.Optional(t.Union([t.String(), t.Null()])),
     icon_color: t.Optional(t.Union([t.String(), t.Null()])),
-    suboptions: RandomTableSubOptionSchema.array().optional(),
+    suboptions: t.Optional(t.Array(RandomTableSubOptionSchema)),
   }),
   relations: t.Object({
     suboptions: t.Optional(t.Array(t.Union([InsertRandomTableSubOptionSchema, UpdateRandomTableSubOptionSchema]))),

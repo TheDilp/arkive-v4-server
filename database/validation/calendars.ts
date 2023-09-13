@@ -1,7 +1,20 @@
 import { t } from "elysia";
 
 import { RequestBodySchema } from "../../types/requestTypes";
-import { InsertMonthSchema, UpdateMonthSchema } from ".";
+
+export const InsertMonthSchema = t.Object({
+  title: t.String(),
+  days: t.Number(),
+  sort: t.Number(),
+  // Optional because it's being attached to a calendar which will provide the parent_id
+  parent_id: t.Optional(t.String()),
+});
+export const UpdateMonthSchema = t.Object({
+  id: t.String(),
+  title: t.Optional(t.String()),
+  days: t.Optional(t.Number()),
+  sort: t.Optional(t.Number()),
+});
 
 export const ReadCalendarSchema = t.Intersect([
   RequestBodySchema,
@@ -45,7 +58,7 @@ export const UpdateCalendarSchema = t.Object({
     is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
     icon: t.Optional(t.Union([t.String(), t.Null()])),
     parent_id: t.Optional(t.Union([t.String(), t.Null()])),
-    days: t.String().array().min(1).optional(),
+    days: t.Optional(t.Array(t.String(), { minItems: 1 })),
   }),
   relations: t.Object({
     months: t.Union([t.Array(InsertMonthSchema, { minItems: 1 }), t.Array(UpdateMonthSchema, { minItems: 1 })]),
