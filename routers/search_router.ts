@@ -1,5 +1,6 @@
 import Elysia from "elysia";
 import { SelectExpression, sql } from "kysely";
+import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
@@ -115,6 +116,29 @@ export function search_router(app: Elysia) {
             return {
               data: graphs,
               message: "Success",
+              ok: true,
+            };
+          }
+          if (type === "words") {
+            const dictionaries = await db
+              .selectFrom("dictionaries")
+              .where("project_id", "=", params.project_id)
+              .select([
+                (eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("words")
+                      .where("title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
+                      .limit(body.limit || 10),
+                  ).as("words"),
+              ])
+              .execute();
+
+            const data = dictionaries.flatMap((dict) => dict.words);
+
+            return {
+              data,
+              message: MessageEnum.success,
               ok: true,
             };
           }
