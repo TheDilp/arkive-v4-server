@@ -50,7 +50,7 @@ export function search_router(app: Elysia) {
               color: type === "tags" ? item.color : "",
               image: type === "characters" ? item.portrait_id || "" : "",
             })),
-            message: "Success",
+            message: MessageEnum.success,
             ok: true,
           };
         },
@@ -64,6 +64,27 @@ export function search_router(app: Elysia) {
 
           if (type === "characters") fields.push("first_name", "nickname", "last_name", "portrait_id");
           else fields.push("title");
+
+          if (type === "characters") {
+            const data = await db
+              .selectFrom("characters")
+              .select(["id", "first_name", "last_name", "portrait_id"])
+              .where((wb) =>
+                wb.or([
+                  wb("first_name", "ilike", `%${body.data.search_term.toLowerCase()}%`),
+                  wb("last_name", "ilike", `%${body.data.search_term.toLowerCase()}%`),
+                ]),
+              )
+              .where("project_id", "=", params.project_id)
+              .limit(body.limit || 10)
+              .execute();
+
+            return {
+              data,
+              message: MessageEnum.success,
+              ok: true,
+            };
+          }
 
           if (type === "documents") {
             const documents = await db
@@ -84,13 +105,13 @@ export function search_router(app: Elysia) {
             const combinedResult = [...documents, ...alter_names];
             return {
               data: combinedResult,
-              message: "Success",
+              message: MessageEnum.success,
               ok: true,
             };
           }
 
           if (type === "maps") {
-            const maps = await db
+            const data = await db
               .selectFrom("maps")
               .select(["id", "title"])
               .where("title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
@@ -99,13 +120,13 @@ export function search_router(app: Elysia) {
               .execute();
 
             return {
-              data: maps,
-              message: "Success",
+              data,
+              message: MessageEnum.success,
               ok: true,
             };
           }
           if (type === "boards") {
-            const graphs = await db
+            const data = await db
               .selectFrom("boards")
               .select(["id", "title"])
               .where("title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
@@ -114,8 +135,8 @@ export function search_router(app: Elysia) {
               .execute();
 
             return {
-              data: graphs,
-              message: "Success",
+              data,
+              message: MessageEnum.success,
               ok: true,
             };
           }
@@ -142,9 +163,15 @@ export function search_router(app: Elysia) {
               ok: true,
             };
           }
+          return {
+            data: [],
+            message: MessageEnum.success,
+            ok: true,
+          };
         },
         {
           body: CategorySearchSchema,
+          response: ResponseWithDataSchema,
         },
       )
       .post(
