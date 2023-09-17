@@ -5,7 +5,7 @@ import { DB } from "kysely-codegen";
 import { db } from "../database/db";
 import { InserWordSchema, ListWordSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
-import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructOrdering } from "../utils/orderByConstructor";
 
 export function word_router(app: Elysia) {
@@ -44,7 +44,22 @@ export function word_router(app: Elysia) {
           response: ResponseWithDataSchema,
         },
       )
-
+      .post(
+        "/:id",
+        async ({ params, body }) => {
+          const data = await db
+            .selectFrom("words")
+            .where("id", "=", params.id)
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "words">[]))
+            .executeTakeFirstOrThrow();
+          return { data, ok: true, message: MessageEnum.success };
+        },
+        {
+          body: RequestBodySchema,
+          response: ResponseWithDataSchema,
+        },
+      )
       .delete(
         "/delete/:id",
         async ({ params }) => {
