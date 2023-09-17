@@ -1,6 +1,7 @@
 import { t } from "elysia";
 
 import { RequestBodySchema } from "../../types/requestTypes";
+import { InsertMapLayerSchema, UpdateMapLayerSchema } from "./map_layers";
 
 export const ReadMapSchema = t.Intersect([
   RequestBodySchema,
@@ -59,6 +60,7 @@ export const UpdateMapSchema = t.Object({
           }),
         ),
       ),
+      map_layers: t.Union([t.Array(InsertMapLayerSchema, { minItems: 0 }), t.Array(UpdateMapLayerSchema, { minItems: 0 })]),
     }),
   ),
 });

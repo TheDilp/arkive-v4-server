@@ -9,7 +9,7 @@ import { InsertMapSchema, ReadMapSchema, UpdateMapSchema } from "../database/val
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
-import { CreateTagRelations, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
+import { CreateTagRelations, GetRelationsForUpdating, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 
 export function map_router(app: Elysia) {
   return app.group("/maps", (server) =>
@@ -94,9 +94,25 @@ export function map_router(app: Elysia) {
             )
             .$if(!!body?.relations?.map_layers, (qb) =>
               qb.select((eb) =>
-                jsonArrayFrom(eb.selectFrom("map_layers").selectAll().whereRef("map_layers.parent_id", "=", "maps.id")).as(
-                  "map_layers",
-                ),
+                jsonArrayFrom(
+                  eb
+                    .selectFrom("map_layers")
+                    .select([
+                      "map_layers.id",
+                      "map_layers.title",
+                      "map_layers.image_id",
+                      "map_layers.is_public",
+                      "map_layers.parent_id",
+                      (eb) =>
+                        jsonObjectFrom(
+                          eb
+                            .selectFrom("images")
+                            .whereRef("images.id", "=", "map_layers.image_id")
+                            .select(["images.id", "images.title"]),
+                        ).as("image"),
+                    ])
+                    .whereRef("map_layers.parent_id", "=", "maps.id"),
+                ).as("map_layers"),
               ),
             )
             .$if(!!body?.relations?.images, (qb) =>
@@ -123,6 +139,43 @@ export function map_router(app: Elysia) {
             if (body?.relations) {
               if (body.relations?.tags)
                 UpdateTagRelations({ relationalTable: "_mapsTotags", id: params.id, newTags: body.relations.tags, tx });
+
+              if (body.relations?.map_layers) {
+                const existingMapLayers = await tx
+                  .selectFrom("map_layers")
+                  .select(["id", "title", "parent_id"])
+                  .where("map_layers.parent_id", "=", params.id)
+                  .execute();
+                const existingIds = existingMapLayers.map((layer) => layer.id);
+                const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+                  existingIds,
+                  body.relations?.map_layers.map((layer) => layer.data),
+                );
+
+                if (idsToRemove.length) {
+                  await tx.deleteFrom("map_layers").where("map_layers.id", "in", idsToRemove).execute();
+                }
+                if (itemsToAdd.length) {
+                  await tx
+                    .insertInto("map_layers")
+                    .values(
+                      itemsToAdd.map((item) => ({
+                        title: item.title,
+                        parent_id: item.parent_id,
+                        image_id: item.image_id,
+                        is_public: item.is_public,
+                      })),
+                    )
+                    .execute();
+                }
+                if (itemsToUpdate.length) {
+                  await Promise.all(
+                    itemsToUpdate.map(async (item) => {
+                      await tx.updateTable("map_layers").where("map_layers.id", "=", item.id).set(item).execute();
+                    }),
+                  );
+                }
+              }
             }
           });
 
