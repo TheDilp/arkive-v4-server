@@ -1,6 +1,5 @@
 import Elysia from "elysia";
 import { SelectExpression, sql } from "kysely";
-import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
@@ -9,6 +8,7 @@ import { BasicSearchSchema, CategorySearchSchema, TagSearchSchema } from "../dat
 import { EntitiesWithTagsTables, SubEntityEnum } from "../enums/entityEnums";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseWithDataSchema, SearchableEntities } from "../types/requestTypes";
+import { getCharacterFullName } from "../utils/transform";
 
 export function search_router(app: Elysia) {
   return app.group("/search", (server) =>
@@ -66,7 +66,7 @@ export function search_router(app: Elysia) {
           else fields.push("title");
 
           if (type === "characters") {
-            const data = await db
+            const characters = await db
               .selectFrom("characters")
               .select(["id", "first_name", "last_name", "portrait_id"])
               .where((wb) =>
@@ -78,7 +78,11 @@ export function search_router(app: Elysia) {
               .where("project_id", "=", params.project_id)
               .limit(body.limit || 10)
               .execute();
-
+            const data = characters.map((char) => ({
+              id: char.id,
+              title: getCharacterFullName(char.first_name, undefined, char.last_name),
+              portrait_id: char.portrait_id,
+            }));
             return {
               data,
               message: MessageEnum.success,
@@ -141,21 +145,14 @@ export function search_router(app: Elysia) {
             };
           }
           if (type === "words") {
-            const dictionaries = await db
-              .selectFrom("dictionaries")
-              .where("project_id", "=", params.project_id)
-              .select([
-                (eb) =>
-                  jsonArrayFrom(
-                    eb
-                      .selectFrom("words")
-                      .where("title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
-                      .limit(body.limit || 10),
-                  ).as("words"),
-              ])
+            const data = await db
+              .selectFrom("words")
+              .select(["words.id", "words.title"])
+              .leftJoin("dictionaries", "dictionaries.id", "words.parent_id")
+              .where("dictionaries.project_id", "=", params.project_id)
+              .where("words.title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
+              .limit(body.limit || 10)
               .execute();
-
-            const data = dictionaries.flatMap((dict) => dict.words);
 
             return {
               data,
