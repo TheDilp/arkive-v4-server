@@ -11,7 +11,7 @@ import {
 } from "../database/validation/nodes";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { CreateTagRelations, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
+import { TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 
 export function node_router(app: Elysia) {
   return app.group("/nodes", (server) =>
@@ -19,25 +19,13 @@ export function node_router(app: Elysia) {
       .post(
         "/create",
         async ({ body }) => {
-          let returningData;
-          await db.transaction().execute(async (tx) => {
-            returningData = await tx.insertInto("nodes").values(body.data).returning("id").executeTakeFirstOrThrow();
-
-            if (body.relations?.tags) {
-              await CreateTagRelations({
-                relationalTable: "_nodesTotags",
-                tags: body.relations.tags,
-                id: returningData.id,
-                tx,
-              });
-            }
-          });
+          const returningData = await db.insertInto("nodes").values(body.data).returning("id").executeTakeFirstOrThrow();
 
           return { data: returningData, message: `Node ${MessageEnum.successfully_created}`, ok: true };
         },
         {
           body: InsertNodeSchema,
-          response: ResponseSchema,
+          response: ResponseWithDataSchema,
         },
       )
       .post(
