@@ -1,17 +1,16 @@
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import Elysia, { t } from "elysia";
 import sharp from "sharp";
 
-import Elysia, { t } from "elysia";
 import { db } from "../database/db";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { s3Client } from "../utils/s3Client";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 async function createFile(data: Blob) {
   const buff = await data.arrayBuffer();
   const sharpData = sharp(buff);
-  const metadata = await sharpData.metadata();
   return sharpData.toFormat("webp").toBuffer();
 }
 
@@ -37,11 +36,10 @@ export function asset_router(app: Elysia) {
         "/upload/:project_id/:type",
         async ({ params, body }) => {
           const { type, project_id } = params;
-          const filesToSend: string[] = [];
 
           const objectEntries = Object.entries(body);
           for (let index = 0; index < objectEntries.length; index++) {
-            const [name, file] = objectEntries[index];
+            const [, file] = objectEntries[index];
             const buffer = await createFile(file);
             const { id: image_id } = await db
               .insertInto("images")
@@ -69,11 +67,11 @@ export function asset_router(app: Elysia) {
             });
           }
 
-          return { data: [], message: MessageEnum.success, ok: true };
+          return { message: MessageEnum.success, ok: true };
         },
         {
           body: t.Record(t.String(), t.File()),
-          response: ResponseWithDataSchema,
+          response: ResponseSchema,
         },
       )
       .post(
