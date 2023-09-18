@@ -38,6 +38,10 @@ export const ReadNodeSchema = t.Object({
 
 export const InsertNodeSchema = t.Object({
   data: t.Object({
+    // IDs are required in order to insert nodes
+    // on the frontend during mutation to provide for a
+    // better UX
+    id: t.String(),
     parent_id: t.String(),
     label: t.Optional(t.Union([t.String(), t.Null()])),
     type: NodeShapeEnum,

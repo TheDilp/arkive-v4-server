@@ -10,6 +10,7 @@ export const ReadEdgeSchema = t.Object({
 
 export const InsertEdgeSchema = t.Object({
   data: t.Object({
+    id: t.String(),
     parent_id: t.String(),
     source_id: t.String(),
     target_id: t.String(),
