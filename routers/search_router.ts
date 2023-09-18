@@ -8,6 +8,7 @@ import { BasicSearchSchema, CategorySearchSchema, TagSearchSchema } from "../dat
 import { EntitiesWithTagsTables, SubEntityEnum } from "../enums/entityEnums";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseWithDataSchema, SearchableEntities } from "../types/requestTypes";
+import { getSearchTableFromType } from "../utils/requestUtils";
 import { getCharacterFullName } from "../utils/transform";
 
 export function search_router(app: Elysia) {
@@ -28,7 +29,7 @@ export function search_router(app: Elysia) {
           if (SubEntityEnum.includes(type)) fields.push("parent_id");
 
           const result = await db
-            .selectFrom(type as keyof DB)
+            .selectFrom(getSearchTableFromType(type as "map_images" | keyof DB))
             .select(fields as SelectExpression<DB, SearchableEntities>[])
             .where("project_id", "=", params.project_id)
             .where((eb) =>
@@ -40,6 +41,8 @@ export function search_router(app: Elysia) {
                   ])
                 : eb("title", "ilike", `%${body.data.search_term}%`),
             )
+            .$if(type === "map_images", (eb) => eb.where("type", "=", "map_image"))
+            .$if(type === "images", (eb) => eb.where("type", "=", "image"))
 
             .execute();
 
