@@ -32,6 +32,9 @@ export const ReadNodeSchema = t.Object({
       tags: t.Optional(t.Boolean()),
       image: t.Optional(t.Boolean()),
       character: t.Optional(t.Boolean()),
+      document: t.Optional(t.Boolean()),
+      map_pin: t.Optional(t.Boolean()),
+      event: t.Optional(t.Boolean()),
     }),
   ),
 });

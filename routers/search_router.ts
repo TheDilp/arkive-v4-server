@@ -5,7 +5,7 @@ import { DB } from "kysely-codegen";
 import { db } from "../database/db";
 import { EntitiesWithTags } from "../database/types";
 import { BasicSearchSchema, CategorySearchSchema, TagSearchSchema } from "../database/validation/search";
-import { EntitiesWithTagsTables, SubEntityEnum } from "../enums/entityEnums";
+import { EntitiesWithoutProjectId, EntitiesWithTagsTables, SubEntityEnum } from "../enums/entityEnums";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseWithDataSchema, SearchableEntities } from "../types/requestTypes";
 import { getSearchTableFromType } from "../utils/requestUtils";
@@ -31,7 +31,7 @@ export function search_router(app: Elysia) {
           const result = await db
             .selectFrom(getSearchTableFromType(type as "map_images" | keyof DB))
             .select(fields as SelectExpression<DB, SearchableEntities>[])
-            .where("project_id", "=", params.project_id)
+
             .where((eb) =>
               type === "characters"
                 ? eb.or([
@@ -41,6 +41,7 @@ export function search_router(app: Elysia) {
                   ])
                 : eb("title", "ilike", `%${body.data.search_term}%`),
             )
+            .$if(!EntitiesWithoutProjectId.includes(type), (eb) => eb.where("project_id", "=", params.project_id))
             .$if(type === "map_images", (eb) => eb.where("type", "=", "map_image"))
             .$if(type === "images", (eb) => eb.where("type", "=", "image"))
 
@@ -229,7 +230,6 @@ export function search_router(app: Elysia) {
               .leftJoin("maps", "maps.id", "map_pins.parent_id")
               .select(["map_pins.id", "map_pins.icon", "map_pins.parent_id"])
               .where("map_pins.title", "ilike", `%${search_term}%`)
-              .where("maps.project_id", "=", project_id)
               .limit(5),
           };
           const characterMapPinSearch = {
@@ -237,7 +237,6 @@ export function search_router(app: Elysia) {
             request: db
               .selectFrom("map_pins")
               .leftJoin("maps", "maps.id", "map_pins.parent_id")
-              .where("maps.project_id", "=", project_id)
               .where("map_pins.character_id", "is not", null)
               .leftJoin("characters", "characters.id", "map_pins.character_id")
               .where((eb) =>

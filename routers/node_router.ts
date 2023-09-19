@@ -53,6 +53,30 @@ export function node_router(app: Elysia) {
                 ).as("character"),
               ),
             )
+            .$if(!!body?.relations?.document, (qb) =>
+              qb.select((eb) =>
+                jsonObjectFrom(
+                  eb.selectFrom("documents").whereRef("documents.id", "=", "nodes.doc_id").select(["id", "title"]),
+                ).as("document"),
+              ),
+            )
+            .$if(!!body?.relations?.map_pin, (qb) =>
+              qb.select((eb) =>
+                jsonObjectFrom(
+                  eb
+                    .selectFrom("map_pins")
+                    .whereRef("map_pins.id", "=", "nodes.map_pin_id")
+                    .select(["id", "title", "parent_id", "icon"]),
+                ).as("map_pin"),
+              ),
+            )
+            .$if(!!body?.relations?.event, (qb) =>
+              qb.select((eb) =>
+                jsonObjectFrom(
+                  eb.selectFrom("events").whereRef("events.id", "=", "nodes.event_id").select(["id", "title", "parent_id"]),
+                ).as("event"),
+              ),
+            )
             .executeTakeFirstOrThrow();
           return { data, message: MessageEnum.success, ok: true };
         },
