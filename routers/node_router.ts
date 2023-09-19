@@ -56,7 +56,7 @@ export function node_router(app: Elysia) {
             .$if(!!body?.relations?.document, (qb) =>
               qb.select((eb) =>
                 jsonObjectFrom(
-                  eb.selectFrom("documents").whereRef("documents.id", "=", "nodes.doc_id").select(["id", "title"]),
+                  eb.selectFrom("documents").whereRef("documents.id", "=", "nodes.doc_id").select(["id", "title", "image_id"]),
                 ).as("document"),
               ),
             )
