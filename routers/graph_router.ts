@@ -123,16 +123,13 @@ export function graph_router(app: Elysia) {
               "boards.default_edge_color",
             ])
             .executeTakeFirstOrThrow();
+          const edges = body?.relations?.edges
+            ? await db.selectFrom("edges").selectAll().where("edges.parent_id", "=", params.id).execute()
+            : [];
 
-          const edges = await db.selectFrom("edges").selectAll().where("edges.parent_id", "=", params.id).execute();
+          const parents = body?.relations?.parents ? await GetBreadcrumbs({ db, id: params.id, table_name: "boards" }) : [];
 
-          if (body?.relations?.parents) {
-            const parents = await GetBreadcrumbs({ db, id: params.id, table_name: "boards" });
-
-            return { data: { ...data, edges, parents }, message: "Success.", ok: true };
-          }
-
-          return { data: { ...data, edges }, message: MessageEnum.success, ok: true };
+          return { data: { ...data, edges, parents }, message: "Success.", ok: true };
         },
         {
           body: ReadGraphSchema,
