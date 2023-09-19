@@ -128,8 +128,20 @@ export function graph_router(app: Elysia) {
             : [];
 
           const parents = body?.relations?.parents ? await GetBreadcrumbs({ db, id: params.id, table_name: "boards" }) : [];
+          const finalData: typeof data & { parents?: any[]; edges?: any[] } = { ...data };
 
-          return { data: { ...data, edges, parents }, message: "Success.", ok: true };
+          if (parents.length) {
+            finalData.parents = parents;
+          }
+          if (edges.length) {
+            finalData.edges = edges;
+          }
+
+          return {
+            data: finalData,
+            message: MessageEnum.success,
+            ok: true,
+          };
         },
         {
           body: ReadGraphSchema,
@@ -154,7 +166,7 @@ export function graph_router(app: Elysia) {
             }
           });
 
-          return { message: `Grpah ${MessageEnum.route_not_found}`, ok: true };
+          return { message: `Graph ${MessageEnum.successfully_updated}`, ok: true };
         },
         {
           body: UpdateGraphSchema,
@@ -163,7 +175,7 @@ export function graph_router(app: Elysia) {
       )
       .delete("/:id", async ({ params }) => {
         await db.deleteFrom("boards").where("boards.id", "=", params.id).execute();
-        return { message: `Graph ${MessageEnum.successfully_updated}`, ok: true };
+        return { message: `Graph ${MessageEnum.successfully_deleted}`, ok: true };
       }),
   );
 }
