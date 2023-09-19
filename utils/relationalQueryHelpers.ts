@@ -86,13 +86,32 @@ export async function GetBreadcrumbs({
   id: string;
   table_name: EntitiesWithBreadcrumbs;
 }) {
+  // with recursive tree as (
+  //   select id,
+  //          parent_id,
+  //          array[id] as all_parents
+  //   from hierarchy
+  //   where parent_id is null
+
+  //   union all
+
+  //   select c.id,
+  //          c.parent_id,
+  //          p.all_parents||c.id
+  //   from hierarchy c
+  //      join tree p
+  //       on c.parent_id = p.id
+  //      and c.id <> ALL (p.all_parents) -- this is the trick to exclude the endless loops
+  // )
+
   const parents_data = await db
     .withRecursive("entityWithParents", (d) =>
       d
         .selectFrom(table_name)
+        .distinctOn(`${table_name}.id`)
         .where(`${table_name}.id`, "=", id)
         .select([`${table_name}.id`, `${table_name}.title`, `${table_name}.parent_id`])
-        .unionAll(
+        .union(
           d
             .selectFrom(`${table_name} as parents`)
             .select(["parents.id", "parents.title", "parents.parent_id"])

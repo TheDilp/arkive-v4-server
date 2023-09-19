@@ -79,7 +79,7 @@ export function graph_router(app: Elysia) {
                 jsonArrayFrom(
                   eb
                     .selectFrom("nodes")
-                    .whereRef("nodes.parent_id", "=", "boards.id")
+                    .where("nodes.parent_id", "=", params.id)
                     .leftJoin("characters", (join) => join.onRef("characters.id", "=", "nodes.character_id"))
                     .select((sb) => [
                       "nodes.id",
@@ -109,11 +109,7 @@ export function graph_router(app: Elysia) {
                 ).as("nodes"),
               ),
             )
-            .$if(!!body?.relations?.edges, (qb) =>
-              qb.select((eb) =>
-                jsonArrayFrom(eb.selectFrom("edges").selectAll().whereRef("edges.parent_id", "=", "boards.id")).as("edges"),
-              ),
-            )
+
             .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_boardsTotags", "boards")))
             .select([
               "boards.id",
@@ -128,12 +124,15 @@ export function graph_router(app: Elysia) {
             ])
             .executeTakeFirstOrThrow();
 
+          const edges = await db.selectFrom("edges").selectAll().where("edges.parent_id", "=", params.id).execute();
+
           if (body?.relations?.parents) {
             const parents = await GetBreadcrumbs({ db, id: params.id, table_name: "boards" });
-            return { data: { ...data, parents }, message: "Success.", ok: true };
+
+            return { data: { ...data, edges, parents }, message: "Success.", ok: true };
           }
 
-          return { data, message: MessageEnum.success, ok: true };
+          return { data: { ...data, edges }, message: MessageEnum.success, ok: true };
         },
         {
           body: ReadGraphSchema,
