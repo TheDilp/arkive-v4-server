@@ -12,6 +12,7 @@ export type SearchableEntities =
   | "edges"
   | "random_tables"
   | "images"
+  | "events"
   | "tags";
 export type SearchableMentionEntities = "characters" | "documents" | "maps" | "map_pins" | "boards" | "nodes" | "words";
 
