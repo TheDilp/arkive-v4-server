@@ -1,9 +1,19 @@
 import Elysia from "elysia";
+import { SelectExpression } from "kysely";
+import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { DeleteManyEdgeSchema, InsertEdgeSchema, ReadEdgeSchema, UpdateEdgeSchema } from "../database/validation/edges";
+import {
+  DeleteManyEdgeSchema,
+  InsertEdgeSchema,
+  ListEdgesSchema,
+  ReadEdgeSchema,
+  UpdateEdgeSchema,
+} from "../database/validation/edges";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { constructFilter } from "../utils/filterConstructor";
+import { constructOrdering } from "../utils/orderByConstructor";
 import { CreateTagRelations, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 
 export function edge_router(app: Elysia) {
@@ -25,6 +35,31 @@ export function edge_router(app: Elysia) {
         },
         {
           body: InsertEdgeSchema,
+          response: ResponseWithDataSchema,
+        },
+      )
+      .post(
+        "/",
+        async ({ body }) => {
+          const data = await db
+            .selectFrom("edges")
+            .where("parent_id", "=", body.data.parent_id)
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "edges">[]))
+            .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
+              qb = constructFilter("nodes", qb, body.filters);
+              return qb;
+            })
+            .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
+            .$if(!!body.orderBy?.length, (qb) => {
+              qb = constructOrdering(body.orderBy, qb);
+              return qb;
+            })
+            .execute();
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: ListEdgesSchema,
           response: ResponseWithDataSchema,
         },
       )
