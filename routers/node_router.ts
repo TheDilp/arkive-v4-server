@@ -120,12 +120,7 @@ export function node_router(app: Elysia) {
         async ({ params, body }) => {
           await db.transaction().execute(async (tx) => {
             if (body.data) {
-              await tx
-                .updateTable("nodes")
-                .set(body.data)
-                .where("nodes.id", "=", params.id)
-
-                .executeTakeFirstOrThrow();
+              await tx.updateTable("nodes").set(body.data).where("nodes.id", "=", params.id).executeTakeFirstOrThrow();
             }
             if (body?.relations) {
               if (body.relations?.tags)
@@ -155,6 +150,18 @@ export function node_router(app: Elysia) {
                     .execute();
                 }),
               );
+              const nodesWithTagsToUpdate = body.data.filter((n) => !!n?.relations?.tags);
+              if (nodesWithTagsToUpdate.length)
+                await Promise.all(
+                  nodesWithTagsToUpdate.map((n) =>
+                    UpdateTagRelations({
+                      relationalTable: "_nodesTotags",
+                      id: n.data.id,
+                      newTags: n.relations?.tags as { id: string }[],
+                      tx,
+                    }),
+                  ),
+                );
             }
           });
           return { message: MessageEnum.success, ok: true };
