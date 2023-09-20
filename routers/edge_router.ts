@@ -9,6 +9,7 @@ import {
   ListEdgesSchema,
   ReadEdgeSchema,
   UpdateEdgeSchema,
+  UpdateManyEdgesSchema,
 } from "../database/validation/edges";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
@@ -47,7 +48,7 @@ export function edge_router(app: Elysia) {
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "edges">[]))
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
-              qb = constructFilter("nodes", qb, body.filters);
+              qb = constructFilter("edges", qb, body.filters);
               return qb;
             })
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
@@ -101,6 +102,29 @@ export function edge_router(app: Elysia) {
         },
         {
           body: UpdateEdgeSchema,
+          response: ResponseSchema,
+        },
+      )
+      .post(
+        "/update",
+        async ({ body }) => {
+          await db.transaction().execute(async (tx) => {
+            if (body.data) {
+              await Promise.all(
+                body.data.map((n) => {
+                  return tx
+                    .updateTable("edges")
+                    .where("id", "=", n.data.id as string)
+                    .set(n.data)
+                    .execute();
+                }),
+              );
+            }
+          });
+          return { message: MessageEnum.success, ok: true };
+        },
+        {
+          body: UpdateManyEdgesSchema,
           response: ResponseSchema,
         },
       )

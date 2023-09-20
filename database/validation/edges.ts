@@ -57,6 +57,10 @@ export const InsertEdgeSchema = t.Object({
 
 export const UpdateEdgeSchema = t.Object({
   data: t.Object({
+    // IDs are required in order to insert nodes
+    // on the frontend during mutation to provide for a
+    // better UX
+    id: t.String(),
     label: t.Optional(t.Union([t.String(), t.Null()])),
     curve_style: t.Optional(t.Union([t.String(), t.Null()])),
     line_style: t.Optional(t.Union([t.String(), t.Null()])),
@@ -94,5 +98,7 @@ export const UpdateEdgeSchema = t.Object({
     }),
   ),
 });
+
+export const UpdateManyEdgesSchema = t.Object({ data: t.Array(UpdateEdgeSchema) });
 
 export const DeleteManyEdgeSchema = t.Object({ data: t.Array(t.Object({ id: t.String() })) });
