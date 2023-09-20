@@ -1,5 +1,7 @@
 import { t } from "elysia";
 
+import { RequestBodySchema } from "../../types/requestTypes";
+
 const NodeShapeEnum = t.Optional(
   t.Union([
     t.Literal("rectangle"),
@@ -38,6 +40,8 @@ export const ReadNodeSchema = t.Object({
     }),
   ),
 });
+
+export const ListNodesSchema = t.Intersect([RequestBodySchema, t.Object({ data: t.Object({ parent_id: t.String() }) })]);
 
 export const InsertNodeSchema = t.Object({
   data: t.Object({

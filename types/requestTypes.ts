@@ -19,7 +19,7 @@ export type RequestFilterOperatorType = keyof typeof FilterEnum;
 
 export interface RequestFilterType {
   field: string;
-  value: string | number | null;
+  value: string | number | string[] | number[] | null;
   operator: RequestFilterOperatorType;
 }
 
@@ -79,7 +79,7 @@ export const RequestBodySchema = t.Object({
         t.Array(
           t.Object({
             field: t.String(),
-            value: t.Union([t.String(), t.Number(), t.Null()]),
+            value: t.Union([t.String(), t.Number(), t.Array(t.String()), t.Array(t.Number()), t.Null()]),
             operator: FilterEnumSchema,
           }),
         ),

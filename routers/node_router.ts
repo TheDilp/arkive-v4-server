@@ -1,16 +1,21 @@
 import Elysia from "elysia";
+import { SelectExpression } from "kysely";
 import { jsonObjectFrom } from "kysely/helpers/postgres";
+import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
 import {
   DeleteManyNodesSchema,
   InsertNodeSchema,
+  ListNodesSchema,
   ReadNodeSchema,
   UpdateManyNodesSchema,
   UpdateNodeSchema,
 } from "../database/validation/nodes";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { constructFilter } from "../utils/filterConstructor";
+import { constructOrdering } from "../utils/orderByConstructor";
 import { TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 
 export function node_router(app: Elysia) {
@@ -25,6 +30,31 @@ export function node_router(app: Elysia) {
         },
         {
           body: InsertNodeSchema,
+          response: ResponseWithDataSchema,
+        },
+      )
+      .post(
+        "/",
+        async ({ body }) => {
+          const data = await db
+            .selectFrom("nodes")
+            .where("parent_id", "=", body.data.parent_id)
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "nodes">[]))
+            .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
+              qb = constructFilter("nodes", qb, body.filters);
+              return qb;
+            })
+            .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
+            .$if(!!body.orderBy?.length, (qb) => {
+              qb = constructOrdering(body.orderBy, qb);
+              return qb;
+            })
+            .execute();
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: ListNodesSchema,
           response: ResponseWithDataSchema,
         },
       )
