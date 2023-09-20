@@ -120,6 +120,18 @@ export function edge_router(app: Elysia) {
                 }),
               );
             }
+            const edgesWithTagsToUpdate = body.data.filter((n) => !!n?.relations?.tags);
+            if (edgesWithTagsToUpdate.length)
+              await Promise.all(
+                edgesWithTagsToUpdate.map((e) =>
+                  UpdateTagRelations({
+                    relationalTable: "_edgesTotags",
+                    id: e.data.id,
+                    newTags: e.relations?.tags as { id: string }[],
+                    tx,
+                  }),
+                ),
+              );
           });
           return { message: MessageEnum.success, ok: true };
         },
