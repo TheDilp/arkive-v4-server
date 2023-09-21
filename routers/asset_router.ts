@@ -6,8 +6,10 @@ import { DB } from "kysely-codegen";
 import sharp from "sharp";
 
 import { db } from "../database/db";
+import { UpdateImageSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { constructOrdering } from "../utils/orderByConstructor";
 import { s3Client } from "../utils/s3Client";
 
 async function createFile(data: Blob) {
@@ -31,6 +33,10 @@ export function asset_router(app: Elysia) {
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "images">[]))
+            .$if(!!body.orderBy?.length, (qb) => {
+              qb = constructOrdering(body.orderBy, qb);
+              return qb;
+            })
             .execute();
           return { data, message: MessageEnum.success, ok: true };
         },
@@ -93,6 +99,17 @@ export function asset_router(app: Elysia) {
           return { message: `Character portrait ${MessageEnum.successfully_updated}`, ok: true };
         },
         {
+          response: ResponseSchema,
+        },
+      )
+      .post(
+        "/update/:id",
+        async ({ params, body }) => {
+          await db.updateTable("images").where("id", "=", params.id).set(body.data).execute();
+          return { message: `Image ${MessageEnum.successfully_updated}`, ok: true };
+        },
+        {
+          body: UpdateImageSchema,
           response: ResponseSchema,
         },
       ),
