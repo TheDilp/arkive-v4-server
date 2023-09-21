@@ -11,22 +11,22 @@ import { ResponseWithDataSchema, SearchableEntities } from "../types/requestType
 import { getSearchTableFromType } from "../utils/requestUtils";
 import { getCharacterFullName } from "../utils/transform";
 
-function getSearchFields(type: string) {
+function getSearchFields(type: SearchableEntities): string[] {
   const fields = [`${type}.id`];
   if (type === "characters") fields.push("first_name", "nickname", "last_name", "portrait_id");
   else if (type === "tags") fields.push("title", "color");
   else if (type === "nodes") fields.push("label", "nodes.parent_id");
   else if (type === "edges") fields.push("label", "edges.parent_id");
-  else fields.push("title");
+  else fields.push(`${type}.title`);
 
   if (type === "events") fields.push("events.parent_id");
   if (type === "map_pins") fields.push("map_pins.parent_id");
-  if (type === "map_layers") fields.push("map_layers.parent_id");
+  if (type === "words") fields.push("words.parent_id");
 
   return fields;
 }
 
-function getSearchWhere(eb: ExpressionBuilder<DB, keyof DB>, type: string, search_term: string) {
+function getSearchWhere(eb: ExpressionBuilder<DB, keyof DB>, type: SearchableEntities, search_term: string) {
   if (type === "characters") {
     return eb.or([
       eb("first_name", "ilike", `%${search_term}%`),
@@ -40,7 +40,7 @@ function getSearchWhere(eb: ExpressionBuilder<DB, keyof DB>, type: string, searc
   if (type === "nodes") {
     return eb.or([eb("nodes.label", "ilike", `%${search_term}%`), eb("characters.first_name", "ilike", `%${search_term}%`)]);
   }
-  return eb("title", "ilike", `%${search_term}%`);
+  return eb(`${type}.title`, "ilike", `%${search_term}%`);
 }
 
 export function search_router(app: Elysia) {
@@ -50,7 +50,7 @@ export function search_router(app: Elysia) {
         "/:project_id/:type",
         async ({ params, body }) => {
           const { type } = params;
-          const fields = getSearchFields(type);
+          const fields = getSearchFields(type as SearchableEntities);
 
           const result = await db
             .selectFrom(getSearchTableFromType(type as "map_images" | keyof DB))
@@ -66,10 +66,22 @@ export function search_router(app: Elysia) {
                   "characters.last_name",
                 ]),
             )
+            .$if(type === "edges", (eb) =>
+              eb.leftJoin("boards", "boards.id", "nodes.parent_id").select(["boards.title as parent_title"]),
+            )
+            .$if(type === "map_pins", (eb) =>
+              eb.leftJoin("maps", "maps.id", "map_pins.parent_id").select(["maps.title as parent_title"]),
+            )
+            .$if(type === "events", (eb) =>
+              eb.leftJoin("calendars", "calendars.id", "events.parent_id").select(["calendars.title as parent_title"]),
+            )
+            .$if(type === "words", (eb) =>
+              eb.leftJoin("dictionaries", "dictionaries.id", "words.parent_id").select(["dictionaries.title as parent_title"]),
+            )
             .$if(!EntitiesWithoutProjectId.includes(type), (eb) => eb.where("project_id", "=", params.project_id))
             .$if(type === "map_images", (eb) => eb.where("type", "=", "map_image"))
             .$if(type === "images", (eb) => eb.where("type", "=", "image"))
-            .where((eb) => getSearchWhere(eb, type, body.data.search_term))
+            .where((eb) => getSearchWhere(eb, type as SearchableEntities, body.data.search_term))
 
             .execute();
           return {
