@@ -1,5 +1,5 @@
 import Elysia from "elysia";
-import { SelectExpression, sql } from "kysely";
+import { ExpressionBuilder, SelectExpression, sql } from "kysely";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
@@ -11,6 +11,38 @@ import { ResponseWithDataSchema, SearchableEntities } from "../types/requestType
 import { getSearchTableFromType } from "../utils/requestUtils";
 import { getCharacterFullName } from "../utils/transform";
 
+function getSearchFields(type: string) {
+  const fields = [`${type}.id`];
+  if (type === "characters") fields.push("first_name", "nickname", "last_name", "portrait_id");
+  else if (type === "tags") fields.push("title", "color");
+  else if (type === "nodes") fields.push("label", "nodes.parent_id");
+  else if (type === "edges") fields.push("label", "edges.parent_id");
+  else fields.push("title");
+
+  if (type === "events") fields.push("events.parent_id");
+  if (type === "map_pins") fields.push("map_pins.parent_id");
+  if (type === "map_layers") fields.push("map_layers.parent_id");
+
+  return fields;
+}
+
+function getSearchWhere(eb: ExpressionBuilder<DB, keyof DB>, type: string, search_term: string) {
+  if (type === "characters") {
+    return eb.or([
+      eb("first_name", "ilike", `%${search_term}%`),
+      eb("nickname", "ilike", `%${search_term}%`),
+      eb("last_name", "ilike", `%${search_term}%`),
+    ]);
+  }
+  if (type === "edges") {
+    return eb("label", "ilike", `%${search_term}%`);
+  }
+  if (type === "nodes") {
+    return eb.or([eb("nodes.label", "ilike", `%${search_term}%`), eb("characters.first_name", "ilike", `%${search_term}%`)]);
+  }
+  return eb("title", "ilike", `%${search_term}%`);
+}
+
 export function search_router(app: Elysia) {
   return app.group("/search", (server) =>
     server
@@ -18,41 +50,39 @@ export function search_router(app: Elysia) {
         "/:project_id/:type",
         async ({ params, body }) => {
           const { type } = params;
-          const fields = ["id"];
-
-          if (type === "characters") fields.push("first_name", "nickname", "last_name", "portrait_id");
-          else if (type === "tags") fields.push("title", "color");
-
-          if (type === "nodes" || type === "edges") fields.push("label");
-          else if (type !== "characters") fields.push("title");
-
-          if (SubEntityEnum.includes(type)) fields.push("parent_id");
+          const fields = getSearchFields(type);
 
           const result = await db
             .selectFrom(getSearchTableFromType(type as "map_images" | keyof DB))
             .select(fields as SelectExpression<DB, SearchableEntities>[])
-
-            .where((eb) =>
-              type === "characters"
-                ? eb.or([
-                    eb("first_name", "ilike", `%${body.data.search_term}%`),
-                    eb("nickname", "ilike", `%${body.data.search_term}%`),
-                    eb("last_name", "ilike", `%${body.data.search_term}%`),
-                  ])
-                : eb("title", "ilike", `%${body.data.search_term}%`),
+            .$if(type === "nodes", (eb) =>
+              eb
+                .leftJoin("characters", "characters.id", "nodes.character_id")
+                .leftJoin("boards", "boards.id", "nodes.parent_id")
+                .select([
+                  "boards.title as parent_title",
+                  "characters.id as character_id",
+                  "characters.first_name",
+                  "characters.last_name",
+                ]),
             )
             .$if(!EntitiesWithoutProjectId.includes(type), (eb) => eb.where("project_id", "=", params.project_id))
             .$if(type === "map_images", (eb) => eb.where("type", "=", "map_image"))
             .$if(type === "images", (eb) => eb.where("type", "=", "image"))
+            .where((eb) => getSearchWhere(eb, type, body.data.search_term))
 
             .execute();
-
           return {
             data: result.map((item) => ({
               value: item.id,
-              label: type === "characters" ? `${item.first_name} ${item?.last_name || ""}` : item?.title || "",
+              label:
+                type === "characters" || (type === "nodes" && item?.first_name)
+                  ? `${item.first_name} ${item?.last_name || ""}`
+                  : item?.title || item?.label || "",
               color: type === "tags" ? item.color : "",
               image: type === "characters" ? item.portrait_id || "" : "",
+              parent_id: item?.parent_id || null,
+              parent_title: item?.parent_title,
             })),
             message: MessageEnum.success,
             ok: true,
@@ -228,7 +258,7 @@ export function search_router(app: Elysia) {
             request: db
               .selectFrom("map_pins")
               .leftJoin("maps", "maps.id", "map_pins.parent_id")
-              .select(["map_pins.id", "map_pins.icon", "map_pins.parent_id"])
+              .select(["map_pins.id", "map_pins.icon", "map_pins.parent_id", "maps.title as parent_title"])
               .where("map_pins.title", "ilike", `%${search_term}%`)
               .limit(5),
           };
@@ -249,6 +279,7 @@ export function search_router(app: Elysia) {
                 "map_pins.id",
                 "map_pins.icon",
                 "map_pins.parent_id",
+                "maps.title as parent_title",
                 "characters.first_name",
                 "characters.last_name",
                 "characters.portrait_id",
@@ -271,7 +302,7 @@ export function search_router(app: Elysia) {
               .where("label", "ilike", `%${search_term}%`)
               .leftJoin("boards", "boards.id", "nodes.parent_id")
               .where("boards.project_id", "=", project_id)
-              .select(["nodes.id", "nodes.label", "nodes.parent_id"])
+              .select(["nodes.id", "nodes.label", "nodes.parent_id", "boards.title as parent_title"])
               .limit(5),
           };
           const edgeSearch = {
@@ -281,7 +312,7 @@ export function search_router(app: Elysia) {
               .where("label", "ilike", `%${search_term}%`)
               .leftJoin("boards", "boards.id", "edges.parent_id")
               .where("boards.project_id", "=", project_id)
-              .select(["edges.id", "edges.label", "edges.parent_id"])
+              .select(["edges.id", "edges.label", "edges.parent_id", "boards.title as parent_title"])
               .limit(5),
           };
           const calendarSearch = {
@@ -291,6 +322,16 @@ export function search_router(app: Elysia) {
               .where("calendars.title", "ilike", `%${search_term}%`)
               .where("project_id", "=", project_id)
               .select(["id", "title", "icon"])
+              .limit(5),
+          };
+          const eventsSearch = {
+            name: "events",
+            request: db
+              .selectFrom("events")
+              .leftJoin("calendars", "calendars.id", "events.parent_id")
+              .where("events.title", "ilike", `%${search_term}%`)
+              .where("calendars.project_id", "=", project_id)
+              .select(["events.id", "events.title", "calendars.title as parent_title", "events.parent_id"])
               .limit(5),
           };
           const requests = [
@@ -304,6 +345,7 @@ export function search_router(app: Elysia) {
             nodeSearch,
             edgeSearch,
             calendarSearch,
+            eventsSearch,
           ];
           const result = await Promise.all(
             requests.map(async (item) => ({
