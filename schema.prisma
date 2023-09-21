@@ -60,7 +60,7 @@ model images {
   id    String @id @default(dbgenerated("gen_random_uuid()"))
   title String
 
-  type String @default("image")
+  type String @default("images")
 
   project    projects? @relation("projects_images", fields: [project_id], references: [id])
   project_id String?

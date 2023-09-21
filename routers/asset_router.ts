@@ -1,11 +1,13 @@
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import Elysia, { t } from "elysia";
+import { SelectExpression } from "kysely";
+import { DB } from "kysely-codegen";
 import sharp from "sharp";
 
 import { db } from "../database/db";
 import { MessageEnum } from "../enums/requestEnums";
-import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { s3Client } from "../utils/s3Client";
 
 async function createFile(data: Blob) {
@@ -17,18 +19,23 @@ async function createFile(data: Blob) {
 export function asset_router(app: Elysia) {
   return app.group("/assets", (server) =>
     server
-      .get(
+      .post(
         "/:project_id/:type",
-        async ({ params }) => {
+        async ({ params, body }) => {
           const data = await db
             .selectFrom("images")
             .selectAll()
             .where("images.project_id", "=", params.project_id)
             .where("images.type", "=", params.type)
+            .limit(body?.pagination?.limit || 10)
+            .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "images">[]))
             .execute();
           return { data, message: MessageEnum.success, ok: true };
         },
         {
+          body: RequestBodySchema,
           response: ResponseWithDataSchema,
         },
       )
