@@ -22,8 +22,7 @@ export function character_router(app: Elysia) {
         "/create",
         async ({ body, set }) => {
           await db.transaction().execute(async (tx) => {
-            const parsedData = InsertCharacterSchema.parse(body.data);
-            const character = await tx.insertInto("characters").values(parsedData).returning("id").executeTakeFirstOrThrow();
+            const character = await tx.insertInto("characters").values(body.data).returning("id").executeTakeFirstOrThrow();
 
             if (body?.relations) {
               if (body.relations?.images) {
@@ -101,7 +100,6 @@ export function character_router(app: Elysia) {
             .$if(!!body?.relationFilters?.tags?.length, (qb) =>
               constructTagFilter("characters", qb, "_charactersTotags", body?.relationFilters?.tags || [], "A", "B"),
             )
-
             .$if(!!body.orderBy?.length, (qb) => {
               qb = constructOrdering(body.orderBy, qb);
               return qb;
