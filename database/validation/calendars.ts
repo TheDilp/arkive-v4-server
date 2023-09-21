@@ -18,7 +18,6 @@ export const UpdateMonthSchema = t.Object({
 
 export const ReadCalendarSchema = t.Intersect([
   RequestBodySchema,
-  t.Object({ data: t.Object({}) }),
   t.Optional(
     t.Object({
       relations: t.Optional(
