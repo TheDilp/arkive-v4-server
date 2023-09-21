@@ -15,7 +15,7 @@ function getSearchFields(type: SearchableEntities): string[] {
   const fields = [`${type}.id`];
   if (type === "characters") fields.push("first_name", "nickname", "last_name", "portrait_id");
   else if (type === "tags") fields.push("title", "color");
-  else if (type === "nodes") fields.push("label", "nodes.parent_id");
+  else if (type === "nodes") fields.push("label", "nodes.parent_id", "nodes.image_id");
   else if (type === "edges") fields.push("label", "edges.parent_id");
   else fields.push(`${type}.title`);
 
@@ -64,6 +64,7 @@ export function search_router(app: Elysia) {
                   "characters.id as character_id",
                   "characters.first_name",
                   "characters.last_name",
+                  "characters.portrait_id",
                 ]),
             )
             .$if(type === "edges", (eb) =>
@@ -92,7 +93,8 @@ export function search_router(app: Elysia) {
                   ? `${item.first_name} ${item?.last_name || ""}`
                   : item?.title || item?.label || "",
               color: type === "tags" ? item.color : "",
-              image: type === "characters" ? item.portrait_id || "" : "",
+              image:
+                type === "characters" || (type === "nodes" && item?.first_name) ? item.portrait_id || "" : item?.image_id || "",
               parent_id: item?.parent_id || null,
               parent_title: item?.parent_title,
             })),
@@ -311,10 +313,22 @@ export function search_router(app: Elysia) {
             name: "nodes",
             request: db
               .selectFrom("nodes")
-              .where("label", "ilike", `%${search_term}%`)
               .leftJoin("boards", "boards.id", "nodes.parent_id")
+              .leftJoin("characters", "characters.id", "nodes.character_id")
+              .where((eb) =>
+                eb.or([eb("label", "ilike", `%${search_term}%`), eb("characters.first_name", "ilike", `%${search_term}%`)]),
+              )
               .where("boards.project_id", "=", project_id)
-              .select(["nodes.id", "nodes.label", "nodes.parent_id", "boards.title as parent_title"])
+              .select([
+                "nodes.id",
+                "nodes.label",
+                "nodes.parent_id",
+                "nodes.image_id",
+                "boards.title as parent_title",
+                "characters.first_name",
+                "characters.last_name",
+                "characters.portrait_id",
+              ])
               .limit(5),
           };
           const edgeSearch = {
