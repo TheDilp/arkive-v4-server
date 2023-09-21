@@ -22,6 +22,7 @@ export const ReadCharacterSchema = t.Intersect([
           relationships: t.Optional(t.Boolean()),
           character_fields: t.Optional(t.Boolean()),
           documents: t.Optional(t.Boolean()),
+          images: t.Optional(t.Boolean()),
           locations: t.Optional(t.Boolean()),
         }),
       ),

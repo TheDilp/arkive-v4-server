@@ -227,6 +227,17 @@ export function character_router(app: Elysia) {
                   ).as("portrait"),
                 );
               }
+              if (body?.relations?.images) {
+                qb = qb.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("_charactersToimages")
+                      .where("_charactersToimages.A", "=", params.id)
+                      .leftJoin("images", "images.id", "_charactersToimages.B")
+                      .select(["images.id", "images.title"]),
+                  ).as("images"),
+                );
+              }
               if (body?.relations?.locations) {
                 qb = qb.select((eb) =>
                   jsonArrayFrom(
@@ -745,7 +756,21 @@ export function character_router(app: Elysia) {
                   .execute();
               }
             }
+            if (body?.relations?.images) {
+              const existingImageIds = (
+                await tx.selectFrom("_charactersToimages").select(["B"]).where("A", "=", params.id).execute()
+              ).map((item) => item.B);
+              const filteredRequestIds = body.relations.images
+                .map((image) => image.id)
+                .filter((id) => !existingImageIds.includes(id));
 
+              if (filteredRequestIds.length) {
+                await tx
+                  .insertInto("_charactersToimages")
+                  .values(filteredRequestIds.map((id) => ({ A: params.id, B: id })))
+                  .execute();
+              }
+            }
             if (body?.relations?.tags) {
               const existingTagIds = (
                 await tx.selectFrom("_charactersTotags").select(["B"]).where("A", "=", params.id).execute()
@@ -759,9 +784,11 @@ export function character_router(app: Elysia) {
               }
             }
           });
+          return { message: MessageEnum.success, ok: true };
         },
         {
           body: UpdateCharacterSchema,
+          response: ResponseSchema,
         },
       )
       .delete(
