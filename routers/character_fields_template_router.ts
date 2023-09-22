@@ -15,6 +15,7 @@ import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
+import { CreateTagRelations } from "../utils/relationalQueryHelpers";
 
 export function character_fields_templates_router(app: Elysia) {
   return app.group("/character_fields_templates", (server) =>
@@ -34,6 +35,14 @@ export function character_fields_templates_router(app: Elysia) {
                 .insertInto("character_fields")
                 .values(body.relations.character_fields.map((field) => ({ ...field, parent_id: newTemplate.id })))
                 .execute();
+            }
+            if (body.relations?.tags) {
+              await CreateTagRelations({
+                tx,
+                relationalTable: "_character_fields_templatesTotags",
+                id: newTemplate.id,
+                tags: body.relations.tags,
+              });
             }
           });
           return { message: `Character template ${MessageEnum.successfully_created}`, ok: true };

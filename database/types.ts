@@ -14,7 +14,8 @@ export type TagsRelationTables =
   | "_dictionariesTotags"
   | "_edgesTotags"
   | "_nodesTotags"
-  | "_screensTotags";
+  | "_screensTotags"
+  | "_character_fields_templatesTotags";
 export type EntitiesWithTags =
   | "maps"
   | "boards"
