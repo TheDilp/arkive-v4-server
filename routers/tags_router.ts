@@ -51,7 +51,7 @@ export function tag_router(app: Elysia) {
         },
       )
       .delete(
-        "/delete/:id",
+        "/:id",
         async ({ params }) => {
           await db.deleteFrom("tags").where("id", "=", params.id).execute();
           return { message: `Tag ${MessageEnum.successfully_deleted}`, ok: true };

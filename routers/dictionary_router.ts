@@ -88,7 +88,7 @@ export function dictionary_router(app: Elysia) {
         },
         { body: UpdateDictionarySchema, response: ResponseSchema },
       )
-      .delete("/delete/:id", async ({ params }) => {
+      .delete("/:id", async ({ params }) => {
         await db.deleteFrom("dictionaries").where("id", "=", params.id).execute();
         return { ok: true, message: `Dictionary ${MessageEnum.successfully_deleted}` };
       }),
