@@ -3,9 +3,9 @@ import { SelectExpression } from "kysely";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InserWordSchema, ListWordSchema } from "../database/validation";
+import { InserWordSchema, ListWordSchema, ReadWordSchema, UpdateWordSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
-import { RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructOrdering } from "../utils/orderByConstructor";
 
 export function word_router(app: Elysia) {
@@ -56,15 +56,23 @@ export function word_router(app: Elysia) {
           return { data, ok: true, message: MessageEnum.success };
         },
         {
-          body: RequestBodySchema,
+          body: ReadWordSchema,
           response: ResponseWithDataSchema,
         },
+      )
+      .post(
+        "/update/:id",
+        async ({ params, body }) => {
+          await db.updateTable("words").where("words.id", "=", params.id).set(body.data).execute();
+          return { message: `Word ${MessageEnum.successfully_updated}`, ok: true };
+        },
+        { body: UpdateWordSchema, response: ResponseSchema },
       )
       .delete(
         "/delete/:id",
         async ({ params }) => {
           await db.deleteFrom("words").where("id", "=", params.id).execute();
-          return { ok: true, message: MessageEnum.success };
+          return { message: `Word ${MessageEnum.successfully_deleted}`, ok: true };
         },
         {
           response: ResponseSchema,
