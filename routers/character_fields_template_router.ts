@@ -33,7 +33,13 @@ export function character_fields_templates_router(app: Elysia) {
             if (body.relations?.character_fields) {
               await tx
                 .insertInto("character_fields")
-                .values(body.relations.character_fields.map((field) => ({ ...field, parent_id: newTemplate.id })))
+                .values(
+                  body.relations.character_fields.map((field) => ({
+                    ...field,
+                    parent_id: newTemplate.id,
+                    options: JSON.stringify(field.options || []),
+                  })),
+                )
                 .execute();
             }
             if (body.relations?.tags) {
@@ -212,7 +218,13 @@ export function character_fields_templates_router(app: Elysia) {
                 if (itemsToAdd.length) {
                   await tx
                     .insertInto("character_fields")
-                    .values(itemsToAdd.map((field) => ({ ...omit(field, ["id"]), parent_id: params.id })))
+                    .values(
+                      itemsToAdd.map((field) => ({
+                        ...omit(field, ["id"]),
+                        options: JSON.stringify(field.options || []),
+                        parent_id: params.id,
+                      })),
+                    )
                     .execute();
                 }
                 if (itemsToUpdate.length) {
@@ -221,7 +233,7 @@ export function character_fields_templates_router(app: Elysia) {
                       tx
                         .updateTable("character_fields")
                         .where("character_fields.id", "=", item.id as string)
-                        .set(omit(item, ["id"]))
+                        .set({ ...omit(item, ["id"]), options: JSON.stringify(item.options || []) })
                         .execute(),
                     ),
                   );

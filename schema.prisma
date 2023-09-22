@@ -183,7 +183,7 @@ model character_fields {
 
   /// @kyselyType('text' | 'textarea' | 'select' | 'select_multiple' | 'dice_roll' | 'date' | 'random_table' | 'documents_single' | 'documents_multiple' | 'images_single' | 'images_multiple')
   field_type      String
-  options         String[]
+  options         Json?
   formula         String?
   random_table_id String?
 
