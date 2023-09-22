@@ -1,5 +1,6 @@
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { StreamingBlobPayloadOutputTypes } from "@smithy/types";
 import Elysia, { t } from "elysia";
 import { SelectExpression } from "kysely";
 import { DB } from "kysely-codegen";
@@ -9,6 +10,7 @@ import { db } from "../database/db";
 import { UpdateImageSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { s3Client } from "../utils/s3Client";
 
@@ -31,6 +33,10 @@ export function asset_router(app: Elysia) {
             .where("images.type", "=", params.type)
             .limit(body?.pagination?.limit || 10)
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
+            .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
+              qb = constructFilter("images", qb, body.filters);
+              return qb;
+            })
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "images">[]))
             .$if(!!body.orderBy?.length, (qb) => {
@@ -112,7 +118,38 @@ export function asset_router(app: Elysia) {
           body: UpdateImageSchema,
           response: ResponseSchema,
         },
-      ),
+      )
+      .get("/download/:project_id/:type/:id", async ({ params }) => {
+        const { project_id, type, id } = params;
+        const filePath = `assets/${project_id}/${type}`;
+        const bucketParams = {
+          Bucket: process.env.DO_SPACES_NAME as string,
+          Key: `${filePath}/${id}.webp`,
+        };
+
+        // Function to turn the file's body into a string.
+        const streamToString = (stream: StreamingBlobPayloadOutputTypes | undefined) => {
+          const chunks: Buffer[] = [];
+          if (!stream) return chunks;
+          return new Promise((resolve, reject) => {
+            // @ts-ignore
+            stream.on("data", (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+            // @ts-ignore
+            stream.on("error", (err) => reject(err));
+            // @ts-ignore
+            stream.on("end", () => resolve(Buffer.concat(chunks).toString("base64")));
+          });
+        };
+
+        try {
+          const response = await s3Client.send(new GetObjectCommand(bucketParams));
+          const data = await streamToString(response.Body);
+
+          return { data, message: MessageEnum.success, ok: true };
+        } catch (err) {
+          throw new Error("Error downloading file.");
+        }
+      }),
   );
 
   // server.get(
