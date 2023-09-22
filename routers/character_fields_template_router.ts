@@ -9,13 +9,13 @@ import {
   InsertCharacterFieldsTemplateSchema,
   ListCharacterFieldsTemplateSchema,
   ReadCharacterFieldsTemplateSchema,
-  UpdateCharacterFieldsTemplateSchema,
+  UpdateTemplateSchema,
 } from "../database/validation/character_fields_templates";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { constructFilter } from "../utils/filterConstructor";
+import { constructFilter, constructTagFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { CreateTagRelations } from "../utils/relationalQueryHelpers";
+import { CreateTagRelations, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 
 export function character_fields_templates_router(app: Elysia) {
   return app.group("/character_fields_templates", (server) =>
@@ -45,7 +45,7 @@ export function character_fields_templates_router(app: Elysia) {
               });
             }
           });
-          return { message: `Character template ${MessageEnum.successfully_created}`, ok: true };
+          return { message: `Template ${MessageEnum.successfully_created}`, ok: true };
         },
         {
           body: InsertCharacterFieldsTemplateSchema,
@@ -66,6 +66,16 @@ export function character_fields_templates_router(app: Elysia) {
               qb = constructFilter("character_fields_templates", qb, body.filters);
               return qb;
             })
+            .$if(!!body?.relationFilters?.tags?.length, (qb) =>
+              constructTagFilter(
+                "character_fields_templates",
+                qb,
+                "_character_fields_templatesTotags",
+                body?.relationFilters?.tags || [],
+                "A",
+                "B",
+              ),
+            )
             .$if(!!body.orderBy?.length, (qb) => {
               qb = constructOrdering(body.orderBy, qb);
               return qb;
@@ -133,7 +143,6 @@ export function character_fields_templates_router(app: Elysia) {
               qb.clearSelect().select(body.fields as SelectExpression<DB, "character_fields_templates">[]),
             )
             .where("character_fields_templates.id", "=", params.id)
-
             .$if(!!body?.relations?.character_fields, (qb) =>
               qb.select((eb) =>
                 jsonArrayFrom(
@@ -159,8 +168,11 @@ export function character_fields_templates_router(app: Elysia) {
                 ).as("character_fields"),
               ),
             )
+            .$if(!!body?.relations?.tags, (qb) =>
+              qb.select((eb) => TagQuery(eb, "_character_fields_templatesTotags", "character_fields_templates")),
+            )
             .executeTakeFirstOrThrow();
-          return { data, message: "Success.", ok: true };
+          return { data, message: MessageEnum.success, ok: true };
         },
         {
           body: ReadCharacterFieldsTemplateSchema,
@@ -191,8 +203,8 @@ export function character_fields_templates_router(app: Elysia) {
                 const newIds = character_fields.map((field) => field.id);
 
                 const idsToRemove = existingIds.filter((id) => !newIds.includes(id));
-                const itemsToAdd = character_fields.filter((field) => !existingIds.includes(field.id));
-                const itemsToUpdate = character_fields.filter((field) => existingIds.includes(field.id));
+                const itemsToAdd = character_fields.filter((field) => !field.id);
+                const itemsToUpdate = character_fields.filter((field) => existingIds.includes(field.id as string));
 
                 if (idsToRemove.length) {
                   await tx.deleteFrom("character_fields").where("id", "in", idsToRemove).execute();
@@ -208,20 +220,30 @@ export function character_fields_templates_router(app: Elysia) {
                     itemsToUpdate.map(async (item) =>
                       tx
                         .updateTable("character_fields")
-                        .where("character_fields.id", "=", item.id)
+                        .where("character_fields.id", "=", item.id as string)
                         .set(omit(item, ["id"]))
                         .execute(),
                     ),
                   );
                 }
               }
+              if (body.relations?.tags) {
+                if (body.relations.tags.length)
+                  UpdateTagRelations({
+                    relationalTable: "_charactersTotags",
+                    id: params.id,
+                    newTags: body.relations.tags,
+                    tx,
+                  });
+                else await tx.deleteFrom("_charactersTotags").where("A", "=", params.id).execute();
+              }
             });
           }
 
-          return { message: `Template ${MessageEnum.successfully_updated}.`, ok: true };
+          return { message: `Template ${MessageEnum.successfully_updated}`, ok: true };
         },
         {
-          body: UpdateCharacterFieldsTemplateSchema,
+          body: UpdateTemplateSchema,
           response: ResponseSchema,
         },
       )

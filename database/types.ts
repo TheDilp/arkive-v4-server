@@ -27,7 +27,8 @@ export type EntitiesWithTags =
   | "dictionaries"
   | "edges"
   | "nodes"
-  | "screens";
+  | "screens"
+  | "character_fields_templates";
 
 export type EntitiesWithBreadcrumbs = "documents" | "maps" | "boards" | "dictionaries" | "random_tables";
 

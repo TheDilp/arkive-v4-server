@@ -46,8 +46,9 @@ export const InsertCharacterFieldsTemplateSchema = t.Object({
   ),
 });
 
-export const UpdateCharacterFieldsTemplateSchema = t.Object({
+export const UpdateTemplateSchema = t.Object({
   data: t.Object({
+    id: t.Optional(t.String()),
     title: t.Optional(t.String()),
     sort: t.Optional(t.Number()),
   }),
@@ -55,7 +56,7 @@ export const UpdateCharacterFieldsTemplateSchema = t.Object({
     t.Object({
       character_fields: t.Array(
         t.Object({
-          id: t.String(),
+          id: t.Optional(t.String()),
           title: t.String(),
           project_id: t.String(),
           field_type: t.String(),
@@ -65,6 +66,7 @@ export const UpdateCharacterFieldsTemplateSchema = t.Object({
           random_table_id: t.Optional(t.Union([t.String(), t.Null()])),
         }),
       ),
+      tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
     }),
   ),
 });
