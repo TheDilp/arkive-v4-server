@@ -86,7 +86,7 @@ export function character_router(app: Elysia) {
       .post(
         "/",
         async ({ body }) => {
-          const data = await db
+          const result = await db
             .selectFrom("characters")
             .where("characters.project_id", "=", body?.data?.project_id)
             .limit(body?.pagination?.limit || 10)
@@ -122,7 +122,18 @@ export function character_router(app: Elysia) {
             })
             .execute();
 
-          return { data, message: MessageEnum.success, ok: true };
+          //! TODO: Find better solution via SQL for finding items with all tags
+
+          return {
+            data: body?.relationFilters?.tags?.length
+              ? uniqBy(result, "id").filter((char) => {
+                  const charTags: string[] = char?.tags?.map((t: { id: string }) => t.id);
+                  return body?.relationFilters?.tags.every((tag_id) => charTags.includes(tag_id));
+                })
+              : result,
+            message: MessageEnum.success,
+            ok: true,
+          };
         },
         {
           body: ListCharacterSchema,
