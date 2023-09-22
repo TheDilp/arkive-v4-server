@@ -12,7 +12,7 @@ export function tag_router(app: Elysia) {
       .post(
         "/create",
         async ({ body }) => {
-          await db.insertInto("tags").values(body).execute();
+          await db.insertInto("tags").values(body.data).execute();
           return { message: `Tags ${MessageEnum.successfully_created}`, ok: true };
         },
         {

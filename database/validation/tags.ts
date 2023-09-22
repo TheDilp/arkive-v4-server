@@ -1,19 +1,21 @@
 import { t } from "elysia";
 
-export const InsertTagSchema = t.Union([
-  t.Object({
-    title: t.String(),
-    color: t.String(),
-    project_id: t.String(),
-  }),
-  t.Array(
+export const InsertTagSchema = t.Object({
+  data: t.Union([
     t.Object({
       title: t.String(),
       color: t.String(),
       project_id: t.String(),
     }),
-  ),
-]);
+    t.Array(
+      t.Object({
+        title: t.String(),
+        color: t.String(),
+        project_id: t.String(),
+      }),
+    ),
+  ]),
+});
 
 export const UpdateTagSchema = t.Object({
   id: t.String(),
