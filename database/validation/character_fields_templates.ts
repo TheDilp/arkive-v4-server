@@ -56,7 +56,7 @@ export const UpdateTemplateSchema = t.Object({
     t.Object({
       character_fields: t.Array(
         t.Object({
-          id: t.Optional(t.String()),
+          id: t.String(),
           title: t.String(),
           project_id: t.String(),
           field_type: t.String(),
