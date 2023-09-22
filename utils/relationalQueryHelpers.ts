@@ -55,13 +55,20 @@ export async function UpdateTagRelations({
   const tagsToDelete = existingTagIds.filter((tag) => !newTagIds.includes(tag));
   const tagsToInsert = newTagIds.filter((tag) => !existingTagIds.includes(tag));
 
-  if (tagsToDelete.length) await tx.deleteFrom(relationalTable).where(`${relationalTable}.B`, "in", tagsToDelete).execute();
+  if (tagsToDelete.length)
+    await tx
+      .deleteFrom(relationalTable)
+      .where(`${relationalTable}.A`, "=", id)
+      .where(`${relationalTable}.B`, "in", tagsToDelete)
+      .execute();
 
   if (tagsToInsert.length)
     await tx
       .insertInto(relationalTable)
       .values(tagsToInsert.map((tag) => ({ A: id, B: tag })))
       .execute();
+
+  return tagsToDelete;
 }
 
 export function GetRelationsForUpdating(
