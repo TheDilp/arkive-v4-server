@@ -69,7 +69,7 @@ export function word_router(app: Elysia) {
         { body: UpdateWordSchema, response: ResponseSchema },
       )
       .delete(
-        "/delete/:id",
+        "/:id",
         async ({ params }) => {
           await db.deleteFrom("words").where("id", "=", params.id).execute();
           return { message: `Word ${MessageEnum.successfully_deleted}`, ok: true };
