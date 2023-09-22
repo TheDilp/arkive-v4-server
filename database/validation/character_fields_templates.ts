@@ -9,7 +9,7 @@ export const ListCharacterFieldsTemplateSchema = t.Intersect([
   }),
   t.Optional(
     t.Object({
-      relations: t.Optional(t.Object({ character_fields: t.Boolean() })),
+      relations: t.Optional(t.Object({ character_fields: t.Optional(t.Boolean()), tags: t.Optional(t.Boolean()) })),
     }),
   ),
 ]);
@@ -18,7 +18,7 @@ export const ReadCharacterFieldsTemplateSchema = t.Intersect([
   RequestBodySchema,
   t.Object({
     data: t.Object({ id: t.String() }),
-    relations: t.Object({ character_fields: t.Boolean() }),
+    relations: t.Object({ character_fields: t.Optional(t.Boolean()), tags: t.Optional(t.Boolean()) }),
   }),
 ]);
 
@@ -41,6 +41,7 @@ export const InsertCharacterFieldsTemplateSchema = t.Object({
           random_table_id: t.Optional(t.Union([t.String(), t.Null()])),
         }),
       ),
+      tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
     }),
   ),
 });

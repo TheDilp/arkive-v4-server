@@ -181,7 +181,7 @@ model character_fields {
 
   sort Int @default(0)
 
-  /// @kyselyType('text' | 'textarea' | 'select' | 'select_multiple' | 'dice_roll' | 'random_table')
+  /// @kyselyType('text' | 'textarea' | 'select' | 'select_multiple' | 'dice_roll' | 'date' | 'random_table' | 'documents_single' | 'documents_multiple' | 'images_single' | 'images_multiple')
   field_type      String
   options         String[]
   formula         String?
@@ -200,6 +200,8 @@ model character_fields_templates {
   project          projects           @relation(fields: [project_id], references: [id])
   project_id       String
   character_fields character_fields[]
+
+  tags tags[]
 
   sort Int @default(0)
 }
@@ -698,18 +700,19 @@ model tags {
   project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
   project_id String
 
-  documents    documents[]
-  maps         maps[]
-  map_pins     map_pins[]
-  boards       boards[]
-  nodes        nodes[]
-  edges        edges[]
-  screens      screens[]
-  cards        cards[]
-  dictionaries dictionaries[]
-  calendars    calendars[]
-  events       events[]
-  characters   characters[]
+  documents                  documents[]
+  maps                       maps[]
+  map_pins                   map_pins[]
+  boards                     boards[]
+  nodes                      nodes[]
+  edges                      edges[]
+  screens                    screens[]
+  cards                      cards[]
+  dictionaries               dictionaries[]
+  calendars                  calendars[]
+  events                     events[]
+  characters                 characters[]
+  character_fields_templates character_fields_templates[]
 
   @@unique([title, project_id])
 }
