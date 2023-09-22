@@ -42,7 +42,7 @@ export function tag_router(app: Elysia) {
       .post(
         "/update/:id",
         async ({ params, body }) => {
-          await db.updateTable("tags").where("id", "=", params.id).set(body).execute();
+          await db.updateTable("tags").where("id", "=", params.id).set(body.data).execute();
           return { message: `Tag ${MessageEnum.successfully_updated}`, ok: true };
         },
         {

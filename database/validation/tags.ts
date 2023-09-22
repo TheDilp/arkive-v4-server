@@ -18,7 +18,9 @@ export const InsertTagSchema = t.Object({
 });
 
 export const UpdateTagSchema = t.Object({
-  id: t.String(),
-  title: t.Optional(t.String()),
-  color: t.Optional(t.String()),
+  data: t.Object({
+    id: t.String(),
+    title: t.Optional(t.String()),
+    color: t.Optional(t.String()),
+  }),
 });
