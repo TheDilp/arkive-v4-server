@@ -54,6 +54,7 @@ export function search_router(app: Elysia) {
 
           const result = await db
             .selectFrom(getSearchTableFromType(type as "map_images" | keyof DB))
+            // @ts-ignore
             .select(fields as SelectExpression<DB, SearchableEntities>[])
             .$if(type === "nodes", (eb) =>
               eb
