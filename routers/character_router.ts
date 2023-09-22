@@ -579,6 +579,8 @@ export function character_router(app: Elysia) {
         "/update/:id",
         async ({ params, body }) => {
           await db.transaction().execute(async (tx) => {
+            let deletedTags: string[] | null = null;
+
             if (body.data) {
               await tx.updateTable("characters").where("characters.id", "=", params.id).set(body.data).execute();
             }
@@ -593,6 +595,7 @@ export function character_router(app: Elysia) {
                 existingIds,
                 body.relations?.character_fields,
               );
+
               if (idsToRemove.length) {
                 await tx.deleteFrom("characters_to_character_fields").where("character_field_id", "in", idsToRemove).execute();
               }
@@ -619,6 +622,57 @@ export function character_router(app: Elysia) {
                       .execute();
                   }),
                 );
+              }
+            }
+            if (body.relations?.tags) {
+              if (body.relations.tags.length) {
+                const tagsToDelete = await UpdateTagRelations({
+                  relationalTable: "_charactersTotags",
+                  id: params.id,
+                  newTags: body.relations.tags,
+                  tx,
+                });
+                if (tagsToDelete.length) {
+                  deletedTags = tagsToDelete;
+                }
+              } else {
+                await tx.deleteFrom("_charactersTotags").where("A", "=", params.id).execute();
+                deletedTags = [];
+              }
+
+              if (deletedTags !== null) {
+                if (deletedTags?.length) {
+                  const templates = await tx
+                    .selectFrom("character_fields_templates")
+                    .select(["id"])
+                    .leftJoin(
+                      "_character_fields_templatesTotags",
+                      "_character_fields_templatesTotags.A",
+                      "character_fields_templates.id",
+                    )
+                    .where("_character_fields_templatesTotags.B", "in", deletedTags)
+                    .execute();
+
+                  const templateIds = templates.map((t) => t.id);
+                  if (templateIds?.length) {
+                    console.log(templateIds);
+                    await tx
+                      .deleteFrom("characters_to_character_fields")
+                      .using("character_fields")
+                      .where("characters_to_character_fields.character_id", "=", params.id)
+                      .whereRef("characters_to_character_fields.character_field_id", "=", "character_fields.id")
+                      .where("character_fields.parent_id", "in", templateIds)
+                      .returningAll()
+                      .execute();
+                  }
+                }
+                // if all tags are removed, remove all fields
+                else {
+                  await tx
+                    .deleteFrom("characters_to_character_fields")
+                    .where("characters_to_character_fields.character_id", "=", params.id)
+                    .execute();
+                }
               }
             }
             if (body.relations?.related_to) {
@@ -718,16 +772,6 @@ export function character_router(app: Elysia) {
                   )
                   .execute();
               }
-            }
-            if (body.relations?.tags) {
-              if (body.relations.tags.length)
-                UpdateTagRelations({
-                  relationalTable: "_charactersTotags",
-                  id: params.id,
-                  newTags: body.relations.tags,
-                  tx,
-                });
-              else await tx.deleteFrom("_charactersTotags").where("A", "=", params.id).execute();
             }
           });
           return { message: `Character ${MessageEnum.successfully_updated}`, ok: true };
