@@ -63,7 +63,7 @@ export function dictionary_router(app: Elysia) {
                 jsonArrayFrom(
                   eb
                     .selectFrom("words")
-                    .select(["words.id", "words.title", "words.description", "words.translation"])
+                    .select(["words.id", "words.title", "words.translation"])
                     .where("words.parent_id", "=", params.id),
                 ).as("words"),
             ])
