@@ -13,7 +13,7 @@ import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, constructTagFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { CreateTagRelations, GetRelationsForUpdating, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
-import { getCharacterFullName, getGenerationOffset } from "../utils/transform";
+import { getCharacterFullName } from "../utils/transform";
 
 export function character_router(app: Elysia) {
   return app.group("/characters", (server) =>
@@ -205,12 +205,7 @@ export function character_router(app: Elysia) {
                     eb
                       .selectFrom("characters_relationships as cr")
                       .leftJoin("characters_relationships as cr2", "cr.character_b_id", "cr2.character_b_id")
-                      .where((wb) =>
-                        wb.and([
-                          wb("cr.character_a_id", "=", params.id),
-                          wb.or([wb("cr2.relation_type", "=", "father"), wb("cr2.relation_type", "=", "mother")]),
-                        ]),
-                      )
+                      .where((wb) => wb.and([wb("cr.character_a_id", "=", params.id), wb("cr2.relation_type", "=", "parent")]))
                       .leftJoin("characters", "characters.id", "cr2.character_a_id")
                       .where("characters.id", "!=", params.id)
                       .distinctOn("characters.id")
@@ -297,19 +292,14 @@ export function character_router(app: Elysia) {
             .withRecursive("character_tree", (db) =>
               db
                 .selectFrom("characters_relationships")
-                .where((eb) =>
-                  eb.and([
-                    eb("character_a_id", "=", params.id),
-                    eb.or([eb("relation_type", "=", "father"), eb("relation_type", "=", "mother")]),
-                  ]),
-                )
+                .where((eb) => eb.and([eb("character_a_id", "=", params.id), eb("relation_type", "=", "parent")]))
                 .select(["character_b_id as parent_id", () => sql<number>`0`.as("generation")])
 
                 .unionAll(
                   db
                     .selectFrom("characters_relationships")
                     .innerJoin("character_tree", "character_a_id", "character_tree.parent_id")
-                    .where((eb) => eb.or([eb("relation_type", "=", "father"), eb("relation_type", "=", "mother")]))
+                    .where("relation_type", "=", "parent")
                     .select([
                       "characters_relationships.character_b_id as parent_id",
                       () => sql<number>`character_tree.generation + 1`.as("generation"),
@@ -324,19 +314,14 @@ export function character_router(app: Elysia) {
             .withRecursive("character_tree", (db) =>
               db
                 .selectFrom("characters_relationships")
-                .where((eb) =>
-                  eb.and([
-                    eb("character_b_id", "=", params.id),
-                    eb.or([eb("relation_type", "=", "father"), eb("relation_type", "=", "mother")]),
-                  ]),
-                )
+                .where((eb) => eb.and([eb("character_b_id", "=", params.id), eb("relation_type", "=", "parent")]))
                 .select(["character_a_id as child_id", () => sql<number>`0`.as("generation")])
 
                 .unionAll(
                   db
                     .selectFrom("characters_relationships")
                     .innerJoin("character_tree", "character_b_id", "character_tree.child_id")
-                    .where((eb) => eb.or([eb("relation_type", "=", "father"), eb("relation_type", "=", "mother")]))
+                    .where("relation_type", "=", "parent")
                     .select([
                       "characters_relationships.character_a_id as child_id",
                       () => sql<number>`character_tree.generation + 1`.as("generation"),
@@ -427,24 +412,17 @@ export function character_router(app: Elysia) {
 
             const itemsWithGen = groupBy([...parentsWithGen, ...targetsWithGen], "generation");
 
-            const nodes = Object.entries(itemsWithGen).flatMap(([generation, members]) => {
-              const parsedGen = parseInt(generation, 10) + 1;
-              const generationCount = members.length;
+            const nodes = Object.entries(itemsWithGen).flatMap(([, members]) => {
               return members
-                .map((member, index) => {
+                .map((member) => {
                   if (member)
                     return {
                       id: member.id,
                       label: getCharacterFullName(member.first_name as string, member?.nickname, member?.last_name),
-                      x:
-                        parsedGen * 150 +
-                        index * (member?.relation_type === "father" ? 450 : 150) +
-                        (generationCount >= 3 ? getGenerationOffset(index, generationCount) : 0),
-                      y: parsedGen < 0 ? parsedGen * 150 : parsedGen * -150,
                       width: 50,
                       height: 50,
                       image_id: member.portrait_id ?? [],
-                      is_locked: true,
+                      is_locked: false,
                     };
                 })
                 .filter((m) => !!m);
@@ -536,25 +514,17 @@ export function character_router(app: Elysia) {
               .filter((p) => Boolean(p));
 
             const itemsWithGen = groupBy([...childrenWithGen, ...targetsWithGen], "generation");
-            const nodes = Object.entries(itemsWithGen).flatMap(([generation, members]) => {
-              const parsedGen = parseInt(generation, 10) + 1;
-              const generationCount = members.length;
+            const nodes = Object.entries(itemsWithGen).flatMap(([, members]) => {
               return members
-                .map((member, index) => {
+                .map((member) => {
                   if (member)
                     return {
                       id: member.id,
                       label: `${member.first_name} ${member?.last_name || ""}`,
-                      x:
-                        parsedGen * 150 +
-                        index * (member?.relation_type === "father" ? 450 : 150) +
-                        (generationCount >= 3 ? getGenerationOffset(index, generationCount) : 0) +
-                        (parsedGen === 0 ? -150 : 0),
-                      y: parsedGen * 150,
                       width: 50,
                       height: 50,
                       image_id: member.portrait_id ?? [],
-                      is_locked: true,
+                      is_locked: false,
                     };
                 })
                 .filter((m) => !!m);

@@ -2,11 +2,12 @@ export function capitalizeFirstLetter(word: string): string {
   return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
-export function getGenerationOffset(index: number, generationCount: number): number {
-  const startOffset = -450 * (generationCount - 2);
-  if (index === 0) return startOffset;
-
-  return startOffset + 300 * index;
+export function getXCoordinate(index: number, generation: number, previousOffset: number = 0): number {
+  if (index % 2 === 0) {
+    return (index / 2) * 150 + 150 + generation * 150 + previousOffset;
+  } else {
+    return (Math.floor(index / 2) * 150 + 150 + generation * 150 + previousOffset) * -1;
+  }
 }
 
 type MainType = { id: string; title: string; suboptions?: { id: string; title: string }[] };

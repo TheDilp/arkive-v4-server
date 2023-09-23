@@ -232,7 +232,7 @@ model characters_relationships {
   character_b    characters @relation(name: "characters_character_relations_b", fields: [character_b_id], references: [id], onDelete: Cascade)
   character_b_id String
 
-  /// @kyselyType('father' | 'mother'  | 'partner' | string)
+  /// @kyselyType('parent'  | 'partner' | string)
   relation_type String
 
   @@id([character_a_id, character_b_id])

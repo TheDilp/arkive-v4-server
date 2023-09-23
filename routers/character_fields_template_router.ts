@@ -15,7 +15,7 @@ import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, constructTagFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { CreateTagRelations, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
+import { CreateTagRelations, GetRelationsForUpdating, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 
 export function character_fields_templates_router(app: Elysia) {
   return app.group("/character_fields_templates", (server) =>
@@ -206,11 +206,8 @@ export function character_fields_templates_router(app: Elysia) {
                   .execute();
 
                 const existingIds = existingCharacterFields.map((field) => field.id);
-                const newIds = character_fields.map((field) => field.id);
 
-                const idsToRemove = existingIds.filter((id) => !newIds.includes(id));
-                const itemsToAdd = character_fields.filter((field) => !field.id);
-                const itemsToUpdate = character_fields.filter((field) => existingIds.includes(field.id as string));
+                const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(existingIds, character_fields);
 
                 if (idsToRemove.length) {
                   await tx.deleteFrom("character_fields").where("id", "in", idsToRemove).execute();
@@ -219,6 +216,7 @@ export function character_fields_templates_router(app: Elysia) {
                   await tx
                     .insertInto("character_fields")
                     .values(
+                      // @ts-ignore
                       itemsToAdd.map((field) => ({
                         ...omit(field, ["id"]),
                         options: JSON.stringify(field.options || []),
