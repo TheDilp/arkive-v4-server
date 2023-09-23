@@ -398,6 +398,7 @@ export function character_router(app: Elysia) {
                 if (typeof generation === "number") {
                   return {
                     id: parent.id,
+                    character_id: parent.id,
                     first_name: parent.first_name,
                     nickname: parent.nickname,
                     last_name: parent.last_name,
@@ -418,6 +419,7 @@ export function character_router(app: Elysia) {
                   if (member)
                     return {
                       id: member.id,
+                      character_id: member.id,
                       label: getCharacterFullName(member.first_name as string, member?.nickname, member?.last_name),
                       width: 50,
                       height: 50,
@@ -501,6 +503,7 @@ export function character_router(app: Elysia) {
                 if (typeof generation === "number") {
                   return {
                     id: child.id,
+                    character_id: child.id,
                     first_name: child.first_name,
                     nickname: child.nickname,
                     last_name: child.last_name,
@@ -520,6 +523,7 @@ export function character_router(app: Elysia) {
                   if (member)
                     return {
                       id: member.id,
+                      character_id: member.id,
                       label: `${member.first_name} ${member?.last_name || ""}`,
                       width: 50,
                       height: 50,

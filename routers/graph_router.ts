@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import Elysia from "elysia";
 import { SelectExpression, SelectQueryBuilder } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
@@ -6,7 +7,7 @@ import { DB } from "kysely-codegen";
 import { db } from "../database/db";
 import { EntitiesWithChildren } from "../database/types";
 import { EntityListSchema } from "../database/validation";
-import { InsertGraphSchema, ReadGraphSchema, UpdateGraphSchema } from "../database/validation/graphs";
+import { GenerateGraphSchema, InsertGraphSchema, ReadGraphSchema, UpdateGraphSchema } from "../database/validation/graphs";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
@@ -172,6 +173,42 @@ export function graph_router(app: Elysia) {
           body: UpdateGraphSchema,
           response: ResponseSchema,
         },
+      )
+      .post(
+        "/generate",
+        async ({ body }) => {
+          let graphId = "";
+          await db.transaction().execute(async (tx) => {
+            const { id } = await tx.insertInto("boards").values(body.data).returning("id").executeTakeFirstOrThrow();
+            graphId = id;
+            const { nodes, edges } = body.relations;
+
+            const nodeIdDict: Record<string, string> = {};
+
+            if (nodes.length) {
+              for (let index = 0; index < nodes.length; index++) {
+                nodeIdDict[nodes[index].data.id] = randomUUID();
+              }
+              await tx
+                .insertInto("nodes")
+                .values(nodes.map((n) => ({ ...n.data, id: nodeIdDict[n.data.id], parent_id: id })))
+                .execute();
+            }
+            if (edges && edges.length) {
+              const formattedEdges = edges.map((e) => {
+                e.data.source_id = nodeIdDict[e.data.source_id];
+                e.data.target_id = nodeIdDict[e.data.target_id];
+                return e;
+              });
+              await tx
+                .insertInto("edges")
+                .values(formattedEdges.map((e) => ({ ...e.data, parent_id: id })))
+                .execute();
+            }
+          });
+          return { message: `Graph ${MessageEnum.successfully_created}`, ok: true, data: { id: graphId } };
+        },
+        { body: GenerateGraphSchema, response: ResponseWithDataSchema },
       )
       .delete("/:id", async ({ params }) => {
         await db.deleteFrom("boards").where("boards.id", "=", params.id).execute();

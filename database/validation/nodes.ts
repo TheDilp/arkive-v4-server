@@ -2,7 +2,7 @@ import { t } from "elysia";
 
 import { RequestBodySchema } from "../../types/requestTypes";
 
-const NodeShapeEnum = t.Optional(
+export const NodeShapeEnum = t.Optional(
   t.Union([
     t.Literal("rectangle"),
     t.Literal("ellipse"),
