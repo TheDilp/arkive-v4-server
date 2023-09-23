@@ -29,15 +29,16 @@ export const InsertRandomTableSchema = t.Object({
     is_folder: t.Optional(t.Union([t.Boolean(), t.Null()])),
     is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
   }),
-  relations: t.Object({
-    random_table_options: t.Array(t.Object({ data: InsertRandomTableOptionItemSchema })),
-  }),
+  relations: t.Optional(
+    t.Object({
+      random_table_options: t.Array(t.Object({ data: InsertRandomTableOptionItemSchema })),
+    }),
+  ),
 });
 export const UpdateRandomTableSchema = t.Object({
   data: t.Object({
     title: t.String(),
     description: t.Optional(t.Union([t.String(), t.Null()])),
-    project_id: t.String(),
     parent_id: t.Optional(t.Union([t.String(), t.Null()])),
     icon: t.Optional(t.Union([t.String(), t.Null()])),
     is_folder: t.Optional(t.Union([t.Boolean(), t.Null()])),

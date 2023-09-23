@@ -44,7 +44,9 @@ export const InsertCharacterSchema = t.Object({
   relations: t.Optional(
     t.Object({
       character_fields: t.Optional(
-        t.Array(t.Object({ id: t.String(), value: t.Object({ value: t.Optional(t.Union([t.String(), t.Null()])) }) })),
+        t.Array(
+          t.Object({ id: t.String(), value: t.Object({ value: t.Optional(t.Union([t.String(), t.Number(), t.Null()])) }) }),
+        ),
       ),
       related_to: t.Optional(t.Array(t.Object({ id: t.String(), relation_type: t.String() }))),
       related_from: t.Optional(t.Array(t.Object({ id: t.String(), relation_type: t.String() }))),
@@ -67,7 +69,9 @@ export const UpdateCharacterSchema = t.Object({
   relations: t.Optional(
     t.Object({
       character_fields: t.Optional(
-        t.Array(t.Object({ id: t.String(), value: t.Object({ value: t.Optional(t.Union([t.String(), t.Null()])) }) })),
+        t.Array(
+          t.Object({ id: t.String(), value: t.Object({ value: t.Optional(t.Union([t.String(), t.Number(), t.Null()])) }) }),
+        ),
       ),
       related_to: t.Optional(t.Array(t.Object({ id: t.String(), relation_type: t.String() }))),
       related_from: t.Optional(t.Array(t.Object({ id: t.String(), relation_type: t.String() }))),
