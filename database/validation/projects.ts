@@ -10,8 +10,10 @@ export const InsertProjectSchema = t.Object({
 
 export const UpdateProjectSchema = t.Object({
   data: t.Object({
+    id: t.Optional(t.String()),
     title: t.Optional(t.String()),
-    image_id: t.Optional(t.String()),
+    image_id: t.Optional(t.Union([t.String(), t.Null()])),
+    default_dice_color: t.Optional(t.Union([t.String(), t.Null()])),
   }),
 });
 
