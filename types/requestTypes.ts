@@ -21,7 +21,7 @@ export type RequestFilterOperatorType = keyof typeof FilterEnum;
 
 export interface RequestFilterType {
   field: string;
-  value: string | number | string[] | number[] | null;
+  value: string | number | string[] | number[] | boolean | boolean[] | null;
   operator: RequestFilterOperatorType;
 }
 

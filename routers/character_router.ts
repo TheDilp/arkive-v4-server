@@ -294,7 +294,6 @@ export function character_router(app: Elysia) {
                 .selectFrom("characters_relationships")
                 .where((eb) => eb.and([eb("character_a_id", "=", params.id), eb("relation_type", "=", "parent")]))
                 .select(["character_b_id as parent_id", () => sql<number>`0`.as("generation")])
-
                 .unionAll(
                   db
                     .selectFrom("characters_relationships")
@@ -348,6 +347,7 @@ export function character_router(app: Elysia) {
               .selectFrom("characters as sources")
               .where("id", "in", parent_ids)
               .leftJoin("characters_relationships", "character_b_id", "id")
+              .where("relation_type", "=", "parent")
               .select([
                 "id",
                 "first_name",
@@ -362,6 +362,7 @@ export function character_router(app: Elysia) {
                       .selectFrom("characters_relationships")
                       .whereRef("character_b_id", "=", "sources.id")
                       .leftJoin("characters as children", "children.id", "characters_relationships.character_a_id")
+                      .where("relation_type", "=", "parent")
                       .select([
                         "id",
                         "first_name",
@@ -376,7 +377,6 @@ export function character_router(app: Elysia) {
               ])
               .distinctOn("id")
               .execute();
-
             const targetsWithGen = uniqBy(
               parents.flatMap((p) => p.targets),
               "id",
@@ -455,6 +455,7 @@ export function character_router(app: Elysia) {
               .selectFrom("characters as targets")
               .where("id", "in", child_ids)
               .leftJoin("characters_relationships", "character_a_id", "id")
+              .where("relation_type", "=", "parent")
               .select([
                 "id",
                 "first_name",
@@ -469,6 +470,8 @@ export function character_router(app: Elysia) {
                       .selectFrom("characters_relationships")
                       .whereRef("character_a_id", "=", "targets.id")
                       .leftJoin("characters as parents", "parents.id", "characters_relationships.character_b_id")
+                      .where("relation_type", "=", "parent")
+
                       .select([
                         "id",
                         "first_name",
