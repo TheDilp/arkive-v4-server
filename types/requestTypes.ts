@@ -66,6 +66,24 @@ export const FilterEnumSchema = t.Union([
   t.Literal("notIn"),
 ]);
 
+const RequestFilterSchema = t.Optional(
+  t.Array(
+    t.Object({
+      field: t.String(),
+      value: t.Union([
+        t.String(),
+        t.Number(),
+        t.Boolean(),
+        t.Null(),
+        t.Array(t.String()),
+        t.Array(t.Number()),
+        t.Array(t.Boolean()),
+      ]),
+      operator: FilterEnumSchema,
+    }),
+  ),
+);
+
 export const RequestBodySchema = t.Object({
   fields: t.Optional(t.Array(t.String())),
   orderBy: t.Optional(t.Array(t.Object({ field: t.String(), sort: t.Union([t.Literal("asc"), t.Literal("desc")]) }))),
@@ -77,24 +95,8 @@ export const RequestBodySchema = t.Object({
   ),
   filters: t.Optional(
     t.Object({
-      and: t.Optional(
-        t.Array(
-          t.Object({
-            field: t.String(),
-            value: t.Union([t.String(), t.Number(), t.Array(t.String()), t.Array(t.Number()), t.Null()]),
-            operator: FilterEnumSchema,
-          }),
-        ),
-      ),
-      or: t.Optional(
-        t.Array(
-          t.Object({
-            field: t.String(),
-            value: t.Union([t.String(), t.Number(), t.Null()]),
-            operator: FilterEnumSchema,
-          }),
-        ),
-      ),
+      and: RequestFilterSchema,
+      or: RequestFilterSchema,
     }),
   ),
   relationFilters: t.Optional(t.Record(t.String(), t.Array(t.String()))),
