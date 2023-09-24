@@ -3,7 +3,7 @@ import { Boards } from "kysely-codegen";
 
 import { RequestBodySchema } from "../../types/requestTypes";
 
-export const NodeShapeEnum = t.Optional(
+const NodeShapeEnum = t.Optional(
   t.Union([
     t.Literal("rectangle"),
     t.Literal("ellipse"),

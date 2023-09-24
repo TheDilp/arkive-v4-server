@@ -5,6 +5,7 @@ export * from "./blueprints_router";
 export * from "./calendar_router";
 export * from "./character_fields_router";
 export * from "./character_fields_template_router";
+export * from "./character_relationship_types_router";
 export * from "./character_router";
 export * from "./dictionary_router";
 export * from "./document_router";

@@ -219,10 +219,12 @@ model characters_to_character_fields {
 }
 
 model character_relationship_types {
-  id         String   @id @default(dbgenerated("gen_random_uuid()"))
-  title      String
-  project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  project_id String
+  id               String   @id @default(dbgenerated("gen_random_uuid()"))
+  title            String
+  ascendant_title  String
+  descendant_title String
+  project          projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  project_id       String
 }
 
 model characters_relationships {

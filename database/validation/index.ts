@@ -19,6 +19,7 @@ export * from "./nodes";
 export * from "./projects";
 export * from "./random_table_options";
 export * from "./random_tables";
+export * from "./relationship_types";
 export * from "./search";
 export * from "./tags";
 export * from "./users";

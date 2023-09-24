@@ -7,6 +7,7 @@ import {
   calendar_router,
   character_fields_router,
   character_fields_templates_router,
+  character_relationship_types_router,
   character_router,
   dictionary_router,
   document_router,
@@ -55,6 +56,7 @@ const app = new Elysia()
       .use(character_router)
       .use(character_fields_templates_router)
       .use(character_fields_router)
+      .use(character_relationship_types_router)
       .use(document_router)
       .use(map_router)
       .use(map_pin_router)
