@@ -1,5 +1,9 @@
 import { t } from "elysia";
 
+import { RequestBodySchema } from "../../types/requestTypes";
+
+export const ReadProjectSchema = t.Intersect([RequestBodySchema]);
+
 export const InsertProjectSchema = t.Object({
   data: t.Object({ owner_id: t.String(), title: t.String(), image: t.Optional(t.String()) }),
 });

@@ -1,7 +1,14 @@
 import Elysia from "elysia";
+import { SelectExpression } from "kysely";
+import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertProjectSchema, ProjectListSchema, UpdateProjectSchema } from "../database/validation/projects";
+import {
+  InsertProjectSchema,
+  ProjectListSchema,
+  ReadProjectSchema,
+  UpdateProjectSchema,
+} from "../database/validation/projects";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 
@@ -31,6 +38,23 @@ export function project_router(app: Elysia) {
         },
         {
           body: ProjectListSchema,
+          response: ResponseWithDataSchema,
+        },
+      )
+      .post(
+        "/:id",
+        async ({ params, body }) => {
+          const data = await db
+            .selectFrom("projects")
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "projects">[]))
+            .select(["projects.id", "projects.title"])
+            .where("id", "=", params.id)
+            .executeTakeFirstOrThrow();
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: ReadProjectSchema,
           response: ResponseWithDataSchema,
         },
       )
