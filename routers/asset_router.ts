@@ -1,4 +1,4 @@
-import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { StreamingBlobPayloadOutputTypes } from "@smithy/types";
 import Elysia, { t } from "elysia";
@@ -17,6 +17,7 @@ import { s3Client } from "../utils/s3Client";
 async function createFile(data: Blob) {
   const buff = await data.arrayBuffer();
   const sharpData = sharp(buff);
+  // const metadata = await sharpData.metadata();
   return sharpData.toFormat("webp").toBuffer();
 }
 
@@ -149,7 +150,32 @@ export function asset_router(app: Elysia) {
         } catch (err) {
           throw new Error("Error downloading file.");
         }
-      }),
+      })
+      .delete(
+        "/:project_id/:type/:id",
+        async ({ params }) => {
+          const filePath = `assets/${params.project_id}/${params.type}`;
+
+          try {
+            s3Client
+              .send(
+                new DeleteObjectCommand({
+                  Bucket: process.env.DO_SPACES_NAME as string,
+                  Key: `${filePath}/${params.id}.webp`,
+                }),
+              )
+              .then(async () => {
+                await db.deleteFrom("images").where("id", "=", params.id).execute();
+              });
+            return { message: `Image ${MessageEnum.successfully_deleted}`, ok: true };
+          } catch (error) {
+            return { message: "Could not delete image.", ok: false };
+          }
+        },
+        {
+          response: ResponseSchema,
+        },
+      ),
   );
 
   // server.get(

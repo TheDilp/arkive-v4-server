@@ -255,7 +255,7 @@ model documents {
 
   is_template Boolean?
   properties  Json?
-  image       images?  @relation(fields: [image_id], references: [id])
+  image       images?  @relation(fields: [image_id], references: [id], onDelete: SetNull)
   dice_color  String?
 
   // Relations
@@ -299,7 +299,7 @@ model maps {
   is_public    Boolean?
   cluster_pins Boolean?
 
-  image images? @relation(fields: [image_id], references: [id])
+  image images? @relation(fields: [image_id], references: [id], onDelete: SetNull)
   icon  String?
 
   project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
@@ -327,7 +327,7 @@ model map_pins {
   border_color     String?
   background_color String?
   icon             String?
-  image            images?  @relation(fields: [image_id], references: [id])
+  image            images?  @relation(fields: [image_id], references: [id], onDelete: SetNull)
   show_background  Boolean  @default(true)
   show_border      Boolean  @default(true)
   is_public        Boolean?
@@ -343,7 +343,7 @@ model map_pins {
 model map_layers {
   id        String   @id @default(dbgenerated("gen_random_uuid()"))
   title     String   @default("New Layer")
-  image     images   @relation(fields: [image_id], references: [id])
+  image     images   @relation(fields: [image_id], references: [id], onDelete: Cascade)
   parent_id String
   is_public Boolean?
   maps      maps?    @relation(fields: [parent_id], references: [id], onDelete: Cascade)
@@ -399,7 +399,7 @@ model nodes {
   z_index     Int?
 
   board        boards  @relation(fields: [parent_id], references: [id], onDelete: Cascade)
-  image        images? @relation(fields: [image_id], references: [id])
+  image        images? @relation(fields: [image_id], references: [id], onDelete: SetNull)
   parent_id    String
   edges_source edges[] @relation("edges_source")
   edges_target edges[] @relation("edges_target")
@@ -600,7 +600,7 @@ model events {
   id          String  @id @default(dbgenerated("gen_random_uuid()"))
   title       String
   description String?
-  image       images? @relation(fields: [image_id], references: [id])
+  image       images? @relation(fields: [image_id], references: [id], onDelete: SetNull)
 
   is_public Boolean?
 
