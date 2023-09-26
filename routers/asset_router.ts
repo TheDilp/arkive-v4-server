@@ -157,16 +157,13 @@ export function asset_router(app: Elysia) {
           const filePath = `assets/${params.project_id}/${params.type}`;
 
           try {
-            s3Client
-              .send(
-                new DeleteObjectCommand({
-                  Bucket: process.env.DO_SPACES_NAME as string,
-                  Key: `${filePath}/${params.id}.webp`,
-                }),
-              )
-              .then(async () => {
-                await db.deleteFrom("images").where("id", "=", params.id).execute();
-              });
+            await s3Client.send(
+              new DeleteObjectCommand({
+                Bucket: process.env.DO_SPACES_NAME as string,
+                Key: `${filePath}/${params.id}.webp`,
+              }),
+            );
+            await db.deleteFrom("images").where("id", "=", params.id).execute();
             return { message: `Image ${MessageEnum.successfully_deleted}`, ok: true };
           } catch (error) {
             return { message: "Could not delete image.", ok: false };
