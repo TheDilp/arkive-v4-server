@@ -20,7 +20,7 @@ export function character_router(app: Elysia) {
     server
       .post(
         "/create",
-        async ({ body, set }) => {
+        async ({ body }) => {
           await db.transaction().execute(async (tx) => {
             const character = await tx.insertInto("characters").values(body.data).returning("id").executeTakeFirstOrThrow();
 
@@ -68,14 +68,13 @@ export function character_router(app: Elysia) {
                     body.relations.related_to.map((item) => ({
                       character_a_id: character.id,
                       character_b_id: item.id,
-                      relation_type: item.relation_type,
+                      relation_type_id: item.relation_type_id,
                     })),
                   )
                   .execute();
               }
             }
           });
-          set.status = 200;
           return { message: `Character ${MessageEnum.successfully_created}`, ok: true };
         },
         {
@@ -178,7 +177,7 @@ export function character_router(app: Elysia) {
                         "characters.nickname",
                         "characters.last_name",
                         "characters.portrait_id",
-                        "characters_relationships.relation_type",
+                        "characters_relationships.relation_type_id",
                       ]),
                   ).as("related_to"),
                 );
@@ -195,30 +194,30 @@ export function character_router(app: Elysia) {
                         "characters.nickname",
                         "characters.last_name",
                         "characters.portrait_id",
-                        "characters_relationships.relation_type",
+                        "characters_relationships.relation_type_id",
                       ]),
                   ).as("related_from"),
                 );
 
-                qb = qb.select((eb) =>
-                  jsonArrayFrom(
-                    eb
-                      .selectFrom("characters_relationships as cr")
-                      .leftJoin("characters_relationships as cr2", "cr.character_b_id", "cr2.character_b_id")
-                      .where((wb) => wb.and([wb("cr.character_a_id", "=", params.id), wb("cr2.relation_type", "=", "parent")]))
-                      .leftJoin("characters", "characters.id", "cr2.character_a_id")
-                      .where("characters.id", "!=", params.id)
-                      .distinctOn("characters.id")
-                      .select([
-                        "characters.id",
-                        "characters.first_name",
-                        "characters.nickname",
-                        "characters.last_name",
-                        "characters.portrait_id",
-                        "cr.relation_type",
-                      ]),
-                  ).as("siblings"),
-                );
+                // qb = qb.select((eb) =>
+                //   jsonArrayFrom(
+                //     eb
+                //       .selectFrom("characters_relationships as cr")
+                //       .leftJoin("characters_relationships as cr2", "cr.character_b_id", "cr2.character_b_id")
+                //       .where((wb) => wb.and([wb("cr.character_a_id", "=", params.id), wb("cr2.relation_type_id", "=", "parent")]))
+                //       .leftJoin("characters", "characters.id", "cr2.character_a_id")
+                //       .where("characters.id", "!=", params.id)
+                //       .distinctOn("characters.id")
+                //       .select([
+                //         "characters.id",
+                //         "characters.first_name",
+                //         "characters.nickname",
+                //         "characters.last_name",
+                //         "characters.portrait_id",
+                //         "cr.relation_type_id",
+                //       ]),
+                //   ).as("siblings"),
+                // );
               }
               if (body?.relations?.tags) {
                 qb = qb.select((eb) => TagQuery(eb, "_charactersTotags", "characters"));
@@ -282,23 +281,24 @@ export function character_router(app: Elysia) {
         },
       )
       .get(
-        "/family/:id",
+        "/family/:relation_type_id/:id",
         async ({ params }) => {
           let finalNodes: any[] = [];
           let finalEdges: any[] = [];
+          const { id, relation_type_id } = params;
 
           // Get ids of main branch/parent characters and their generations
           const p = await db
             .withRecursive("character_tree", (db) =>
               db
                 .selectFrom("characters_relationships")
-                .where((eb) => eb.and([eb("character_a_id", "=", params.id), eb("relation_type", "=", "parent")]))
+                .where((eb) => eb.and([eb("character_a_id", "=", id), eb("relation_type_id", "=", relation_type_id)]))
                 .select(["character_b_id as parent_id", () => sql<number>`0`.as("generation")])
                 .unionAll(
                   db
                     .selectFrom("characters_relationships")
                     .innerJoin("character_tree", "character_a_id", "character_tree.parent_id")
-                    .where("relation_type", "=", "parent")
+                    .where("relation_type_id", "=", relation_type_id)
                     .select([
                       "characters_relationships.character_b_id as parent_id",
                       () => sql<number>`character_tree.generation + 1`.as("generation"),
@@ -313,14 +313,14 @@ export function character_router(app: Elysia) {
             .withRecursive("character_tree", (db) =>
               db
                 .selectFrom("characters_relationships")
-                .where((eb) => eb.and([eb("character_b_id", "=", params.id), eb("relation_type", "=", "parent")]))
+                .where((eb) => eb.and([eb("character_b_id", "=", id), eb("relation_type_id", "=", relation_type_id)]))
                 .select(["character_a_id as child_id", () => sql<number>`0`.as("generation")])
 
                 .unionAll(
                   db
                     .selectFrom("characters_relationships")
                     .innerJoin("character_tree", "character_b_id", "character_tree.child_id")
-                    .where("relation_type", "=", "parent")
+                    .where("relation_type_id", "=", relation_type_id)
                     .select([
                       "characters_relationships.character_a_id as child_id",
                       () => sql<number>`character_tree.generation + 1`.as("generation"),
@@ -347,7 +347,7 @@ export function character_router(app: Elysia) {
               .selectFrom("characters as sources")
               .where("id", "in", parent_ids)
               .leftJoin("characters_relationships", "character_b_id", "id")
-              .where("relation_type", "=", "parent")
+              .where("relation_type_id", "=", relation_type_id)
               .select([
                 "id",
                 "first_name",
@@ -355,14 +355,18 @@ export function character_router(app: Elysia) {
                 "last_name",
                 "portrait_id",
                 "project_id",
-                "characters_relationships.relation_type",
                 (eb) =>
                   jsonArrayFrom(
                     eb
                       .selectFrom("characters_relationships")
                       .whereRef("character_b_id", "=", "sources.id")
                       .leftJoin("characters as children", "children.id", "characters_relationships.character_a_id")
-                      .where("relation_type", "=", "parent")
+                      // .leftJoin(
+                      //   "character_relationship_types",
+                      //   "character_relationship_types.id",
+                      //   "characters_relationships.relation_type_id",
+                      // )
+                      .where("relation_type_id", "=", relation_type_id)
                       .select([
                         "id",
                         "first_name",
@@ -371,7 +375,6 @@ export function character_router(app: Elysia) {
                         "project_id",
                         "portrait_id",
                         "character_b_id as parent_id",
-                        "characters_relationships.relation_type",
                       ]),
                   ).as("targets"),
               ])
@@ -403,7 +406,7 @@ export function character_router(app: Elysia) {
                     nickname: parent.nickname,
                     last_name: parent.last_name,
                     portrait_id: parent.portrait_id,
-                    relation_type: parent.relation_type,
+                    // relation_type: parent.relation_type,
                     project_id: parent.project_id,
                     generation,
                   };
@@ -455,7 +458,7 @@ export function character_router(app: Elysia) {
               .selectFrom("characters as targets")
               .where("id", "in", child_ids)
               .leftJoin("characters_relationships", "character_a_id", "id")
-              .where("relation_type", "=", "parent")
+              .where("relation_type_id", "=", relation_type_id)
               .select([
                 "id",
                 "first_name",
@@ -463,14 +466,14 @@ export function character_router(app: Elysia) {
                 "last_name",
                 "portrait_id",
                 "project_id",
-                "characters_relationships.relation_type",
+                // "characters_relationships.relation_type",
                 (eb) =>
                   jsonArrayFrom(
                     eb
                       .selectFrom("characters_relationships")
                       .whereRef("character_a_id", "=", "targets.id")
                       .leftJoin("characters as parents", "parents.id", "characters_relationships.character_b_id")
-                      .where("relation_type", "=", "parent")
+                      .where("relation_type_id", "=", relation_type_id)
 
                       .select([
                         "id",
@@ -479,7 +482,7 @@ export function character_router(app: Elysia) {
                         "project_id",
                         "portrait_id",
                         "character_a_id as child_id",
-                        "characters_relationships.relation_type",
+                        // "characters_relationships.relation_type",
                       ]),
                   ).as("targets"),
               ])
@@ -511,7 +514,7 @@ export function character_router(app: Elysia) {
                     nickname: child.nickname,
                     last_name: child.last_name,
                     portrait_id: child.portrait_id,
-                    relation_type: child.relation_type,
+                    // relation_type: child.relation_type,
                     project_id: child.project_id,
                     generation,
                   };
@@ -666,7 +669,7 @@ export function character_router(app: Elysia) {
             if (body.relations?.related_to) {
               const existingRelatedTo = await tx
                 .selectFrom("characters_relationships")
-                .select(["character_a_id as id", "character_b_id", "relation_type"])
+                .select(["character_a_id as id", "character_b_id", "relation_type_id"])
                 .where("character_a_id", "=", params.id)
                 .execute();
               const existingIds = existingRelatedTo.map((relation) => relation.id);
@@ -681,7 +684,7 @@ export function character_router(app: Elysia) {
                     itemsToAdd.map((item) => ({
                       character_a_id: params.id,
                       character_b_id: item.id,
-                      relation_type: item.relation_type,
+                      relation_type_id: item.relation_type_id,
                     })),
                   )
                   .execute();
@@ -693,7 +696,7 @@ export function character_router(app: Elysia) {
                       .updateTable("characters_relationships")
                       .where("character_a_id", "=", params.id)
                       .where("character_b_id", "=", item.id)
-                      .set({ relation_type: item.relation_type })
+                      .set({ relation_type_id: item.relation_type_id })
                       .execute(),
                   ),
                 );
@@ -702,7 +705,7 @@ export function character_router(app: Elysia) {
             if (body.relations?.related_from) {
               const existingRelatedTo = await tx
                 .selectFrom("characters_relationships")
-                .select(["character_b_id as id", "character_a_id", "relation_type"])
+                .select(["character_b_id as id", "character_a_id", "relation_type_id"])
                 .where("character_b_id", "=", params.id)
                 .execute();
               const existingIds = existingRelatedTo.map((relation) => relation.id);
@@ -720,7 +723,7 @@ export function character_router(app: Elysia) {
                     itemsToAdd.map((item) => ({
                       character_a_id: params.id,
                       character_b_id: item.id,
-                      relation_type: item.relation_type,
+                      relation_type_id: item.relation_type_id,
                     })),
                   )
                   .execute();
@@ -732,7 +735,7 @@ export function character_router(app: Elysia) {
                       .updateTable("characters_relationships")
                       .where("character_a_id", "=", params.id)
                       .where("character_b_id", "=", item.id)
-                      .set({ relation_type: item.relation_type })
+                      .set({ relation_type_id: item.relation_type_id })
                       .execute(),
                   ),
                 );
@@ -827,7 +830,7 @@ export function character_router(app: Elysia) {
         "/:id",
         async ({ params }) => {
           await db.deleteFrom("characters").where("characters.id", "=", params.id).execute();
-          return { message: `Character ${MessageEnum.successfully_deleted}.`, ok: true };
+          return { message: `Character ${MessageEnum.successfully_deleted}`, ok: true };
         },
         {
           response: ResponseSchema,

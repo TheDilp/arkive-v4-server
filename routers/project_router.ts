@@ -1,5 +1,6 @@
 import Elysia from "elysia";
 import { SelectExpression } from "kysely";
+import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
@@ -48,6 +49,20 @@ export function project_router(app: Elysia) {
             .selectFrom("projects")
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "projects">[]))
+            .$if(!!body?.relations?.character_relationship_types, (qb) =>
+              qb.select((eb) =>
+                jsonArrayFrom(
+                  eb
+                    .selectFrom("character_relationship_types")
+                    .select([
+                      "character_relationship_types.id",
+                      "character_relationship_types.title",
+                      "character_relationship_types.ascendant_title",
+                      "character_relationship_types.descendant_title",
+                    ]),
+                ).as("character_relationship_types"),
+              ),
+            )
             .select(["projects.id", "projects.title"])
             .where("id", "=", params.id)
             .executeTakeFirstOrThrow();

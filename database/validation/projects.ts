@@ -2,7 +2,18 @@ import { t } from "elysia";
 
 import { RequestBodySchema } from "../../types/requestTypes";
 
-export const ReadProjectSchema = t.Intersect([RequestBodySchema]);
+export const ReadProjectSchema = t.Intersect([
+  RequestBodySchema,
+  t.Optional(
+    t.Object({
+      relations: t.Optional(
+        t.Object({
+          character_relationship_types: t.Optional(t.Boolean()),
+        }),
+      ),
+    }),
+  ),
+]);
 
 export const InsertProjectSchema = t.Object({
   data: t.Object({ owner_id: t.String(), title: t.String(), image: t.Optional(t.String()) }),
