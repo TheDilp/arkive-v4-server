@@ -219,6 +219,53 @@ export function character_router(app: Elysia) {
                 //   ).as("siblings"),
                 // );
               }
+              if (body?.relations?.character_relationship_types) {
+                qb = qb.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("characters_relationships")
+                      .distinctOn("relation_type_id")
+                      .where((wb) => wb.or([wb("character_a_id", "=", params.id), wb("character_b_id", "=", params.id)]))
+                      .leftJoin(
+                        "character_relationship_types as related_to",
+                        "related_to.id",
+                        "characters_relationships.relation_type_id",
+                      )
+                      .leftJoin(
+                        "character_relationship_types as related_from",
+                        "related_from.id",
+                        "characters_relationships.relation_type_id",
+                      )
+                      .select([
+                        "characters_relationships.relation_type_id as id",
+                        "related_from.title as related_from_title",
+                        "related_to.title as related_to_title",
+                        "related_from.ascendant_title as related_from_ascendant_title",
+                        "related_to.ascendant_title as related_to_ascendant_title",
+                      ]),
+                  ).as("character_relationship_types"),
+                );
+
+                // qb = qb.select((eb) =>
+                //   jsonArrayFrom(
+                //     eb
+                //       .selectFrom("characters_relationships as cr")
+                //       .leftJoin("characters_relationships as cr2", "cr.character_b_id", "cr2.character_b_id")
+                //       .where((wb) => wb.and([wb("cr.character_a_id", "=", params.id), wb("cr2.relation_type_id", "=", "parent")]))
+                //       .leftJoin("characters", "characters.id", "cr2.character_a_id")
+                //       .where("characters.id", "!=", params.id)
+                //       .distinctOn("characters.id")
+                //       .select([
+                //         "characters.id",
+                //         "characters.first_name",
+                //         "characters.nickname",
+                //         "characters.last_name",
+                //         "characters.portrait_id",
+                //         "cr.relation_type_id",
+                //       ]),
+                //   ).as("siblings"),
+                // );
+              }
               if (body?.relations?.tags) {
                 qb = qb.select((eb) => TagQuery(eb, "_charactersTotags", "characters"));
               }
@@ -474,7 +521,6 @@ export function character_router(app: Elysia) {
                       .whereRef("character_a_id", "=", "targets.id")
                       .leftJoin("characters as parents", "parents.id", "characters_relationships.character_b_id")
                       .where("relation_type_id", "=", relation_type_id)
-
                       .select([
                         "id",
                         "first_name",

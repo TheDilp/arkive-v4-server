@@ -19,6 +19,7 @@ export const ReadCharacterSchema = t.Intersect([
         t.Object({
           portrait: t.Optional(t.Boolean()),
           tags: t.Optional(t.Boolean()),
+          character_relationship_types: t.Optional(t.Boolean()),
           relationships: t.Optional(t.Boolean()),
           character_fields: t.Optional(t.Boolean()),
           documents: t.Optional(t.Boolean()),

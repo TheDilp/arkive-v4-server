@@ -27,6 +27,16 @@ export function character_relationship_types_router(app: Elysia) {
           return { data, message: MessageEnum.success, ok: true };
         },
         { body: ListCharacterRelationshipTypeSchema, respose: ResponseWithDataSchema },
+      )
+      .delete(
+        "/:id",
+        async ({ params }) => {
+          await db.deleteFrom("character_relationship_types").where("id", "=", params.id).execute();
+          return { message: `Relationship type ${MessageEnum.successfully_deleted}`, ok: true };
+        },
+        {
+          response: ResponseSchema,
+        },
       ),
   );
 }
