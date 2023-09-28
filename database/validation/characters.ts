@@ -31,6 +31,12 @@ export const ReadCharacterSchema = t.Intersect([
   ),
 ]);
 
+export const GenerateCharacterRelationshipTreeSchema = t.Object({
+  data: t.Object({
+    direct_only: t.Optional(t.Boolean()),
+  }),
+});
+
 export const InsertCharacterSchema = t.Object({
   data: t.Object({
     first_name: t.String(),

@@ -251,7 +251,9 @@ export function character_router(app: Elysia) {
                 //     eb
                 //       .selectFrom("characters_relationships as cr")
                 //       .leftJoin("characters_relationships as cr2", "cr.character_b_id", "cr2.character_b_id")
-                //       .where((wb) => wb.and([wb("cr.character_a_id", "=", params.id), wb("cr2.relation_type_id", "=", "parent")]))
+                //       .where((wb) =>
+                //         wb.and([wb("cr.character_a_id", "=", params.id), wb("cr2.relation_type_id", "=", "parent")]),
+                //       )
                 //       .leftJoin("characters", "characters.id", "cr2.character_a_id")
                 //       .where("characters.id", "!=", params.id)
                 //       .distinctOn("characters.id")
@@ -334,6 +336,69 @@ export function character_router(app: Elysia) {
           let finalEdges: any[] = [];
           const { id, relation_type_id } = params;
 
+          const relationType = await db
+            .selectFrom("character_relationship_types")
+            .where("id", "=", relation_type_id)
+            .select(["id", "title", "ascendant_title", "descendant_title"])
+            .executeTakeFirstOrThrow();
+
+          const isDirect = !relationType.ascendant_title && !relationType.descendant_title;
+          const targetArrow = isDirect ? "none" : "triangle";
+          const curveStyle = isDirect ? "straight" : "taxi";
+
+          // If it is not a hierarchical relationship
+          if (isDirect) {
+            // const source = await db
+            //   .selectFrom("characters")
+            //   .select(["id", "first_name", "nickname", "last_name", "portrait_id", "project_id"])
+            //   .where("characters.id", "=", params.id)
+            //   .executeTakeFirstOrThrow();
+            const targets = await db
+              .selectFrom("characters_relationships")
+              .where((eb) => eb.and([eb("character_a_id", "=", id), eb("relation_type_id", "=", relation_type_id)]))
+              .leftJoin("characters", "characters.id", "characters_relationships.character_b_id")
+              .select(["id", "first_name", "nickname", "last_name", "portrait_id", "project_id"])
+              .union(
+                db
+                  .selectFrom("characters_relationships")
+                  .where((eb) => eb.and([eb("character_b_id", "=", id), eb("relation_type_id", "=", relation_type_id)]))
+                  .leftJoin("characters", "characters.id", "characters_relationships.character_a_id")
+                  .select(["id", "first_name", "nickname", "last_name", "portrait_id", "project_id"]),
+              )
+              .union(
+                db
+                  .selectFrom("characters")
+                  .where("characters.id", "=", params.id)
+                  .select(["id", "first_name", "nickname", "last_name", "portrait_id", "project_id"]),
+              )
+              .execute();
+
+            const nodes = targets.map((target) => ({
+              id: target.id,
+              character_id: target.id,
+              label: getCharacterFullName(target.first_name as string, target?.nickname, target?.last_name),
+              width: 50,
+              height: 50,
+              image_id: target.portrait_id ?? [],
+              is_locked: false,
+            }));
+
+            const edges = targets
+              .filter((t) => t.id !== params.id)
+              .map((target) => {
+                return {
+                  id: randomUUID(),
+                  source_id: params.id,
+                  target_id: target.id,
+                  target_arrow_shape: targetArrow,
+                  curve_style: curveStyle,
+                  taxi_direction: "downward",
+                };
+              });
+
+            return { data: { edges, nodes }, ok: true, message: MessageEnum.success };
+          }
+
           // Get ids of main branch/parent characters and their generations
           const p = await db
             .withRecursive("character_tree", (db) =>
@@ -350,7 +415,7 @@ export function character_router(app: Elysia) {
                       "characters_relationships.character_b_id as parent_id",
                       () => sql<number>`character_tree.generation + 1`.as("generation"),
                     ])
-                    .where("generation", "<", 5),
+                    .where("generation", "<", isDirect ? 0 : 5),
                 ),
             )
             .selectFrom("character_tree")
@@ -372,7 +437,7 @@ export function character_router(app: Elysia) {
                       "characters_relationships.character_a_id as child_id",
                       () => sql<number>`character_tree.generation + 1`.as("generation"),
                     ])
-                    .where("generation", "<", 5),
+                    .where("generation", "<", isDirect ? 0 : 5),
                 ),
             )
             .selectFrom("character_tree")
@@ -489,8 +554,8 @@ export function character_router(app: Elysia) {
                       id: randomUUID(),
                       source_id: target?.parent_id,
                       target_id: target.id,
-                      target_arrow: "triangle",
-                      curve_style: "taxi",
+                      target_arrow_shape: targetArrow,
+                      curve_style: curveStyle,
                       taxi_direction: "downward",
                     };
                   });
@@ -595,8 +660,8 @@ export function character_router(app: Elysia) {
                       id: randomUUID(),
                       source_id: target.id,
                       target_id: target?.child_id,
-                      target_arrow: "triangle",
-                      curve_style: "taxi",
+                      target_arrow_shape: targetArrow,
+                      curve_style: curveStyle,
                       taxi_direction: "downward",
                     };
                   });
