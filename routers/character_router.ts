@@ -376,8 +376,13 @@ export function character_router(app: Elysia) {
 
           const relationType = await db
             .selectFrom("character_relationship_types")
-            .where("id", "=", relation_type_id)
-            .select(["id", "title", "ascendant_title", "descendant_title"])
+            .where("character_relationship_types.id", "=", relation_type_id)
+            .select([
+              "character_relationship_types.id",
+              "character_relationship_types.title",
+              "character_relationship_types.ascendant_title",
+              "character_relationship_types.descendant_title",
+            ])
             .executeTakeFirstOrThrow();
 
           const isDirect = !relationType.ascendant_title && !relationType.descendant_title;
@@ -395,19 +400,26 @@ export function character_router(app: Elysia) {
               .selectFrom("characters_relationships")
               .where((eb) => eb.and([eb("character_a_id", "=", id), eb("relation_type_id", "=", relation_type_id)]))
               .leftJoin("characters", "characters.id", "characters_relationships.character_b_id")
-              .select(["id", "first_name", "nickname", "last_name", "portrait_id", "project_id"])
+              .select([
+                "characters.id",
+                "characters.first_name",
+                "characters.nickname",
+                "characters.last_name",
+                "characters.portrait_id",
+                "characters.project_id",
+              ])
               .union(
                 db
                   .selectFrom("characters_relationships")
                   .where((eb) => eb.and([eb("character_b_id", "=", id), eb("relation_type_id", "=", relation_type_id)]))
                   .leftJoin("characters", "characters.id", "characters_relationships.character_a_id")
-                  .select(["id", "first_name", "nickname", "last_name", "portrait_id", "project_id"]),
+                  .select(["characters.id", "characters.first_name", "nickname", "last_name", "portrait_id", "project_id"]),
               )
               .union(
                 db
                   .selectFrom("characters")
                   .where("characters.id", "=", params.id)
-                  .select(["id", "first_name", "nickname", "last_name", "portrait_id", "project_id"]),
+                  .select(["characters.id", "first_name", "nickname", "last_name", "portrait_id", "project_id"]),
               )
               .execute();
 
@@ -495,11 +507,11 @@ export function character_router(app: Elysia) {
             // Get parents data along with children
             const parents = await db
               .selectFrom("characters as sources")
-              .where("id", "in", parent_ids)
-              .leftJoin("characters_relationships", "character_b_id", "id")
+              .where("sources.id", "in", parent_ids)
+              .leftJoin("characters_relationships", "character_b_id", "sources.id")
               .where("relation_type_id", "=", relation_type_id)
               .select([
-                "id",
+                "sources.id",
                 "first_name",
                 "nickname",
                 "last_name",
@@ -518,7 +530,7 @@ export function character_router(app: Elysia) {
                       // )
                       .where("relation_type_id", "=", relation_type_id)
                       .select([
-                        "id",
+                        "children.id",
                         "first_name",
                         "nickname",
                         "last_name",
@@ -528,7 +540,7 @@ export function character_router(app: Elysia) {
                       ]),
                   ).as("targets"),
               ])
-              .distinctOn("id")
+              .distinctOn("sources.id")
               .execute();
             const targetsWithGen = uniqBy(
               parents.flatMap((p) => p.targets),
@@ -606,11 +618,11 @@ export function character_router(app: Elysia) {
           if (child_ids.length) {
             const children = await db
               .selectFrom("characters as targets")
-              .where("id", "in", child_ids)
-              .leftJoin("characters_relationships", "character_a_id", "id")
+              .where("targets.id", "in", child_ids)
+              .leftJoin("characters_relationships", "character_a_id", "targets.id")
               .where("relation_type_id", "=", relation_type_id)
               .select([
-                "id",
+                "targets.id",
                 "first_name",
                 "nickname",
                 "last_name",
@@ -625,7 +637,7 @@ export function character_router(app: Elysia) {
                       .leftJoin("characters as parents", "parents.id", "characters_relationships.character_b_id")
                       .where("relation_type_id", "=", relation_type_id)
                       .select([
-                        "id",
+                        "parents.id",
                         "first_name",
                         "last_name",
                         "project_id",
@@ -635,7 +647,7 @@ export function character_router(app: Elysia) {
                       ]),
                   ).as("targets"),
               ])
-              .distinctOn("id")
+              .distinctOn("targets.id")
               .execute();
             const targetsWithGen = uniqBy(
               children.flatMap((p) => p.targets),
