@@ -236,26 +236,6 @@ export function character_router(app: Elysia) {
                       ]),
                   ).as("related_other"),
                 );
-
-                // qb = qb.select((eb) =>
-                //   jsonArrayFrom(
-                //     eb
-                //       .selectFrom("characters_relationships as cr")
-                //       .leftJoin("characters_relationships as cr2", "cr.character_b_id", "cr2.character_b_id")
-                //       .where((wb) => wb.and([wb("cr.character_a_id", "=", params.id), wb("cr2.relation_type_id", "=", "parent")]))
-                //       .leftJoin("characters", "characters.id", "cr2.character_a_id")
-                //       .where("characters.id", "!=", params.id)
-                //       .distinctOn("characters.id")
-                //       .select([
-                //         "characters.id",
-                //         "characters.first_name",
-                //         "characters.nickname",
-                //         "characters.last_name",
-                //         "characters.portrait_id",
-                //         "cr.relation_type_id",
-                //       ]),
-                //   ).as("siblings"),
-                // );
               }
               if (body?.relations?.character_relationship_types) {
                 qb = qb.select((eb) =>
@@ -368,7 +348,7 @@ export function character_router(app: Elysia) {
         },
       )
       .get(
-        "/family/:relation_type_id/:id",
+        "/family/:relation_type_id/:id/:count",
         async ({ params }) => {
           let finalNodes: any[] = [];
           let finalEdges: any[] = [];
@@ -465,7 +445,7 @@ export function character_router(app: Elysia) {
                       "characters_relationships.character_b_id as parent_id",
                       () => sql<number>`character_tree.generation + 1`.as("generation"),
                     ])
-                    .where("generation", "<", isDirect ? 0 : 5),
+                    .where("generation", "<", isDirect ? 0 : Number(params.count || 5)),
                 ),
             )
             .selectFrom("character_tree")
@@ -487,7 +467,7 @@ export function character_router(app: Elysia) {
                       "characters_relationships.character_a_id as child_id",
                       () => sql<number>`character_tree.generation + 1`.as("generation"),
                     ])
-                    .where("generation", "<", isDirect ? 0 : 5),
+                    .where("generation", "<", isDirect ? 0 : Number(params.count) || 5),
                 ),
             )
             .selectFrom("character_tree")

@@ -84,6 +84,7 @@ export function search_router(app: Elysia) {
             .$if(type === "map_images", (eb) => eb.where("type", "=", "map_image"))
             .$if(type === "images", (eb) => eb.where("type", "=", "images"))
             .where((eb) => getSearchWhere(eb, type as SearchableEntities, body.data.search_term))
+            .limit(body.limit || 10)
 
             .execute();
           return {
