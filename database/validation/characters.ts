@@ -57,6 +57,7 @@ export const InsertCharacterSchema = t.Object({
       ),
       related_to: t.Optional(t.Array(t.Object({ id: t.String(), relation_type_id: t.String() }))),
       related_from: t.Optional(t.Array(t.Object({ id: t.String(), relation_type_id: t.String() }))),
+      related_other: t.Optional(t.Array(t.Object({ id: t.String(), relation_type_id: t.String() }))),
       tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
       documents: t.Optional(t.Array(t.Object({ id: t.String() }))),
       images: t.Optional(t.Array(t.Object({ id: t.String() }))),
@@ -80,8 +81,33 @@ export const UpdateCharacterSchema = t.Object({
           t.Object({ id: t.String(), value: t.Object({ value: t.Optional(t.Union([t.String(), t.Number(), t.Null()])) }) }),
         ),
       ),
-      related_to: t.Optional(t.Array(t.Object({ id: t.String(), relation_type_id: t.String() }))),
-      related_from: t.Optional(t.Array(t.Object({ id: t.String(), relation_type_id: t.String() }))),
+      related_to: t.Optional(
+        t.Array(
+          t.Object({
+            id: t.String(),
+            relation_type_id: t.String(),
+            character_relationship_id: t.Optional(t.String({ minLength: 0 })),
+          }),
+        ),
+      ),
+      related_from: t.Optional(
+        t.Array(
+          t.Object({
+            id: t.String(),
+            relation_type_id: t.String(),
+            character_relationship_id: t.Optional(t.String({ minLength: 0 })),
+          }),
+        ),
+      ),
+      related_other: t.Optional(
+        t.Array(
+          t.Object({
+            id: t.String(),
+            relation_type_id: t.String(),
+            character_relationship_id: t.Optional(t.String({ minLength: 0 })),
+          }),
+        ),
+      ),
       tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
       documents: t.Optional(t.Array(t.Object({ id: t.String() }))),
       images: t.Optional(t.Array(t.Object({ id: t.String() }))),

@@ -178,3 +178,69 @@ export function GetEntityChildren(qb: SelectQueryBuilder<DB, EntitiesWithChildre
     ).as("children"),
   );
 }
+
+export async function UpdateCharacterRelationships({
+  tx,
+  id,
+  related,
+  relation_direction,
+}: {
+  tx: Transaction<DB>;
+  id: string;
+  related: {
+    character_relationship_id?: string | undefined;
+    id: string;
+    relation_type_id: string;
+  }[];
+  relation_direction: "related_to" | "related_other" | "related_from";
+}) {
+  const id1: "character_a_id" | "character_b_id" =
+    relation_direction === "related_from" ? ("character_a_id" as const) : ("character_b_id" as const);
+  const id2: "character_a_id" | "character_b_id" =
+    relation_direction === "related_from" ? ("character_b_id" as const) : ("character_a_id" as const);
+
+  const existingRelated = await tx
+    .selectFrom("characters_relationships")
+    .leftJoin("character_relationship_types", "character_relationship_types.id", "characters_relationships.relation_type_id")
+    .where(id2, "=", id)
+    .where((wb) =>
+      wb.and([
+        wb("character_relationship_types.ascendant_title", relation_direction === "related_other" ? "is" : "is not", null),
+        wb("character_relationship_types.descendant_title", relation_direction === "related_other" ? "is" : "is not", null),
+      ]),
+    )
+    .select([`${id1} as id`, id2, "relation_type_id", "characters_relationships.id as character_relationship_id"])
+    .execute();
+  // const existingIds = existingRelatedTo.map((relation) => relation.id);
+
+  const itemsToAdd = (related || [])?.filter((r) => !r.character_relationship_id);
+  const itemsWithIds = (related || [])?.filter((r) => !!r.character_relationship_id);
+
+  const itemsToRemove = existingRelated.filter(
+    (ex) => !itemsWithIds?.some((r) => r.id === ex.id && r.character_relationship_id === ex.character_relationship_id),
+  );
+
+  if (itemsToRemove.length) {
+    await Promise.all(
+      itemsToRemove.map((item) =>
+        tx
+          .deleteFrom("characters_relationships")
+          .where("characters_relationships.id", "=", item.character_relationship_id)
+          .execute(),
+      ),
+    );
+  }
+  if (itemsToAdd.length) {
+    await tx
+      .insertInto("characters_relationships")
+      .values(
+        //@ts-ignore
+        itemsToAdd.map((item) => ({
+          [id2]: id,
+          [id1]: item.id,
+          relation_type_id: item.relation_type_id,
+        })),
+      )
+      .execute();
+  }
+}
