@@ -99,6 +99,8 @@ export function search_router(app: Elysia) {
                 type === "characters" || (type === "nodes" && item?.first_name) ? item.portrait_id || "" : item?.image_id || "",
               parent_id: item?.parent_id || null,
               parent_title: item?.parent_title,
+              first_name: item?.first_name,
+              last_name: item?.last_name,
             })),
             message: MessageEnum.success,
             ok: true,

@@ -114,3 +114,11 @@ export const UpdateCharacterSchema = t.Object({
     }),
   ),
 });
+
+export const DeleteCharacterItemSchema = t.Object({
+  data: t.Object({
+    document: t.Optional(t.Object({ data: t.Object({ id: t.String() }) })),
+    image: t.Optional(t.Object({ data: t.Object({ id: t.String() }) })),
+    tag: t.Optional(t.Object({ data: t.Object({ id: t.String() }) })),
+  }),
+});

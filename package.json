@@ -20,6 +20,7 @@
     "kysely": "^0.26.3",
     "lodash.groupby": "^4.6.0",
     "lodash.omit": "^4.5.0",
+    "lodash.uniq": "^4.5.0",
     "lodash.uniqby": "^4.7.0",
     "pg": "^8.11.1",
     "sharp": "^0.32.1"
@@ -31,6 +32,7 @@
   "devDependencies": {
     "@types/lodash.groupby": "^4.6.7",
     "@types/lodash.omit": "^4.5.7",
+    "@types/lodash.uniq": "^4.5.7",
     "@types/lodash.uniqby": "^4.7.7",
     "@types/node": "^20.4.1",
     "@types/pg": "^8.10.2",

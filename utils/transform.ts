@@ -41,3 +41,19 @@ export function chooseRandomItems(arr: MainType[], M: number): { id: string; sub
 export function getCharacterFullName(first_name: string, nickname?: string | null, last_name?: string | null): string {
   return `${first_name.trim()}${nickname ? ` ${nickname?.trim()}` : ""}${last_name ? ` ${last_name?.trim()}` : ""}`;
 }
+
+export function areArraysEqual(a: string[], b: string[]) {
+  if (a === b) return true;
+  if (a == null || b == null) return false;
+  if (a.length !== b.length) return false;
+
+  // If you don't care about the order of the elements inside
+  // the array, you should sort both arrays here.
+  // Please note that calling sort on an array will modify that array.
+  // you might want to clone your array first.
+
+  for (var i = 0; i < a.length; ++i) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
