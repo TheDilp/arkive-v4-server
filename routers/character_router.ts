@@ -3,7 +3,7 @@ import Elysia from "elysia";
 import { SelectExpression, sql } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
-import groupBy from "lodash.groupby";
+import uniq from "lodash.uniq";
 import uniqBy from "lodash.uniqby";
 
 import { db } from "../database/db";
@@ -350,9 +350,7 @@ export function character_router(app: Elysia) {
       .get(
         "/family/:relation_type_id/:id/:count",
         async ({ params }) => {
-          let finalNodes: any[] = [];
-          let finalEdges: any[] = [];
-          const { id, relation_type_id } = params;
+          const { id, relation_type_id, count } = params;
 
           const relationType = await db
             .selectFrom("character_relationship_types")
@@ -398,7 +396,7 @@ export function character_router(app: Elysia) {
               .union(
                 db
                   .selectFrom("characters")
-                  .where("characters.id", "=", params.id)
+                  .where("characters.id", "=", id)
                   .select(["characters.id", "first_name", "nickname", "last_name", "portrait_id", "project_id"]),
               )
               .execute();
@@ -429,279 +427,90 @@ export function character_router(app: Elysia) {
             return { data: { edges, nodes }, ok: true, message: MessageEnum.success };
           }
 
+          const baseCharacterRelationships = await sql<{
+            character_a_id: string;
+            character_b_id: string;
+          }>`
+          WITH RECURSIVE
+          related_characters (character_a_id, character_b_id, depth) AS (
+            SELECT
+              character_a_id,
+              character_b_id,
+              1
+            FROM
+              characters_relationships
+            WHERE
+             ( character_a_id = ${id}
+              OR character_b_id = ${id})
+              AND relation_type_id = ${relation_type_id}
+            UNION
+            SELECT
+              cr.character_a_id,
+              cr.character_b_id,
+              depth + 1
+            FROM
+              characters_relationships cr
+              INNER JOIN related_characters rc ON cr.character_a_id = rc.character_b_id
+              OR cr.character_b_id = rc.character_a_id
+            WHERE
+              cr.relation_type_id = ${relation_type_id} AND
+              depth < ${Number(count || 1)}
+          )
+        SELECT
+          *
+        FROM
+          related_characters;
+          `.execute(db);
+
+          const ids = uniq(baseCharacterRelationships.rows.flatMap((r) => [r.character_a_id, r.character_b_id]));
+
+          const mainCharacters = await db
+            .selectFrom("characters")
+            .select(["id", "portrait_id", "nickname", "first_name", "last_name"])
+            .where("id", "in", ids)
+            .execute();
+
+          const additionalChars = await db
+            .selectFrom("characters")
+            .leftJoin("characters_relationships", "character_b_id", "characters.id")
+            .where("character_a_id", "in", ids)
+            .where("characters.id", "not in", ids)
+            .where("relation_type_id", "=", relation_type_id)
+            .select(["characters.id", "portrait_id", "nickname", "first_name", "last_name", "character_a_id"])
+            .execute();
+
+          const withParents = [...mainCharacters, ...additionalChars].map((char) => {
+            const parents = baseCharacterRelationships.rows
+              .filter((r) => r.character_a_id === char.id)
+              .map((p) => p.character_b_id)
+              .concat(additionalChars.filter((c) => c.character_a_id === char.id).map((c) => c.id as string));
+            return { ...char, parents };
+          });
+
+          const nodes = withParents.map((c) => ({
+            id: c.id,
+            character_id: c.id,
+            label: getCharacterFullName(c.first_name as string, c?.nickname, c?.last_name),
+            width: 50,
+            height: 50,
+            image_id: c.portrait_id ?? [],
+            is_locked: false,
+          }));
+
+          const edges = withParents.flatMap((c) =>
+            ("parents" in c ? c.parents : []).map((p) => ({
+              id: randomUUID(),
+              source_id: p,
+              target_id: c.id,
+              target_arrow_shape: targetArrow,
+              curve_style: curveStyle,
+              taxi_direction: "downward",
+            })),
+          );
+
           // Get ids of main branch/parent characters and their generations
-          const p = await db
-            .withRecursive("character_tree", (db) =>
-              db
-                .selectFrom("characters_relationships")
-                .where((eb) => eb.and([eb("character_a_id", "=", id), eb("relation_type_id", "=", relation_type_id)]))
-                .select(["character_b_id as parent_id", () => sql<number>`0`.as("generation")])
-                .unionAll(
-                  db
-                    .selectFrom("characters_relationships")
-                    .innerJoin("character_tree", "character_a_id", "character_tree.parent_id")
-                    .where("relation_type_id", "=", relation_type_id)
-                    .select([
-                      "characters_relationships.character_b_id as parent_id",
-                      () => sql<number>`character_tree.generation + 1`.as("generation"),
-                    ])
-                    .where("generation", "<", isDirect ? 0 : Number(params.count || 5)),
-                ),
-            )
-            .selectFrom("character_tree")
-            .selectAll()
-            .execute();
-          const c = await db
-            .withRecursive("character_tree", (db) =>
-              db
-                .selectFrom("characters_relationships")
-                .where((eb) => eb.and([eb("character_b_id", "=", id), eb("relation_type_id", "=", relation_type_id)]))
-                .select(["character_a_id as child_id", () => sql<number>`0`.as("generation")])
 
-                .unionAll(
-                  db
-                    .selectFrom("characters_relationships")
-                    .innerJoin("character_tree", "character_b_id", "character_tree.child_id")
-                    .where("relation_type_id", "=", relation_type_id)
-                    .select([
-                      "characters_relationships.character_a_id as child_id",
-                      () => sql<number>`character_tree.generation + 1`.as("generation"),
-                    ])
-                    .where("generation", "<", isDirect ? 0 : Number(params.count) || 5),
-                ),
-            )
-            .selectFrom("character_tree")
-            .selectAll()
-            .execute();
-          const parent_ids = p.reverse().map((p) => p.parent_id);
-          const child_ids = c
-            .reverse()
-            .map((c) => c.child_id)
-            .filter((c_id) => !parent_ids.includes(c_id));
-
-          if (!parent_ids.length && !child_ids.length) {
-            return { data: { nodes: [], edges: [] }, message: MessageEnum.success, ok: true };
-          }
-
-          if (parent_ids.length) {
-            // Get parents data along with children
-            const parents = await db
-              .selectFrom("characters as sources")
-              .where("sources.id", "in", parent_ids)
-              .leftJoin("characters_relationships", "character_b_id", "sources.id")
-              .where("relation_type_id", "=", relation_type_id)
-              .select([
-                "sources.id",
-                "first_name",
-                "nickname",
-                "last_name",
-                "portrait_id",
-                "project_id",
-                (eb) =>
-                  jsonArrayFrom(
-                    eb
-                      .selectFrom("characters_relationships")
-                      .whereRef("character_b_id", "=", "sources.id")
-                      .leftJoin("characters as children", "children.id", "characters_relationships.character_a_id")
-                      // .leftJoin(
-                      //   "character_relationship_types",
-                      //   "character_relationship_types.id",
-                      //   "characters_relationships.relation_type_id",
-                      // )
-                      .where("relation_type_id", "=", relation_type_id)
-                      .select([
-                        "children.id",
-                        "first_name",
-                        "nickname",
-                        "last_name",
-                        "project_id",
-                        "portrait_id",
-                        "character_b_id as parent_id",
-                      ]),
-                  ).as("targets"),
-              ])
-              .distinctOn("sources.id")
-              .execute();
-            const targetsWithGen = uniqBy(
-              parents.flatMap((p) => p.targets),
-              "id",
-            )
-              .map((t) => {
-                const generation = p.find((par) => par.parent_id === t.id || par.parent_id === t.parent_id)?.generation;
-                if (typeof generation === "number") {
-                  if (t?.id && parent_ids.includes(t.id)) {
-                    return { ...t, generation };
-                  }
-                  return { ...t, generation: generation - 1 };
-                }
-              })
-              .filter((t) => Boolean(t) && !parent_ids.includes(t?.id as string));
-
-            const parentsWithGen = parents
-              .map((parent) => {
-                const generation = p.find((par) => par.parent_id === parent.id)?.generation;
-                if (typeof generation === "number") {
-                  return {
-                    id: parent.id,
-                    character_id: parent.id,
-                    first_name: parent.first_name,
-                    nickname: parent.nickname,
-                    last_name: parent.last_name,
-                    portrait_id: parent.portrait_id,
-                    // relation_type: parent.relation_type,
-                    project_id: parent.project_id,
-                    generation,
-                  };
-                }
-              })
-              .filter((p) => Boolean(p));
-
-            const itemsWithGen = groupBy([...parentsWithGen, ...targetsWithGen], "generation");
-
-            const nodes = Object.entries(itemsWithGen).flatMap(([, members]) => {
-              return members
-                .map((member) => {
-                  if (member)
-                    return {
-                      id: member.id,
-                      character_id: member.id,
-                      label: getCharacterFullName(member.first_name as string, member?.nickname, member?.last_name),
-                      width: 50,
-                      height: 50,
-                      image_id: member.portrait_id ?? [],
-                      is_locked: false,
-                    };
-                })
-                .filter((m) => !!m);
-            });
-
-            const edges = parents
-              .filter((p) => !!p.targets.length)
-              .flatMap((par) => {
-                if (par.targets.length) {
-                  return par.targets.map((target) => {
-                    return {
-                      id: randomUUID(),
-                      source_id: target?.parent_id,
-                      target_id: target.id,
-                      target_arrow_shape: targetArrow,
-                      curve_style: curveStyle,
-                      taxi_direction: "downward",
-                    };
-                  });
-                }
-              });
-
-            finalNodes = finalNodes.concat(nodes);
-            finalEdges = finalEdges.concat(edges);
-          }
-          if (child_ids.length) {
-            const children = await db
-              .selectFrom("characters as targets")
-              .where("targets.id", "in", child_ids)
-              .leftJoin("characters_relationships", "character_a_id", "targets.id")
-              .where("relation_type_id", "=", relation_type_id)
-              .select([
-                "targets.id",
-                "first_name",
-                "nickname",
-                "last_name",
-                "portrait_id",
-                "project_id",
-                // "characters_relationships.relation_type",
-                (eb) =>
-                  jsonArrayFrom(
-                    eb
-                      .selectFrom("characters_relationships")
-                      .whereRef("character_a_id", "=", "targets.id")
-                      .leftJoin("characters as parents", "parents.id", "characters_relationships.character_b_id")
-                      .where("relation_type_id", "=", relation_type_id)
-                      .select([
-                        "parents.id",
-                        "first_name",
-                        "last_name",
-                        "project_id",
-                        "portrait_id",
-                        "character_a_id as child_id",
-                        // "characters_relationships.relation_type",
-                      ]),
-                  ).as("targets"),
-              ])
-              .distinctOn("targets.id")
-              .execute();
-            const targetsWithGen = uniqBy(
-              children.flatMap((p) => p.targets),
-              "id",
-            )
-              .map((t) => {
-                const generation = c.find((child) => child.child_id === t.id || child.child_id === t.child_id)?.generation;
-                if (typeof generation === "number") {
-                  if (t?.id && child_ids.includes(t.id)) {
-                    return { ...t, generation };
-                  }
-                  return { ...t, generation: generation - 1 };
-                }
-              })
-              .filter((t) => Boolean(t) && !child_ids.includes(t?.id as string));
-
-            const childrenWithGen = children
-              .map((child) => {
-                const generation = c.find((ch) => ch.child_id === child.id)?.generation;
-                if (typeof generation === "number") {
-                  return {
-                    id: child.id,
-                    character_id: child.id,
-                    first_name: child.first_name,
-                    nickname: child.nickname,
-                    last_name: child.last_name,
-                    portrait_id: child.portrait_id,
-                    // relation_type: child.relation_type,
-                    project_id: child.project_id,
-                    generation,
-                  };
-                }
-              })
-              .filter((p) => Boolean(p));
-
-            const itemsWithGen = groupBy([...childrenWithGen, ...targetsWithGen], "generation");
-            const nodes = Object.entries(itemsWithGen).flatMap(([, members]) => {
-              return members
-                .map((member) => {
-                  if (member)
-                    return {
-                      id: member.id,
-                      character_id: member.id,
-                      label: `${member.first_name} ${member?.last_name || ""}`,
-                      width: 50,
-                      height: 50,
-                      image_id: member.portrait_id ?? [],
-                      is_locked: false,
-                    };
-                })
-                .filter((m) => !!m);
-            });
-
-            const edges = children
-              .filter((c) => !!c.targets.length)
-              .flatMap((par) => {
-                if (par.targets.length) {
-                  return par.targets.map((target) => {
-                    return {
-                      id: randomUUID(),
-                      source_id: target.id,
-                      target_id: target?.child_id,
-                      target_arrow_shape: targetArrow,
-                      curve_style: curveStyle,
-                      taxi_direction: "downward",
-                    };
-                  });
-                }
-              });
-
-            finalNodes = finalNodes.concat(nodes);
-            finalEdges = finalEdges.concat(edges);
-          }
-          return { data: { edges: finalEdges, nodes: finalNodes }, ok: true, message: MessageEnum.success };
+          return { data: { nodes, edges }, ok: true, message: MessageEnum.success };
         },
         {
           response: ResponseWithDataSchema,

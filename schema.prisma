@@ -464,7 +464,7 @@ model edges {
   parent_id String
   tags      tags[]
 
-  @@unique([source_id, target_id])
+  // @@unique([source_id, target_id,])
 }
 
 model screens {
