@@ -454,7 +454,7 @@ export function character_router(app: Elysia) {
               OR cr.character_b_id = rc.character_a_id
             WHERE
               cr.relation_type_id = ${relation_type_id} AND
-              depth < ${Number(count || 1)}
+              depth < ${Number(count || 1) - (Number(count) <= 2 ? 0 : 1)}
           )
         SELECT
           *
@@ -470,14 +470,17 @@ export function character_router(app: Elysia) {
             .where("id", "in", ids)
             .execute();
 
-          const additionalChars = await db
-            .selectFrom("characters")
-            .leftJoin("characters_relationships", "character_b_id", "characters.id")
-            .where("character_a_id", "in", ids)
-            .where("characters.id", "not in", ids)
-            .where("relation_type_id", "=", relation_type_id)
-            .select(["characters.id", "portrait_id", "nickname", "first_name", "last_name", "character_a_id"])
-            .execute();
+          const additionalChars =
+            Number(count) <= 2
+              ? []
+              : await db
+                  .selectFrom("characters")
+                  .leftJoin("characters_relationships", "character_b_id", "characters.id")
+                  .where("character_a_id", "in", ids)
+                  .where("characters.id", "not in", ids)
+                  .where("relation_type_id", "=", relation_type_id)
+                  .select(["characters.id", "portrait_id", "nickname", "first_name", "last_name", "character_a_id"])
+                  .execute();
 
           const withParents = [...mainCharacters, ...additionalChars].map((char) => {
             const parents = baseCharacterRelationships.rows
