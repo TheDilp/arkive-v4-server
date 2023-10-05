@@ -191,6 +191,8 @@ export function character_router(app: Elysia) {
                         "characters.portrait_id",
                         "characters_relationships.relation_type_id",
                         "characters_relationships.id as character_relationship_id",
+                        "character_relationship_types.ascendant_title as relation_title",
+                        "character_relationship_types.title as relation_type_title",
                       ]),
                   ).as("related_to"),
                 );
@@ -201,6 +203,12 @@ export function character_router(app: Elysia) {
                       .select(["character_b_id as id"])
                       .where("character_b_id", "=", params.id)
                       .leftJoin("characters", "characters.id", "character_a_id")
+                      .leftJoin(
+                        "character_relationship_types",
+                        "character_relationship_types.id",
+                        "characters_relationships.relation_type_id",
+                      )
+                      .where("character_relationship_types.ascendant_title", "is not", null)
                       .select([
                         "character_a_id as id",
                         "characters.first_name",
@@ -209,6 +217,8 @@ export function character_router(app: Elysia) {
                         "characters.portrait_id",
                         "characters_relationships.relation_type_id",
                         "characters_relationships.id as character_relationship_id",
+                        "character_relationship_types.descendant_title as relation_title",
+                        "character_relationship_types.title as relation_type_title",
                       ]),
                   ).as("related_from"),
                 );
@@ -233,6 +243,8 @@ export function character_router(app: Elysia) {
                         "characters.portrait_id",
                         "characters_relationships.relation_type_id",
                         "characters_relationships.id as character_relationship_id",
+                        "character_relationship_types.ascendant_title as relation_title",
+                        "character_relationship_types.title as relation_type_title",
                       ]),
                   ).as("related_other"),
                 );
@@ -263,28 +275,6 @@ export function character_router(app: Elysia) {
                       ]),
                   ).as("character_relationship_types"),
                 );
-
-                // qb = qb.select((eb) =>
-                //   jsonArrayFrom(
-                //     eb
-                //       .selectFrom("characters_relationships as cr")
-                //       .leftJoin("characters_relationships as cr2", "cr.character_b_id", "cr2.character_b_id")
-                //       .where((wb) =>
-                //         wb.and([wb("cr.character_a_id", "=", params.id), wb("cr2.relation_type_id", "=", "parent")]),
-                //       )
-                //       .leftJoin("characters", "characters.id", "cr2.character_a_id")
-                //       .where("characters.id", "!=", params.id)
-                //       .distinctOn("characters.id")
-                //       .select([
-                //         "characters.id",
-                //         "characters.first_name",
-                //         "characters.nickname",
-                //         "characters.last_name",
-                //         "characters.portrait_id",
-                //         "cr.relation_type_id",
-                //       ]),
-                //   ).as("siblings"),
-                // );
               }
               if (body?.relations?.tags) {
                 qb = qb.select((eb) => TagQuery(eb, "_charactersTotags", "characters"));
@@ -369,11 +359,6 @@ export function character_router(app: Elysia) {
 
           // If it is not a hierarchical relationship
           if (isDirect) {
-            // const source = await db
-            //   .selectFrom("characters")
-            //   .select(["id", "first_name", "nickname", "last_name", "portrait_id", "project_id"])
-            //   .where("characters.id", "=", params.id)
-            //   .executeTakeFirstOrThrow();
             const targets = await db
               .selectFrom("characters_relationships")
               .where((eb) => eb.and([eb("character_a_id", "=", id), eb("relation_type_id", "=", relation_type_id)]))
