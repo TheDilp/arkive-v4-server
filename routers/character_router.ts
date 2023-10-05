@@ -245,7 +245,30 @@ export function character_router(app: Elysia) {
                         "characters_relationships.id as character_relationship_id",
                         "character_relationship_types.ascendant_title as relation_title",
                         "character_relationship_types.title as relation_type_title",
-                      ]),
+                      ])
+                      .union(
+                        eb
+                          .selectFrom("characters_relationships")
+                          .leftJoin(
+                            "character_relationship_types",
+                            "character_relationship_types.id",
+                            "characters_relationships.relation_type_id",
+                          )
+                          .where("characters_relationships.character_b_id", "=", params.id)
+                          .where("character_relationship_types.descendant_title", "is", null)
+                          .leftJoin("characters", "characters.id", "character_a_id")
+                          .select([
+                            "character_a_id as id",
+                            "characters.first_name",
+                            "characters.nickname",
+                            "characters.last_name",
+                            "characters.portrait_id",
+                            "characters_relationships.relation_type_id",
+                            "characters_relationships.id as character_relationship_id",
+                            "character_relationship_types.descendant_title as relation_title",
+                            "character_relationship_types.title as relation_type_title",
+                          ]),
+                      ),
                   ).as("related_other"),
                 );
               }
@@ -329,7 +352,10 @@ export function character_router(app: Elysia) {
               return qb;
             })
             .executeTakeFirstOrThrow();
-
+          // If fetching direct relationships return only unique relationships
+          if (data?.related_other) {
+            data.related_other = uniqBy(data.related_other, "id");
+          }
           return { data, message: MessageEnum.success, ok: true };
         },
         {
