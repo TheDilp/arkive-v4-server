@@ -491,17 +491,32 @@ export function character_router(app: Elysia) {
                   .where("characters.id", "not in", ids)
                   .where("relation_type_id", "=", relation_type_id)
                   .select(["characters.id", "portrait_id", "nickname", "first_name", "last_name", "character_a_id"])
-                  .execute();
 
-          const withParents = [...mainCharacters, ...additionalChars].map((char) => {
+                  .execute();
+          const additionalCharsChildren = await db
+            .selectFrom("characters")
+            .leftJoin("characters_relationships", "character_a_id", "characters.id")
+            .where("character_b_id", "in", ids)
+            .where("characters.id", "not in", ids)
+            .where("relation_type_id", "=", relation_type_id)
+            .select(["characters.id", "portrait_id", "nickname", "first_name", "last_name", "character_b_id"])
+
+            .execute();
+
+          const withParents = [...mainCharacters, ...additionalChars, ...additionalCharsChildren].map((char) => {
             const parents = baseCharacterRelationships.rows
               .filter((r) => r.character_a_id === char.id)
               .map((p) => p.character_b_id)
               .concat(additionalChars.filter((c) => c.character_a_id === char.id).map((c) => c.id as string));
-            return { ...char, parents };
+            const children = baseCharacterRelationships.rows
+              .filter((r) => r.character_b_id === char.id)
+              .map((p) => p.character_a_id)
+              .concat(additionalCharsChildren.filter((c) => c.character_b_id === char.id).map((c) => c.id as string));
+            return { ...char, parents, children };
           });
+          const uniqueChars = uniqBy(withParents, "id");
 
-          const nodes = withParents.map((c) => ({
+          const nodes = uniqueChars.map((c) => ({
             id: c.id,
             character_id: c.id,
             label: getCharacterFullName(c.first_name as string, c?.nickname, c?.last_name),
@@ -511,16 +526,35 @@ export function character_router(app: Elysia) {
             is_locked: false,
           }));
 
-          const edges = withParents.flatMap((c) =>
-            ("parents" in c ? c.parents : []).map((p) => ({
-              id: randomUUID(),
-              source_id: p,
-              target_id: c.id,
-              target_arrow_shape: targetArrow,
-              curve_style: curveStyle,
-              taxi_direction: "downward",
-            })),
-          );
+          const edges = uniqueChars.flatMap((c) => {
+            const base = [];
+            if ("parents" in c && c?.parents.length) {
+              for (let index = 0; index < c.parents.length; index++) {
+                base.push({
+                  id: randomUUID(),
+                  source_id: c.parents[index],
+                  target_id: c.id,
+                  target_arrow_shape: targetArrow,
+                  curve_style: curveStyle,
+                  taxi_direction: "downward",
+                });
+              }
+            }
+
+            if ("children" in c && c?.children.length) {
+              for (let index = 0; index < c.children.length; index++) {
+                base.push({
+                  id: randomUUID(),
+                  source_id: c.id,
+                  target_id: c.children[index],
+                  target_arrow_shape: targetArrow,
+                  curve_style: curveStyle,
+                  taxi_direction: "downward",
+                });
+              }
+            }
+            return base;
+          });
 
           // Get ids of main branch/parent characters and their generations
 
