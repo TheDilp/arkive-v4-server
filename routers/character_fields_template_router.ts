@@ -129,6 +129,9 @@ export function character_fields_templates_router(app: Elysia) {
                   ).as("character_fields"),
                 );
               }
+              if (body?.relations?.tags) {
+                qb = qb.select((eb) => TagQuery(eb, "_character_fields_templatesTotags", "character_fields_templates"));
+              }
               return qb;
             })
             .execute();
