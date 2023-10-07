@@ -11,6 +11,7 @@ export type SearchableEntities =
   | "nodes"
   | "edges"
   | "random_tables"
+  | "calendars"
   | "images"
   | "events"
   | "words"
