@@ -177,6 +177,7 @@ model character_fields {
   options         Json?
   formula         String?
   random_table_id String?
+  calendar_id     String?
 
   character_fields_templates character_fields_templates @relation(fields: [parent_id], references: [id], onDelete: Cascade)
   parent_id                  String
