@@ -130,12 +130,13 @@ model character_fields {
   random_table_id String?
   calendar_id     String?
 
-  character_fields_templates character_fields_templates @relation(fields: [parent_id], references: [id], onDelete: Cascade)
-  parent_id                  String
+  character_fields_templates character_fields_templates? @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  parent_id                  String?
 
   characters_to_character_fields characters_to_character_fields[]
-  blueprints                     blueprints?                      @relation(fields: [blueprintsId], references: [id])
-  blueprintsId                   String?
+
+  blueprints   blueprints? @relation(fields: [blueprint_id], references: [id])
+  blueprint_id String?
 }
 
 model character_fields_templates {
