@@ -663,53 +663,7 @@ export function character_router(app: Elysia) {
                 }
               }
             }
-            // if (body.relations?.related_to) {
-            //   const existingRelatedTo = await tx
-            //     .selectFrom("characters_relationships")
-            //     .select(["character_b_id as id", "character_a_id", "relation_type_id"])
-            //     .leftJoin(
-            //       "character_relationship_types",
-            //       "character_relationship_types.id",
-            //       "characters_relationships.relation_type_id",
-            //     )
-            //     .where("character_a_id", "=", params.id)
-            //     .where((wb) =>
-            //       wb.and([
-            //         wb("character_relationship_types.ascendant_title", "is not", null),
-            //         wb("character_relationship_types.descendant_title", "is not", null),
-            //       ]),
-            //     )
-            //     .execute();
-            //   const existingIds = existingRelatedTo.map((relation) => relation.id);
-            //   const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(existingIds, body.relations?.related_to);
-            //   if (idsToRemove.length) {
-            //     await tx.deleteFrom("characters_relationships").where("character_b_id", "in", idsToRemove).execute();
-            //   }
-            //   if (itemsToAdd.length) {
-            //     await tx
-            //       .insertInto("characters_relationships")
-            //       .values(
-            //         itemsToAdd.map((item) => ({
-            //           character_a_id: params.id,
-            //           character_b_id: item.id,
-            //           relation_type_id: item.relation_type_id,
-            //         })),
-            //       )
-            //       .execute();
-            //   }
-            //   if (itemsToUpdate.length) {
-            //     await Promise.all(
-            //       itemsToUpdate.map(async (item) =>
-            //         tx
-            //           .updateTable("characters_relationships")
-            //           .where("character_a_id", "=", params.id)
-            //           .where("character_b_id", "=", item.id)
-            //           .set({ relation_type_id: item.relation_type_id })
-            //           .execute(),
-            //       ),
-            //     );
-            //   }
-            // }
+
             if (body.relations?.related_to) {
               UpdateCharacterRelationships({
                 tx,
@@ -734,45 +688,7 @@ export function character_router(app: Elysia) {
                 relation_direction: "related_from",
               });
             }
-            // if (body.relations?.related_from) {
-            //   const existingRelatedTo = await tx
-            //     .selectFrom("characters_relationships")
-            //     .select(["character_a_id as id", "character_b_id", "relation_type_id"])
-            //     .where("character_b_id", "=", params.id)
-            //     .execute();
-            //   const existingIds = existingRelatedTo.map((relation) => relation.id);
-            //   const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
-            //     existingIds,
-            //     body.relations?.related_from,
-            //   );
-            //   if (idsToRemove.length) {
-            //     await tx.deleteFrom("characters_relationships").where("character_a_id", "in", idsToRemove).execute();
-            //   }
-            //   if (itemsToAdd.length) {
-            //     await tx
-            //       .insertInto("characters_relationships")
-            //       .values(
-            //         itemsToAdd.map((item) => ({
-            //           character_a_id: item.id,
-            //           character_b_id: params.id,
-            //           relation_type_id: item.relation_type_id,
-            //         })),
-            //       )
-            //       .execute();
-            //   }
-            //   if (itemsToUpdate.length) {
-            //     await Promise.all(
-            //       itemsToUpdate.map(async (item) =>
-            //         tx
-            //           .updateTable("characters_relationships")
-            //           .where("character_a_id", "=", params.id)
-            //           .where("character_b_id", "=", item.id)
-            //           .set({ relation_type_id: item.relation_type_id })
-            //           .execute(),
-            //       ),
-            //     );
-            //   }
-            // }
+
             if (body.relations?.documents) {
               const existingDocuments = await tx
                 .selectFrom("_charactersTodocuments")

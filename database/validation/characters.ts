@@ -54,7 +54,9 @@ export const InsertCharacterSchema = t.Object({
         t.Array(
           t.Object({
             id: t.String(),
-            value: t.Object({ value: t.Optional(t.Union([t.String(), t.Number(), t.Null(), t.Record(t.String(), t.Any())])) }),
+            value: t.Object({
+              value: t.Optional(t.Union([t.String(), t.Number(), t.Boolean(), t.Null(), t.Record(t.String(), t.Any())])),
+            }),
           }),
         ),
       ),
@@ -83,7 +85,9 @@ export const UpdateCharacterSchema = t.Object({
         t.Array(
           t.Object({
             id: t.String(),
-            value: t.Object({ value: t.Optional(t.Union([t.String(), t.Number(), t.Null(), t.Record(t.String(), t.Any())])) }),
+            value: t.Object({
+              value: t.Optional(t.Union([t.String(), t.Number(), t.Boolean(), t.Null(), t.Record(t.String(), t.Any())])),
+            }),
           }),
         ),
       ),
