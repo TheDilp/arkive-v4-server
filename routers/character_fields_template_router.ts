@@ -267,12 +267,12 @@ export function character_fields_templates_router(app: Elysia) {
               if (body.relations?.tags) {
                 if (body.relations.tags.length)
                   UpdateTagRelations({
-                    relationalTable: "_charactersTotags",
+                    relationalTable: "_character_fields_templatesTotags",
                     id: params.id,
                     newTags: body.relations.tags,
                     tx,
                   });
-                else await tx.deleteFrom("_charactersTotags").where("A", "=", params.id).execute();
+                else await tx.deleteFrom("_character_fields_templatesTotags").where("A", "=", params.id).execute();
               }
             });
           }
