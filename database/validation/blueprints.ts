@@ -20,6 +20,18 @@ export const ListBlueprintSchema = t.Intersect([
   ),
 ]);
 
+export const ReadBlueprintSchema = t.Intersect([
+  RequestBodySchema,
+  t.Object({
+    data: t.Object({ id: t.String() }),
+    relations: t.Object({
+      character_fields: t.Optional(t.Boolean()),
+
+      // tags: t.Optional(t.Boolean())
+    }),
+  }),
+]);
+
 export const InsertBlueprintSchema = t.Object({
   data: t.Object({
     project_id: t.String(),

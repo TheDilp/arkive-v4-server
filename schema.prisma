@@ -74,13 +74,24 @@ model blueprints {
   id String @id @default(dbgenerated("gen_random_uuid()"))
 
   created_at DateTime @default(now())
-  updated_at DateTime @default(now()) @map("updated_at")
+  updated_at DateTime @default(now())
 
   title      String
   project    projects @relation(fields: [project_id], references: [id])
   project_id String
 
-  blueprint_fields character_fields[]
+  blueprint_fields   character_fields[]
+  blueprint_instance blueprint_instance[]
+}
+
+model blueprint_instance {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  blueprint    blueprints @relation(fields: [blueprint_id], references: [id])
+  blueprint_id String
+  value        Json?
 }
 
 // #region characters

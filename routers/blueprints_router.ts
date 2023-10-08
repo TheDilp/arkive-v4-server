@@ -4,9 +4,9 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertBlueprintSchema, ListBlueprintSchema } from "../database/validation";
+import { InsertBlueprintSchema, ListBlueprintSchema, ReadBlueprintSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
-import { ResponseSchema } from "../types/requestTypes";
+import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 
@@ -142,6 +142,58 @@ export function blueprints_router(app: Elysia) {
         {
           body: ListBlueprintSchema,
           response: ResponseSchema,
+        },
+      )
+      .post(
+        "/:id",
+        async ({ params, body }) => {
+          const data = await db
+            .selectFrom("blueprints")
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "blueprints">[]))
+            .where("blueprints.id", "=", params.id)
+            .$if(!!body?.relations?.character_fields, (qb) =>
+              qb.select((eb) =>
+                jsonArrayFrom(
+                  eb
+                    .selectFrom("character_fields")
+                    .whereRef("character_fields.parent_id", "=", "blueprints.id")
+                    .select([
+                      "character_fields.id",
+                      "character_fields.title",
+                      "character_fields.options",
+                      "character_fields.field_type",
+                      "character_fields.sort",
+                      "character_fields.formula",
+                      "character_fields.random_table_id",
+                      "character_fields.calendar_id",
+                      (eb) =>
+                        jsonObjectFrom(
+                          eb
+                            .selectFrom("random_tables")
+                            .select(["id", "title"])
+                            .whereRef("random_tables.id", "=", "character_fields.random_table_id"),
+                        ).as("random_table"),
+                      (eb) =>
+                        jsonObjectFrom(
+                          eb
+                            .selectFrom("calendars")
+                            .select(["id", "title"])
+                            .whereRef("calendars.id", "=", "character_fields.calendar_id"),
+                        ).as("calendar"),
+                    ]),
+                ).as("character_fields"),
+              ),
+            )
+            // .$if(!!body?.relations?.tags, (qb) =>
+            //   qb.select((eb) => TagQuery(eb, "_character_fields_templatesTotags", "character_fields_templates")),
+            // )
+            .executeTakeFirstOrThrow();
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: ReadBlueprintSchema,
+          response: ResponseWithDataSchema,
         },
       ),
   );
