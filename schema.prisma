@@ -43,8 +43,7 @@ model projects {
   character_fields             character_fields[]
   character_fields_templates   character_fields_templates[]
   character_relationship_types character_relationship_types[]
-  blueprint_fields             blueprint_fields[]
-  blueprint_template           blueprint_template[]
+  blueprints                   blueprints[]
 }
 
 model images {
@@ -71,65 +70,17 @@ model images {
   character_id        String?
 }
 
-model blueprint_fields {
-  id    String @id @default(dbgenerated("gen_random_uuid()"))
-  title String
-
-  project    projects @relation(fields: [project_id], references: [id])
-  project_id String
-
-  sort Int @default(0)
-
-  field_type      String
-  options         String[]
-  formula         String?
-  random_table_id String?
-
-  blueprint_template blueprint_template @relation(fields: [parent_id], references: [id], onDelete: Cascade)
-  parent_id          String
-
-  blueprint_to_blueprint_fields blueprint_to_blueprint_fields[]
-}
-
-model blueprint_template {
-  id         String   @id @default(dbgenerated("gen_random_uuid()"))
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now()) @map("updated_at")
-
-  project    projects @relation(fields: [project_id], references: [id])
-  project_id String
-
-  title String
-  sort  Int    @default(0)
-
-  blueprint_fields blueprint_fields[]
-  blueprints       blueprints[]
-}
-
 model blueprints {
   id String @id @default(dbgenerated("gen_random_uuid()"))
 
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @map("updated_at")
 
-  title String
+  title      String
+  project    projects @relation(fields: [project_id], references: [id])
+  project_id String
 
-  blueprint_template    blueprint_template @relation(fields: [blueprint_template_id], references: [id])
-  blueprint_template_id String
-
-  blueprints_to_blueprint_fields blueprint_to_blueprint_fields[]
-}
-
-model blueprint_to_blueprint_fields {
-  blueprint    blueprints @relation(fields: [blueprint_id], references: [id], onDelete: Cascade)
-  blueprint_id String
-
-  blueprint_field    blueprint_fields @relation(fields: [blueprint_field_id], references: [id], onDelete: Cascade)
-  blueprint_field_id String
-
-  value Json?
-
-  @@id([blueprint_id, blueprint_field_id])
+  blueprint_fields character_fields[]
 }
 
 // #region characters
@@ -183,6 +134,8 @@ model character_fields {
   parent_id                  String
 
   characters_to_character_fields characters_to_character_fields[]
+  blueprints                     blueprints?                      @relation(fields: [blueprintsId], references: [id])
+  blueprintsId                   String?
 }
 
 model character_fields_templates {

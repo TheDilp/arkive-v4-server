@@ -4,6 +4,7 @@ import { Elysia } from "elysia";
 
 import {
   asset_router,
+  blueprints_router,
   calendar_router,
   character_fields_router,
   character_fields_templates_router,
@@ -63,6 +64,7 @@ const app = new Elysia()
       .use(graph_router)
       .use(node_router)
       .use(edge_router)
+      .use(blueprints_router)
       .use(calendar_router)
       .use(month_router)
       .use(event_router)
