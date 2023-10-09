@@ -26,6 +26,7 @@ export const ReadBlueprintSchema = t.Intersect([
     data: t.Object({ id: t.String() }),
     relations: t.Object({
       character_fields: t.Optional(t.Boolean()),
+      blueprint_instances: t.Optional(t.Boolean()),
 
       // tags: t.Optional(t.Boolean())
     }),

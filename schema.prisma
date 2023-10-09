@@ -81,10 +81,10 @@ model blueprints {
   project_id String
 
   blueprint_fields   character_fields[]
-  blueprint_instance blueprint_instance[]
+  blueprint_instance blueprint_instances[]
 }
 
-model blueprint_instance {
+model blueprint_instances {
   id         String   @id @default(dbgenerated("gen_random_uuid()"))
   created_at DateTime @default(now())
   updated_at DateTime @default(now())

@@ -157,7 +157,7 @@ export function blueprints_router(app: Elysia) {
                 jsonArrayFrom(
                   eb
                     .selectFrom("character_fields")
-                    .whereRef("character_fields.parent_id", "=", "blueprints.id")
+                    .whereRef("character_fields.blueprint_id", "=", "blueprints.id")
                     .select([
                       "character_fields.id",
                       "character_fields.title",
@@ -183,6 +183,16 @@ export function blueprints_router(app: Elysia) {
                         ).as("calendar"),
                     ]),
                 ).as("character_fields"),
+              ),
+            )
+            .$if(!!body?.relations?.blueprint_instances, (qb) =>
+              qb.select((eb) =>
+                jsonArrayFrom(
+                  eb
+                    .selectFrom("blueprint_instances")
+                    .whereRef("blueprint_instances.blueprint_id", "=", "blueprints.id")
+                    .select(["blueprint_instances.id", "blueprint_instances.blueprint_id", "blueprint_instances.value"]),
+                ).as("blueprint_instances"),
               ),
             )
             // .$if(!!body?.relations?.tags, (qb) =>
