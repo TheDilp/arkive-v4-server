@@ -66,7 +66,14 @@ export function character_fields_templates_router(app: Elysia) {
             .where("character_fields_templates.project_id", "=", body.data.project_id)
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) =>
-              qb.clearSelect().select(body.fields as SelectExpression<DB, "character_fields_templates">[]),
+              qb
+                .clearSelect()
+                .select(
+                  (body.fields || [])?.map((field) => `character_fields_templates.${field}`) as SelectExpression<
+                    DB,
+                    "character_fields_templates"
+                  >[],
+                ),
             )
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
               qb = constructFilter("character_fields_templates", qb, body.filters);
