@@ -21,6 +21,10 @@ export const ListDocumentSchema = t.Intersect([RequestBodySchema, t.Object({ dat
 
 export const InsertDocumentSchema = t.Object({
   data: t.Object({
+    // id is optional as it is usually auto-generated
+    // but must be sent when creating mentions from
+    // existing document text content
+    id: t.Optional(t.String()),
     project_id: t.String(),
     title: t.Optional(t.String()),
     content: t.Optional(t.Union([t.String(), t.Null()])),
@@ -38,8 +42,6 @@ export const InsertDocumentSchema = t.Object({
         t.Array(
           t.Object({
             title: t.String(),
-            project_id: t.String(),
-            parent_id: t.String(),
           }),
         ),
       ),
@@ -72,8 +74,6 @@ export const UpdateDocumentSchema = t.Object({
         t.Array(
           t.Object({
             title: t.String(),
-            project_id: t.String(),
-            parent_id: t.String(),
           }),
         ),
       ),

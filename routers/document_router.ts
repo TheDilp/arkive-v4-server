@@ -31,7 +31,7 @@ export function document_router(app: Elysia) {
         "/create",
         async ({ body }) => {
           await db.transaction().execute(async (tx) => {
-            const [document] = await tx.insertInto("documents").values(body.data).returning("id").execute();
+            const document = await tx.insertInto("documents").values(body.data).returning("id").executeTakeFirstOrThrow();
 
             if (body.relations?.alter_names?.length) {
               const { alter_names } = body.relations;
@@ -94,7 +94,12 @@ export function document_router(app: Elysia) {
               }
               if (body?.relations?.alter_names) {
                 qb = qb.select((eb) => {
-                  return jsonArrayFrom(eb.selectFrom("alter_names").where("parent_id", "=", params.id)).as("alter_names");
+                  return jsonArrayFrom(
+                    eb
+                      .selectFrom("alter_names")
+                      .select(["alter_names.id", "alter_names.title"])
+                      .where("parent_id", "=", params.id),
+                  ).as("alter_names");
                 });
               }
 
