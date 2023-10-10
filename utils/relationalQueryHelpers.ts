@@ -117,11 +117,11 @@ export async function GetBreadcrumbs({
         .selectFrom(table_name)
         .distinctOn(`${table_name}.id`)
         .where(`${table_name}.id`, "=", id)
-        .select([`${table_name}.id`, `${table_name}.title`, `${table_name}.parent_id`])
+        .select([`${table_name}.id`, `${table_name}.title`, `${table_name}.parent_id`, `${table_name}.is_folder`])
         .union(
           d
             .selectFrom(`${table_name} as parents`)
-            .select(["parents.id", "parents.title", "parents.parent_id"])
+            .select(["parents.id", "parents.title", "parents.parent_id", "parents.is_folder"])
             .innerJoin("entityWithParents", "entityWithParents.parent_id", "parents.id"),
         ),
     )
