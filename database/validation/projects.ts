@@ -25,6 +25,8 @@ export const UpdateProjectSchema = t.Object({
     title: t.Optional(t.String()),
     image_id: t.Optional(t.Union([t.String(), t.Null()])),
     default_dice_color: t.Optional(t.Union([t.String(), t.Null()])),
+    show_image_folder_view: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    show_image_table_view: t.Optional(t.Union([t.Boolean(), t.Null()])),
   }),
 });
 

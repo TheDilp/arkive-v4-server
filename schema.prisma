@@ -29,6 +29,9 @@ model projects {
 
   default_dice_color String?
 
+  show_image_folder_view Boolean?
+  show_image_table_view  Boolean?
+
   documents                    documents[]
   maps                         maps[]
   boards                       boards[]
