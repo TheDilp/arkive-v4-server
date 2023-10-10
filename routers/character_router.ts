@@ -105,10 +105,7 @@ export function character_router(app: Elysia) {
             .$if(!!body?.relationFilters?.tags?.length, (qb) =>
               constructTagFilter("characters", qb, "_charactersTotags", body?.relationFilters?.tags || [], "A", "B"),
             )
-            .$if(!!body.orderBy?.length, (qb) => {
-              qb = constructOrdering(body.orderBy, qb);
-              return qb;
-            })
+            .$if(!!body.orderBy?.length, (qb) => constructOrdering(body.orderBy, qb))
             .$if(!!body?.relations, (qb) => {
               if (body?.relations?.portrait) {
                 qb = qb.select((eb) =>
