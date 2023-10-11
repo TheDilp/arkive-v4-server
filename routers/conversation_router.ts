@@ -1,9 +1,10 @@
 import Elysia from "elysia";
 import { SelectExpression } from "kysely";
+import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertConversationSchema, ListConversationSchema } from "../database/validation";
+import { InsertConversationSchema, ListConversationSchema, ReadConversationSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
@@ -44,14 +45,78 @@ export function conversation_router(app: Elysia) {
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "conversations">[]))
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) =>
-              constructFilter("characters", qb, body.filters),
+              constructFilter("conversations", qb, body.filters),
             )
+            .$if(!!body?.relations, (qb) => {
+              if (body?.relations?.characters) {
+                qb = qb.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("_charactersToconversations")
+                      .whereRef("conversations.id", "=", "_charactersToconversations.B")
+                      .leftJoin("characters", "characters.id", "_charactersToconversations.A")
+                      .select(["characters.id", "characters.first_name", "characters.last_name", "characters.portrait_id"]),
+                  ).as("characters"),
+                );
+              }
+              if (body?.relations?.messages) {
+                qb = qb.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("messages")
+                      .whereRef("messages.parent_id", "=", "conversations.id")
+                      .select(["messages.id", "messages.content", "messages.sender_id"]),
+                  ).as("messages"),
+                );
+              }
+              return qb;
+            })
             .$if(!!body.orderBy?.length, (qb) => constructOrdering(body.orderBy, qb))
             .execute();
 
           return { data, message: MessageEnum.success, ok: true };
         },
         { body: ListConversationSchema, response: ResponseWithDataSchema },
+      )
+      .post(
+        "/:id",
+        async ({ params, body }) => {
+          const data = await db
+            .selectFrom("conversations")
+            .where("id", "=", params.id)
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "conversations">[]))
+
+            .$if(!!body?.relations, (qb) => {
+              if (body?.relations?.characters) {
+                qb = qb.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("_charactersToconversations")
+                      .whereRef("conversations.id", "=", "_charactersToconversations.B")
+                      .leftJoin("characters", "characters.id", "_charactersToconversations.A")
+                      .select(["characters.id", "characters.first_name", "characters.last_name", "characters.portrait_id"]),
+                  ).as("characters"),
+                );
+              }
+              if (body?.relations?.messages) {
+                qb = qb.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("messages")
+                      .whereRef("messages.parent_id", "=", "conversations.id")
+                      .select(["messages.id", "messages.content", "messages.sender_id"]),
+                  ).as("messages"),
+                );
+              }
+              return qb;
+            })
+            .$if(!!body.orderBy?.length, (qb) => constructOrdering(body.orderBy, qb))
+            .executeTakeFirstOrThrow();
+
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        { body: ReadConversationSchema, response: ResponseWithDataSchema },
       ),
   );
 }

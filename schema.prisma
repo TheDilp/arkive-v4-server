@@ -3,6 +3,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum FieldType {
+  text
+  select
+  select_multiple
+  dice_roll
+  date
+  random_table
+  documents_single
+  documents_multiple
+  images_single
+  images_multiple
+  locations_single
+  locations_multiple
+}
+
+enum ConversationMessageType {
+  character
+  narration
+  place
+}
+
 model users {
   id       String     @id @default(dbgenerated("gen_random_uuid()"))
   auth_id  String     @unique
@@ -229,11 +250,13 @@ model messages {
   updated_at DateTime @default(now()) @map("updated_at")
   content    Json?    @db.JsonB
 
-  conversation    conversations @relation(fields: [conversation_id], references: [id])
-  conversation_id String
+  conversation conversations @relation(fields: [parent_id], references: [id])
+  parent_id    String
 
-  sender    characters @relation(fields: [sender_id], references: [id])
-  sender_id String
+  sender    characters? @relation(fields: [sender_id], references: [id])
+  sender_id String?
+
+  type ConversationMessageType
 }
 
 // #endregion characters

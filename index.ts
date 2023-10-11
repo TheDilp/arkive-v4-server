@@ -19,6 +19,7 @@ import {
   health_check_router,
   map_pin_router,
   map_router,
+  message_router,
   month_router,
   node_router,
   project_router,
@@ -74,7 +75,8 @@ const app = new Elysia()
       .use(word_router)
       .use(random_table_router)
       .use(random_table_option_router)
-      .use(search_router),
+      .use(search_router)
+      .use(message_router),
   )
 
   .listen((process.env.PORT as string) || 3000);

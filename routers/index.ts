@@ -17,6 +17,7 @@ export * from "./health_check";
 export * from "./map_layer_router";
 export * from "./map_pin_router";
 export * from "./map_router";
+export * from "./message_router";
 export * from "./month_router";
 export * from "./node_router";
 export * from "./project_router";
