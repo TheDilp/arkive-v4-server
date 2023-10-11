@@ -6,6 +6,7 @@ export * from "./calendars";
 export * from "./character_fields";
 export * from "./character_fields_templates";
 export * from "./characters";
+export * from "./conversations";
 export * from "./dictionaries";
 export * from "./documents";
 export * from "./edges";

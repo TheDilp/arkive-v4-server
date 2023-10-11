@@ -7,6 +7,7 @@ export * from "./character_fields_router";
 export * from "./character_fields_template_router";
 export * from "./character_relationship_types_router";
 export * from "./character_router";
+export * from "./conversation_router";
 export * from "./dictionary_router";
 export * from "./document_router";
 export * from "./edge_router";

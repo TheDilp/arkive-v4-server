@@ -47,6 +47,7 @@ model projects {
   character_fields_templates   character_fields_templates[]
   character_relationship_types character_relationship_types[]
   blueprints                   blueprints[]
+  conversations                conversations[]
 }
 
 model images {
@@ -124,8 +125,10 @@ model characters {
   nodes     nodes[]
   tags      tags[]
 
-  related_from characters_relationships[] @relation("characters_character_relations_a")
-  related_to   characters_relationships[] @relation("characters_character_relations_b")
+  related_from  characters_relationships[] @relation("characters_character_relations_a")
+  related_to    characters_relationships[] @relation("characters_character_relations_b")
+  conversations conversations[]
+  messages      messages[]
 }
 
 model character_fields {
@@ -204,6 +207,33 @@ model characters_relationships {
   relation_type_id String
 
   @@unique([character_a_id, character_b_id, relation_type_id])
+}
+
+model conversations {
+  id    String @id @default(dbgenerated("gen_random_uuid()"))
+  title String
+
+  project    projects @relation(fields: [project_id], references: [id])
+  project_id String
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @map("updated_at")
+
+  characters characters[]
+  messages   messages[]
+}
+
+model messages {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @map("updated_at")
+  content    Json?    @db.JsonB
+
+  conversation    conversations @relation(fields: [conversation_id], references: [id])
+  conversation_id String
+
+  sender    characters @relation(fields: [sender_id], references: [id])
+  sender_id String
 }
 
 // #endregion characters

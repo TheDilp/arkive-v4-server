@@ -10,6 +10,7 @@ import {
   character_fields_templates_router,
   character_relationship_types_router,
   character_router,
+  conversation_router,
   dictionary_router,
   document_router,
   edge_router,
@@ -55,6 +56,7 @@ const app = new Elysia()
       .use(asset_router)
       .use(tag_router)
       .use(character_router)
+      .use(conversation_router)
       .use(character_fields_templates_router)
       .use(character_fields_router)
       .use(character_relationship_types_router)
