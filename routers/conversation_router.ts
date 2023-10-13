@@ -105,7 +105,7 @@ export function conversation_router(app: Elysia) {
                     eb
                       .selectFrom("messages")
                       .whereRef("messages.parent_id", "=", "conversations.id")
-                      .select(["messages.id", "messages.content", "messages.sender_id"]),
+                      .select(["messages.id", "messages.content", "messages.sender_id", "messages.type"]),
                   ).as("messages"),
                 );
               }
