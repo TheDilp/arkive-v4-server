@@ -105,7 +105,10 @@ export function conversation_router(app: Elysia) {
                     eb
                       .selectFrom("messages")
                       .whereRef("messages.parent_id", "=", "conversations.id")
-                      .select(["messages.id", "messages.content", "messages.sender_id", "messages.type"]),
+                      .select(["messages.id", "messages.content", "messages.sender_id", "messages.type"])
+                      .limit(20)
+                      .orderBy("messages.created_at", "desc")
+                      .orderBy("messages.created_at", "asc"),
                   ).as("messages"),
                 );
               }

@@ -1,6 +1,6 @@
 import { cors } from "@elysiajs/cors";
 import { swagger } from "@elysiajs/swagger";
-import { Elysia } from "elysia";
+import { Elysia, ws } from "elysia";
 
 import {
   asset_router,
@@ -28,12 +28,14 @@ import {
   search_router,
   tag_router,
   user_router,
+  websocket_router,
   word_router,
 } from "./routers";
 
 const app = new Elysia()
   .use(cors({ origin: process.env.NODE_ENV === "development" ? "*" : "https://thearkive.app" }))
   .use(swagger())
+  .use(ws())
   .onError(({ code, error, set }) => {
     if (code === "NOT_FOUND") {
       set.status = 404;
@@ -50,6 +52,7 @@ const app = new Elysia()
     }
   })
   .group("/api/v1", (server) =>
+    // @ts-ignore
     server
       .use(health_check_router)
       .use(user_router)
@@ -78,7 +81,7 @@ const app = new Elysia()
       .use(search_router)
       .use(message_router),
   )
-
+  .use(websocket_router)
   .listen((process.env.PORT as string) || 3000);
 
 export type App = typeof app;

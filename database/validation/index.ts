@@ -16,6 +16,7 @@ export * from "./graphs";
 export * from "./map_layers";
 export * from "./map_pins";
 export * from "./maps";
+export * from "./messages";
 export * from "./nodes";
 export * from "./projects";
 export * from "./random_table_options";
