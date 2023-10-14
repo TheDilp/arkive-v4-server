@@ -73,6 +73,9 @@ export function conversation_router(app: Elysia) {
               return qb;
             })
             .$if(!!body.orderBy?.length, (qb) => constructOrdering(body.orderBy, qb))
+            .leftJoin("_charactersToconversations", "_charactersToconversations.B", "conversations.id")
+            .where("_charactersToconversations.A", "=", body.data.character_id)
+            .distinctOn("conversations.id")
             .execute();
 
           return { data, message: MessageEnum.success, ok: true };

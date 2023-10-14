@@ -20,7 +20,7 @@ export const ReadConversationSchema = t.Intersect([
 ]);
 export const ListConversationSchema = t.Intersect([
   RequestBodySchema,
-  t.Object({ data: t.Object({ project_id: t.String() }) }),
+  t.Object({ data: t.Object({ character_id: t.String(), project_id: t.String() }) }),
   t.Object({ relations: t.Object({ characters: t.Optional(t.Boolean()), messages: t.Optional(t.Boolean()) }) }),
 ]);
 
