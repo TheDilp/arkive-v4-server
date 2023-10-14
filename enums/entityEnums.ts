@@ -1,6 +1,7 @@
 import { TagsRelationTables } from "../database/types";
 
 export const AllEntities = [
+  "characters",
   "documents",
   "maps",
   "map_pins",
@@ -11,6 +12,7 @@ export const AllEntities = [
   "calendars",
   "events",
   "dictionaries",
+  "words",
   "screens",
   "character_fields_templates",
   "character_fields",
