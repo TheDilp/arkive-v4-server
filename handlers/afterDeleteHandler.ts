@@ -2,7 +2,7 @@ import { getCharacterFullName, getSingularEntityType } from "../utils/transform"
 import { sendNotification } from "../utils/websocketUtils";
 
 export function afterDeleteHandler(
-  data: { title?: string; label?: string; first_name?: string; last_name?: string; project_id: string },
+  data: { title?: string; label?: string; first_name?: string; last_name?: string | null; project_id: string },
   entity: string,
 ) {
   const { project_id, title, label, first_name, last_name } = data;

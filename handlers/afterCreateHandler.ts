@@ -3,7 +3,7 @@ import { sendNotification } from "../utils/websocketUtils";
 
 export function afterCreateHanlder(
   args: {
-    body: { data: { title?: string; label?: string; first_name?: string; last_name?: string; project_id: string } };
+    body: { data: { title?: string; label?: string; first_name?: string; last_name?: string | null; project_id: string } };
   },
   entity: string,
 ) {

@@ -9,6 +9,7 @@ import uniqBy from "lodash.uniqby";
 import { db } from "../database/db";
 import { InsertCharacterSchema, ListCharacterSchema, ReadCharacterSchema, UpdateCharacterSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
+import { afterCreateHanlder, afterDeleteHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, constructTagFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -86,6 +87,7 @@ export function character_router(app: Elysia) {
         {
           body: InsertCharacterSchema,
           response: ResponseSchema,
+          afterHandle: (args) => afterCreateHanlder(args, "characters"),
         },
       )
       .post(
@@ -774,7 +776,14 @@ export function character_router(app: Elysia) {
       .delete(
         "/:id",
         async ({ params }) => {
-          await db.deleteFrom("characters").where("characters.id", "=", params.id).execute();
+          const { first_name, last_name, project_id } = await db
+            .deleteFrom("characters")
+            .where("characters.id", "=", params.id)
+            .returning(["first_name", "last_name", "project_id"])
+            .executeTakeFirstOrThrow();
+
+          afterDeleteHandler({ first_name, last_name, project_id }, "characters");
+
           return { message: `Character ${MessageEnum.successfully_deleted}`, ok: true };
         },
         {
