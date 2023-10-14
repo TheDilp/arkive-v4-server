@@ -12,7 +12,7 @@ import {
   UpdateDocumentSchema,
 } from "../database/validation/documents";
 import { MessageEnum } from "../enums/requestEnums";
-import { afterCreateHanlder, afterDeleteHandler } from "../handlers";
+import { afterCreateHandler, afterDeleteHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -55,7 +55,7 @@ export function document_router(app: Elysia) {
           return { message: `Document ${MessageEnum.successfully_created}`, ok: true };
         },
         {
-          afterHandle: (args) => afterCreateHanlder(args, "documents"),
+          afterHandle: (args) => afterCreateHandler(args, "documents"),
           body: InsertDocumentSchema,
           response: ResponseSchema,
         },

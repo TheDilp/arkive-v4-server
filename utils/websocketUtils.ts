@@ -7,6 +7,7 @@ export function sendNotification(
     event_type: EventType;
     message: string;
     entity: string;
+    image_id?: string | null;
   },
 ) {
   console.log(app.server.publish, room, notification);

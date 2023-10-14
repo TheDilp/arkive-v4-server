@@ -9,7 +9,7 @@ import uniqBy from "lodash.uniqby";
 import { db } from "../database/db";
 import { InsertCharacterSchema, ListCharacterSchema, ReadCharacterSchema, UpdateCharacterSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
-import { afterCreateHanlder, afterDeleteHandler } from "../handlers";
+import { afterCreateHandler, afterDeleteHandler, afterUpdateHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, constructTagFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -87,7 +87,7 @@ export function character_router(app: Elysia) {
         {
           body: InsertCharacterSchema,
           response: ResponseSchema,
-          afterHandle: (args) => afterCreateHanlder(args, "characters"),
+          afterHandle: (args) => afterCreateHandler(args, "characters"),
         },
       )
       .post(
@@ -569,9 +569,6 @@ export function character_router(app: Elysia) {
           await db.transaction().execute(async (tx) => {
             let deletedTags: string[] | null = null;
 
-            if (body.data) {
-              await tx.updateTable("characters").where("characters.id", "=", params.id).set(body.data).execute();
-            }
             if (body.relations?.character_fields) {
               const existingCharacterFields = await tx
                 .selectFrom("characters_to_character_fields")
@@ -687,7 +684,6 @@ export function character_router(app: Elysia) {
                 relation_direction: "related_from",
               });
             }
-
             if (body.relations?.documents) {
               const existingDocuments = await tx
                 .selectFrom("_charactersTodocuments")
@@ -710,6 +706,15 @@ export function character_router(app: Elysia) {
                   )
                   .execute();
               }
+            }
+            if (body.data) {
+              const updatedChar = await tx
+                .updateTable("characters")
+                .where("characters.id", "=", params.id)
+                .set(body.data)
+                .returning(["first_name", "last_name", "project_id", "portrait_id as image_id"])
+                .executeTakeFirstOrThrow();
+              afterUpdateHandler(updatedChar, "characters");
             }
           });
           return { message: `Character ${MessageEnum.successfully_updated}`, ok: true };
