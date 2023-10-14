@@ -21,6 +21,7 @@ export function websocket_router(app: Elysia) {
         if (conversation_id) {
           try {
             await db.insertInto("messages").values(message.data).execute();
+
             app.server.publish(
               conversation_id,
               JSON.stringify({

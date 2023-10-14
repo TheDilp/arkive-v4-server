@@ -12,6 +12,7 @@ import {
   UpdateDocumentSchema,
 } from "../database/validation/documents";
 import { MessageEnum } from "../enums/requestEnums";
+import { afterCreateHanlder, afterDeleteHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -54,6 +55,7 @@ export function document_router(app: Elysia) {
           return { message: `Document ${MessageEnum.successfully_created}`, ok: true };
         },
         {
+          afterHandle: (args) => afterCreateHanlder(args, "documents"),
           body: InsertDocumentSchema,
           response: ResponseSchema,
         },
@@ -186,7 +188,12 @@ export function document_router(app: Elysia) {
         },
       )
       .delete("/:id", async ({ params }) => {
-        await db.deleteFrom("documents").where("documents.id", "=", params.id).execute();
+        const { title, project_id } = await db
+          .deleteFrom("documents")
+          .where("documents.id", "=", params.id)
+          .returning(["title", "project_id"])
+          .executeTakeFirstOrThrow();
+        afterDeleteHandler({ title, project_id }, "documents");
         return { message: `Document ${MessageEnum.successfully_deleted}.`, ok: true };
       }),
   );

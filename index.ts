@@ -32,7 +32,7 @@ import {
   word_router,
 } from "./routers";
 
-const app = new Elysia()
+export const app = new Elysia()
   .use(cors({ origin: process.env.NODE_ENV === "development" ? "*" : "https://thearkive.app" }))
   .use(swagger())
   .use(ws())
@@ -51,6 +51,7 @@ const app = new Elysia()
       return { message: "The payload was not formatted correctly.", ok: false };
     }
   })
+
   .group("/api/v1", (server) =>
     // @ts-ignore
     server
