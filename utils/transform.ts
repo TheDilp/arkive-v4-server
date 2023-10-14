@@ -57,3 +57,15 @@ export function areArraysEqual(a: string[], b: string[]) {
   }
   return true;
 }
+
+export function getSingularEntityType(type: string) {
+  if (type === "alter_names") return "alter name";
+  if (type === "character_fields") return "character field";
+  if (type === "character_fields_templates") return "character field template";
+  if (type === "map_layers") return "map layer";
+  if (type === "map_pins") return "map pin";
+  if (type === "random_table_options") return "random table option";
+  if (type === "random_tables") return "random table";
+  if (type === "dictionaries") return "dictionary";
+  return type.slice(0, type.length - 1);
+}
