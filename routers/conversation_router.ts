@@ -6,6 +6,7 @@ import { DB } from "kysely-codegen";
 import { db } from "../database/db";
 import { InsertConversationSchema, ListConversationSchema, ReadConversationSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
+import { afterDeleteHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -120,6 +121,23 @@ export function conversation_router(app: Elysia) {
           return { data, message: MessageEnum.success, ok: true };
         },
         { body: ReadConversationSchema, response: ResponseWithDataSchema },
+      )
+      .delete(
+        "/:id",
+        async ({ params }) => {
+          const { title, project_id } = await db
+            .deleteFrom("conversations")
+            .where("conversations.id", "=", params.id)
+            .returning(["conversations.title", "conversations.project_id"])
+            .executeTakeFirstOrThrow();
+
+          afterDeleteHandler({ title, project_id }, "conversation");
+
+          return { message: `Character ${MessageEnum.successfully_deleted}`, ok: true };
+        },
+        {
+          response: ResponseSchema,
+        },
       ),
   );
 }

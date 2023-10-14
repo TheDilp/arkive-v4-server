@@ -24,6 +24,12 @@ enum ConversationMessageType {
   place
 }
 
+enum MemberRole {
+  viewer
+  editor
+  owner
+}
+
 model users {
   id       String     @id @default(dbgenerated("gen_random_uuid()"))
   auth_id  String     @unique
@@ -234,7 +240,7 @@ model conversations {
   id    String @id @default(dbgenerated("gen_random_uuid()"))
   title String
 
-  project    projects @relation(fields: [project_id], references: [id])
+  project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
   project_id String
 
   created_at DateTime @default(now())
@@ -250,10 +256,10 @@ model messages {
   updated_at DateTime @default(now()) @map("updated_at")
   content    Json?    @db.JsonB
 
-  conversation conversations @relation(fields: [parent_id], references: [id])
+  conversation conversations @relation(fields: [parent_id], references: [id], onDelete: Cascade)
   parent_id    String
 
-  sender    characters? @relation(fields: [sender_id], references: [id])
+  sender    characters? @relation(fields: [sender_id], references: [id], onDelete: SetNull)
   sender_id String?
 
   type ConversationMessageType
@@ -494,7 +500,7 @@ model screens {
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  title      String   @default("New Screen")
+  title      String
   project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
   project_id String
 
@@ -502,20 +508,20 @@ model screens {
   parent    screens?  @relation("parentChildScreens", fields: [parent_id], references: [id], onDelete: Cascade)
   children  screens[] @relation("parentChildScreens")
 
-  icon      String
+  icon      String?
   is_folder Boolean?
   is_public Boolean?
 
-  section_size String     @default("md")
+  section_size String?
   sections     sections[]
   tags         tags[]
 }
 
 model sections {
-  id        String @id @default(dbgenerated("gen_random_uuid()"))
+  id        String  @id @default(dbgenerated("gen_random_uuid()"))
   title     String
-  sort      Int    @default(0)
-  card_size String @default("md")
+  sort      Int     @default(0)
+  card_size String?
 
   screens   screens? @relation(fields: [parent_id], references: [id], onDelete: Cascade)
   parent_id String?
@@ -526,6 +532,8 @@ model sections {
 model cards {
   id   String @id @default(dbgenerated("gen_random_uuid()"))
   sort Int    @default(0)
+
+  content Json? @db.JsonB
 
   document    documents @relation(fields: [document_id], references: [id], onDelete: Cascade)
   document_id String
