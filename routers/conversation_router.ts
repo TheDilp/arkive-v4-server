@@ -6,7 +6,7 @@ import { DB } from "kysely-codegen";
 import { db } from "../database/db";
 import { InsertConversationSchema, ListConversationSchema, ReadConversationSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
-import { afterDeleteHandler } from "../handlers";
+import { afterCreateHandler, afterDeleteHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -17,20 +17,23 @@ export function conversation_router(app: Elysia) {
       .post(
         "/create",
         async ({ body }) => {
-          const conversation = await db
-            .insertInto("conversations")
-            .values(body.data)
-            .returning(["id"])
-            .executeTakeFirstOrThrow();
+          await db.transaction().execute(async (tx) => {
+            const conversation = await tx
+              .insertInto("conversations")
+              .values(body.data)
+              .returning(["id", "title"])
+              .executeTakeFirstOrThrow();
 
-          await db
-            .insertInto("_charactersToconversations")
-            .values(body.relations.characters.map((char) => ({ A: char.id, B: conversation.id })))
-            .execute();
+            await tx
+              .insertInto("_charactersToconversations")
+              .values(body.relations.characters.map((char) => ({ A: char.id, B: conversation.id })))
+              .execute();
+          });
 
           return { message: `Conversation ${MessageEnum.successfully_created}`, ok: true };
         },
         {
+          afterHandle: (args) => afterCreateHandler(args, "conversations"),
           body: InsertConversationSchema,
           response: ResponseSchema,
         },
@@ -111,8 +114,7 @@ export function conversation_router(app: Elysia) {
                       .whereRef("messages.parent_id", "=", "conversations.id")
                       .select(["messages.id", "messages.content", "messages.sender_id", "messages.type"])
                       .limit(20)
-                      .orderBy("messages.created_at", "desc")
-                      .orderBy("messages.created_at", "asc"),
+                      .orderBy("messages.created_at", "desc"),
                   ).as("messages"),
                 );
               }
@@ -120,7 +122,8 @@ export function conversation_router(app: Elysia) {
             })
             .$if(!!body.orderBy?.length, (qb) => constructOrdering(body.orderBy, qb))
             .executeTakeFirstOrThrow();
-
+          const sortedMessages = [...(data.messages || [])].reverse();
+          data.messages = sortedMessages;
           return { data, message: MessageEnum.success, ok: true };
         },
         { body: ReadConversationSchema, response: ResponseWithDataSchema },
@@ -134,7 +137,7 @@ export function conversation_router(app: Elysia) {
             .returning(["conversations.title", "conversations.project_id"])
             .executeTakeFirstOrThrow();
 
-          afterDeleteHandler({ title, project_id }, "conversation");
+          afterDeleteHandler({ title, project_id }, "conversations");
 
           return { message: `Character ${MessageEnum.successfully_deleted}`, ok: true };
         },
