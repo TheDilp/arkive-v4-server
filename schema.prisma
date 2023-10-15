@@ -254,7 +254,7 @@ model messages {
   id         String   @id @default(dbgenerated("gen_random_uuid()"))
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @map("updated_at")
-  content    Json?    @db.JsonB
+  content    Json     @db.JsonB
 
   conversation conversations @relation(fields: [parent_id], references: [id], onDelete: Cascade)
   parent_id    String

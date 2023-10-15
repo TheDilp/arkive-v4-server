@@ -28,6 +28,9 @@ export function websocket_router(app: Elysia) {
         };
         if (conversation_id) {
           try {
+            if (typedMessage.data.content.length === 0) {
+              return;
+            }
             // @ts-ignore
             await db.insertInto("messages").values(typedMessage.data).execute();
             app.server.publish(
