@@ -4,12 +4,18 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertConversationSchema, ListConversationSchema, ReadConversationSchema } from "../database/validation";
+import {
+  InsertConversationSchema,
+  ListConversationSchema,
+  ReadConversationSchema,
+  UpdateConversationSchema,
+} from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { afterCreateHandler, afterDeleteHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
+import { GetRelationsForUpdating } from "../utils/relationalQueryHelpers";
 
 export function conversation_router(app: Elysia) {
   return app.group("/conversations", (server) =>
@@ -127,6 +133,43 @@ export function conversation_router(app: Elysia) {
           return { data, message: MessageEnum.success, ok: true };
         },
         { body: ReadConversationSchema, response: ResponseWithDataSchema },
+      )
+      .post(
+        "/update/:id",
+        async ({ params, body }) => {
+          await db.transaction().execute(async (tx) => {
+            await tx.updateTable("conversations").where("conversations.id", "=", params.id).set(body.data).execute();
+            if (body.relations?.characters) {
+              const existingCharactersInConversations = await tx
+                .selectFrom("_charactersToconversations")
+                .select(["A", "B"])
+                .where("B", "=", params.id)
+                .execute();
+              const existingIds = existingCharactersInConversations.map((char) => char.A);
+              const [idsToRemove, itemsToAdd] = GetRelationsForUpdating(existingIds, body.relations?.characters);
+
+              if (idsToRemove.length) {
+                await tx.deleteFrom("_charactersToconversations").where("A", "in", idsToRemove).execute();
+              }
+              if (itemsToAdd.length) {
+                await tx
+                  .insertInto("_charactersToconversations")
+                  .values(
+                    itemsToAdd.map((item) => ({
+                      A: item.id,
+                      B: params.id,
+                    })),
+                  )
+                  .execute();
+              }
+            }
+          });
+          return { message: `Conversation ${MessageEnum.successfully_updated}`, ok: true };
+        },
+        {
+          body: UpdateConversationSchema,
+          response: ResponseSchema,
+        },
       )
       .delete(
         "/:id",
