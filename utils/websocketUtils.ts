@@ -10,6 +10,5 @@ export function sendNotification(
     image_id?: string | null;
   },
 ) {
-  console.log(app.server.publish, room, notification);
   app.server.publish(`notifications/${room}`, JSON.stringify(notification));
 }
