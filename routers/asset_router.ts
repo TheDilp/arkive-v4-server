@@ -74,12 +74,13 @@ export function asset_router(app: Elysia) {
               Body: buffer,
               ACL: "public-read",
               ContentType: "image/webp",
+              CacheControl: "max-age=3600",
             });
             const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
             await fetch(url, {
               headers: {
                 "Content-Type": "image/webp",
-                "Cache-Control": "3600",
+                "Cache-Control": "max-age=3600",
                 "x-amz-acl": "public-read",
               },
               method: "PUT",
