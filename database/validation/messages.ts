@@ -24,3 +24,10 @@ export const InsertMessageSchema = t.Object({
     }),
   ),
 });
+
+export const UpdateMessageSchema = t.Object({
+  data: t.Object({
+    id: t.String(),
+    content: t.String({ minLength: 1 }),
+  }),
+});

@@ -4,7 +4,7 @@ import { jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertMessageSchema, ReadMessageSchema } from "../database/validation/messages";
+import { InsertMessageSchema, ReadMessageSchema, UpdateMessageSchema } from "../database/validation/messages";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 
@@ -47,6 +47,17 @@ export function message_router(app: Elysia) {
         {
           body: ReadMessageSchema,
           response: ResponseWithDataSchema,
+        },
+      )
+      .post(
+        "/update/:id",
+        async ({ params, body }) => {
+          await db.updateTable("messages").set(body.data).where("messages.id", "=", params.id).execute();
+          return { message: MessageEnum.success, ok: true };
+        },
+        {
+          body: UpdateMessageSchema,
+          response: ResponseSchema,
         },
       )
       .delete(
