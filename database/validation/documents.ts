@@ -89,5 +89,10 @@ export const UpdateDocumentSchema = t.Object({
 });
 
 export const GenerateDocumentSchema = t.Object({
-  data: t.Object({ title: t.String(), content: t.String(), project_id: t.String() }),
+  data: t.Object({
+    title: t.String(),
+    parent_id: t.Optional(t.String()),
+    project_id: t.String(),
+    content: t.Optional(t.String()),
+  }),
 });

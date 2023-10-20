@@ -189,10 +189,30 @@ export function document_router(app: Elysia) {
         },
       )
       .post(
-        "/generate",
-        async ({ body }) => {
-          const { id } = await db.insertInto("documents").values(body.data).returning("id").executeTakeFirstOrThrow();
-          return { data: { id }, message: `Document ${MessageEnum.successfully_created}`, ok: true };
+        "/generate/:type",
+        async ({ params, body }) => {
+          if (body.data.content) {
+            const { id } = await db.insertInto("documents").values(body.data).returning("id").executeTakeFirstOrThrow();
+            return { data: { id }, message: `Document ${MessageEnum.successfully_created}`, ok: true };
+          }
+          if (params.type === "conversations" && body.data.parent_id) {
+            const messages = await db
+              .selectFrom("messages")
+              .where("parent_id", "=", body.data.parent_id)
+              .select(["content"])
+              .execute();
+            // @ts-ignore
+            const mergedContent = messages.flatMap((msg) => msg.content?.content).filter((content) => !!content);
+            const content = JSON.stringify({ type: "doc", content: mergedContent });
+
+            const { id } = await db
+              .insertInto("documents")
+              .values({ title: body.data.title, project_id: body.data.project_id, content })
+              .returning("id")
+              .executeTakeFirstOrThrow();
+            return { data: { id }, message: `Document ${MessageEnum.successfully_created}`, ok: true };
+          }
+          return { data: [], ok: false, message: "error" };
         },
         { body: GenerateDocumentSchema, response: ResponseWithDataSchema },
       )
