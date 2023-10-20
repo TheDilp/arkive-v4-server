@@ -6,6 +6,7 @@ import { DB } from "kysely-codegen";
 import { db } from "../database/db";
 import { EntitiesWithChildren } from "../database/types";
 import {
+  GenerateDocumentSchema,
   InsertDocumentSchema,
   ListDocumentSchema,
   ReadDocumentSchema,
@@ -186,6 +187,14 @@ export function document_router(app: Elysia) {
           body: UpdateDocumentSchema,
           response: ResponseSchema,
         },
+      )
+      .post(
+        "/generate",
+        async ({ body }) => {
+          const { id } = await db.insertInto("documents").values(body.data).returning("id").executeTakeFirstOrThrow();
+          return { data: { id }, message: `Document ${MessageEnum.successfully_created}`, ok: true };
+        },
+        { body: GenerateDocumentSchema, response: ResponseWithDataSchema },
       )
       .delete("/:id", async ({ params }) => {
         const { title, project_id } = await db
