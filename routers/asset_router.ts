@@ -63,7 +63,7 @@ export function asset_router(app: Elysia) {
             const buffer = await createFile(file);
             const { id: image_id } = await db
               .insertInto("images")
-              .values({ title: file.name, project_id })
+              .values({ title: file.name, project_id, type })
               .returning("id")
               .executeTakeFirstOrThrow();
             const filePath = `assets/${project_id}/${type}`;
