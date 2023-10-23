@@ -30,6 +30,11 @@ enum MemberRole {
   owner
 }
 
+enum ImageType {
+  images
+  map_images
+}
+
 model users {
   id       String     @id @default(dbgenerated("gen_random_uuid()"))
   auth_id  String     @unique
@@ -81,7 +86,7 @@ model images {
   id    String @id @default(dbgenerated("gen_random_uuid()"))
   title String
 
-  type String @default("images")
+  type ImageType @default(images)
 
   project    projects? @relation("projects_images", fields: [project_id], references: [id])
   project_id String?
@@ -324,8 +329,9 @@ model maps {
   is_public    Boolean?
   cluster_pins Boolean?
 
-  image images? @relation(fields: [image_id], references: [id], onDelete: SetNull)
-  icon  String?
+  image    images? @relation(fields: [image_id], references: [id], onDelete: SetNull)
+  image_id String?
+  icon     String?
 
   project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
   project_id String
@@ -337,7 +343,6 @@ model maps {
   parent    maps?   @relation("parentChildMaps", fields: [parent_id], references: [id], onDelete: Cascade)
   children  maps[]  @relation("parentChildMaps")
   tags      tags[]
-  image_id  String?
   nodes     nodes[]
 }
 
