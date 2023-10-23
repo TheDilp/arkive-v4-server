@@ -2,6 +2,7 @@ import Elysia from "elysia";
 import { SelectExpression, SelectQueryBuilder } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
+import merge from "lodash.merge";
 
 import { db } from "../database/db";
 import { EntitiesWithChildren } from "../database/types";
@@ -25,6 +26,7 @@ import {
   TagQuery,
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
+import { getCharacterFullName, insertSenderToMessage } from "../utils/transform";
 
 export function document_router(app: Elysia) {
   return app.group("/documents", (server) =>
@@ -198,11 +200,33 @@ export function document_router(app: Elysia) {
           if (params.type === "conversations" && body.data.parent_id) {
             const messages = await db
               .selectFrom("messages")
+              .leftJoin("characters", "characters.id", "messages.sender_id")
               .where("parent_id", "=", body.data.parent_id)
-              .select(["content"])
+              .select(["content", "sender_id", "characters.first_name", "characters.last_name"])
               .execute();
-            // @ts-ignore
-            const mergedContent = messages.flatMap((msg) => msg.content?.content).filter((content) => !!content);
+            const mergedContent = merge(
+              messages
+                .flatMap((msg) => {
+                  // @ts-ignore
+                  const c = msg.content?.content;
+                  if (msg.sender_id && msg.first_name && c) {
+                    insertSenderToMessage(msg?.content as any, {
+                      type: "mentionAtom",
+                      attrs: {
+                        id: msg.sender_id,
+                        name: "characters",
+                        label: getCharacterFullName(msg.first_name, undefined, msg.last_name),
+                        alterId: null,
+                        projectId: body.data.project_id,
+                      },
+                    });
+                  }
+
+                  return c;
+                })
+
+                .filter((content) => !!content),
+            );
             const content = JSON.stringify({ type: "doc", content: mergedContent });
 
             const { id } = await db

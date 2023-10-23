@@ -5,18 +5,19 @@ import { DB } from "kysely-codegen";
 import { db } from "../database/db";
 import { EntitiesWithTags } from "../database/types";
 import { BasicSearchSchema, CategorySearchSchema, TagSearchSchema } from "../database/validation/search";
-import { EntitiesWithoutProjectId, EntitiesWithTagsTables, SubEntityEnum } from "../enums/entityEnums";
+import { EntitiesWithTagsTables, SubEntityEnum } from "../enums/entityEnums";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseWithDataSchema, SearchableEntities } from "../types/requestTypes";
 import { getSearchTableFromType } from "../utils/requestUtils";
 import { getCharacterFullName } from "../utils/transform";
 
 function getSearchFields(type: SearchableEntities): string[] {
-  const fields = [`${type}.id`];
+  const fields = type === "map_images" ? ["images.id"] : [`${type}.id`];
   if (type === "characters") fields.push("first_name", "nickname", "last_name", "portrait_id");
   else if (type === "tags") fields.push("title", "color");
   else if (type === "nodes") fields.push("label", "nodes.parent_id", "nodes.image_id");
   else if (type === "edges") fields.push("label", "edges.parent_id");
+  else if (type === "map_images") fields.push("images.title");
   else fields.push(`${type}.title`);
 
   if (type === "events") fields.push("events.parent_id");
@@ -40,6 +41,9 @@ function getSearchWhere(eb: ExpressionBuilder<DB, keyof DB>, type: SearchableEnt
   if (type === "nodes") {
     return eb.or([eb("nodes.label", "ilike", `%${search_term}%`), eb("characters.first_name", "ilike", `%${search_term}%`)]);
   }
+  if (type === "map_images") {
+    return eb.and([eb("images.title", "ilike", `%${search_term}%`), eb("images.type", "=", "map_images")]);
+  }
   return eb(`${type}.title`, "ilike", `%${search_term}%`);
 }
 
@@ -49,11 +53,41 @@ export function search_router(app: Elysia) {
       .post(
         "/:project_id/:type",
         async ({ params, body }) => {
-          const { type } = params;
+          const { project_id, type } = params;
           const fields = getSearchFields(type as SearchableEntities);
 
+          if (type === "places") {
+            const maps = await db
+              .selectFrom("maps")
+              .select(["id", "title", "image_id"])
+              .where("project_id", "=", project_id)
+              .where("title", "ilike", `%${body.data.search_term}%`)
+              .execute();
+            const map_pins = await db
+              .selectFrom("map_pins")
+              .select(["id", "title", "image_id"])
+              .leftJoin("maps", "maps.project_id", "map_pins.parent_id")
+              .where("maps.project_id", "=", project_id)
+              .where("map_pins.character_id", "=", null)
+              .where("map_pins.title", "ilike", `%${body.data.search_term}%`)
+              .execute();
+
+            const result = [...maps, ...map_pins];
+
+            return {
+              data: result.map((item) => ({
+                value: item.id,
+                label: item?.title,
+                color: "",
+                image: item?.image_id,
+              })),
+              message: MessageEnum.success,
+              ok: true,
+            };
+          }
+
           const result = await db
-            .selectFrom(getSearchTableFromType(type as "map_images" | keyof DB))
+            .selectFrom(getSearchTableFromType(type as SearchableEntities | keyof DB))
             // @ts-ignore
             .select(fields as SelectExpression<DB, SearchableEntities>[])
             .$if(type === "nodes", (eb) =>
@@ -80,12 +114,11 @@ export function search_router(app: Elysia) {
             .$if(type === "words", (eb) =>
               eb.leftJoin("dictionaries", "dictionaries.id", "words.parent_id").select(["dictionaries.title as parent_title"]),
             )
-            .$if(!EntitiesWithoutProjectId.includes(type), (eb) => eb.where("project_id", "=", params.project_id))
-            .$if(type === "map_images", (eb) => eb.where("type", "=", "map_image"))
+            // .$if(!EntitiesWithoutProjectId.includes(type), (eb) => eb.where("project_id", "=", project_id))
+            // .$if(type === "map_images", (eb) => eb.where("type", "=", "map_images"))
             .$if(type === "images", (eb) => eb.where("type", "=", "images"))
             .where((eb) => getSearchWhere(eb, type as SearchableEntities, body.data.search_term))
             .limit(body.limit || 10)
-
             .execute();
           return {
             data: result.map((item) => ({

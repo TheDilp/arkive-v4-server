@@ -69,3 +69,28 @@ export function getSingularEntityType(type: string) {
   if (type === "dictionaries") return "dictionary";
   return type.slice(0, type.length - 1);
 }
+
+export function insertSenderToMessage(content: { type: string; content: any }, mention: any) {
+  if (content?.type === "paragraph" && Array.isArray(content?.content)) {
+    content?.content?.unshift(mention, {
+      text: ": ",
+      type: "text",
+    });
+    return;
+  } else {
+    if (Array.isArray(content?.content) && content?.content?.length) {
+      for (let index = 0; index < content.content.length; index++) {
+        const node = content.content[index];
+        if (node?.type === "paragraph") {
+          node?.content?.unshift(mention, {
+            text: ": ",
+            type: "text",
+          });
+          return;
+        } else {
+          insertSenderToMessage(node?.content, mention);
+        }
+      }
+    }
+  }
+}
