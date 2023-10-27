@@ -16,7 +16,6 @@ export function character_fields_router(app: Elysia) {
           .select([
             "id",
             "title",
-            "project_id",
             "sort",
             "field_type",
             "parent_id",

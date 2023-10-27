@@ -10,7 +10,6 @@ export const ListCharacterFieldsSchema = t.Intersect([
 export const insertCharacterFieldsSchema = t.Object({
   data: t.Object({
     title: t.String(),
-    project_id: t.String(),
     sort: t.Optional(t.Number()),
     field_type: t.String(),
     parent_id: t.String(),
