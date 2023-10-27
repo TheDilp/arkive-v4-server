@@ -27,7 +27,7 @@ export const InsertDocumentSchema = t.Object({
     id: t.Optional(t.String()),
     project_id: t.String(),
     title: t.Optional(t.String()),
-    content: t.Optional(t.Union([t.String(), t.Null()])),
+    content: t.Optional(t.Union([t.Any(), t.Null()])),
     icon: t.Optional(t.Union([t.String(), t.Null()])),
     is_folder: t.Optional(t.Union([t.Boolean(), t.Null()])),
     is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
@@ -59,7 +59,7 @@ export const UpdateDocumentSchema = t.Object({
   data: t.Object({
     id: t.String(),
     title: t.Optional(t.String()),
-    content: t.Optional(t.Union([t.String(), t.Null()])),
+    content: t.Optional(t.Union([t.Any(), t.Null()])),
     icon: t.Optional(t.Union([t.String(), t.Null()])),
     is_folder: t.Optional(t.Union([t.Boolean(), t.Null()])),
     is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),

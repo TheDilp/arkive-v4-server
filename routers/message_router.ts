@@ -4,7 +4,12 @@ import { jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertMessageSchema, ReadMessageSchema, UpdateMessageSchema } from "../database/validation/messages";
+import {
+  InsertMessageSchema,
+  ListMessagesSchema,
+  ReadMessageSchema,
+  UpdateMessageSchema,
+} from "../database/validation/messages";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 
@@ -18,6 +23,21 @@ export function message_router(app: Elysia) {
           return { message: MessageEnum.success, ok: true };
         },
         { body: InsertMessageSchema, response: ResponseSchema },
+      )
+      .post(
+        "/",
+        async ({ body }) => {
+          const data = await db
+            .selectFrom("messages")
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "messages">[]))
+            .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
+            .limit(body.pagination?.limit || 10)
+            .execute();
+
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        { body: ListMessagesSchema, response: ResponseWithDataSchema },
       )
       .post(
         "/:id",

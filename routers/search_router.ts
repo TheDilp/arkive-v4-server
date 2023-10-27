@@ -59,16 +59,17 @@ export function search_router(app: Elysia) {
           if (type === "places") {
             const maps = await db
               .selectFrom("maps")
-              .select(["id", "title", "image_id"])
-              .where("project_id", "=", project_id)
-              .where("title", "ilike", `%${body.data.search_term}%`)
+              .select(["maps.id", "maps.title", "maps.image_id", "maps.project_id", "maps.icon"])
+              .where("maps.project_id", "=", project_id)
+              .where("maps.title", "ilike", `%${body.data.search_term}%`)
               .execute();
             const map_pins = await db
               .selectFrom("map_pins")
-              .select(["id", "title", "image_id"])
-              .leftJoin("maps", "maps.project_id", "map_pins.parent_id")
-              .where("maps.project_id", "=", project_id)
-              .where("map_pins.character_id", "=", null)
+              .leftJoin("maps", (join) =>
+                join.onRef("maps.project_id", "=", "map_pins.parent_id").on("maps.project_id", "=", project_id),
+              )
+              .select(["map_pins.id", "map_pins.title", "map_pins.image_id", "map_pins.parent_id", "map_pins.icon"])
+              .where("map_pins.character_id", "is", null)
               .where("map_pins.title", "ilike", `%${body.data.search_term}%`)
               .execute();
 
@@ -78,8 +79,9 @@ export function search_router(app: Elysia) {
               data: result.map((item) => ({
                 value: item.id,
                 label: item?.title,
-                color: "",
+                parent_id: "parent_id" in item ? item?.parent_id : null,
                 image: item?.image_id,
+                icon: item?.icon,
               })),
               message: MessageEnum.success,
               ok: true,

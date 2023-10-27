@@ -183,7 +183,7 @@ export function document_router(app: Elysia) {
               }
             }
           });
-          return { message: `Document ${MessageEnum.successfully_updated}.`, ok: true };
+          return { message: `Document ${MessageEnum.successfully_updated}`, ok: true };
         },
         {
           body: UpdateDocumentSchema,
