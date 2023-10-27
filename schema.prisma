@@ -113,7 +113,7 @@ model blueprints {
   updated_at DateTime @default(now())
 
   title      String
-  project    projects @relation(fields: [project_id], references: [id])
+  project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
   project_id String
 
   blueprint_fields   character_fields[]
@@ -125,7 +125,7 @@ model blueprint_instances {
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  blueprint    blueprints @relation(fields: [blueprint_id], references: [id])
+  blueprint    blueprints @relation(fields: [blueprint_id], references: [id], onDelete: Cascade)
   blueprint_id String
   value        Json?
 }
@@ -137,7 +137,7 @@ model characters {
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @map("updated_at")
 
-  project    projects @relation(fields: [project_id], references: [id])
+  project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
   project_id String
 
   is_favorite Boolean?
@@ -167,7 +167,7 @@ model character_fields {
   id    String @id @default(dbgenerated("gen_random_uuid()"))
   title String
 
-  project    projects @relation(fields: [project_id], references: [id])
+  project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
   project_id String
 
   sort Int @default(0)
@@ -192,7 +192,7 @@ model character_fields_templates {
   id    String @id @default(dbgenerated("gen_random_uuid()"))
   title String
 
-  project          projects           @relation(fields: [project_id], references: [id])
+  project          projects           @relation(fields: [project_id], references: [id], onDelete: Cascade)
   project_id       String
   character_fields character_fields[]
 
@@ -436,15 +436,15 @@ model nodes {
   tags         tags[]
   image_id     String?
 
-  document     documents?  @relation(fields: [doc_id], references: [id])
+  document     documents?  @relation(fields: [doc_id], references: [id], onDelete: SetNull)
   doc_id       String?
-  character    characters? @relation(fields: [character_id], references: [id])
+  character    characters? @relation(fields: [character_id], references: [id], onDelete: SetNull)
   character_id String?
-  event        events?     @relation(fields: [event_id], references: [id])
+  event        events?     @relation(fields: [event_id], references: [id], onDelete: SetNull)
   event_id     String?
-  map          maps?       @relation(fields: [map_id], references: [id])
+  map          maps?       @relation(fields: [map_id], references: [id], onDelete: SetNull)
   map_id       String?
-  map_pin      map_pins?   @relation(fields: [map_pin_id], references: [id])
+  map_pin      map_pins?   @relation(fields: [map_pin_id], references: [id], onDelete: SetNull)
   map_pin_id   String?
 }
 
@@ -636,7 +636,7 @@ model events {
 
   is_public Boolean?
 
-  document documents? @relation(fields: [document_id], references: [id])
+  document documents? @relation(fields: [document_id], references: [id], onDelete: SetNull)
 
   background_color String?
   text_color       String?
@@ -755,7 +755,7 @@ model webhooks {
   id    String @id @default(dbgenerated("gen_random_uuid()"))
   title String
   url   String
-  user  users  @relation(fields: [user_id], references: [id])
+  user  users  @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   user_id String
 
