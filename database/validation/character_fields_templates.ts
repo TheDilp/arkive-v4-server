@@ -33,7 +33,6 @@ export const InsertCharacterFieldsTemplateSchema = t.Object({
       character_fields: t.Array(
         t.Object({
           title: t.String(),
-          project_id: t.String(),
           field_type: t.String(),
           sort: t.Optional(t.Number()),
           formula: t.Optional(t.Union([t.String(), t.Null()])),
@@ -59,7 +58,6 @@ export const UpdateTemplateSchema = t.Object({
         t.Object({
           id: t.String(),
           title: t.String(),
-          project_id: t.String(),
           field_type: t.String(),
           sort: t.Optional(t.Number()),
           formula: t.Optional(t.Union([t.String(), t.Null()])),

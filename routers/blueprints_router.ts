@@ -19,13 +19,13 @@ export function blueprints_router(app: Elysia) {
           await db.transaction().execute(async (tx) => {
             const newTemplate = await tx.insertInto("blueprints").values(body.data).returning("id").executeTakeFirstOrThrow();
 
-            if (body.relations?.character_fields) {
+            if (body.relations?.blueprint_fields) {
               await tx
-                .insertInto("character_fields")
+                .insertInto("blueprint_fields")
                 .values(
-                  body.relations.character_fields.map((field) => ({
+                  body.relations.blueprint_fields.map((field) => ({
                     ...field,
-                    blueprint_id: newTemplate.id,
+                    parent_id: newTemplate.id,
                     options: JSON.stringify(field.options || []),
                   })),
                 )
@@ -34,7 +34,7 @@ export function blueprints_router(app: Elysia) {
             // if (body.relations?.tags) {
             //   await CreateTagRelations({
             //     tx,
-            //     relationalTable: "_character_fields_templatesTotags",
+            //     relationalTable: "_blueprint_fields_templatesTotags",
             //     id: newTemplate.id,
             //     tags: body.relations.tags,
             //   });
@@ -61,9 +61,9 @@ export function blueprints_router(app: Elysia) {
             })
             // .$if(!!body?.relationFilters?.tags?.length, (qb) =>
             //   constructTagFilter(
-            //     "character_fields_templates",
+            //     "blueprint_fields_templates",
             //     qb,
-            //     "_character_fields_templatesTotags",
+            //     "_blueprint_fields_templatesTotags",
             //     body?.relationFilters?.tags || [],
             //     "A",
             //     "B",
@@ -74,25 +74,25 @@ export function blueprints_router(app: Elysia) {
               return qb;
             })
             .$if(!!body?.relations, (qb) => {
-              if (body?.relations?.character_fields) {
+              if (body?.relations?.blueprint_fields) {
                 qb = qb.select((eb) =>
                   jsonArrayFrom(
                     eb
-                      .selectFrom("character_fields")
-                      .whereRef("blueprints.id", "=", "character_fields.blueprint_id")
+                      .selectFrom("blueprint_fields")
+                      .whereRef("blueprints.id", "=", "blueprint_fields.blueprint_id")
                       .select([
-                        "character_fields.id",
-                        "character_fields.title",
-                        "character_fields.field_type",
-                        "character_fields.options",
-                        "character_fields.formula",
-                        "character_fields.random_table_id",
+                        "blueprint_fields.id",
+                        "blueprint_fields.title",
+                        "blueprint_fields.field_type",
+                        "blueprint_fields.options",
+                        "blueprint_fields.formula",
+                        "blueprint_fields.random_table_id",
                         (eb) =>
                           jsonObjectFrom(
                             eb
                               .selectFrom("random_tables")
                               .select(["random_tables.id", "random_tables.title"])
-                              .whereRef("random_tables.id", "=", "character_fields.random_table_id"),
+                              .whereRef("random_tables.id", "=", "blueprint_fields.random_table_id"),
                           ).as("random_table"),
                         (eb) =>
                           jsonArrayFrom(
@@ -109,7 +109,7 @@ export function blueprints_router(app: Elysia) {
                                       .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id"),
                                   ).as("suboptions"),
                               ])
-                              .whereRef("random_table_options.parent_id", "=", "character_fields.random_table_id"),
+                              .whereRef("random_table_options.parent_id", "=", "blueprint_fields.random_table_id"),
                           ).as("random_table_options"),
 
                         (eb) =>
@@ -125,14 +125,14 @@ export function blueprints_router(app: Elysia) {
                                     sb.selectFrom("months").select(["months.id", "months.title", "months.days"]),
                                   ).as("months"),
                               ])
-                              .whereRef("calendars.id", "=", "character_fields.calendar_id"),
+                              .whereRef("calendars.id", "=", "blueprint_fields.calendar_id"),
                           ).as("calendar"),
                       ]),
-                  ).as("character_fields"),
+                  ).as("blueprint_fields"),
                 );
               }
               // if (body?.relations?.tags) {
-              //   qb = qb.select((eb) => TagQuery(eb, "_character_fields_templatesTotags", "character_fields_templates"));
+              //   qb = qb.select((eb) => TagQuery(eb, "_blueprint_fields_templatesTotags", "blueprint_fields_templates"));
               // }
               return qb;
             })
@@ -152,37 +152,37 @@ export function blueprints_router(app: Elysia) {
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "blueprints">[]))
             .where("blueprints.id", "=", params.id)
-            .$if(!!body?.relations?.character_fields, (qb) =>
+            .$if(!!body?.relations?.blueprint_fields, (qb) =>
               qb.select((eb) =>
                 jsonArrayFrom(
                   eb
-                    .selectFrom("character_fields")
-                    .whereRef("character_fields.blueprint_id", "=", "blueprints.id")
+                    .selectFrom("blueprint_fields")
+                    .whereRef("blueprint_fields.blueprint_id", "=", "blueprints.id")
                     .select([
-                      "character_fields.id",
-                      "character_fields.title",
-                      "character_fields.options",
-                      "character_fields.field_type",
-                      "character_fields.sort",
-                      "character_fields.formula",
-                      "character_fields.random_table_id",
-                      "character_fields.calendar_id",
+                      "blueprint_fields.id",
+                      "blueprint_fields.title",
+                      "blueprint_fields.options",
+                      "blueprint_fields.field_type",
+                      "blueprint_fields.sort",
+                      "blueprint_fields.formula",
+                      "blueprint_fields.random_table_id",
+                      "blueprint_fields.calendar_id",
                       (eb) =>
                         jsonObjectFrom(
                           eb
                             .selectFrom("random_tables")
                             .select(["id", "title"])
-                            .whereRef("random_tables.id", "=", "character_fields.random_table_id"),
+                            .whereRef("random_tables.id", "=", "blueprint_fields.random_table_id"),
                         ).as("random_table"),
                       (eb) =>
                         jsonObjectFrom(
                           eb
                             .selectFrom("calendars")
                             .select(["id", "title"])
-                            .whereRef("calendars.id", "=", "character_fields.calendar_id"),
+                            .whereRef("calendars.id", "=", "blueprint_fields.calendar_id"),
                         ).as("calendar"),
                     ]),
-                ).as("character_fields"),
+                ).as("blueprint_fields"),
               ),
             )
             .$if(!!body?.relations?.blueprint_instances, (qb) =>
@@ -196,7 +196,7 @@ export function blueprints_router(app: Elysia) {
               ),
             )
             // .$if(!!body?.relations?.tags, (qb) =>
-            //   qb.select((eb) => TagQuery(eb, "_character_fields_templatesTotags", "character_fields_templates")),
+            //   qb.select((eb) => TagQuery(eb, "_blueprint_fields_templatesTotags", "blueprint_fields_templates")),
             // )
             .executeTakeFirstOrThrow();
           return { data, message: MessageEnum.success, ok: true };

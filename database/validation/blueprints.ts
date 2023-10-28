@@ -2,6 +2,22 @@ import { t } from "elysia";
 
 import { RequestBodySchema } from "../../types/requestTypes";
 
+const FieldWidthSchema = t.Union([t.Literal("full"), t.Literal("half")]);
+const FieldTypeSchema = t.Union([
+  t.Literal("text"),
+  t.Literal("select"),
+  t.Literal("select_multiple"),
+  t.Literal("dice_roll"),
+  t.Literal("date"),
+  t.Literal("random_table"),
+  t.Literal("documents_single"),
+  t.Literal("documents_multiple"),
+  t.Literal("images_single"),
+  t.Literal("images_multiple"),
+  t.Literal("locations_single"),
+  t.Literal("locations_multiple"),
+]);
+
 export const ListBlueprintSchema = t.Intersect([
   RequestBodySchema,
   t.Object({
@@ -11,7 +27,7 @@ export const ListBlueprintSchema = t.Intersect([
     t.Object({
       relations: t.Optional(
         t.Object({
-          character_fields: t.Optional(t.Boolean()),
+          blueprint_fields: t.Optional(t.Boolean()),
 
           // tags: t.Optional(t.Boolean())
         }),
@@ -25,7 +41,7 @@ export const ReadBlueprintSchema = t.Intersect([
   t.Object({
     data: t.Object({ id: t.String() }),
     relations: t.Object({
-      character_fields: t.Optional(t.Boolean()),
+      blueprint_fields: t.Optional(t.Boolean()),
       blueprint_instances: t.Optional(t.Boolean()),
 
       // tags: t.Optional(t.Boolean())
@@ -40,11 +56,11 @@ export const InsertBlueprintSchema = t.Object({
   }),
   relations: t.Optional(
     t.Object({
-      character_fields: t.Array(
+      blueprint_fields: t.Array(
         t.Object({
           title: t.String(),
-          project_id: t.String(),
-          field_type: t.String(),
+          field_type: FieldTypeSchema,
+          width: FieldWidthSchema,
           sort: t.Optional(t.Number()),
           formula: t.Optional(t.Union([t.String(), t.Null()])),
           options: t.Optional(t.Array(t.Object({ id: t.String(), value: t.String() }))),
