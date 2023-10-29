@@ -5,7 +5,7 @@ import { RequestBodySchema } from "../../types/requestTypes";
 export const ListBlueprintInstanceSchema = t.Intersect([
   RequestBodySchema,
   t.Object({
-    data: t.Object({ blueprint_id: t.String() }),
+    data: t.Object({ parent_id: t.String() }),
   }),
   t.Optional(
     t.Object({
@@ -18,9 +18,20 @@ export const ListBlueprintInstanceSchema = t.Intersect([
   ),
 ]);
 
+export const ReadBlueprintInstanceSchema = t.Intersect([
+  RequestBodySchema,
+  t.Object({
+    data: t.Object({ id: t.String() }),
+    relations: t.Object({
+      blueprint_fields: t.Optional(t.Boolean()),
+      tags: t.Optional(t.Boolean()),
+    }),
+  }),
+]);
+
 export const InsertBlueprintInstanceSchema = t.Object({
   data: t.Object({
-    blueprint_id: t.String(),
+    parent_id: t.String(),
     value: t.Optional(t.Union([t.Any(), t.Null()])),
   }),
   relations: t.Optional(

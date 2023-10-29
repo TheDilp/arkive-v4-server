@@ -29,7 +29,8 @@ export type EntitiesWithTags =
   | "edges"
   | "nodes"
   | "screens"
-  | "character_fields_templates";
+  | "character_fields_templates"
+  | "blueprint_instances";
 
 export type EntitiesWithBreadcrumbs = "documents" | "maps" | "boards" | "dictionaries" | "random_tables";
 

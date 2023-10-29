@@ -4,13 +4,16 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { ReadBlueprintSchema } from "../database/validation";
-import { InsertBlueprintInstanceSchema, ListBlueprintInstanceSchema } from "../database/validation/blueprint_instances";
+import {
+  InsertBlueprintInstanceSchema,
+  ListBlueprintInstanceSchema,
+  ReadBlueprintInstanceSchema,
+} from "../database/validation/blueprint_instances";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, constructTagFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { CreateTagRelations } from "../utils/relationalQueryHelpers";
+import { CreateTagRelations, TagQuery } from "../utils/relationalQueryHelpers";
 
 export function blueprint_instance_router(app: Elysia) {
   return app.group("/blueprint_instances", (server) =>
@@ -46,7 +49,7 @@ export function blueprint_instance_router(app: Elysia) {
         async ({ body }) => {
           const data = await db
             .selectFrom("blueprint_instances")
-            .where("blueprint_instances.blueprint_id", "=", body.data.blueprint_id)
+            .where("blueprint_instances.parent_id", "=", body.data.parent_id)
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) =>
               qb.clearSelect().select(body.fields as SelectExpression<DB, "blueprint_instances">[]),
@@ -81,16 +84,18 @@ export function blueprint_instance_router(app: Elysia) {
         "/:id",
         async ({ params, body }) => {
           const data = await db
-            .selectFrom("blueprints")
+            .selectFrom("blueprint_instances")
             .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "blueprints">[]))
-            .where("blueprints.id", "=", params.id)
+            .$if(!!body.fields?.length, (qb) =>
+              qb.clearSelect().select(body.fields as SelectExpression<DB, "blueprint_instances">[]),
+            )
+            .where("blueprint_instances.id", "=", params.id)
             .$if(!!body?.relations?.blueprint_fields, (qb) =>
               qb.select((eb) =>
                 jsonArrayFrom(
                   eb
                     .selectFrom("blueprint_fields")
-                    .whereRef("blueprint_fields.blueprint_id", "=", "blueprints.id")
+                    .whereRef("blueprint_fields.parent_id", "=", "blueprint_instances.parent_id")
                     .select([
                       "blueprint_fields.id",
                       "blueprint_fields.title",
@@ -118,24 +123,15 @@ export function blueprint_instance_router(app: Elysia) {
                 ).as("blueprint_fields"),
               ),
             )
-            .$if(!!body?.relations?.blueprint_instances, (qb) =>
-              qb.select((eb) =>
-                jsonArrayFrom(
-                  eb
-                    .selectFrom("blueprint_instances")
-                    .whereRef("blueprint_instances.blueprint_id", "=", "blueprints.id")
-                    .select(["blueprint_instances.id", "blueprint_instances.blueprint_id", "blueprint_instances.value"]),
-                ).as("blueprint_instances"),
-              ),
+
+            .$if(!!body?.relations?.tags, (qb) =>
+              qb.select((eb) => TagQuery(eb, "_blueprint_instancesTotags", "blueprint_instances")),
             )
-            // .$if(!!body?.relations?.tags, (qb) =>
-            //   qb.select((eb) => TagQuery(eb, "_blueprint_fields_templatesTotags", "blueprint_fields_templates")),
-            // )
             .executeTakeFirstOrThrow();
           return { data, message: MessageEnum.success, ok: true };
         },
         {
-          body: ReadBlueprintSchema,
+          body: ReadBlueprintInstanceSchema,
           response: ResponseWithDataSchema,
         },
       )

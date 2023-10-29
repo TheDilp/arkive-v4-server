@@ -147,10 +147,10 @@ model blueprint_instances {
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  blueprint    blueprints @relation(fields: [blueprint_id], references: [id], onDelete: Cascade)
-  blueprint_id String
-  value        Json?      @db.JsonB
-  tags         tags[]
+  blueprint blueprints @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  parent_id String
+  value     Json?      @db.JsonB
+  tags      tags[]
 }
 
 model blueprint_fields {
@@ -168,8 +168,6 @@ model blueprint_fields {
 
   blueprint blueprints? @relation(fields: [parent_id], references: [id], onDelete: Cascade)
   parent_id String?
-
-  blueprint_id String?
 }
 
 // #region characters
