@@ -8,6 +8,7 @@ import {
   InsertBlueprintInstanceSchema,
   ListBlueprintInstanceSchema,
   ReadBlueprintInstanceSchema,
+  UpdateBlueprintInstanceSchema,
 } from "../database/validation/blueprint_instances";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
@@ -132,6 +133,24 @@ export function blueprint_instance_router(app: Elysia) {
         },
         {
           body: ReadBlueprintInstanceSchema,
+          response: ResponseWithDataSchema,
+        },
+      )
+      .post(
+        "/update/:id",
+        async ({ params, body }) => {
+          const data = await db
+            .updateTable("blueprint_instances")
+            .set(body.data)
+            .where("blueprint_instances.id", "=", params.id)
+            // .$if(!!body?.relations?.tags, (qb) =>
+            //   qb.select((eb) => TagQuery(eb, "_blueprint_instancesTotags", "blueprint_instances")),
+            // )
+            .executeTakeFirstOrThrow();
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: UpdateBlueprintInstanceSchema,
           response: ResponseWithDataSchema,
         },
       )

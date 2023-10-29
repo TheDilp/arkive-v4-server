@@ -2,13 +2,15 @@ import Elysia from "elysia";
 import { SelectExpression } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
+import omit from "lodash.omit";
 
 import { db } from "../database/db";
-import { InsertBlueprintSchema, ListBlueprintSchema, ReadBlueprintSchema } from "../database/validation";
+import { InsertBlueprintSchema, ListBlueprintSchema, ReadBlueprintSchema, UpdateBlueprintSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
+import { GetRelationsForUpdating } from "../utils/relationalQueryHelpers";
 
 export function blueprint_router(app: Elysia) {
   return app.group("/blueprints", (server) =>
@@ -84,6 +86,7 @@ export function blueprint_router(app: Elysia) {
                         "blueprint_fields.id",
                         "blueprint_fields.title",
                         "blueprint_fields.field_type",
+                        "blueprint_fields.width",
                         "blueprint_fields.options",
                         "blueprint_fields.formula",
                         "blueprint_fields.random_table_id",
@@ -164,6 +167,7 @@ export function blueprint_router(app: Elysia) {
                       "blueprint_fields.options",
                       "blueprint_fields.field_type",
                       "blueprint_fields.sort",
+                      "blueprint_fields.width",
                       "blueprint_fields.formula",
                       "blueprint_fields.random_table_id",
                       "blueprint_fields.calendar_id",
@@ -204,6 +208,68 @@ export function blueprint_router(app: Elysia) {
         {
           body: ReadBlueprintSchema,
           response: ResponseWithDataSchema,
+        },
+      )
+      .post(
+        "/update/:id",
+        async ({ params, body }) => {
+          if (body.data) {
+            await db.transaction().execute(async (tx) => {
+              if (body.data) {
+                await tx
+                  .updateTable("blueprints")
+                  .set(body.data)
+                  .where("blueprints.id", "=", params.id)
+                  .executeTakeFirstOrThrow();
+              }
+              if (body?.relations?.blueprint_fields) {
+                const { blueprint_fields } = body.relations;
+                const existingBlueprintFields = await tx
+                  .selectFrom("blueprint_fields")
+                  .select(["id", "parent_id"])
+                  .where("blueprint_fields.parent_id", "=", params.id)
+                  .execute();
+
+                const existingIds = existingBlueprintFields.map((field) => field.id);
+
+                const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(existingIds, blueprint_fields);
+
+                if (idsToRemove.length) {
+                  await tx.deleteFrom("blueprint_fields").where("id", "in", idsToRemove).execute();
+                }
+                if (itemsToAdd.length) {
+                  await tx
+                    .insertInto("blueprint_fields")
+                    .values(
+                      // @ts-ignore
+                      itemsToAdd.map((field) => ({
+                        ...omit(field, ["id"]),
+                        options: JSON.stringify(field.options || []),
+                        parent_id: params.id,
+                      })),
+                    )
+                    .execute();
+                }
+                if (itemsToUpdate.length) {
+                  await Promise.all(
+                    itemsToUpdate.map(async (item) =>
+                      tx
+                        .updateTable("blueprint_fields")
+                        .where("blueprint_fields.id", "=", item.id as string)
+                        .set({ ...omit(item, ["id"]), options: JSON.stringify(item.options || []) })
+                        .execute(),
+                    ),
+                  );
+                }
+              }
+            });
+          }
+
+          return { message: `Template ${MessageEnum.successfully_updated}`, ok: true };
+        },
+        {
+          body: UpdateBlueprintSchema,
+          response: ResponseSchema,
         },
       )
       .delete(

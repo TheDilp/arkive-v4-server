@@ -32,6 +32,7 @@ export const ReadBlueprintInstanceSchema = t.Intersect([
 export const InsertBlueprintInstanceSchema = t.Object({
   data: t.Object({
     parent_id: t.String(),
+    title: t.String(),
     value: t.Optional(t.Union([t.Any(), t.Null()])),
   }),
   relations: t.Optional(
@@ -42,6 +43,7 @@ export const InsertBlueprintInstanceSchema = t.Object({
 });
 export const UpdateBlueprintInstanceSchema = t.Object({
   data: t.Object({
+    title: t.Optional(t.String()),
     value: t.Optional(t.Union([t.Any(), t.Null()])),
   }),
   //   relations: t.Optional(

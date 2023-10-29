@@ -77,7 +77,26 @@ export const InsertBlueprintSchema = t.Object({
   ),
 });
 export const UpdateBlueprintSchema = t.Object({
-  id: t.Optional(t.String()),
-  sort: t.Optional(t.Number()),
-  title: t.Optional(t.String()),
+  data: t.Object({
+    title: t.Optional(t.String()),
+    title_name: t.Optional(t.String()),
+    title_width: t.Optional(FieldWidthSchema),
+  }),
+  relations: t.Optional(
+    t.Object({
+      blueprint_fields: t.Array(
+        t.Object({
+          title: t.String(),
+          field_type: FieldTypeSchema,
+          width: FieldWidthSchema,
+          sort: t.Optional(t.Number()),
+          formula: t.Optional(t.Union([t.String(), t.Null()])),
+          options: t.Optional(t.Array(t.Object({ id: t.String(), value: t.String() }))),
+          random_table_id: t.Optional(t.Union([t.String(), t.Null()])),
+          calendar_id: t.Optional(t.Union([t.String(), t.Null()])),
+        }),
+      ),
+      tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
+    }),
+  ),
 });
