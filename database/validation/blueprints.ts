@@ -16,6 +16,8 @@ const FieldTypeSchema = t.Union([
   t.Literal("images_multiple"),
   t.Literal("locations_single"),
   t.Literal("locations_multiple"),
+  t.Literal("characters_single"),
+  t.Literal("characters_multiple"),
 ]);
 
 export const ListBlueprintSchema = t.Intersect([

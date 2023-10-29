@@ -205,6 +205,16 @@ export function blueprints_router(app: Elysia) {
           body: ReadBlueprintSchema,
           response: ResponseWithDataSchema,
         },
+      )
+      .delete(
+        "/:id",
+        async ({ params }) => {
+          await db.deleteFrom("blueprints").where("id", "=", params.id).execute();
+          return { message: `Blueprint ${MessageEnum.successfully_deleted}`, ok: true };
+        },
+        {
+          response: ResponseSchema,
+        },
       ),
   );
 }
