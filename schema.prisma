@@ -149,7 +149,8 @@ model blueprint_instances {
 
   blueprint    blueprints @relation(fields: [blueprint_id], references: [id], onDelete: Cascade)
   blueprint_id String
-  value        Json?
+  value        Json?      @db.JsonB
+  tags         tags[]
 }
 
 model blueprint_fields {
@@ -782,6 +783,7 @@ model tags {
   events                     events[]
   characters                 characters[]
   character_fields_templates character_fields_templates[]
+  blueprint_instances        blueprint_instances[]
 
   @@unique([title, project_id])
 }

@@ -15,7 +15,8 @@ export type TagsRelationTables =
   | "_edgesTotags"
   | "_nodesTotags"
   | "_screensTotags"
-  | "_character_fields_templatesTotags";
+  | "_character_fields_templatesTotags"
+  | "_blueprint_instancesTotags";
 export type EntitiesWithTags =
   | "maps"
   | "boards"
