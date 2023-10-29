@@ -24,11 +24,11 @@ export function blueprint_instance_router(app: Elysia) {
           await db.transaction().execute(async (tx) => {
             const newInstance = await tx
               .insertInto("blueprint_instances")
-              .values(body.data)
+              .values({ ...body.data, value: JSON.stringify(body.data.value) })
               .returning("id")
               .executeTakeFirstOrThrow();
 
-            if (body.relations?.tags) {
+            if (body.relations?.tags?.length) {
               await CreateTagRelations({
                 tx,
                 relationalTable: "_blueprint_instancesTotags",

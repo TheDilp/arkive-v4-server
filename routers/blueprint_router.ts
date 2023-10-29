@@ -79,7 +79,7 @@ export function blueprint_router(app: Elysia) {
                   jsonArrayFrom(
                     eb
                       .selectFrom("blueprint_fields")
-                      .whereRef("blueprints.id", "=", "blueprint_fields.blueprint_id")
+                      .whereRef("blueprints.id", "=", "blueprint_fields.parent_id")
                       .select([
                         "blueprint_fields.id",
                         "blueprint_fields.title",
@@ -190,8 +190,8 @@ export function blueprint_router(app: Elysia) {
                 jsonArrayFrom(
                   eb
                     .selectFrom("blueprint_instances")
-                    .whereRef("blueprint_instances.blueprint_id", "=", "blueprints.id")
-                    .select(["blueprint_instances.id", "blueprint_instances.blueprint_id", "blueprint_instances.value"]),
+                    .whereRef("blueprint_instances.parent_id", "=", "blueprints.id")
+                    .select(["blueprint_instances.id", "blueprint_instances.parent_id", "blueprint_instances.value"]),
                 ).as("blueprint_instances"),
               ),
             )

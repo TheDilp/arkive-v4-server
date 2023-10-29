@@ -137,7 +137,9 @@ model blueprints {
   project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
   project_id String
 
-  // blueprint_fields   character_fields[]
+  title_name  String
+  title_width FieldWidth @default(full)
+
   blueprint_instance blueprint_instances[]
   blueprint_fields   blueprint_fields[]
 }
@@ -146,6 +148,8 @@ model blueprint_instances {
   id         String   @id @default(dbgenerated("gen_random_uuid()"))
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
+
+  title String
 
   blueprint blueprints @relation(fields: [parent_id], references: [id], onDelete: Cascade)
   parent_id String

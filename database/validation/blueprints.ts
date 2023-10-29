@@ -55,6 +55,8 @@ export const InsertBlueprintSchema = t.Object({
   data: t.Object({
     project_id: t.String(),
     title: t.String(),
+    title_name: t.String(),
+    title_width: FieldWidthSchema,
   }),
   relations: t.Optional(
     t.Object({
