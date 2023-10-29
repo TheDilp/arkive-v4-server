@@ -10,7 +10,7 @@ import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 
-export function blueprints_router(app: Elysia) {
+export function blueprint_router(app: Elysia) {
   return app.group("/blueprints", (server) =>
     server
       .post(

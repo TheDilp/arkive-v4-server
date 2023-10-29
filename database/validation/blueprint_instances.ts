@@ -1,5 +1,23 @@
 import { t } from "elysia";
 
+import { RequestBodySchema } from "../../types/requestTypes";
+
+export const ListBlueprintInstanceSchema = t.Intersect([
+  RequestBodySchema,
+  t.Object({
+    data: t.Object({ blueprint_id: t.String() }),
+  }),
+  t.Optional(
+    t.Object({
+      relations: t.Optional(
+        t.Object({
+          tags: t.Optional(t.Boolean()),
+        }),
+      ),
+    }),
+  ),
+]);
+
 export const InsertBlueprintInstanceSchema = t.Object({
   data: t.Object({
     blueprint_id: t.String(),
