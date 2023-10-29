@@ -86,7 +86,7 @@ export function blueprint_router(app: Elysia) {
                         "blueprint_fields.id",
                         "blueprint_fields.title",
                         "blueprint_fields.field_type",
-                        "blueprint_fields.width",
+
                         "blueprint_fields.options",
                         "blueprint_fields.formula",
                         "blueprint_fields.random_table_id",
@@ -167,7 +167,7 @@ export function blueprint_router(app: Elysia) {
                       "blueprint_fields.options",
                       "blueprint_fields.field_type",
                       "blueprint_fields.sort",
-                      "blueprint_fields.width",
+
                       "blueprint_fields.formula",
                       "blueprint_fields.random_table_id",
                       "blueprint_fields.calendar_id",
@@ -176,6 +176,26 @@ export function blueprint_router(app: Elysia) {
                           eb
                             .selectFrom("random_tables")
                             .select(["id", "title"])
+                            .$if(!!body?.relations?.random_table_options, (qb) =>
+                              qb.select(
+                                jsonArrayFrom(
+                                  eb
+                                    .selectFrom("random_table_options")
+                                    .select([
+                                      "random_table_options.id",
+                                      "random_table_options.title",
+                                      (ebb) =>
+                                        jsonArrayFrom(
+                                          ebb
+                                            .selectFrom("random_table_suboptions")
+                                            .select(["random_table_suboptions.id", "random_table_suboptions.title"])
+                                            .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id"),
+                                        ).as("suboptions"),
+                                    ])
+                                    .whereRef("random_table_options.parent_id", "=", "blueprint_fields.random_table_id"),
+                                ).as("random_table_options"),
+                              ),
+                            )
                             .whereRef("random_tables.id", "=", "blueprint_fields.random_table_id"),
                         ).as("random_table"),
                       (eb) =>
@@ -199,6 +219,7 @@ export function blueprint_router(app: Elysia) {
                 ).as("blueprint_instances"),
               ),
             )
+
             // .$if(!!body?.relations?.tags, (qb) =>
             //   qb.select((eb) => TagQuery(eb, "_blueprint_fields_templatesTotags", "blueprint_fields_templates")),
             // )

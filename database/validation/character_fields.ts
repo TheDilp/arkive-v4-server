@@ -5,6 +5,8 @@ import { RequestBodySchema } from "../../types/requestTypes";
 // const FieldWidthSchema = t.Union([t.Literal("full"), t.Literal("half")]);
 const FieldTypeSchema = t.Union([
   t.Literal("text"),
+  t.Literal("textarea"),
+  t.Literal("number"),
   t.Literal("select"),
   t.Literal("select_multiple"),
   t.Literal("dice_roll"),

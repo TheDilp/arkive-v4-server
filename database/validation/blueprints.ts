@@ -2,9 +2,11 @@ import { t } from "elysia";
 
 import { RequestBodySchema } from "../../types/requestTypes";
 
-const FieldWidthSchema = t.Union([t.Literal("full"), t.Literal("half")]);
+// const FieldWidthSchema = t.Union([t.Literal("full"), t.Literal("half")]);
 const FieldTypeSchema = t.Union([
   t.Literal("text"),
+  t.Literal("textarea"),
+  t.Literal("number"),
   t.Literal("select"),
   t.Literal("select_multiple"),
   t.Literal("dice_roll"),
@@ -45,6 +47,7 @@ export const ReadBlueprintSchema = t.Intersect([
     relations: t.Object({
       blueprint_fields: t.Optional(t.Boolean()),
       blueprint_instances: t.Optional(t.Boolean()),
+      random_table_options: t.Optional(t.Boolean()),
 
       // tags: t.Optional(t.Boolean())
     }),
@@ -56,7 +59,7 @@ export const InsertBlueprintSchema = t.Object({
     project_id: t.String(),
     title: t.String(),
     title_name: t.String(),
-    title_width: FieldWidthSchema,
+    // title_width: FieldWidthSchema,
   }),
   relations: t.Optional(
     t.Object({
@@ -64,7 +67,7 @@ export const InsertBlueprintSchema = t.Object({
         t.Object({
           title: t.String(),
           field_type: FieldTypeSchema,
-          width: FieldWidthSchema,
+          // width: FieldWidthSchema,
           sort: t.Optional(t.Number()),
           formula: t.Optional(t.Union([t.String(), t.Null()])),
           options: t.Optional(t.Array(t.Object({ id: t.String(), value: t.String() }))),
@@ -80,7 +83,7 @@ export const UpdateBlueprintSchema = t.Object({
   data: t.Object({
     title: t.Optional(t.String()),
     title_name: t.Optional(t.String()),
-    title_width: t.Optional(FieldWidthSchema),
+    // title_width: t.Optional(FieldWidthSchema),
   }),
   relations: t.Optional(
     t.Object({
@@ -88,7 +91,7 @@ export const UpdateBlueprintSchema = t.Object({
         t.Object({
           title: t.String(),
           field_type: FieldTypeSchema,
-          width: FieldWidthSchema,
+          // width: FieldWidthSchema,
           sort: t.Optional(t.Number()),
           formula: t.Optional(t.Union([t.String(), t.Null()])),
           options: t.Optional(t.Array(t.Object({ id: t.String(), value: t.String() }))),

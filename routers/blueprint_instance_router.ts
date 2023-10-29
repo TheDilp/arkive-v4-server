@@ -139,26 +139,27 @@ export function blueprint_instance_router(app: Elysia) {
       .post(
         "/update/:id",
         async ({ params, body }) => {
-          const data = await db
+          const v = JSON.stringify(body.data.value);
+          await db
             .updateTable("blueprint_instances")
-            .set(body.data)
+            .set({ ...body.data, value: v })
             .where("blueprint_instances.id", "=", params.id)
-            // .$if(!!body?.relations?.tags, (qb) =>
-            //   qb.select((eb) => TagQuery(eb, "_blueprint_instancesTotags", "blueprint_instances")),
-            // )
+            //   // .$if(!!body?.relations?.tags, (qb) =>
+            //   //   qb.select((eb) => TagQuery(eb, "_blueprint_instancesTotags", "blueprint_instances")),
+            //   // )
             .executeTakeFirstOrThrow();
-          return { data, message: MessageEnum.success, ok: true };
+          return { message: `Blueprint instance ${MessageEnum.successfully_updated}`, ok: true };
         },
         {
           body: UpdateBlueprintInstanceSchema,
-          response: ResponseWithDataSchema,
+          response: ResponseSchema,
         },
       )
       .delete(
         "/:id",
         async ({ params }) => {
-          await db.deleteFrom("blueprints").where("id", "=", params.id).execute();
-          return { message: `Blueprint ${MessageEnum.successfully_deleted}`, ok: true };
+          await db.deleteFrom("blueprint_instances").where("id", "=", params.id).execute();
+          return { message: `Blueprint instance ${MessageEnum.successfully_deleted}`, ok: true };
         },
         {
           response: ResponseSchema,

@@ -5,6 +5,8 @@ datasource db {
 
 enum BlueprintFieldType {
   text
+  textarea
+  number
   select
   select_multiple
   dice_roll
@@ -22,6 +24,8 @@ enum BlueprintFieldType {
 
 enum FieldType {
   text
+  textarea
+  number
   select
   select_multiple
   dice_roll
@@ -137,8 +141,8 @@ model blueprints {
   project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
   project_id String
 
-  title_name  String
-  title_width FieldWidth @default(full)
+  title_name String
+  // title_width FieldWidth @default(full)
 
   blueprint_instance blueprint_instances[]
   blueprint_fields   blueprint_fields[]
@@ -161,8 +165,8 @@ model blueprint_fields {
   id    String @id @default(dbgenerated("gen_random_uuid()"))
   title String
 
-  sort  Int        @default(0)
-  width FieldWidth
+  sort Int @default(0)
+  // width FieldWidth
 
   field_type      BlueprintFieldType
   options         Json?
