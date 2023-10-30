@@ -141,7 +141,9 @@ model blueprints {
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  title      String
+  title String
+  icon  String?
+
   project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
   project_id String
 
@@ -175,7 +177,6 @@ model blueprint_instances {
   updated_at DateTime @default(now())
 
   title String
-  icon  String?
 
   blueprint blueprints @relation(fields: [parent_id], references: [id], onDelete: Cascade)
   parent_id String
