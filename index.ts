@@ -1,6 +1,7 @@
 import { cors } from "@elysiajs/cors";
 import { swagger } from "@elysiajs/swagger";
 import { Elysia, ws } from "elysia";
+import { clerkPlugin } from "elysia-clerk";
 
 import {
   asset_router,
@@ -33,11 +34,24 @@ import {
   word_router,
 } from "./routers";
 
+class UnauthorizedError extends Error {
+  constructor(public message: string) {
+    super(message);
+  }
+}
+
 export const app = new Elysia()
   .use(cors({ origin: process.env.NODE_ENV === "development" ? "*" : "https://thearkive.app" }))
   .use(swagger())
   .use(ws())
+  .addError({
+    UNAUTHORIZED: UnauthorizedError,
+  })
   .onError(({ code, error, set }) => {
+    if (code === "UNAUTHORIZED") {
+      set.status = 403;
+      return { message: "UNAUTHORIZED", ok: false };
+    }
     if (code === "NOT_FOUND") {
       set.status = 404;
       return { message: "Route not found.", ok: false };
@@ -52,11 +66,18 @@ export const app = new Elysia()
       return { message: "The payload was not formatted correctly.", ok: false };
     }
   })
+  .use(health_check_router)
+  .use(clerkPlugin())
 
   .group("/api/v1", (server) =>
     // @ts-ignore
     server
-      .use(health_check_router)
+      .onBeforeHandle(({ store }) => {
+        // @ts-ignore
+        if ("auth" in store && !store?.auth?.userId) {
+          throw new UnauthorizedError("UNAUTHORIZED");
+        }
+      })
       .use(user_router)
       .use(project_router)
       .use(asset_router)
