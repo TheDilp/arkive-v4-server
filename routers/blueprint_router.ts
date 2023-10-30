@@ -86,7 +86,6 @@ export function blueprint_router(app: Elysia) {
                         "blueprint_fields.id",
                         "blueprint_fields.title",
                         "blueprint_fields.field_type",
-
                         "blueprint_fields.options",
                         "blueprint_fields.formula",
                         "blueprint_fields.random_table_id",
@@ -130,7 +129,8 @@ export function blueprint_router(app: Elysia) {
                               ])
                               .whereRef("calendars.id", "=", "blueprint_fields.calendar_id"),
                           ).as("calendar"),
-                      ]),
+                      ])
+                      .orderBy("sort"),
                   ).as("blueprint_fields"),
                 );
               }
@@ -205,7 +205,8 @@ export function blueprint_router(app: Elysia) {
                             .select(["id", "title"])
                             .whereRef("calendars.id", "=", "blueprint_fields.calendar_id"),
                         ).as("calendar"),
-                    ]),
+                    ])
+                    .orderBy("sort"),
                 ).as("blueprint_fields"),
               ),
             )
