@@ -33,7 +33,8 @@ export function project_router(app: Elysia) {
           const data = await db
             .selectFrom("projects")
             .select(["projects.id", "projects.title", "projects.image_id"])
-            .where("owner_id", "=", body.data.owner_id)
+            .leftJoin("users", "users.id", "projects.owner_id")
+            .where("users.auth_id", "=", body.data.auth_id)
             .execute();
           return { data, message: MessageEnum.success, ok: true };
         },
