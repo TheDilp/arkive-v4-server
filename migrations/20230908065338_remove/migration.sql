@@ -1,0 +1,15 @@
+-- AlterTable
+ALTER TABLE "dictionaries" ALTER COLUMN "is_folder" DROP NOT NULL,
+ALTER COLUMN "is_folder" DROP DEFAULT,
+ALTER COLUMN "is_public" DROP NOT NULL,
+ALTER COLUMN "is_public" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "events" ALTER COLUMN "is_public" DROP NOT NULL,
+ALTER COLUMN "is_public" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "screens" ALTER COLUMN "is_folder" DROP NOT NULL,
+ALTER COLUMN "is_folder" DROP DEFAULT,
+ALTER COLUMN "is_public" DROP NOT NULL,
+ALTER COLUMN "is_public" DROP DEFAULT;
