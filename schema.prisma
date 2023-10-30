@@ -20,6 +20,8 @@ enum BlueprintFieldType {
   locations_multiple
   characters_single
   characters_multiple
+  blueprints_single
+  blueprints_multiple
 }
 
 enum FieldType {
@@ -37,6 +39,8 @@ enum FieldType {
   images_multiple
   locations_single
   locations_multiple
+  blueprints_single
+  blueprints_multiple
 }
 
 enum FieldWidth {
