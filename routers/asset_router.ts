@@ -9,6 +9,7 @@ import sharp from "sharp";
 import { db } from "../database/db";
 import { UpdateImageSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
+import { AssetType } from "../types/entityTypes";
 import { RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -31,7 +32,7 @@ export function asset_router(app: Elysia) {
             .selectFrom("images")
             .selectAll()
             .where("images.project_id", "=", params.project_id)
-            .where("images.type", "=", params.type)
+            .where("images.type", "=", params.type as AssetType)
             .limit(body?.pagination?.limit || 10)
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
@@ -63,7 +64,7 @@ export function asset_router(app: Elysia) {
             const buffer = await createFile(file);
             const { id: image_id } = await db
               .insertInto("images")
-              .values({ title: file.name, project_id, type })
+              .values({ title: file.name, project_id, type: type as AssetType })
               .returning("id")
               .executeTakeFirstOrThrow();
             const filePath = `assets/${project_id}/${type}`;
