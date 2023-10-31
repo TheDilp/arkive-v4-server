@@ -3,7 +3,7 @@ import { SelectExpression } from "kysely";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertUserSchema, ReadUserSchema } from "../database/validation";
+import { InsertUserSchema, InviteUserSchema, ReadUserSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 
@@ -34,6 +34,31 @@ export function user_router(app: Elysia) {
         {
           body: ReadUserSchema,
           response: ResponseWithDataSchema,
+        },
+      )
+      .post(
+        "/invite",
+        async ({ body }) => {
+          const user = await db.selectFrom("users").select(["id"]).where("email", "=", body.data.email).executeTakeFirst();
+          if (user) {
+            await db.insertInto("_project_members").values({ A: body.data.project_id, B: user.id }).execute();
+            return { message: MessageEnum.success, ok: true };
+          } else {
+            const newUser = await db
+              .insertInto("users")
+              .values({ email: body.data.email, nickname: "New user" })
+              .returning("id")
+              .executeTakeFirst();
+            if (newUser) await db.insertInto("_project_members").values({ A: body.data.project_id, B: newUser.id }).execute();
+
+            // Send invite via email
+
+            return { message: MessageEnum.success, ok: true };
+          }
+        },
+        {
+          body: InviteUserSchema,
+          response: ResponseSchema,
         },
       ),
   );

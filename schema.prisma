@@ -67,7 +67,7 @@ enum ImageType {
 
 model users {
   id       String     @id @default(dbgenerated("gen_random_uuid()"))
-  auth_id  String     @unique
+  auth_id  String?    @unique
   nickname String
   email    String     @unique
   image    String?

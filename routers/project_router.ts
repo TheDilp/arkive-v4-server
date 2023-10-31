@@ -68,21 +68,14 @@ export function project_router(app: Elysia) {
               qb.select((eb) =>
                 jsonArrayFrom(
                   eb
-                    .selectFrom("_project_members")
-                    .where("A", "=", params.id)
-                    .select([
-                      (ebb) =>
-                        jsonArrayFrom(
-                          ebb
-                            .selectFrom("users")
-                            .select(["users.id", "users.image", "users.nickname"])
-                            .whereRef("B", "=", "users.id"),
-                        ).as("suboptions"),
-                    ]),
+                    .selectFrom("users")
+                    .leftJoin("_project_members", "_project_members.B", "users.id")
+                    .where("_project_members.A", "=", params.id)
+                    .select(["users.id", "users.email", "users.nickname", "users.image"])
+                    .orderBy("nickname", "asc"),
                 ).as("members"),
               ),
             )
-            .select(["projects.id", "projects.title"])
             .where("id", "=", params.id)
             .executeTakeFirstOrThrow();
           return { data, message: MessageEnum.success, ok: true };

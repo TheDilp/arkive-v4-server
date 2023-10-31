@@ -16,3 +16,9 @@ export const ReadUserSchema = t.Intersect([
 ]);
 
 export const InsertUserSchema = t.Object({});
+export const InviteUserSchema = t.Object({
+  data: t.Object({
+    email: t.String(),
+    project_id: t.String(),
+  }),
+});
