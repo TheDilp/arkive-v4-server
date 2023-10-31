@@ -91,8 +91,8 @@ model projects {
 
   default_dice_color String?
 
-  show_image_folder_view Boolean? @default(true)
-  show_image_table_view  Boolean? @default(true)
+  // show_image_folder_view Boolean? @default(true)
+  // show_image_table_view  Boolean? @default(true)
 
   documents                    documents[]
   maps                         maps[]

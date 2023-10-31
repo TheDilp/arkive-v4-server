@@ -1,7 +1,9 @@
 import Elysia from "elysia";
+import { SelectExpression } from "kysely";
+import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertUserSchema } from "../database/validation";
+import { InsertUserSchema, ReadUserSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 
@@ -18,13 +20,19 @@ export function user_router(app: Elysia) {
           response: ResponseSchema,
         },
       )
-      .get(
-        "/:id",
-        async ({ params }) => {
-          const data = await db.selectFrom("users").where("id", "=", params.id).executeTakeFirstOrThrow();
+      .post(
+        "/:auth_id",
+        async ({ params, body }) => {
+          const data = await db
+            .selectFrom("users")
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "users">[]))
+            .where("auth_id", "=", params.auth_id)
+            .executeTakeFirstOrThrow();
           return { data, message: MessageEnum.success, ok: true };
         },
         {
+          body: ReadUserSchema,
           response: ResponseWithDataSchema,
         },
       ),
