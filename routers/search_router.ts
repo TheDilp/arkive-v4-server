@@ -20,6 +20,7 @@ function getSearchFields(type: SearchableEntities): string[] {
   else if (type === "map_images") fields.push("images.title");
   else fields.push(`${type}.title`);
 
+  if (type === "documents") fields.push("documents.image_id");
   if (type === "events") fields.push("events.parent_id");
   if (type === "map_pins") fields.push("map_pins.parent_id");
   if (type === "words") fields.push("words.parent_id");

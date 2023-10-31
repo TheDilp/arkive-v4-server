@@ -1,5 +1,5 @@
 import { cors } from "@elysiajs/cors";
-import { staticPlugin } from "@elysiajs/static";
+// import { staticPlugin } from "@elysiajs/static";
 import { swagger } from "@elysiajs/swagger";
 import { Elysia, ws } from "elysia";
 import { clerkPlugin } from "elysia-clerk";
@@ -42,10 +42,11 @@ class UnauthorizedError extends Error {
 }
 
 export const app = new Elysia()
+  .state("auth", { userId: "" })
   .use(cors({ origin: process.env.NODE_ENV === "development" ? "*" : "https://thearkive.app" }))
   .use(swagger())
   .use(ws())
-  .use(staticPlugin())
+  // .use(staticPlugin())
   .addError({
     UNAUTHORIZED: UnauthorizedError,
   })

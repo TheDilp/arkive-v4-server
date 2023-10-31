@@ -35,6 +35,15 @@ export function project_router(app: Elysia) {
             .select(["projects.id", "projects.title", "projects.image_id"])
             .leftJoin("users", "users.id", "projects.owner_id")
             .where("users.auth_id", "=", body.data.auth_id)
+            .union(
+              db
+                .selectFrom("projects")
+                .leftJoin("_project_members", "projects.id", "_project_members.A")
+                .select(["projects.id", "projects.title", "projects.image_id"])
+                .where("_project_members.B", "=", (eb) =>
+                  eb.selectFrom("users").select("id").where("users.auth_id", "=", body.data.auth_id),
+                ),
+            )
             .execute();
           return { data, message: MessageEnum.success, ok: true };
         },

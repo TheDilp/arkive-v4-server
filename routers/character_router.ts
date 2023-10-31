@@ -23,7 +23,7 @@ import {
 import { getCharacterFullName } from "../utils/transform";
 
 export function character_router(app: Elysia) {
-  return app.group("/characters", (server) =>
+  return app.state("auth", { userId: "" }).group("/characters", (server) =>
     server
       .post(
         "/create",
@@ -87,7 +87,9 @@ export function character_router(app: Elysia) {
         {
           body: InsertCharacterSchema,
           response: ResponseSchema,
-          afterHandle: (args) => afterCreateHandler(args, "characters"),
+          afterHandle: ({ body, store }) => {
+            afterCreateHandler(body, "characters", store?.auth?.userId);
+          },
         },
       )
       .post(
@@ -565,7 +567,7 @@ export function character_router(app: Elysia) {
       )
       .post(
         "/update/:id",
-        async ({ params, body }) => {
+        async ({ params, body, store }) => {
           await db.transaction().execute(async (tx) => {
             let deletedTags: string[] | null = null;
 
@@ -714,7 +716,8 @@ export function character_router(app: Elysia) {
                 .set(body.data)
                 .returning(["first_name", "last_name", "project_id", "portrait_id as image_id"])
                 .executeTakeFirstOrThrow();
-              afterUpdateHandler(updatedChar, "characters");
+
+              afterUpdateHandler(updatedChar, "characters", store?.auth?.userId);
             }
           });
           return { message: `Character ${MessageEnum.successfully_updated}`, ok: true };

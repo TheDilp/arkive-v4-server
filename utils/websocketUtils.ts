@@ -8,6 +8,8 @@ export function sendNotification(
     message: string;
     entity: string;
     image_id?: string | null;
+    userId: string;
+    nickname?: string;
   },
 ) {
   app.server.publish(`notifications/${room}`, JSON.stringify(notification));

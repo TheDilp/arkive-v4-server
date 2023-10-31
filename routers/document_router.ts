@@ -29,7 +29,7 @@ import {
 import { getCharacterFullName, insertSenderToMessage } from "../utils/transform";
 
 export function document_router(app: Elysia) {
-  return app.group("/documents", (server) =>
+  return app.state("auth", { userId: "" }).group("/documents", (server) =>
     server
       .post(
         "/create",
@@ -58,7 +58,9 @@ export function document_router(app: Elysia) {
           return { message: `Document ${MessageEnum.successfully_created}`, ok: true };
         },
         {
-          afterHandle: (args) => afterCreateHandler(args, "documents"),
+          afterHandle: (args) => {
+            afterCreateHandler(args.body, "documents", args.store?.auth?.userId);
+          },
           body: InsertDocumentSchema,
           response: ResponseSchema,
         },
