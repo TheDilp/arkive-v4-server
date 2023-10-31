@@ -74,6 +74,7 @@ model users {
   webhooks webhooks[]
 
   creatorOf projects[] @relation("project_owner")
+  memberOf  projects[] @relation("project_members")
 }
 
 model projects {
@@ -88,6 +89,8 @@ model projects {
 
   owner_id String
   owner    users  @relation("project_owner", fields: [owner_id], references: [id], onDelete: Cascade)
+
+  members users[] @relation("project_members")
 
   default_dice_color String?
 
