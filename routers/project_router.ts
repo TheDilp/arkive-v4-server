@@ -64,6 +64,24 @@ export function project_router(app: Elysia) {
                 ).as("character_relationship_types"),
               ),
             )
+            .$if(!!body?.relations?.members, (qb) =>
+              qb.select((eb) =>
+                jsonArrayFrom(
+                  eb
+                    .selectFrom("_project_members")
+                    .where("A", "=", params.id)
+                    .select([
+                      (ebb) =>
+                        jsonArrayFrom(
+                          ebb
+                            .selectFrom("users")
+                            .select(["users.id", "users.image", "users.nickname"])
+                            .whereRef("B", "=", "users.id"),
+                        ).as("suboptions"),
+                    ]),
+                ).as("members"),
+              ),
+            )
             .select(["projects.id", "projects.title"])
             .where("id", "=", params.id)
             .executeTakeFirstOrThrow();

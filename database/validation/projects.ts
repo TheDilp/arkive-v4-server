@@ -9,6 +9,7 @@ export const ReadProjectSchema = t.Intersect([
       relations: t.Optional(
         t.Object({
           character_relationship_types: t.Optional(t.Boolean()),
+          members: t.Optional(t.Boolean()),
         }),
       ),
     }),
