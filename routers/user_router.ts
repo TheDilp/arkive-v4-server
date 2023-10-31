@@ -4,8 +4,10 @@ import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
 import { InsertUserSchema, InviteUserSchema, ReadUserSchema } from "../database/validation";
+import { EmailInvite } from "../emails/EmailInvite";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { resend } from "../utils/emailClient";
 
 export function user_router(app: Elysia) {
   return app.group("/users", (server) =>
@@ -51,7 +53,20 @@ export function user_router(app: Elysia) {
               .executeTakeFirst();
             if (newUser) await db.insertInto("_project_members").values({ A: body.data.project_id, B: newUser.id }).execute();
 
+            const { title, image_id } = await db
+              .selectFrom("projects")
+              .where("id", "=", body.data.project_id)
+              .select(["title", "image_id"])
+              .executeTakeFirstOrThrow();
+
             // Send invite via email
+            const image = `https://${process.env.DO_SPACES_NAME}.${process.env.DO_SPACES_CDN_ENDPOINT}/assets/${body.data.project_id}/images/${image_id}.webp`;
+            await resend.emails.send({
+              from: "The Arkive <emails@thearkive.app>",
+              to: [body.data.email],
+              subject: "Arkive project invitation",
+              react: EmailInvite({ project_name: title, image }),
+            });
 
             return { message: MessageEnum.success, ok: true };
           }

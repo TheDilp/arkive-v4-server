@@ -1,4 +1,5 @@
 import { cors } from "@elysiajs/cors";
+import { staticPlugin } from "@elysiajs/static";
 import { swagger } from "@elysiajs/swagger";
 import { Elysia, ws } from "elysia";
 import { clerkPlugin } from "elysia-clerk";
@@ -44,6 +45,7 @@ export const app = new Elysia()
   .use(cors({ origin: process.env.NODE_ENV === "development" ? "*" : "https://thearkive.app" }))
   .use(swagger())
   .use(ws())
+  .use(staticPlugin())
   .addError({
     UNAUTHORIZED: UnauthorizedError,
   })

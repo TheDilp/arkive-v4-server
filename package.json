@@ -5,7 +5,8 @@
   "module": "index.ts",
   "scripts": {
     "start": "bun --watch index.ts",
-    "build": "bun build index.ts"
+    "build": "bun build index.ts",
+    "email": "email dev"
   },
   "keywords": [],
   "author": "",
@@ -16,8 +17,11 @@
     "@aws-sdk/s3-request-presigner": "^3.409.0",
     "@clerk/clerk-sdk-node": "^4.12.18",
     "@elysiajs/cors": "0.6.0",
+    "@elysiajs/static": "^0.7.1",
     "@elysiajs/swagger": "0.6.0",
     "@prisma/client": "latest",
+    "@react-email/components": "^0.0.10",
+    "@react-email/tailwind": "^0.0.12",
     "@sinclair/typebox": "^0.31.14",
     "elysia": "0.6.24",
     "elysia-clerk": "^0.2.2",
@@ -28,6 +32,9 @@
     "lodash.uniq": "^4.5.0",
     "lodash.uniqby": "^4.7.0",
     "pg": "^8.11.1",
+    "react": "^18.2.0",
+    "react-email": "^1.9.5",
+    "resend": "^1.1.0",
     "sharp": "^0.32.1"
   },
   "trustedDependencies": [
@@ -42,6 +49,7 @@
     "@types/lodash.uniqby": "^4.7.7",
     "@types/node": "^20.4.1",
     "@types/pg": "^8.10.2",
+    "@types/react": "^18.2.33",
     "@typescript-eslint/eslint-plugin": "^5.61.0",
     "@typescript-eslint/parser": "^5.61.0",
     "eslint": "^8.44.0",
