@@ -345,7 +345,7 @@ export function character_router(app: Elysia) {
                       .leftJoin("documents", "_charactersTodocuments.B", "documents.id")
                       .where("documents.is_folder", "is not", true)
                       .where("documents.is_template", "is not", true)
-                      .select(["documents.id", "documents.icon", "documents.title"]),
+                      .select(["documents.id", "documents.icon", "documents.title", "documents.image_id"]),
                   ).as("documents"),
                 );
               }
