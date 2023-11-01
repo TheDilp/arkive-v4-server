@@ -22,10 +22,12 @@ export const ReadBlueprintInstanceSchema = t.Intersect([
   RequestBodySchema,
   t.Object({
     data: t.Object({ id: t.String() }),
-    relations: t.Object({
-      blueprint_fields: t.Optional(t.Boolean()),
-      tags: t.Optional(t.Boolean()),
-    }),
+    relations: t.Optional(
+      t.Object({
+        blueprint_fields: t.Optional(t.Boolean()),
+        tags: t.Optional(t.Boolean()),
+      }),
+    ),
   }),
 ]);
 

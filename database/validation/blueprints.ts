@@ -59,7 +59,7 @@ export const InsertBlueprintSchema = t.Object({
     project_id: t.String(),
     title: t.String(),
     title_name: t.String(),
-    icon: t.Optional(t.String()),
+    icon: t.Optional(t.Union([t.String(), t.Null()])),
     // title_width: FieldWidthSchema,
   }),
   relations: t.Optional(
@@ -84,7 +84,7 @@ export const UpdateBlueprintSchema = t.Object({
   data: t.Object({
     title: t.Optional(t.String()),
     title_name: t.Optional(t.String()),
-    icon: t.Optional(t.String()),
+    icon: t.Optional(t.Union([t.String(), t.Null()])),
 
     // title_width: t.Optional(FieldWidthSchema),
   }),
