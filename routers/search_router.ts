@@ -201,7 +201,6 @@ export function search_router(app: Elysia) {
               ok: true,
             };
           }
-
           if (type === "maps") {
             const data = await db
               .selectFrom("maps")
@@ -239,6 +238,22 @@ export function search_router(app: Elysia) {
               .leftJoin("dictionaries", "dictionaries.id", "words.parent_id")
               .where("dictionaries.project_id", "=", params.project_id)
               .where("words.title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
+              .limit(body.limit || 10)
+              .execute();
+
+            return {
+              data,
+              message: MessageEnum.success,
+              ok: true,
+            };
+          }
+          if (type === "blueprints") {
+            const data = await db
+              .selectFrom("blueprint_instances")
+              .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+              .select(["blueprint_instances.id", "blueprint_instances.title", "blueprints.icon"])
+              .where("blueprints.project_id", "=", params.project_id)
+              .where("blueprint_instances.title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
               .limit(body.limit || 10)
               .execute();
 
