@@ -10,7 +10,8 @@ export const FilterEnum: { [key: string]: ComparisonOperatorExpression } = {
   ilike: "ilike",
   in: "in",
   is: "is",
-  notIn: "not in",
+  "is not": "is not",
+  "not in": "not in",
 };
 
 export const MessageEnum = {

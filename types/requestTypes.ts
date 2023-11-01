@@ -65,7 +65,8 @@ export const FilterEnumSchema = t.Union([
   t.Literal("ilike"),
   t.Literal("in"),
   t.Literal("is"),
-  t.Literal("notIn"),
+  t.Literal("not in"),
+  t.Literal("is not"),
 ]);
 
 const RequestFilterSchema = t.Optional(
