@@ -68,6 +68,7 @@ export const app = new Elysia()
       console.log(error);
       return { message: "The payload was not formatted correctly.", ok: false };
     }
+    console.error(error);
     return { message: "There was an error with your request.", ok: false };
   })
   .use(health_check_router)

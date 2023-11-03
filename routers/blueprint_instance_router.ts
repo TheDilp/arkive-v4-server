@@ -197,6 +197,17 @@ export function blueprint_instance_router(app: Elysia) {
                                 jsonArrayFrom(
                                   ebb
                                     .selectFrom("random_table_options")
+                                    .leftJoin(
+                                      "blueprint_instance_to_blueprint_fields as bibf",
+                                      "bibf.blueprint_field_id",
+                                      "blueprint_fields.id",
+                                    )
+                                    .where(({ eb: wbb, ref }) =>
+                                      // This works, typescript is being a bitch
+                                      // @ts-ignore
+                                      wbb(ref("bibf.value", "->>").at(0), "=", ref("random_table_options.id")),
+                                    )
+                                    // .whereRef("random_table_options.id", "=", sql<string>`bibf.value`)
                                     .select([
                                       "random_table_options.id",
                                       "random_table_options.title",

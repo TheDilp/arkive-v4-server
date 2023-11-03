@@ -43,9 +43,14 @@ export const InsertBlueprintInstanceSchema = t.Object({
         t.Array(
           t.Object({
             id: t.String(),
-            value: t.Object({
-              value: t.Optional(t.Union([t.String(), t.Number(), t.Boolean(), t.Null(), t.Record(t.String(), t.Any())])),
-            }),
+            value: t.Optional(
+              t.Union([
+                t.Object({
+                  value: t.Optional(t.Union([t.String(), t.Number(), t.Boolean(), t.Null(), t.Record(t.String(), t.Any())])),
+                }),
+                t.Null(),
+              ]),
+            ),
           }),
         ),
       ),

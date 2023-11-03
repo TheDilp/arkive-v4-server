@@ -159,7 +159,7 @@ model blueprint_fields {
   // width FieldWidth
 
   field_type      BlueprintFieldType
-  options         Json?
+  options         Json?              @db.JsonB
   formula         String?
   random_table_id String?
   calendar_id     String?
@@ -191,7 +191,7 @@ model blueprint_instance_to_blueprint_fields {
   blueprint_field    blueprint_fields @relation(fields: [blueprint_field_id], references: [id], onDelete: Cascade)
   blueprint_field_id String
 
-  value Json?
+  value Json? @db.JsonB
 
   @@id([blueprint_instance_id, blueprint_field_id])
 }
@@ -237,7 +237,7 @@ model character_fields {
 
   /// @kyselyType('text' | 'textarea' | 'select' | 'select_multiple' | 'dice_roll' | 'date' | 'random_table' | 'documents_single' | 'documents_multiple' | 'images_single' | 'images_multiple' | 'locations_single' | 'locations_multiple')
   field_type      String
-  options         Json?
+  options         Json?   @db.JsonB
   formula         String?
   random_table_id String?
   calendar_id     String?
@@ -268,7 +268,7 @@ model characters_to_character_fields {
   character_field    character_fields @relation(fields: [character_field_id], references: [id], onDelete: Cascade)
   character_field_id String
 
-  value Json?
+  value Json? @db.JsonB
 
   @@id([character_id, character_field_id])
 }
@@ -344,7 +344,7 @@ model documents {
   is_public Boolean?
 
   is_template Boolean?
-  properties  Json?
+  properties  Json?    @db.JsonB
 
   image    images? @relation(fields: [image_id], references: [id], onDelete: SetNull)
   image_id String?
