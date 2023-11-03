@@ -93,6 +93,16 @@ export function blueprint_instance_router(app: Elysia) {
                               jsonArrayFrom(
                                 ebb
                                   .selectFrom("random_table_options")
+                                  .leftJoin(
+                                    "blueprint_instance_to_blueprint_fields as bibf",
+                                    "bibf.blueprint_field_id",
+                                    "blueprint_fields.id",
+                                  )
+                                  .where(({ eb: wbb, ref }) =>
+                                    // This works, typescript is being a bitch
+                                    // @ts-ignore
+                                    wbb(ref("bibf.value", "->>").at(0), "=", ref("random_table_options.id")),
+                                  )
                                   .select([
                                     "random_table_options.id",
                                     "random_table_options.title",
@@ -172,13 +182,6 @@ export function blueprint_instance_router(app: Elysia) {
                     .whereRef("blueprint_fields.parent_id", "=", "blueprint_instances.parent_id")
                     .select([
                       "blueprint_fields.id",
-                      "blueprint_fields.title",
-                      "blueprint_fields.options",
-                      "blueprint_fields.field_type",
-                      "blueprint_fields.sort",
-                      "blueprint_fields.formula",
-                      "blueprint_fields.random_table_id",
-                      "blueprint_fields.calendar_id",
                       (eb) =>
                         jsonObjectFrom(
                           eb
@@ -207,7 +210,6 @@ export function blueprint_instance_router(app: Elysia) {
                                       // @ts-ignore
                                       wbb(ref("bibf.value", "->>").at(0), "=", ref("random_table_options.id")),
                                     )
-                                    // .whereRef("random_table_options.id", "=", sql<string>`bibf.value`)
                                     .select([
                                       "random_table_options.id",
                                       "random_table_options.title",
