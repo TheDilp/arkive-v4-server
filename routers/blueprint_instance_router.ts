@@ -69,6 +69,57 @@ export function blueprint_instance_router(app: Elysia) {
             .$if(!!body.fields?.length, (qb) =>
               qb.clearSelect().select(body.fields as SelectExpression<DB, "blueprint_instances">[]),
             )
+            .select((eb) =>
+              jsonArrayFrom(
+                eb
+                  .selectFrom("blueprint_fields")
+                  .whereRef("blueprint_fields.parent_id", "=", "blueprint_instances.parent_id")
+                  .select([
+                    (eb) =>
+                      jsonObjectFrom(
+                        eb
+                          .selectFrom("blueprint_instance_to_blueprint_fields")
+                          .select(["blueprint_field_id as id", "value"])
+                          .whereRef("blueprint_instance_to_blueprint_fields.blueprint_field_id", "=", "blueprint_fields.id"),
+                      ).as("value"),
+                    (eb) =>
+                      jsonObjectFrom(
+                        eb
+                          .selectFrom("random_tables")
+                          .select([
+                            "id",
+                            "title",
+                            (ebb) =>
+                              jsonArrayFrom(
+                                ebb
+                                  .selectFrom("random_table_options")
+                                  .select([
+                                    "random_table_options.id",
+                                    "random_table_options.title",
+                                    (ebbb) =>
+                                      jsonArrayFrom(
+                                        ebbb
+                                          .selectFrom("random_table_suboptions")
+                                          .select(["random_table_suboptions.id", "random_table_suboptions.title"])
+                                          .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id"),
+                                      ).as("suboptions"),
+                                  ])
+                                  .whereRef("random_table_options.parent_id", "=", "blueprint_fields.random_table_id"),
+                              ).as("random_table_options"),
+                          ])
+
+                          .whereRef("random_tables.id", "=", "blueprint_fields.random_table_id"),
+                      ).as("random_table"),
+                    (eb) =>
+                      jsonObjectFrom(
+                        eb
+                          .selectFrom("calendars")
+                          .select(["id", "title"])
+                          .whereRef("calendars.id", "=", "blueprint_fields.calendar_id"),
+                      ).as("calendar"),
+                  ]),
+              ).as("blueprint_fields"),
+            )
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
               qb = constructFilter("blueprints", qb, body.filters);
               return qb;
@@ -105,6 +156,14 @@ export function blueprint_instance_router(app: Elysia) {
               qb.clearSelect().select(body.fields as SelectExpression<DB, "blueprint_instances">[]),
             )
             .where("blueprint_instances.id", "=", params.id)
+            .select((eb) =>
+              jsonObjectFrom(
+                eb
+                  .selectFrom("blueprints")
+                  .whereRef("blueprints.id", "=", "blueprint_instances.parent_id")
+                  .select(["title", "title_name"]),
+              ).as("blueprint"),
+            )
             .$if(!!body?.relations?.blueprint_fields, (qb) =>
               qb.select((eb) =>
                 jsonArrayFrom(
@@ -123,8 +182,36 @@ export function blueprint_instance_router(app: Elysia) {
                       (eb) =>
                         jsonObjectFrom(
                           eb
+                            .selectFrom("blueprint_instance_to_blueprint_fields")
+                            .select(["blueprint_field_id as id", "value"])
+                            .whereRef("blueprint_instance_to_blueprint_fields.blueprint_field_id", "=", "blueprint_fields.id"),
+                        ).as("value"),
+                      (eb) =>
+                        jsonObjectFrom(
+                          eb
                             .selectFrom("random_tables")
-                            .select(["id", "title"])
+                            .select([
+                              "id",
+                              "title",
+                              (ebb) =>
+                                jsonArrayFrom(
+                                  ebb
+                                    .selectFrom("random_table_options")
+                                    .select([
+                                      "random_table_options.id",
+                                      "random_table_options.title",
+                                      (ebbb) =>
+                                        jsonArrayFrom(
+                                          ebbb
+                                            .selectFrom("random_table_suboptions")
+                                            .select(["random_table_suboptions.id", "random_table_suboptions.title"])
+                                            .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id"),
+                                        ).as("suboptions"),
+                                    ])
+                                    .whereRef("random_table_options.parent_id", "=", "blueprint_fields.random_table_id"),
+                                ).as("random_table_options"),
+                            ])
+
                             .whereRef("random_tables.id", "=", "blueprint_fields.random_table_id"),
                         ).as("random_table"),
                       (eb) =>
@@ -187,7 +274,7 @@ export function blueprint_instance_router(app: Elysia) {
                     itemsToAdd.map((item) => ({
                       blueprint_instance_id: params.id,
                       blueprint_field_id: item.id,
-                      value: JSON.stringify(item.value),
+                      value: JSON.stringify(item.value.value),
                     })),
                   )
                   .execute();
@@ -196,10 +283,10 @@ export function blueprint_instance_router(app: Elysia) {
                 await Promise.all(
                   itemsToUpdate.map(async (item) => {
                     await tx
-                      .updateTable("characters_to_character_fields")
-                      .where("character_id", "=", params.id)
-                      .where("character_field_id", "=", item.id)
-                      .set({ value: JSON.stringify(item.value) })
+                      .updateTable("blueprint_instance_to_blueprint_fields")
+                      .where("blueprint_instance_id", "=", params.id)
+                      .where("blueprint_field_id", "=", item.id)
+                      .set({ value: JSON.stringify(item.value.value) })
                       .execute();
                   }),
                 );
