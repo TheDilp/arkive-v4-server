@@ -61,16 +61,7 @@ export function blueprint_router(app: Elysia) {
               qb = constructFilter("blueprints", qb, body.filters);
               return qb;
             })
-            // .$if(!!body?.relationFilters?.tags?.length, (qb) =>
-            //   constructTagFilter(
-            //     "blueprint_fields_templates",
-            //     qb,
-            //     "_blueprint_fields_templatesTotags",
-            //     body?.relationFilters?.tags || [],
-            //     "A",
-            //     "B",
-            //   ),
-            // )
+
             .$if(!!body.orderBy?.length, (qb) => {
               qb = constructOrdering(body.orderBy, qb);
               return qb;
