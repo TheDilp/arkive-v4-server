@@ -166,6 +166,8 @@ model blueprint_fields {
 
   blueprint blueprints? @relation(fields: [parent_id], references: [id], onDelete: Cascade)
   parent_id String?
+
+  blueprint_instance_to_blueprint_fields blueprint_instance_to_blueprint_fields[]
 }
 
 model blueprint_instances {
@@ -177,8 +179,21 @@ model blueprint_instances {
 
   blueprint blueprints @relation(fields: [parent_id], references: [id], onDelete: Cascade)
   parent_id String
-  value     Json?      @db.JsonB
   tags      tags[]
+
+  blueprint_instance_to_blueprint_fields blueprint_instance_to_blueprint_fields[]
+}
+
+model blueprint_instance_to_blueprint_fields {
+  blueprint_instance    blueprint_instances @relation(fields: [blueprint_instance_id], references: [id], onDelete: Cascade)
+  blueprint_instance_id String
+
+  blueprint_field    blueprint_fields @relation(fields: [blueprint_field_id], references: [id], onDelete: Cascade)
+  blueprint_field_id String
+
+  value Json?
+
+  @@id([blueprint_instance_id, blueprint_field_id])
 }
 
 // #region characters
