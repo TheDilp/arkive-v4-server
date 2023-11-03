@@ -14,7 +14,7 @@ import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, constructTagFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { CreateTagRelations, TagQuery } from "../utils/relationalQueryHelpers";
+import { CreateTagRelations, GetRelationsForUpdating, TagQuery } from "../utils/relationalQueryHelpers";
 
 export function blueprint_instance_router(app: Elysia) {
   return app.group("/blueprint_instances", (server) =>
@@ -25,9 +25,23 @@ export function blueprint_instance_router(app: Elysia) {
           await db.transaction().execute(async (tx) => {
             const newInstance = await tx
               .insertInto("blueprint_instances")
-              .values({ ...body.data, value: JSON.stringify(body.data.value) })
+              .values(body.data)
               .returning("id")
               .executeTakeFirstOrThrow();
+
+            if (body.relations?.blueprint_fields?.length) {
+              const { blueprint_fields } = body.relations;
+              await tx
+                .insertInto("blueprint_instance_to_blueprint_fields")
+                .values(
+                  blueprint_fields.map((field) => ({
+                    blueprint_field_id: field.id,
+                    value: JSON.stringify(field.value),
+                    blueprint_instance_id: newInstance.id,
+                  })),
+                )
+                .executeTakeFirst();
+            }
 
             if (body.relations?.tags?.length) {
               await CreateTagRelations({
@@ -139,15 +153,60 @@ export function blueprint_instance_router(app: Elysia) {
       .post(
         "/update/:id",
         async ({ params, body }) => {
-          const v = JSON.stringify(body.data.value);
-          await db
-            .updateTable("blueprint_instances")
-            .set({ ...body.data, value: v })
-            .where("blueprint_instances.id", "=", params.id)
-            //   // .$if(!!body?.relations?.tags, (qb) =>
-            //   //   qb.select((eb) => TagQuery(eb, "_blueprint_instancesTotags", "blueprint_instances")),
-            //   // )
-            .executeTakeFirstOrThrow();
+          await db.transaction().execute(async (tx) => {
+            tx.updateTable("blueprint_instances")
+              .set(body.data)
+              .where("blueprint_instances.id", "=", params.id)
+              .executeTakeFirstOrThrow();
+
+            if (body.relations?.blueprint_fields) {
+              const existingBlueprintFields = await tx
+                .selectFrom("blueprint_instance_to_blueprint_fields")
+                .select([
+                  "blueprint_instance_to_blueprint_fields.blueprint_field_id as id",
+                  "blueprint_instance_to_blueprint_fields.value",
+                ])
+                .where("blueprint_instance_to_blueprint_fields.blueprint_instance_id", "=", params.id)
+                .execute();
+              const existingIds = existingBlueprintFields.map((field) => field.id);
+              const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+                existingIds,
+                body.relations?.blueprint_fields,
+              );
+
+              if (idsToRemove.length) {
+                await tx
+                  .deleteFrom("blueprint_instance_to_blueprint_fields")
+                  .where("blueprint_field_id", "in", idsToRemove)
+                  .execute();
+              }
+              if (itemsToAdd.length) {
+                await tx
+                  .insertInto("blueprint_instance_to_blueprint_fields")
+                  .values(
+                    itemsToAdd.map((item) => ({
+                      blueprint_instance_id: params.id,
+                      blueprint_field_id: item.id,
+                      value: JSON.stringify(item.value),
+                    })),
+                  )
+                  .execute();
+              }
+              if (itemsToUpdate.length) {
+                await Promise.all(
+                  itemsToUpdate.map(async (item) => {
+                    await tx
+                      .updateTable("characters_to_character_fields")
+                      .where("character_id", "=", params.id)
+                      .where("character_field_id", "=", item.id)
+                      .set({ value: JSON.stringify(item.value) })
+                      .execute();
+                  }),
+                );
+              }
+            }
+          });
+
           return { message: `Blueprint instance ${MessageEnum.successfully_updated}`, ok: true };
         },
         {
