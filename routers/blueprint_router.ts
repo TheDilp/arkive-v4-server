@@ -215,7 +215,7 @@ export function blueprint_router(app: Elysia) {
                   eb
                     .selectFrom("blueprint_instances")
                     .whereRef("blueprint_instances.parent_id", "=", "blueprints.id")
-                    .select(["blueprint_instances.id", "blueprint_instances.parent_id", "blueprint_instances.value"]),
+                    .select(["blueprint_instances.id", "blueprint_instances.parent_id"]),
                 ).as("blueprint_instances"),
               ),
             )
