@@ -162,6 +162,7 @@ export function blueprint_router(app: Elysia) {
                       "blueprint_fields.formula",
                       "blueprint_fields.random_table_id",
                       "blueprint_fields.calendar_id",
+                      "blueprint_fields.blueprint_id",
                       (eb) =>
                         jsonObjectFrom(
                           eb
