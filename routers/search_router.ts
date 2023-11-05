@@ -443,6 +443,7 @@ export function search_router(app: Elysia) {
                 "blueprint_instances.title",
                 "blueprints.title as parent_title",
                 "blueprint_instances.parent_id",
+                "blueprints.icon",
               ])
               .limit(5),
           };
