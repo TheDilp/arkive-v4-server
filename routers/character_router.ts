@@ -783,14 +783,14 @@ export function character_router(app: Elysia) {
       )
       .delete(
         "/:id",
-        async ({ params }) => {
+        async ({ params, store }) => {
           const { first_name, last_name, project_id } = await db
             .deleteFrom("characters")
             .where("characters.id", "=", params.id)
             .returning(["first_name", "last_name", "project_id"])
             .executeTakeFirstOrThrow();
 
-          afterDeleteHandler({ first_name, last_name, project_id }, "characters");
+          afterDeleteHandler({ first_name, last_name, project_id }, "characters", store?.auth?.userId);
 
           return { message: `Character ${MessageEnum.successfully_deleted}`, ok: true };
         },

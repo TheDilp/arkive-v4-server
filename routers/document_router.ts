@@ -29,8 +29,9 @@ import {
 import { getCharacterFullName, insertSenderToMessage } from "../utils/transform";
 
 export function document_router(app: Elysia) {
-  return app.state("auth", { userId: "" }).group("/documents", (server) =>
+  return app.group("/documents", (server) =>
     server
+      .state("auth", { userId: "" })
       .post(
         "/create",
         async ({ body }) => {
@@ -242,13 +243,13 @@ export function document_router(app: Elysia) {
         },
         { body: GenerateDocumentSchema, response: ResponseWithDataSchema },
       )
-      .delete("/:id", async ({ params }) => {
+      .delete("/:id", async ({ params, store }) => {
         const { title, project_id } = await db
           .deleteFrom("documents")
           .where("documents.id", "=", params.id)
           .returning(["title", "project_id"])
           .executeTakeFirstOrThrow();
-        afterDeleteHandler({ title, project_id }, "documents");
+        afterDeleteHandler({ title, project_id }, "documents", store?.auth?.userId);
         return { message: `Document ${MessageEnum.successfully_deleted}.`, ok: true };
       }),
   );

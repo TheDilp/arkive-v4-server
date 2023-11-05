@@ -1,17 +1,30 @@
+import { db } from "../database/db";
 import { getCharacterFullName, getSingularEntityType } from "../utils/transform";
 import { sendNotification } from "../utils/websocketUtils";
 
-export function afterDeleteHandler(
-  data: { title?: string; label?: string; first_name?: string; last_name?: string | null; project_id: string },
+export async function afterDeleteHandler(
+  data: {
+    is_folder?: boolean | null;
+    title?: string;
+    label?: string;
+    first_name?: string;
+    last_name?: string | null;
+    project_id: string;
+  },
   entity: string,
+  userId: string,
 ) {
-  const { project_id, title, label, first_name, last_name } = data;
+  const { project_id, is_folder, title, label, first_name, last_name } = data;
   if (project_id) {
+    const user = await db.selectFrom("users").where("auth_id", "=", userId).select(["nickname"]).executeTakeFirst();
     const entityName = first_name ? getCharacterFullName(first_name, undefined, last_name) : title || label;
     sendNotification(project_id, {
       event_type: "NEW_NOTIFICATION",
-      message: `User deleted a ${getSingularEntityType(entity)} - "${entityName}"`,
+      message: `${user?.nickname || "User"} updated a ${getSingularEntityType(entity)} ${
+        is_folder ? "folder" : ""
+      } - "${entityName}"`,
       entity,
+      userId,
     });
   }
 }
