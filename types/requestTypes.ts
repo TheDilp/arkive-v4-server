@@ -10,6 +10,8 @@ export type SearchableEntities =
   | "boards"
   | "nodes"
   | "edges"
+  | "blueprints"
+  | "blueprint_instances"
   | "random_tables"
   | "calendars"
   | "images"

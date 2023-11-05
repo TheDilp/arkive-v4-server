@@ -247,7 +247,8 @@ export function search_router(app: Elysia) {
               ok: true,
             };
           }
-          if (type === "blueprints") {
+
+          if (type === "blueprint_instances") {
             const data = await db
               .selectFrom("blueprint_instances")
               .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
@@ -420,6 +421,32 @@ export function search_router(app: Elysia) {
               .select(["events.id", "events.title", "calendars.title as parent_title", "events.parent_id"])
               .limit(5),
           };
+
+          const blueprintsSearch = {
+            name: "blueprints",
+            request: db
+              .selectFrom("blueprints")
+              .where("blueprints.title", "ilike", `%${search_term}%`)
+              .where("project_id", "=", project_id)
+              .select(["id", "title", "icon"])
+              .limit(5),
+          };
+          const blueprintInstancesSearch = {
+            name: "blueprint_instances",
+            request: db
+              .selectFrom("blueprint_instances")
+              .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+              .where("blueprint_instances.title", "ilike", `%${search_term}%`)
+              .where("blueprints.project_id", "=", project_id)
+              .select([
+                "blueprint_instances.id",
+                "blueprint_instances.title",
+                "blueprints.title as parent_title",
+                "blueprint_instances.parent_id",
+              ])
+              .limit(5),
+          };
+
           const requests = [
             charactersSearch,
             documentSearch,
@@ -432,6 +459,8 @@ export function search_router(app: Elysia) {
             edgeSearch,
             calendarSearch,
             eventsSearch,
+            blueprintsSearch,
+            blueprintInstancesSearch,
           ];
           const result = await Promise.all(
             requests.map(async (item) => ({
