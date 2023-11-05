@@ -8,7 +8,7 @@ export const ReadRandomTableOptionSchema = t.Intersect([
     t.Object({
       relations: t.Optional(
         t.Object({
-          suboptions: t.Optional(t.Boolean()),
+          random_table_suboptions: t.Optional(t.Boolean()),
         }),
       ),
     }),
@@ -20,7 +20,7 @@ export const ListRandomTableOptionsSchema = t.Intersect([
   t.Object({ data: t.Object({ parent_id: t.String() }) }),
   t.Optional(
     t.Object({
-      relations: t.Optional(t.Object({ suboptions: t.Optional(t.Boolean()) })),
+      relations: t.Optional(t.Object({ random_table_suboptions: t.Optional(t.Boolean()) })),
     }),
   ),
 ]);
@@ -58,7 +58,7 @@ export const InsertRandomTableOptionItemSchema = t.Object({
 
 export const InsertRandomTableOptionSchema = t.Object({
   data: t.Array(t.Object({ data: InsertRandomTableOptionItemSchema })),
-  relations: t.Optional(t.Object({ suboptions: t.Optional(t.Array(InsertRandomTableSubOptionSchema)) })),
+  relations: t.Optional(t.Object({ random_table_suboptions: t.Optional(t.Array(InsertRandomTableSubOptionSchema)) })),
 });
 
 export const UpdateRandomTableOptionSchema = t.Object({
@@ -68,9 +68,9 @@ export const UpdateRandomTableOptionSchema = t.Object({
     description: t.Optional(t.Union([t.String(), t.Null()])),
     icon: t.Optional(t.Union([t.String(), t.Null()])),
     icon_color: t.Optional(t.Union([t.String(), t.Null()])),
-    suboptions: t.Optional(t.Array(RandomTableSubOptionSchema)),
+    random_table_suboptions: t.Optional(t.Array(RandomTableSubOptionSchema)),
   }),
   relations: t.Object({
-    suboptions: t.Optional(t.Array(t.Union([InsertRandomTableSubOptionSchema, UpdateRandomTableSubOptionSchema]))),
+    random_table_suboptions: t.Optional(t.Array(t.Union([InsertRandomTableSubOptionSchema, UpdateRandomTableSubOptionSchema]))),
   }),
 });

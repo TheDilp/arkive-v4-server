@@ -111,31 +111,6 @@ export function character_fields_templates_router(app: Elysia) {
                         (eb) =>
                           jsonObjectFrom(
                             eb
-                              .selectFrom("random_tables")
-                              .select(["random_tables.id", "random_tables.title"])
-                              .whereRef("random_tables.id", "=", "character_fields.random_table_id"),
-                          ).as("random_table"),
-                        (eb) =>
-                          jsonArrayFrom(
-                            eb
-                              .selectFrom("random_table_options")
-                              .select([
-                                "random_table_options.id",
-                                "random_table_options.title",
-                                (ebb) =>
-                                  jsonArrayFrom(
-                                    ebb
-                                      .selectFrom("random_table_suboptions")
-                                      .select(["random_table_suboptions.id", "random_table_suboptions.title"])
-                                      .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id"),
-                                  ).as("suboptions"),
-                              ])
-                              .whereRef("random_table_options.parent_id", "=", "character_fields.random_table_id"),
-                          ).as("random_table_options"),
-
-                        (eb) =>
-                          jsonObjectFrom(
-                            eb
                               .selectFrom("calendars")
                               .select([
                                 "calendars.id",

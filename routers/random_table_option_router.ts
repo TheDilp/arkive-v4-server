@@ -30,10 +30,10 @@ export function random_table_option_router(app: Elysia) {
               .values(body.data.map((opt) => opt.data))
               .execute();
 
-            if (body?.relations?.suboptions?.length) {
-              const { suboptions } = body.relations;
-              if (suboptions?.length) {
-                await tx.insertInto("random_table_suboptions").values(suboptions).execute();
+            if (body?.relations?.random_table_suboptions?.length) {
+              const { random_table_suboptions } = body.relations;
+              if (random_table_suboptions?.length) {
+                await tx.insertInto("random_table_suboptions").values(random_table_suboptions).execute();
               }
             }
           });
@@ -54,7 +54,7 @@ export function random_table_option_router(app: Elysia) {
             .$if(!!body.fields?.length, (qb) =>
               qb.clearSelect().select(body.fields as SelectExpression<DB, "random_table_options">[]),
             )
-            .$if(!!body.relations?.suboptions, (qb) =>
+            .$if(!!body.relations?.random_table_suboptions, (qb) =>
               qb.select((eb) =>
                 jsonArrayFrom(
                   eb
@@ -65,7 +65,7 @@ export function random_table_option_router(app: Elysia) {
                       "random_table_suboptions.description",
                     ])
                     .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id"),
-                ).as("suboptions"),
+                ).as("random_table_suboptions"),
               ),
             )
             .where("random_table_options.parent_id", "=", body.data.parent_id)
@@ -92,14 +92,14 @@ export function random_table_option_router(app: Elysia) {
               "random_table_options.icon",
               "random_table_options.parent_id",
             ])
-            .$if(!!body.relations?.suboptions, (qb) =>
+            .$if(!!body.relations?.random_table_suboptions, (qb) =>
               qb.select((eb) =>
                 jsonArrayFrom(
                   eb
                     .selectFrom("random_table_suboptions")
                     .selectAll()
                     .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id"),
-                ).as("suboptions"),
+                ).as("random_table_suboptions"),
               ),
             )
             .executeTakeFirstOrThrow();
@@ -125,7 +125,7 @@ export function random_table_option_router(app: Elysia) {
                     .selectFrom("random_table_suboptions")
                     .select(["random_table_suboptions.id", "random_table_suboptions.title"])
                     .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id"),
-                ).as("suboptions"),
+                ).as("random_table_suboptions"),
             ])
             .where("random_table_options.parent_id", "=", params.table_id)
             .execute();
@@ -157,7 +157,7 @@ export function random_table_option_router(app: Elysia) {
                     .selectFrom("random_table_suboptions")
                     .select(["random_table_suboptions.id", "random_table_suboptions.title"])
                     .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id"),
-                ).as("suboptions"),
+                ).as("random_table_suboptions"),
             ])
             .where("random_table_options.parent_id", "in", tableIdsToFetch)
             .execute();
@@ -187,7 +187,7 @@ export function random_table_option_router(app: Elysia) {
           await db.transaction().execute(async (tx) => {
             await tx.updateTable("random_table_options").where("id", "=", params.id).set(body.data).execute();
 
-            if (body?.relations?.suboptions?.length) {
+            if (body?.relations?.random_table_suboptions?.length) {
               const existingIds = await tx
                 .selectFrom("random_table_suboptions")
                 .select(["id"])
@@ -196,7 +196,7 @@ export function random_table_option_router(app: Elysia) {
 
               const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
                 existingIds.map((item) => item.id),
-                body.relations.suboptions,
+                body.relations.random_table_suboptions,
               );
 
               if (idsToRemove.length) {
