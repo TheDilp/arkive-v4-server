@@ -20,6 +20,8 @@ const FieldTypeSchema = t.Union([
   t.Literal("locations_multiple"),
   t.Literal("characters_single"),
   t.Literal("characters_multiple"),
+  t.Literal("blueprints_single"),
+  t.Literal("blueprints_multiple"),
 ]);
 
 export const ListBlueprintSchema = t.Intersect([
@@ -75,6 +77,7 @@ export const InsertBlueprintSchema = t.Object({
           formula: t.Optional(t.Union([t.String(), t.Null()])),
           options: t.Optional(t.Array(t.Object({ id: t.String(), value: t.String() }))),
           random_table_id: t.Optional(t.Union([t.String(), t.Null()])),
+          blueprint_id: t.Optional(t.Union([t.String(), t.Null()])),
           calendar_id: t.Optional(t.Union([t.String(), t.Null()])),
         }),
       ),
@@ -101,6 +104,7 @@ export const UpdateBlueprintSchema = t.Object({
           formula: t.Optional(t.Union([t.String(), t.Null()])),
           options: t.Optional(t.Array(t.Object({ id: t.String(), value: t.String() }))),
           random_table_id: t.Optional(t.Union([t.String(), t.Null()])),
+          blueprint_id: t.Optional(t.Union([t.String(), t.Null()])),
           calendar_id: t.Optional(t.Union([t.String(), t.Null()])),
         }),
       ),

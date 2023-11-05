@@ -5,7 +5,7 @@ import { RequestBodySchema } from "../../types/requestTypes";
 export const ListBlueprintInstanceSchema = t.Intersect([
   RequestBodySchema,
   t.Object({
-    data: t.Object({ parent_id: t.String() }),
+    data: t.Object({ parent_id: t.Optional(t.String()) }),
   }),
   t.Optional(
     t.Object({
@@ -46,7 +46,9 @@ export const InsertBlueprintInstanceSchema = t.Object({
             value: t.Optional(
               t.Union([
                 t.Object({
-                  value: t.Optional(t.Union([t.String(), t.Number(), t.Boolean(), t.Null(), t.Record(t.String(), t.Any())])),
+                  value: t.Optional(
+                    t.Union([t.String(), t.Number(), t.Boolean(), t.Record(t.String(), t.Any()), t.Array(t.String())]),
+                  ),
                 }),
                 t.Null(),
               ]),
@@ -72,7 +74,16 @@ export const UpdateBlueprintInstanceSchema = t.Object({
             value: t.Optional(
               t.Union([
                 t.Object({
-                  value: t.Optional(t.Union([t.String(), t.Number(), t.Boolean(), t.Null(), t.Record(t.String(), t.Any())])),
+                  value: t.Optional(
+                    t.Union([
+                      t.String(),
+                      t.Number(),
+                      t.Boolean(),
+                      t.Null(),
+                      t.Record(t.String(), t.Any()),
+                      t.Array(t.String()),
+                    ]),
+                  ),
                 }),
                 t.Null(),
               ]),

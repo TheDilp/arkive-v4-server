@@ -24,6 +24,7 @@ function getSearchFields(type: SearchableEntities): string[] {
   if (type === "events") fields.push("events.parent_id");
   if (type === "map_pins") fields.push("map_pins.parent_id");
   if (type === "words") fields.push("words.parent_id");
+  if (type === "blueprint_instances") fields.push("blueprint_instances.parent_id");
 
   return fields;
 }

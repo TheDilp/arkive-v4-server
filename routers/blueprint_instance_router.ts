@@ -195,7 +195,8 @@ export function blueprint_instance_router(app: Elysia) {
                           eb
                             .selectFrom("blueprint_instance_to_blueprint_fields")
                             .select(["blueprint_field_id as id", "value"])
-                            .whereRef("blueprint_instance_to_blueprint_fields.blueprint_field_id", "=", "blueprint_fields.id"),
+                            .whereRef("blueprint_instance_to_blueprint_fields.blueprint_field_id", "=", "blueprint_fields.id")
+                            .where("blueprint_instance_to_blueprint_fields.blueprint_instance_id", "=", params.id),
                         ).as("value"),
                       (eb) =>
                         jsonObjectFrom(
