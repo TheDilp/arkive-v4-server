@@ -36,7 +36,7 @@ export function blueprint_instance_router(app: Elysia) {
                 .values(
                   blueprint_fields.map((field) => ({
                     blueprint_field_id: field.id,
-                    value: JSON.stringify(field.value),
+                    value: JSON.stringify(field.value?.value),
                     blueprint_instance_id: newInstance.id,
                   })),
                 )
@@ -64,11 +64,14 @@ export function blueprint_instance_router(app: Elysia) {
         async ({ body }) => {
           const data = await db
             .selectFrom("blueprint_instances")
-            .where("blueprint_instances.parent_id", "=", body.data.parent_id)
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) =>
               qb.clearSelect().select(body.fields as SelectExpression<DB, "blueprint_instances">[]),
             )
+            .$if(!!body.data?.parent_id, (qb) => {
+              if (body.data?.parent_id) return qb.where("blueprint_instances.parent_id", "=", body.data.parent_id);
+              return qb;
+            })
             .select((eb) =>
               jsonArrayFrom(
                 eb
@@ -80,7 +83,12 @@ export function blueprint_instance_router(app: Elysia) {
                         eb
                           .selectFrom("blueprint_instance_to_blueprint_fields")
                           .select(["blueprint_field_id as id", "value"])
-                          .whereRef("blueprint_instance_to_blueprint_fields.blueprint_field_id", "=", "blueprint_fields.id"),
+                          .whereRef("blueprint_instance_to_blueprint_fields.blueprint_field_id", "=", "blueprint_fields.id")
+                          .whereRef(
+                            "blueprint_instance_to_blueprint_fields.blueprint_instance_id",
+                            "=",
+                            "blueprint_instances.id",
+                          ),
                       ).as("value"),
                     (eb) =>
                       jsonObjectFrom(
@@ -131,7 +139,7 @@ export function blueprint_instance_router(app: Elysia) {
               ).as("blueprint_fields"),
             )
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
-              qb = constructFilter("blueprints", qb, body.filters);
+              qb = constructFilter("blueprint_instances", qb, body.filters);
               return qb;
             })
             .$if(!!body?.relationFilters?.tags?.length, (qb) =>
