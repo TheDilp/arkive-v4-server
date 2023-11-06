@@ -11,17 +11,17 @@ enum BlueprintFieldType {
   select_multiple
   dice_roll
   date
-  random_table
-  documents_single
-  documents_multiple
-  images_single
-  images_multiple
-  locations_single
-  locations_multiple
   characters_single
   characters_multiple
+  documents_single
+  documents_multiple
+  locations_single
+  locations_multiple
   blueprints_single
   blueprints_multiple
+  images_single
+  images_multiple
+  random_table
 }
 
 enum FieldType {
@@ -128,8 +128,9 @@ model images {
   nodes      nodes[]
   events     events[]
 
-  character_portraits characters[] @relation("character_portraits")
-  character_id        String?
+  character_portraits       characters[]                @relation("character_portraits")
+  character_id              String?
+  blueprint_instance_images blueprint_instance_images[]
 }
 
 model blueprints {
@@ -168,7 +169,12 @@ model blueprint_fields {
   blueprint blueprints? @relation(fields: [parent_id], references: [id], onDelete: Cascade)
   parent_id String?
 
-  blueprint_instance_to_blueprint_fields blueprint_instance_to_blueprint_fields[]
+  characters   blueprint_instance_characters[]
+  documents    blueprint_instance_documents[]
+  map_pins     blueprint_instance_map_pins[]
+  images       blueprint_instance_images[]
+  random_table blueprint_instance_random_tables[]
+  value        blueprint_instance_value[]
 }
 
 model blueprint_instances {
@@ -182,10 +188,81 @@ model blueprint_instances {
   parent_id String
   tags      tags[]
 
-  blueprint_instance_to_blueprint_fields blueprint_instance_to_blueprint_fields[]
+  characters   blueprint_instance_characters[]
+  documents    blueprint_instance_documents[]
+  map_pins     blueprint_instance_map_pins[]
+  images       blueprint_instance_images[]
+  random_table blueprint_instance_random_tables[]
+  value        blueprint_instance_value[]
 }
 
-model blueprint_instance_to_blueprint_fields {
+model blueprint_instance_characters {
+  blueprint_instance    blueprint_instances @relation(fields: [blueprint_instance_id], references: [id], onDelete: Cascade)
+  blueprint_instance_id String
+
+  blueprint_field    blueprint_fields @relation(fields: [blueprint_field_id], references: [id], onDelete: Cascade)
+  blueprint_field_id String
+
+  character    characters @relation(fields: [character_id], references: [id], onDelete: Cascade)
+  character_id String
+
+  @@id([blueprint_instance_id, blueprint_field_id, character_id])
+}
+
+model blueprint_instance_documents {
+  blueprint_instance    blueprint_instances @relation(fields: [blueprint_instance_id], references: [id], onDelete: Cascade)
+  blueprint_instance_id String
+
+  blueprint_field    blueprint_fields @relation(fields: [blueprint_field_id], references: [id], onDelete: Cascade)
+  blueprint_field_id String
+
+  document    documents @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  document_id String
+
+  @@id([blueprint_instance_id, blueprint_field_id, document_id])
+}
+
+model blueprint_instance_map_pins {
+  blueprint_instance    blueprint_instances @relation(fields: [blueprint_instance_id], references: [id], onDelete: Cascade)
+  blueprint_instance_id String
+
+  blueprint_field    blueprint_fields @relation(fields: [blueprint_field_id], references: [id], onDelete: Cascade)
+  blueprint_field_id String
+
+  map_pins   map_pins @relation(fields: [map_pin_id], references: [id], onDelete: Cascade)
+  map_pin_id String
+
+  @@id([blueprint_instance_id, blueprint_field_id, map_pin_id])
+}
+
+model blueprint_instance_images {
+  blueprint_instance    blueprint_instances @relation(fields: [blueprint_instance_id], references: [id], onDelete: Cascade)
+  blueprint_instance_id String
+
+  blueprint_field    blueprint_fields @relation(fields: [blueprint_field_id], references: [id], onDelete: Cascade)
+  blueprint_field_id String
+
+  image    images @relation(fields: [image_id], references: [id], onDelete: Cascade)
+  image_id String
+
+  @@id([blueprint_instance_id, blueprint_field_id, image_id])
+}
+
+model blueprint_instance_random_tables {
+  blueprint_instance    blueprint_instances @relation(fields: [blueprint_instance_id], references: [id], onDelete: Cascade)
+  blueprint_instance_id String
+
+  blueprint_field    blueprint_fields @relation(fields: [blueprint_field_id], references: [id], onDelete: Cascade)
+  blueprint_field_id String
+
+  random_table    random_tables @relation(fields: [random_table_id], references: [id], onDelete: Cascade)
+  random_table_id String
+
+  @@id([blueprint_instance_id, blueprint_field_id, random_table_id])
+  @@unique([blueprint_instance_id, blueprint_field_id, random_table_id])
+}
+
+model blueprint_instance_value {
   blueprint_instance    blueprint_instances @relation(fields: [blueprint_instance_id], references: [id], onDelete: Cascade)
   blueprint_instance_id String
 
@@ -224,10 +301,11 @@ model characters {
   nodes     nodes[]
   tags      tags[]
 
-  related_from  characters_relationships[] @relation("characters_character_relations_a")
-  related_to    characters_relationships[] @relation("characters_character_relations_b")
-  conversations conversations[]
-  messages      messages[]
+  related_from                  characters_relationships[]      @relation("characters_character_relations_a")
+  related_to                    characters_relationships[]      @relation("characters_character_relations_b")
+  conversations                 conversations[]
+  messages                      messages[]
+  blueprint_instance_characters blueprint_instance_characters[]
 }
 
 model character_fields {
@@ -364,9 +442,10 @@ model documents {
   tags        tags[]
   alter_names alter_names[]
 
-  cards      cards[]
-  events     events[]
-  characters characters[]
+  cards                        cards[]
+  events                       events[]
+  characters                   characters[]
+  blueprint_instance_documents blueprint_instance_documents[]
 }
 
 model alter_names {
@@ -426,11 +505,12 @@ model map_pins {
   is_public        Boolean?
   tags             tags[]
 
-  map_link     String?
-  doc_id       String?
-  character_id String?
-  image_id     String?
-  nodes        nodes[]
+  map_link                    String?
+  doc_id                      String?
+  character_id                String?
+  image_id                    String?
+  nodes                       nodes[]
+  blueprint_instance_map_pins blueprint_instance_map_pins[]
 }
 
 model map_layers {
@@ -762,10 +842,11 @@ model random_tables {
   children  random_tables[] @relation("parentChildRandomTables")
   parent_id String?
 
-  icon                 String?
-  is_folder            Boolean?
-  is_public            Boolean?
-  random_table_options random_table_options[]
+  icon                             String?
+  is_folder                        Boolean?
+  is_public                        Boolean?
+  random_table_options             random_table_options[]
+  blueprint_instance_random_tables blueprint_instance_random_tables[]
 }
 
 model random_table_options {

@@ -14,7 +14,7 @@ import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, constructTagFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { CreateTagRelations, GetRelationsForUpdating, TagQuery } from "../utils/relationalQueryHelpers";
+import { CreateTagRelations, GetRelationsForUpdating } from "../utils/relationalQueryHelpers";
 
 export function blueprint_instance_router(app: Elysia) {
   return app.group("/blueprint_instances", (server) =>
@@ -248,9 +248,9 @@ export function blueprint_instance_router(app: Elysia) {
               ),
             )
 
-            .$if(!!body?.relations?.tags, (qb) =>
-              qb.select((eb) => TagQuery(eb, "_blueprint_instancesTotags", "blueprint_instances")),
-            )
+            // .$if(!!body?.relations?.tags, (qb) =>
+            //   qb.select((eb) => TagQuery(eb, "_blueprint_instancesTotags", "blueprint_instances")),
+            // )
             .executeTakeFirstOrThrow();
           return { data, message: MessageEnum.success, ok: true };
         },
