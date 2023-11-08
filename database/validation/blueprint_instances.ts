@@ -11,6 +11,7 @@ export const ListBlueprintInstanceSchema = t.Intersect([
     t.Object({
       relations: t.Optional(
         t.Object({
+          blueprint_fields: t.Optional(t.Boolean()),
           tags: t.Optional(t.Boolean()),
         }),
       ),

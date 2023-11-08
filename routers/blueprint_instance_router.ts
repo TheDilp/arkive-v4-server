@@ -143,7 +143,107 @@ export function blueprint_instance_router(app: Elysia) {
               if (body.data?.parent_id) return qb.where("blueprint_instances.parent_id", "=", body.data.parent_id);
               return qb;
             })
+            .$if(!!body.relations?.blueprint_fields, (qb) =>
+              qb.select([
+                (eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("blueprint_fields")
+                      .whereRef("blueprint_fields.parent_id", "=", "blueprint_instances.parent_id")
+                      .select([
+                        "id",
+                        (ebb) =>
+                          jsonObjectFrom(
+                            ebb
+                              .selectFrom("random_tables")
+                              .where("random_tables.id", "=", "blueprint_fields.random_table_id")
+                              .select(["id", "title"]),
+                          ).as("random_table_data"),
+                        (ebb) =>
+                          jsonArrayFrom(
+                            ebb
+                              .selectFrom("blueprint_instance_characters")
+                              .whereRef("blueprint_instance_characters.blueprint_field_id", "=", "blueprint_fields.id")
+                              .whereRef("blueprint_instance_characters.blueprint_instance_id", "=", "blueprint_instances.id")
+                              .select([
+                                "related_id",
+                                (ebbb) =>
+                                  jsonObjectFrom(
+                                    ebbb
+                                      .selectFrom("characters")
+                                      .whereRef("related_id", "=", "characters.id")
+                                      .select(["id", "first_name", "last_name", "portrait_id"]),
+                                  ).as("character"),
+                              ]),
+                          ).as("characters"),
+                        (ebb) =>
+                          jsonArrayFrom(
+                            ebb
+                              .selectFrom("blueprint_instance_documents")
+                              .whereRef("blueprint_instance_documents.blueprint_field_id", "=", "blueprint_fields.id")
+                              .whereRef("blueprint_instance_documents.blueprint_instance_id", "=", "blueprint_instances.id")
+                              .select([
+                                "related_id",
+                                (ebbb) =>
+                                  jsonObjectFrom(
+                                    ebbb
+                                      .selectFrom("documents")
+                                      .whereRef("related_id", "=", "documents.id")
+                                      .select(["id", "title", "icon"]),
+                                  ).as("document"),
+                              ]),
+                          ).as("documents"),
+                        (ebb) =>
+                          jsonArrayFrom(
+                            ebb
+                              .selectFrom("blueprint_instance_map_pins")
+                              .whereRef("blueprint_instance_map_pins.blueprint_field_id", "=", "blueprint_fields.id")
+                              .whereRef("blueprint_instance_map_pins.blueprint_instance_id", "=", "blueprint_instances.id")
 
+                              .select([
+                                "related_id",
+                                (ebbb) =>
+                                  jsonObjectFrom(
+                                    ebbb
+                                      .selectFrom("map_pins")
+                                      .where("related_id", "=", "map_pins.id")
+                                      .select(["id", "title", "icon", "parent_id"]),
+                                  ).as("map_pin"),
+                              ]),
+                          ).as("map_pins"),
+                        (ebb) =>
+                          jsonObjectFrom(
+                            ebb
+                              .selectFrom("blueprint_instance_random_tables")
+                              .whereRef("blueprint_instance_random_tables.blueprint_field_id", "=", "blueprint_fields.id")
+                              .whereRef("blueprint_instance_random_tables.blueprint_instance_id", "=", "blueprint_instances.id")
+                              .select(["related_id", "option_id", "suboption_id"]),
+                          ).as("random_table"),
+                        (ebb) =>
+                          jsonArrayFrom(
+                            ebb
+                              .selectFrom("blueprint_instance_images")
+                              .whereRef("blueprint_instance_images.blueprint_field_id", "=", "blueprint_fields.id")
+                              .whereRef("blueprint_instance_images.blueprint_instance_id", "=", "blueprint_instances.id")
+                              .select([
+                                "related_id",
+                                (ebbb) =>
+                                  jsonObjectFrom(
+                                    ebbb.selectFrom("images").whereRef("related_id", "=", "images.id").select(["id", "title"]),
+                                  ).as("image"),
+                              ]),
+                          ).as("images"),
+                        (ebb) =>
+                          ebb
+                            .selectFrom("blueprint_instance_value")
+                            .whereRef("blueprint_instance_value.blueprint_field_id", "=", "blueprint_fields.id")
+                            .whereRef("blueprint_instance_value.blueprint_instance_id", "=", "blueprint_instances.id")
+                            .select(["value"])
+                            .as("value"),
+                      ]),
+                  ).as("blueprint_fields"),
+              ]),
+            )
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
               qb = constructFilter("blueprint_instances", qb, body.filters);
               return qb;
@@ -208,6 +308,7 @@ export function blueprint_instance_router(app: Elysia) {
                           ebb
                             .selectFrom("blueprint_instance_characters")
                             .whereRef("blueprint_instance_characters.blueprint_field_id", "=", "blueprint_fields.id")
+                            .where("blueprint_instance_characters.blueprint_instance_id", "=", params.id)
                             .select([
                               "related_id",
                               (ebbb) =>
@@ -224,6 +325,8 @@ export function blueprint_instance_router(app: Elysia) {
                           ebb
                             .selectFrom("blueprint_instance_documents")
                             .whereRef("blueprint_instance_documents.blueprint_field_id", "=", "blueprint_fields.id")
+                            .where("blueprint_instance_documents.blueprint_instance_id", "=", params.id)
+
                             .select([
                               "related_id",
                               (ebbb) =>
@@ -240,6 +343,7 @@ export function blueprint_instance_router(app: Elysia) {
                           ebb
                             .selectFrom("blueprint_instance_map_pins")
                             .whereRef("blueprint_instance_map_pins.blueprint_field_id", "=", "blueprint_fields.id")
+                            .where("blueprint_instance_map_pins.blueprint_instance_id", "=", params.id)
                             .select([
                               "related_id",
                               (ebbb) =>
@@ -247,7 +351,7 @@ export function blueprint_instance_router(app: Elysia) {
                                   ebbb
                                     .selectFrom("map_pins")
                                     .where("related_id", "=", "map_pins.id")
-                                    .select(["id", "title", "icon"]),
+                                    .select(["id", "title", "icon", "parent_id"]),
                                 ).as("map_pin"),
                             ]),
                         ).as("map_pins"),
@@ -256,6 +360,8 @@ export function blueprint_instance_router(app: Elysia) {
                           ebb
                             .selectFrom("blueprint_instance_random_tables")
                             .whereRef("blueprint_instance_random_tables.blueprint_field_id", "=", "blueprint_fields.id")
+                            .where("blueprint_instance_random_tables.blueprint_instance_id", "=", params.id)
+
                             .select(["related_id", "option_id", "suboption_id"]),
                         ).as("random_table"),
                       (ebb) =>
@@ -263,6 +369,7 @@ export function blueprint_instance_router(app: Elysia) {
                           ebb
                             .selectFrom("blueprint_instance_images")
                             .whereRef("blueprint_instance_images.blueprint_field_id", "=", "blueprint_fields.id")
+                            .where("blueprint_instance_images.blueprint_instance_id", "=", params.id)
                             .select([
                               "related_id",
                               (ebbb) =>
@@ -275,6 +382,7 @@ export function blueprint_instance_router(app: Elysia) {
                         ebb
                           .selectFrom("blueprint_instance_value")
                           .whereRef("blueprint_instance_value.blueprint_field_id", "=", "blueprint_fields.id")
+                          .where("blueprint_instance_value.blueprint_instance_id", "=", params.id)
                           .select(["value"])
                           .as("value"),
                     ]),
