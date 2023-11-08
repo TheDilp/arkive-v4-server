@@ -415,10 +415,17 @@ export function blueprint_instance_router(app: Elysia) {
                 body.relations.blueprint_fields.flatMap(async (field) => {
                   if (field.value) {
                     return tx
-                      .updateTable("blueprint_instance_value")
-                      .where("blueprint_instance_id", "=", params.id)
-                      .where("blueprint_field_id", "=", field.id)
-                      .set({ value: JSON.stringify(field.value) })
+                      .insertInto("blueprint_instance_value")
+                      .values({
+                        blueprint_field_id: field.id,
+                        blueprint_instance_id: params.id,
+                        value: JSON.stringify(field.value),
+                      })
+                      .onConflict((oc) =>
+                        oc
+                          .columns(["blueprint_field_id", "blueprint_instance_id"])
+                          .doUpdateSet({ value: JSON.stringify(field.value) }),
+                      )
                       .execute();
                   }
                   if (field.characters?.length) {
