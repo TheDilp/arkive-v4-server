@@ -230,7 +230,7 @@ export function blueprint_instance_router(app: Elysia) {
                                 jsonObjectFrom(
                                   ebbb
                                     .selectFrom("documents")
-                                    .where("related_id", "=", "documents.id")
+                                    .whereRef("related_id", "=", "documents.id")
                                     .select(["id", "title", "icon"]),
                                 ).as("document"),
                             ]),
@@ -267,7 +267,7 @@ export function blueprint_instance_router(app: Elysia) {
                               "related_id",
                               (ebbb) =>
                                 jsonObjectFrom(
-                                  ebbb.selectFrom("images").where("related_id", "=", "images.id").select(["id", "title"]),
+                                  ebbb.selectFrom("images").whereRef("related_id", "=", "images.id").select(["id", "title"]),
                                 ).as("image"),
                             ]),
                         ).as("images"),
@@ -282,28 +282,9 @@ export function blueprint_instance_router(app: Elysia) {
             ])
             .executeTakeFirstOrThrow();
 
-          // if (body.relations?.blueprint_fields && data.blueprint) {
-
-          //   const blueprint_fields = await db.transaction().execute(async tx => {
-
-          //     Promise.all([
-
-          //       await tx.selectFrom("blueprint_instance_characters")
-
-          //   ])})
-          // }
-
           // .$if(!!body?.relations?.tags, (qb) =>
           //   qb.select((eb) => TagQuery(eb, "_blueprint_instancesTotags", "blueprint_instances")),
           // )
-
-          // if (body?.relations?.blueprint_fields) {
-          //   const blueprint_fields = await Promise.all(
-          //     (["blueprint_instance_characters"] as ["blueprint_instance_characters"]).map(async (rel) =>
-          //       db.selectFrom(rel).where("blueprint_instance_id", "=", params.id).select(["blueprint_field_id as id", eb => eb.selectFrom("blueprint_fields").where("id", "=", "blueprint_field_id").as("blueprint_")]),
-          //     ),
-          //   );
-          // }
 
           return { data, message: MessageEnum.success, ok: true };
         },
