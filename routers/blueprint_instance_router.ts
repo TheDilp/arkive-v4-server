@@ -14,7 +14,7 @@ import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, constructTagFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { CreateTagRelations, GetRelationsForUpdating } from "../utils/relationalQueryHelpers";
+import { CreateTagRelations } from "../utils/relationalQueryHelpers";
 
 export function blueprint_instance_router(app: Elysia) {
   return app.group("/blueprint_instances", (server) =>
@@ -28,21 +28,92 @@ export function blueprint_instance_router(app: Elysia) {
               .values(body.data)
               .returning("id")
               .executeTakeFirstOrThrow();
-
             if (body.relations?.blueprint_fields?.length) {
-              const { blueprint_fields } = body.relations;
-              await tx
-                .insertInto("blueprint_instance_to_blueprint_fields")
-                .values(
-                  blueprint_fields.map((field) => ({
-                    blueprint_field_id: field.id,
-                    value: JSON.stringify(field.value?.value),
-                    blueprint_instance_id: newInstance.id,
-                  })),
-                )
-                .executeTakeFirst();
+              await Promise.all(
+                body.relations.blueprint_fields.map(async (field) => {
+                  if (field?.characters?.length) {
+                    const { characters } = field;
+                    await tx
+                      .insertInto("blueprint_instance_characters")
+                      .values(
+                        characters.map((char) => ({
+                          blueprint_field_id: field.id,
+                          blueprint_instance_id: newInstance.id,
+                          related_id: char.related_id,
+                        })),
+                      )
+                      .execute();
+                    return;
+                  }
+                  if (field?.documents?.length) {
+                    const { documents } = field;
+                    await tx
+                      .insertInto("blueprint_instance_documents")
+                      .values(
+                        documents.map((doc) => ({
+                          blueprint_field_id: field.id,
+                          blueprint_instance_id: newInstance.id,
+                          related_id: doc.related_id,
+                        })),
+                      )
+                      .execute();
+                    return;
+                  }
+                  if (field?.map_pins?.length) {
+                    const { map_pins } = field;
+                    await tx
+                      .insertInto("blueprint_instance_map_pins")
+                      .values(
+                        map_pins.map((map_pin) => ({
+                          blueprint_field_id: field.id,
+                          blueprint_instance_id: newInstance.id,
+                          related_id: map_pin.related_id,
+                        })),
+                      )
+                      .execute();
+                    return;
+                  }
+                  if (field.images?.length) {
+                    const { images } = field;
+                    await tx
+                      .insertInto("blueprint_instance_images")
+                      .values(
+                        images.map((image) => ({
+                          blueprint_field_id: field.id,
+                          blueprint_instance_id: newInstance.id,
+                          related_id: image.related_id,
+                        })),
+                      )
+                      .execute();
+                    return;
+                  }
+                  if (field?.random_tables?.length) {
+                    const { random_tables } = field;
+                    await tx
+                      .insertInto("blueprint_instance_random_tables")
+                      .values(
+                        random_tables.map((random_table) => ({
+                          blueprint_field_id: field.id,
+                          blueprint_instance_id: newInstance.id,
+                          related_id: random_table.related_id,
+                        })),
+                      )
+                      .execute();
+                    return;
+                  }
+                  if (field?.value) {
+                    await tx
+                      .insertInto("blueprint_instance_value")
+                      .values({
+                        blueprint_field_id: field.id,
+                        blueprint_instance_id: newInstance.id,
+                        value: JSON.stringify(field.value),
+                      })
+                      .execute();
+                  }
+                }),
+              );
             }
-
             if (body.relations?.tags?.length) {
               await CreateTagRelations({
                 tx,
@@ -72,72 +143,7 @@ export function blueprint_instance_router(app: Elysia) {
               if (body.data?.parent_id) return qb.where("blueprint_instances.parent_id", "=", body.data.parent_id);
               return qb;
             })
-            .select((eb) =>
-              jsonArrayFrom(
-                eb
-                  .selectFrom("blueprint_fields")
-                  .whereRef("blueprint_fields.parent_id", "=", "blueprint_instances.parent_id")
-                  .select([
-                    (eb) =>
-                      jsonObjectFrom(
-                        eb
-                          .selectFrom("blueprint_instance_to_blueprint_fields")
-                          .select(["blueprint_field_id as id", "value"])
-                          .whereRef("blueprint_instance_to_blueprint_fields.blueprint_field_id", "=", "blueprint_fields.id")
-                          .whereRef(
-                            "blueprint_instance_to_blueprint_fields.blueprint_instance_id",
-                            "=",
-                            "blueprint_instances.id",
-                          ),
-                      ).as("value"),
-                    (eb) =>
-                      jsonObjectFrom(
-                        eb
-                          .selectFrom("random_tables")
-                          .select([
-                            "id",
-                            "title",
-                            (ebb) =>
-                              jsonArrayFrom(
-                                ebb
-                                  .selectFrom("random_table_options")
-                                  .leftJoin(
-                                    "blueprint_instance_to_blueprint_fields as bibf",
-                                    "bibf.blueprint_field_id",
-                                    "blueprint_fields.id",
-                                  )
-                                  .where(({ eb: wbb, ref }) =>
-                                    // This works, typescript is being a bitch
-                                    // @ts-ignore
-                                    wbb(ref("bibf.value", "->>").at(0), "=", ref("random_table_options.id")),
-                                  )
-                                  .select([
-                                    "random_table_options.id",
-                                    "random_table_options.title",
-                                    (ebbb) =>
-                                      jsonArrayFrom(
-                                        ebbb
-                                          .selectFrom("random_table_suboptions")
-                                          .select(["random_table_suboptions.id", "random_table_suboptions.title"])
-                                          .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id"),
-                                      ).as("suboptions"),
-                                  ])
-                                  .whereRef("random_table_options.parent_id", "=", "blueprint_fields.random_table_id"),
-                              ).as("random_table_options"),
-                          ])
 
-                          .whereRef("random_tables.id", "=", "blueprint_fields.random_table_id"),
-                      ).as("random_table"),
-                    (eb) =>
-                      jsonObjectFrom(
-                        eb
-                          .selectFrom("calendars")
-                          .select(["id", "title"])
-                          .whereRef("calendars.id", "=", "blueprint_fields.calendar_id"),
-                      ).as("calendar"),
-                  ]),
-              ).as("blueprint_fields"),
-            )
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
               qb = constructFilter("blueprint_instances", qb, body.filters);
               return qb;
@@ -174,84 +180,131 @@ export function blueprint_instance_router(app: Elysia) {
               qb.clearSelect().select(body.fields as SelectExpression<DB, "blueprint_instances">[]),
             )
             .where("blueprint_instances.id", "=", params.id)
-            .select((eb) =>
-              jsonObjectFrom(
-                eb
-                  .selectFrom("blueprints")
-                  .whereRef("blueprints.id", "=", "blueprint_instances.parent_id")
-                  .select(["title", "title_name"]),
-              ).as("blueprint"),
-            )
-            .$if(!!body?.relations?.blueprint_fields, (qb) =>
-              qb.select((eb) =>
+            .select([
+              (eb) =>
+                jsonObjectFrom(
+                  eb
+                    .selectFrom("blueprints")
+                    .whereRef("blueprints.id", "=", "blueprint_instances.parent_id")
+                    .select(["title", "title_name"]),
+                ).as("blueprint"),
+
+              (eb) =>
                 jsonArrayFrom(
                   eb
                     .selectFrom("blueprint_fields")
                     .whereRef("blueprint_fields.parent_id", "=", "blueprint_instances.parent_id")
                     .select([
-                      "blueprint_fields.id",
-                      (eb) =>
+                      "id",
+                      (ebb) =>
                         jsonObjectFrom(
-                          eb
-                            .selectFrom("blueprint_instance_to_blueprint_fields")
-                            .select(["blueprint_field_id as id", "value"])
-                            .whereRef("blueprint_instance_to_blueprint_fields.blueprint_field_id", "=", "blueprint_fields.id")
-                            .where("blueprint_instance_to_blueprint_fields.blueprint_instance_id", "=", params.id),
-                        ).as("value"),
-                      (eb) =>
-                        jsonObjectFrom(
-                          eb
+                          ebb
                             .selectFrom("random_tables")
+                            .where("random_tables.id", "=", "blueprint_fields.random_table_id")
+                            .select(["id", "title"]),
+                        ).as("random_table_data"),
+                      (ebb) =>
+                        jsonArrayFrom(
+                          ebb
+                            .selectFrom("blueprint_instance_characters")
+                            .whereRef("blueprint_instance_characters.blueprint_field_id", "=", "blueprint_fields.id")
                             .select([
-                              "id",
-                              "title",
-                              (ebb) =>
-                                jsonArrayFrom(
-                                  ebb
-                                    .selectFrom("random_table_options")
-                                    .leftJoin(
-                                      "blueprint_instance_to_blueprint_fields as bibf",
-                                      "bibf.blueprint_field_id",
-                                      "blueprint_fields.id",
-                                    )
-                                    .where(({ eb: wbb, ref }) =>
-                                      // This works, typescript is being a bitch
-                                      // @ts-ignore
-                                      wbb(ref("bibf.value", "->>").at(0), "=", ref("random_table_options.id")),
-                                    )
-                                    .select([
-                                      "random_table_options.id",
-                                      "random_table_options.title",
-                                      (ebbb) =>
-                                        jsonArrayFrom(
-                                          ebbb
-                                            .selectFrom("random_table_suboptions")
-                                            .select(["random_table_suboptions.id", "random_table_suboptions.title"])
-                                            .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id"),
-                                        ).as("suboptions"),
-                                    ])
-                                    .whereRef("random_table_options.parent_id", "=", "blueprint_fields.random_table_id"),
-                                ).as("random_table_options"),
-                            ])
-
-                            .whereRef("random_tables.id", "=", "blueprint_fields.random_table_id"),
-                        ).as("random_table"),
-                      (eb) =>
+                              "related_id",
+                              (ebbb) =>
+                                jsonObjectFrom(
+                                  ebbb
+                                    .selectFrom("characters")
+                                    .whereRef("related_id", "=", "characters.id")
+                                    .select(["id", "first_name", "last_name", "portrait_id"]),
+                                ).as("character"),
+                            ]),
+                        ).as("characters"),
+                      (ebb) =>
+                        jsonArrayFrom(
+                          ebb
+                            .selectFrom("blueprint_instance_documents")
+                            .whereRef("blueprint_instance_documents.blueprint_field_id", "=", "blueprint_fields.id")
+                            .select([
+                              "related_id",
+                              (ebbb) =>
+                                jsonObjectFrom(
+                                  ebbb
+                                    .selectFrom("documents")
+                                    .where("related_id", "=", "documents.id")
+                                    .select(["id", "title", "icon"]),
+                                ).as("document"),
+                            ]),
+                        ).as("documents"),
+                      (ebb) =>
+                        jsonArrayFrom(
+                          ebb
+                            .selectFrom("blueprint_instance_map_pins")
+                            .whereRef("blueprint_instance_map_pins.blueprint_field_id", "=", "blueprint_fields.id")
+                            .select([
+                              "related_id",
+                              (ebbb) =>
+                                jsonObjectFrom(
+                                  ebbb
+                                    .selectFrom("map_pins")
+                                    .where("related_id", "=", "map_pins.id")
+                                    .select(["id", "title", "icon"]),
+                                ).as("map_pin"),
+                            ]),
+                        ).as("map_pins"),
+                      (ebb) =>
                         jsonObjectFrom(
-                          eb
-                            .selectFrom("calendars")
-                            .select(["id", "title"])
-                            .whereRef("calendars.id", "=", "blueprint_fields.calendar_id"),
-                        ).as("calendar"),
+                          ebb
+                            .selectFrom("blueprint_instance_random_tables")
+                            .whereRef("blueprint_instance_random_tables.blueprint_field_id", "=", "blueprint_fields.id")
+                            .select(["related_id", "option_id", "suboption_id"]),
+                        ).as("random_table"),
+                      (ebb) =>
+                        jsonArrayFrom(
+                          ebb
+                            .selectFrom("blueprint_instance_images")
+                            .whereRef("blueprint_instance_images.blueprint_field_id", "=", "blueprint_fields.id")
+                            .select([
+                              "related_id",
+                              (ebbb) =>
+                                jsonObjectFrom(
+                                  ebbb.selectFrom("images").where("related_id", "=", "images.id").select(["id", "title"]),
+                                ).as("image"),
+                            ]),
+                        ).as("images"),
+                      (ebb) =>
+                        ebb
+                          .selectFrom("blueprint_instance_value")
+                          .whereRef("blueprint_instance_value.blueprint_field_id", "=", "blueprint_fields.id")
+                          .select(["value"])
+                          .as("value"),
                     ]),
                 ).as("blueprint_fields"),
-              ),
-            )
-
-            // .$if(!!body?.relations?.tags, (qb) =>
-            //   qb.select((eb) => TagQuery(eb, "_blueprint_instancesTotags", "blueprint_instances")),
-            // )
+            ])
             .executeTakeFirstOrThrow();
+
+          // if (body.relations?.blueprint_fields && data.blueprint) {
+
+          //   const blueprint_fields = await db.transaction().execute(async tx => {
+
+          //     Promise.all([
+
+          //       await tx.selectFrom("blueprint_instance_characters")
+
+          //   ])})
+          // }
+
+          // .$if(!!body?.relations?.tags, (qb) =>
+          //   qb.select((eb) => TagQuery(eb, "_blueprint_instancesTotags", "blueprint_instances")),
+          // )
+
+          // if (body?.relations?.blueprint_fields) {
+          //   const blueprint_fields = await Promise.all(
+          //     (["blueprint_instance_characters"] as ["blueprint_instance_characters"]).map(async (rel) =>
+          //       db.selectFrom(rel).where("blueprint_instance_id", "=", params.id).select(["blueprint_field_id as id", eb => eb.selectFrom("blueprint_fields").where("id", "=", "blueprint_field_id").as("blueprint_")]),
+          //     ),
+          //   );
+          // }
+
           return { data, message: MessageEnum.success, ok: true };
         },
         {
@@ -269,50 +322,103 @@ export function blueprint_instance_router(app: Elysia) {
               .executeTakeFirstOrThrow();
 
             if (body.relations?.blueprint_fields) {
-              const existingBlueprintFields = await tx
-                .selectFrom("blueprint_instance_to_blueprint_fields")
-                .select([
-                  "blueprint_instance_to_blueprint_fields.blueprint_field_id as id",
-                  "blueprint_instance_to_blueprint_fields.value",
-                ])
-                .where("blueprint_instance_to_blueprint_fields.blueprint_instance_id", "=", params.id)
-                .execute();
-              const existingIds = existingBlueprintFields.map((field) => field.id);
-              const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
-                existingIds,
-                body.relations?.blueprint_fields,
-              );
-
-              if (idsToRemove.length) {
-                await tx
-                  .deleteFrom("blueprint_instance_to_blueprint_fields")
-                  .where("blueprint_field_id", "in", idsToRemove)
-                  .execute();
-              }
-              if (itemsToAdd.length) {
-                await tx
-                  .insertInto("blueprint_instance_to_blueprint_fields")
-                  .values(
-                    itemsToAdd.map((item) => ({
-                      blueprint_instance_id: params.id,
-                      blueprint_field_id: item.id,
-                      value: JSON.stringify(item.value.value),
-                    })),
-                  )
-                  .execute();
-              }
-              if (itemsToUpdate.length) {
-                await Promise.all(
-                  itemsToUpdate.map(async (item) => {
-                    await tx
-                      .updateTable("blueprint_instance_to_blueprint_fields")
+              await Promise.all(
+                body.relations.blueprint_fields.flatMap(async (field) => {
+                  if (field.value) {
+                    return tx
+                      .updateTable("blueprint_instance_value")
                       .where("blueprint_instance_id", "=", params.id)
-                      .where("blueprint_field_id", "=", item.id)
-                      .set({ value: JSON.stringify(item.value.value) })
+                      .where("blueprint_field_id", "=", field.id)
+                      .set({ value: JSON.stringify(field.value) })
                       .execute();
-                  }),
-                );
-              }
+                  }
+                  if (field.characters?.length) {
+                    await tx
+                      .deleteFrom("blueprint_instance_characters")
+                      .where("blueprint_instance_id", "=", params.id)
+                      .where("blueprint_field_id", "=", field.id)
+                      .execute();
+                    return field.characters.map((char) =>
+                      tx
+                        .insertInto("blueprint_instance_characters")
+                        .values({
+                          blueprint_field_id: field.id,
+                          blueprint_instance_id: params.id,
+                          related_id: char.related_id,
+                        })
+                        .execute(),
+                    );
+                  }
+                  if (field.documents?.length) {
+                    await tx
+                      .deleteFrom("blueprint_instance_documents")
+                      .where("blueprint_instance_id", "=", params.id)
+                      .where("blueprint_field_id", "=", field.id)
+                      .execute();
+                    return field.documents.map((char) =>
+                      tx
+                        .insertInto("blueprint_instance_documents")
+                        .values({
+                          blueprint_field_id: field.id,
+                          blueprint_instance_id: params.id,
+                          related_id: char.related_id,
+                        })
+                        .execute(),
+                    );
+                  }
+                  if (field.map_pins?.length) {
+                    await tx
+                      .deleteFrom("blueprint_instance_map_pins")
+                      .where("blueprint_instance_id", "=", params.id)
+                      .where("blueprint_field_id", "=", field.id)
+                      .execute();
+                    return field.map_pins.map((char) =>
+                      tx
+                        .insertInto("blueprint_instance_map_pins")
+                        .values({
+                          blueprint_field_id: field.id,
+                          blueprint_instance_id: params.id,
+                          related_id: char.related_id,
+                        })
+                        .execute(),
+                    );
+                  }
+                  if (field.images?.length) {
+                    await tx
+                      .deleteFrom("blueprint_instance_images")
+                      .where("blueprint_instance_id", "=", params.id)
+                      .where("blueprint_field_id", "=", field.id)
+                      .execute();
+                    return field.images.map((char) =>
+                      tx
+                        .insertInto("blueprint_instance_images")
+                        .values({
+                          blueprint_field_id: field.id,
+                          blueprint_instance_id: params.id,
+                          related_id: char.related_id,
+                        })
+                        .execute(),
+                    );
+                  }
+                  if (field.random_table) {
+                    await tx
+                      .deleteFrom("blueprint_instance_random_tables")
+                      .where("blueprint_instance_id", "=", params.id)
+                      .where("blueprint_field_id", "=", field.id)
+                      .execute();
+                    return tx
+                      .insertInto("blueprint_instance_random_tables")
+                      .values({
+                        blueprint_field_id: field.id,
+                        blueprint_instance_id: params.id,
+                        related_id: field.random_table.related_id,
+                        option_id: field.random_table.option_id,
+                        suboption_id: field.random_table.suboption_id,
+                      })
+                      .execute();
+                  }
+                }),
+              );
             }
           });
 

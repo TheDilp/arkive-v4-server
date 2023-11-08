@@ -26,9 +26,13 @@ export function blueprint_router(app: Elysia) {
                 .insertInto("blueprint_fields")
                 .values(
                   body.relations.blueprint_fields.map((field) => ({
-                    ...field,
+                    title: field.title,
                     parent_id: newTemplate.id,
+                    field_type: field.field_type,
+                    sort: field.sort,
+                    formula: field?.formula,
                     options: JSON.stringify(field.options || []),
+                    random_table_id: field?.random_table_id || null,
                   })),
                 )
                 .execute();
@@ -79,48 +83,6 @@ export function blueprint_router(app: Elysia) {
                         "blueprint_fields.field_type",
                         "blueprint_fields.options",
                         "blueprint_fields.formula",
-                        "blueprint_fields.random_table_id",
-                        "blueprint_fields.blueprint_id",
-                        (eb) =>
-                          jsonObjectFrom(
-                            eb
-                              .selectFrom("random_tables")
-                              .select(["random_tables.id", "random_tables.title"])
-                              .whereRef("random_tables.id", "=", "blueprint_fields.random_table_id"),
-                          ).as("random_table"),
-                        (eb) =>
-                          jsonArrayFrom(
-                            eb
-                              .selectFrom("random_table_options")
-                              .select([
-                                "random_table_options.id",
-                                "random_table_options.title",
-                                (ebb) =>
-                                  jsonArrayFrom(
-                                    ebb
-                                      .selectFrom("random_table_suboptions")
-                                      .select(["random_table_suboptions.id", "random_table_suboptions.title"])
-                                      .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id"),
-                                  ).as("suboptions"),
-                              ])
-                              .whereRef("random_table_options.parent_id", "=", "blueprint_fields.random_table_id"),
-                          ).as("random_table_options"),
-
-                        (eb) =>
-                          jsonObjectFrom(
-                            eb
-                              .selectFrom("calendars")
-                              .select([
-                                "calendars.id",
-                                "calendars.title",
-                                "calendars.days",
-                                (sb) =>
-                                  jsonArrayFrom(
-                                    sb.selectFrom("months").select(["months.id", "months.title", "months.days"]),
-                                  ).as("months"),
-                              ])
-                              .whereRef("calendars.id", "=", "blueprint_fields.calendar_id"),
-                          ).as("calendar"),
                       ])
                       .orderBy("sort"),
                   ).as("blueprint_fields"),
@@ -161,42 +123,33 @@ export function blueprint_router(app: Elysia) {
                       "blueprint_fields.sort",
                       "blueprint_fields.formula",
                       "blueprint_fields.random_table_id",
-                      "blueprint_fields.calendar_id",
-                      "blueprint_fields.blueprint_id",
                       (eb) =>
                         jsonObjectFrom(
                           eb
                             .selectFrom("random_tables")
-                            .select(["id", "title"])
-                            .$if(!!body?.relations?.random_table_options, (qb) =>
-                              qb.select(
+                            .whereRef("blueprint_fields.random_table_id", "=", "random_tables.id")
+                            .select([
+                              "id",
+                              "title",
+                              (ebb) =>
                                 jsonArrayFrom(
-                                  eb
+                                  ebb
                                     .selectFrom("random_table_options")
+                                    .whereRef("random_tables.id", "=", "random_table_options.parent_id")
                                     .select([
-                                      "random_table_options.id",
-                                      "random_table_options.title",
-                                      (ebb) =>
+                                      "id",
+                                      "title",
+                                      (ebbb) =>
                                         jsonArrayFrom(
-                                          ebb
+                                          ebbb
                                             .selectFrom("random_table_suboptions")
-                                            .select(["random_table_suboptions.id", "random_table_suboptions.title"])
-                                            .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id"),
-                                        ).as("suboptions"),
-                                    ])
-                                    .whereRef("random_table_options.parent_id", "=", "blueprint_fields.random_table_id"),
+                                            .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id")
+                                            .select(["id", "title"]),
+                                        ).as("random_table_suboptions"),
+                                    ]),
                                 ).as("random_table_options"),
-                              ),
-                            )
-                            .whereRef("random_tables.id", "=", "blueprint_fields.random_table_id"),
+                            ]),
                         ).as("random_table"),
-                      (eb) =>
-                        jsonObjectFrom(
-                          eb
-                            .selectFrom("calendars")
-                            .select(["id", "title"])
-                            .whereRef("calendars.id", "=", "blueprint_fields.calendar_id"),
-                        ).as("calendar"),
                     ])
                     .orderBy("sort"),
                 ).as("blueprint_fields"),

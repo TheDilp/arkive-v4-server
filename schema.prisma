@@ -162,19 +162,17 @@ model blueprint_fields {
   field_type      BlueprintFieldType
   options         Json?              @db.JsonB
   formula         String?
+  random_table    random_tables?     @relation(fields: [random_table_id], references: [id], onDelete: SetNull)
   random_table_id String?
-  blueprint_id    String?
-  calendar_id     String?
+  blueprint       blueprints?        @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  parent_id       String?
 
-  blueprint blueprints? @relation(fields: [parent_id], references: [id], onDelete: Cascade)
-  parent_id String?
-
-  characters   blueprint_instance_characters[]
-  documents    blueprint_instance_documents[]
-  map_pins     blueprint_instance_map_pins[]
-  images       blueprint_instance_images[]
-  random_table blueprint_instance_random_tables[]
-  value        blueprint_instance_value[]
+  characters    blueprint_instance_characters[]
+  documents     blueprint_instance_documents[]
+  map_pins      blueprint_instance_map_pins[]
+  images        blueprint_instance_images[]
+  random_tables blueprint_instance_random_tables[]
+  value         blueprint_instance_value[]
 }
 
 model blueprint_instances {
@@ -188,12 +186,12 @@ model blueprint_instances {
   parent_id String
   tags      tags[]
 
-  characters   blueprint_instance_characters[]
-  documents    blueprint_instance_documents[]
-  map_pins     blueprint_instance_map_pins[]
-  images       blueprint_instance_images[]
-  random_table blueprint_instance_random_tables[]
-  value        blueprint_instance_value[]
+  characters    blueprint_instance_characters[]
+  documents     blueprint_instance_documents[]
+  map_pins      blueprint_instance_map_pins[]
+  images        blueprint_instance_images[]
+  random_tables blueprint_instance_random_tables[]
+  value         blueprint_instance_value[]
 }
 
 model blueprint_instance_characters {
@@ -203,10 +201,10 @@ model blueprint_instance_characters {
   blueprint_field    blueprint_fields @relation(fields: [blueprint_field_id], references: [id], onDelete: Cascade)
   blueprint_field_id String
 
-  character    characters @relation(fields: [character_id], references: [id], onDelete: Cascade)
-  character_id String
+  character  characters @relation(fields: [related_id], references: [id], onDelete: Cascade)
+  related_id String
 
-  @@id([blueprint_instance_id, blueprint_field_id, character_id])
+  @@id([blueprint_instance_id, blueprint_field_id, related_id])
 }
 
 model blueprint_instance_documents {
@@ -216,10 +214,10 @@ model blueprint_instance_documents {
   blueprint_field    blueprint_fields @relation(fields: [blueprint_field_id], references: [id], onDelete: Cascade)
   blueprint_field_id String
 
-  document    documents @relation(fields: [document_id], references: [id], onDelete: Cascade)
-  document_id String
+  document   documents @relation(fields: [related_id], references: [id], onDelete: Cascade)
+  related_id String
 
-  @@id([blueprint_instance_id, blueprint_field_id, document_id])
+  @@id([blueprint_instance_id, blueprint_field_id, related_id])
 }
 
 model blueprint_instance_map_pins {
@@ -229,10 +227,10 @@ model blueprint_instance_map_pins {
   blueprint_field    blueprint_fields @relation(fields: [blueprint_field_id], references: [id], onDelete: Cascade)
   blueprint_field_id String
 
-  map_pins   map_pins @relation(fields: [map_pin_id], references: [id], onDelete: Cascade)
-  map_pin_id String
+  map_pins   map_pins @relation(fields: [related_id], references: [id], onDelete: Cascade)
+  related_id String
 
-  @@id([blueprint_instance_id, blueprint_field_id, map_pin_id])
+  @@id([blueprint_instance_id, blueprint_field_id, related_id])
 }
 
 model blueprint_instance_images {
@@ -242,10 +240,10 @@ model blueprint_instance_images {
   blueprint_field    blueprint_fields @relation(fields: [blueprint_field_id], references: [id], onDelete: Cascade)
   blueprint_field_id String
 
-  image    images @relation(fields: [image_id], references: [id], onDelete: Cascade)
-  image_id String
+  image      images @relation(fields: [related_id], references: [id], onDelete: Cascade)
+  related_id String
 
-  @@id([blueprint_instance_id, blueprint_field_id, image_id])
+  @@id([blueprint_instance_id, blueprint_field_id, related_id])
 }
 
 model blueprint_instance_random_tables {
@@ -255,11 +253,17 @@ model blueprint_instance_random_tables {
   blueprint_field    blueprint_fields @relation(fields: [blueprint_field_id], references: [id], onDelete: Cascade)
   blueprint_field_id String
 
-  random_table    random_tables @relation(fields: [random_table_id], references: [id], onDelete: Cascade)
-  random_table_id String
+  random_table random_tables @relation(fields: [related_id], references: [id], onDelete: Cascade)
+  related_id   String
 
-  @@id([blueprint_instance_id, blueprint_field_id, random_table_id])
-  @@unique([blueprint_instance_id, blueprint_field_id, random_table_id])
+  random_table_option random_table_options? @relation(fields: [option_id], references: [id], onDelete: SetNull)
+  option_id           String?
+
+  random_table_suboption random_table_suboptions? @relation(fields: [suboption_id], references: [id])
+  suboption_id           String?
+
+  @@id([blueprint_instance_id, blueprint_field_id, related_id])
+  @@unique([blueprint_instance_id, blueprint_field_id, related_id])
 }
 
 model blueprint_instance_value {
@@ -847,17 +851,19 @@ model random_tables {
   is_public                        Boolean?
   random_table_options             random_table_options[]
   blueprint_instance_random_tables blueprint_instance_random_tables[]
+  blueprint_fields                 blueprint_fields[]
 }
 
 model random_table_options {
-  id                      String                    @id @default(dbgenerated("gen_random_uuid()"))
-  title                   String
-  description             String?
-  random_table            random_tables             @relation(fields: [parent_id], references: [id], onDelete: Cascade)
-  parent_id               String
-  icon                    String?
-  icon_color              String?
-  random_table_suboptions random_table_suboptions[]
+  id                               String                             @id @default(dbgenerated("gen_random_uuid()"))
+  title                            String
+  description                      String?
+  random_table                     random_tables                      @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  parent_id                        String
+  icon                             String?
+  icon_color                       String?
+  random_table_suboptions          random_table_suboptions[]
+  blueprint_instance_random_tables blueprint_instance_random_tables[]
 }
 
 model random_table_suboptions {
@@ -865,8 +871,9 @@ model random_table_suboptions {
   title       String
   description String?
 
-  random_table_option random_table_options @relation(fields: [parent_id], references: [id], onDelete: Cascade)
-  parent_id           String
+  random_table_option              random_table_options               @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  parent_id                        String
+  blueprint_instance_random_tables blueprint_instance_random_tables[]
 }
 
 model tags {

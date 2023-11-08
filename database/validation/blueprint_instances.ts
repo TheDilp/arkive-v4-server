@@ -39,22 +39,46 @@ export const InsertBlueprintInstanceSchema = t.Object({
   relations: t.Optional(
     t.Object({
       tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
-      blueprint_fields: t.Optional(
-        t.Array(
-          t.Object({
-            id: t.String(),
-            value: t.Optional(
-              t.Union([
-                t.Object({
-                  value: t.Optional(
-                    t.Union([t.String(), t.Number(), t.Boolean(), t.Record(t.String(), t.Any()), t.Array(t.String())]),
-                  ),
-                }),
-                t.Null(),
-              ]),
+      blueprint_fields: t.Array(
+        t.Object({
+          id: t.String(),
+          characters: t.Optional(
+            t.Array(
+              t.Object({
+                related_id: t.String(),
+              }),
             ),
-          }),
-        ),
+          ),
+          documents: t.Optional(
+            t.Array(
+              t.Object({
+                related_id: t.String(),
+              }),
+            ),
+          ),
+          map_pins: t.Optional(
+            t.Array(
+              t.Object({
+                related_id: t.String(),
+              }),
+            ),
+          ),
+          images: t.Optional(
+            t.Array(
+              t.Object({
+                related_id: t.String(),
+              }),
+            ),
+          ),
+          random_tables: t.Optional(
+            t.Array(
+              t.Object({
+                related_id: t.String(),
+              }),
+            ),
+          ),
+          value: t.Optional(t.Union([t.Array(t.Union([t.String(), t.Number(), t.Null()])), t.String(), t.Number(), t.Null()])),
+        }),
       ),
     }),
   ),
@@ -67,29 +91,49 @@ export const UpdateBlueprintInstanceSchema = t.Object({
   relations: t.Optional(
     t.Object({
       tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
-      blueprint_fields: t.Optional(
-        t.Array(
-          t.Object({
-            id: t.String(),
-            value: t.Optional(
-              t.Union([
-                t.Object({
-                  value: t.Optional(
-                    t.Union([
-                      t.String(),
-                      t.Number(),
-                      t.Boolean(),
-                      t.Null(),
-                      t.Record(t.String(), t.Any()),
-                      t.Array(t.String()),
-                    ]),
-                  ),
-                }),
-                t.Null(),
-              ]),
+      blueprint_fields: t.Array(
+        t.Object({
+          id: t.String(),
+          characters: t.Optional(
+            t.Array(
+              t.Object({
+                related_id: t.String(),
+              }),
             ),
-          }),
-        ),
+          ),
+          documents: t.Optional(
+            t.Array(
+              t.Object({
+                related_id: t.String(),
+              }),
+            ),
+          ),
+          map_pins: t.Optional(
+            t.Array(
+              t.Object({
+                related_id: t.String(),
+              }),
+            ),
+          ),
+          images: t.Optional(
+            t.Array(
+              t.Object({
+                related_id: t.String(),
+              }),
+            ),
+          ),
+          random_table: t.Optional(
+            t.Union([
+              t.Object({
+                option_id: t.Optional(t.Union([t.Null(), t.String()])),
+                suboption_id: t.Optional(t.Union([t.Null(), t.String()])),
+                related_id: t.String(),
+              }),
+              t.Null(),
+            ]),
+          ),
+          value: t.Optional(t.Union([t.Array(t.Union([t.String(), t.Number(), t.Null()])), t.String(), t.Number(), t.Null()])),
+        }),
       ),
     }),
   ),
