@@ -238,7 +238,7 @@ export function blueprint_instance_router(app: Elysia) {
                                   jsonObjectFrom(
                                     ebbb
                                       .selectFrom("map_pins")
-                                      .where("related_id", "=", "map_pins.id")
+                                      .whereRef("related_id", "=", "map_pins.id")
                                       .select(["id", "title", "icon", "parent_id"]),
                                   ).as("map_pin"),
                               ]),
@@ -251,6 +251,22 @@ export function blueprint_instance_router(app: Elysia) {
                               .whereRef("blueprint_instance_random_tables.blueprint_instance_id", "=", "blueprint_instances.id")
                               .select(["related_id", "option_id", "suboption_id"]),
                           ).as("random_table"),
+                        (ebb) =>
+                          jsonObjectFrom(
+                            ebb
+                              .selectFrom("blueprint_instance_calendars")
+                              .whereRef("blueprint_instance_calendars.blueprint_field_id", "=", "blueprint_fields.id")
+                              .whereRef("blueprint_instance_calendars.blueprint_instance_id", "=", "blueprint_instances.id")
+                              .select([
+                                "related_id",
+                                "start_day",
+                                "start_month_id",
+                                "start_year",
+                                "end_day",
+                                "end_month_id",
+                                "end_year",
+                              ]),
+                          ).as("calendar"),
                         (ebb) =>
                           jsonArrayFrom(
                             ebb
@@ -401,7 +417,7 @@ export function blueprint_instance_router(app: Elysia) {
                                 jsonObjectFrom(
                                   ebbb
                                     .selectFrom("map_pins")
-                                    .where("related_id", "=", "map_pins.id")
+                                    .whereRef("related_id", "=", "map_pins.id")
                                     .select(["id", "title", "icon", "parent_id"]),
                                 ).as("map_pin"),
                             ]),
