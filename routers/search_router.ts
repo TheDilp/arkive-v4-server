@@ -22,7 +22,7 @@ function getSearchFields(type: SearchableEntities): string[] {
 
   if (type === "documents") fields.push("documents.image_id");
   if (type === "events") fields.push("events.parent_id");
-  if (type === "map_pins") fields.push("map_pins.parent_id");
+  if (type === "map_pins") fields.push("map_pins.parent_id", "map_pins.icon");
   if (type === "words") fields.push("words.parent_id");
   if (type === "blueprint_instances") fields.push("blueprint_instances.parent_id");
 
