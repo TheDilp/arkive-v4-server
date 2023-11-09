@@ -118,6 +118,9 @@ export function search_router(app: Elysia) {
             .$if(type === "words", (eb) =>
               eb.leftJoin("dictionaries", "dictionaries.id", "words.parent_id").select(["dictionaries.title as parent_title"]),
             )
+            .$if(type === "blueprint_instances", (eb) =>
+              eb.leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id").select(["blueprints.icon as icon"]),
+            )
             // .$if(!EntitiesWithoutProjectId.includes(type), (eb) => eb.where("project_id", "=", project_id))
             // .$if(type === "map_images", (eb) => eb.where("type", "=", "map_images"))
             .$if(type === "images", (eb) => eb.where("type", "=", "images"))
@@ -138,6 +141,7 @@ export function search_router(app: Elysia) {
               parent_title: item?.parent_title,
               first_name: item?.first_name,
               last_name: item?.last_name,
+              icon: item?.icon,
             })),
             message: MessageEnum.success,
             ok: true,

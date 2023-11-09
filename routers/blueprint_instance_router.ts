@@ -354,8 +354,9 @@ export function blueprint_instance_router(app: Elysia) {
                                   ebbb
                                     .selectFrom("blueprint_instances")
                                     .whereRef("related_id", "=", "blueprint_instances.id")
-                                    .select(["id", "title"]),
-                                ).as("character"),
+                                    .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+                                    .select(["blueprint_instances.id", "blueprint_instances.title", "blueprints.icon as icon"]),
+                                ).as("blueprint_instance"),
                             ]),
                         ).as("blueprint_instances"),
                       (ebb) =>
