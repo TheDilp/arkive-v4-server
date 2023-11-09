@@ -78,7 +78,15 @@ export const InsertBlueprintInstanceSchema = t.Object({
               }),
             ),
           ),
-          value: t.Optional(t.Union([t.Array(t.Union([t.String(), t.Number(), t.Null()])), t.String(), t.Number(), t.Null()])),
+          value: t.Optional(
+            t.Union([
+              t.Array(t.Union([t.String(), t.Number(), t.Null()])),
+              t.String(),
+              t.Number(),
+              t.Null(),
+              t.Record(t.String(), t.Any()),
+            ]),
+          ),
         }),
       ),
     }),
@@ -133,7 +141,15 @@ export const UpdateBlueprintInstanceSchema = t.Object({
               t.Null(),
             ]),
           ),
-          value: t.Optional(t.Union([t.Array(t.Union([t.String(), t.Number(), t.Null()])), t.String(), t.Number(), t.Null()])),
+          value: t.Optional(
+            t.Union([
+              t.Array(t.Union([t.String(), t.Number(), t.Null()])),
+              t.String(),
+              t.Number(),
+              t.Null(),
+              t.Record(t.String(), t.Any()),
+            ]),
+          ),
         }),
       ),
     }),
