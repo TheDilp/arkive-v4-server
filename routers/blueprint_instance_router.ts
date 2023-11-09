@@ -45,6 +45,20 @@ export function blueprint_instance_router(app: Elysia) {
                       .execute();
                     return;
                   }
+                  if (field?.blueprint_instances?.length) {
+                    const { blueprint_instances } = field;
+                    await tx
+                      .insertInto("blueprint_instance_blueprint_instances")
+                      .values(
+                        blueprint_instances.map((char) => ({
+                          blueprint_field_id: field.id,
+                          blueprint_instance_id: newInstance.id,
+                          related_id: char.related_id,
+                        })),
+                      )
+                      .execute();
+                    return;
+                  }
                   if (field?.documents?.length) {
                     const { documents } = field;
                     await tx
@@ -484,6 +498,24 @@ export function blueprint_instance_router(app: Elysia) {
                         .execute(),
                     );
                   }
+                  if (field.blueprint_instances?.length) {
+                    await tx
+                      .deleteFrom("blueprint_instance_blueprint_instances")
+                      .where("blueprint_instance_id", "=", params.id)
+                      .where("blueprint_field_id", "=", field.id)
+                      .execute();
+                    return field.blueprint_instances.map((char) =>
+                      tx
+                        .insertInto("blueprint_instance_blueprint_instances")
+                        .values({
+                          blueprint_field_id: field.id,
+                          blueprint_instance_id: params.id,
+                          related_id: char.related_id,
+                        })
+                        .execute(),
+                    );
+                  }
+
                   if (field.documents?.length) {
                     await tx
                       .deleteFrom("blueprint_instance_documents")
