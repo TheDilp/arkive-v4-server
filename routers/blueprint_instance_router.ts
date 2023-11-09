@@ -179,6 +179,27 @@ export function blueprint_instance_router(app: Elysia) {
                         (ebb) =>
                           jsonArrayFrom(
                             ebb
+                              .selectFrom("blueprint_instance_blueprint_instances")
+                              .whereRef("blueprint_instance_blueprint_instances.blueprint_field_id", "=", "blueprint_fields.id")
+                              .whereRef(
+                                "blueprint_instance_blueprint_instances.blueprint_instance_id",
+                                "=",
+                                "blueprint_instances.id",
+                              )
+                              .select([
+                                "related_id",
+                                (ebbb) =>
+                                  jsonObjectFrom(
+                                    ebbb
+                                      .selectFrom("blueprint_instances")
+                                      .whereRef("related_id", "=", "blueprint_instances.id")
+                                      .select(["id", "title"]),
+                                  ).as("character"),
+                              ]),
+                          ).as("blueprint_instances"),
+                        (ebb) =>
+                          jsonArrayFrom(
+                            ebb
                               .selectFrom("blueprint_instance_documents")
                               .whereRef("blueprint_instance_documents.blueprint_field_id", "=", "blueprint_fields.id")
                               .whereRef("blueprint_instance_documents.blueprint_instance_id", "=", "blueprint_instances.id")
@@ -320,6 +341,23 @@ export function blueprint_instance_router(app: Elysia) {
                                 ).as("character"),
                             ]),
                         ).as("characters"),
+                      (ebb) =>
+                        jsonArrayFrom(
+                          ebb
+                            .selectFrom("blueprint_instance_blueprint_instances")
+                            .whereRef("blueprint_instance_blueprint_instances.blueprint_field_id", "=", "blueprint_fields.id")
+                            .where("blueprint_instance_blueprint_instances.blueprint_instance_id", "=", params.id)
+                            .select([
+                              "related_id",
+                              (ebbb) =>
+                                jsonObjectFrom(
+                                  ebbb
+                                    .selectFrom("blueprint_instances")
+                                    .whereRef("related_id", "=", "blueprint_instances.id")
+                                    .select(["id", "title"]),
+                                ).as("character"),
+                            ]),
+                        ).as("blueprint_instances"),
                       (ebb) =>
                         jsonArrayFrom(
                           ebb

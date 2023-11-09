@@ -167,12 +167,13 @@ model blueprint_fields {
   blueprint       blueprints?        @relation(fields: [parent_id], references: [id], onDelete: Cascade)
   parent_id       String?
 
-  characters    blueprint_instance_characters[]
-  documents     blueprint_instance_documents[]
-  map_pins      blueprint_instance_map_pins[]
-  images        blueprint_instance_images[]
-  random_tables blueprint_instance_random_tables[]
-  value         blueprint_instance_value[]
+  characters                             blueprint_instance_characters[]
+  documents                              blueprint_instance_documents[]
+  map_pins                               blueprint_instance_map_pins[]
+  images                                 blueprint_instance_images[]
+  random_tables                          blueprint_instance_random_tables[]
+  value                                  blueprint_instance_value[]
+  blueprint_instance_blueprint_instances blueprint_instance_blueprint_instances[]
 }
 
 model blueprint_instances {
@@ -186,12 +187,14 @@ model blueprint_instances {
   parent_id String
   tags      tags[]
 
-  characters    blueprint_instance_characters[]
-  documents     blueprint_instance_documents[]
-  map_pins      blueprint_instance_map_pins[]
-  images        blueprint_instance_images[]
-  random_tables blueprint_instance_random_tables[]
-  value         blueprint_instance_value[]
+  characters                             blueprint_instance_characters[]
+  documents                              blueprint_instance_documents[]
+  map_pins                               blueprint_instance_map_pins[]
+  images                                 blueprint_instance_images[]
+  random_tables                          blueprint_instance_random_tables[]
+  value                                  blueprint_instance_value[]
+  related_blueprint_instances            blueprint_instance_blueprint_instances[] @relation(name: "related_blueprint_instances")
+  blueprint_instance_blueprint_instances blueprint_instance_blueprint_instances[] @relation(name: "main_instances")
 }
 
 model blueprint_instance_characters {
@@ -216,6 +219,19 @@ model blueprint_instance_documents {
 
   document   documents @relation(fields: [related_id], references: [id], onDelete: Cascade)
   related_id String
+
+  @@id([blueprint_instance_id, blueprint_field_id, related_id])
+}
+
+model blueprint_instance_blueprint_instances {
+  blueprint_instance    blueprint_instances @relation(name: "main_instances", fields: [blueprint_instance_id], references: [id], onDelete: Cascade)
+  blueprint_instance_id String
+
+  blueprint_field    blueprint_fields @relation(fields: [blueprint_field_id], references: [id], onDelete: Cascade)
+  blueprint_field_id String
+
+  related_blueprint_instance blueprint_instances @relation(name: "related_blueprint_instances", fields: [related_id], references: [id], onDelete: Cascade)
+  related_id                 String
 
   @@id([blueprint_instance_id, blueprint_field_id, related_id])
 }

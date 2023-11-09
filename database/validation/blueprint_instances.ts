@@ -50,6 +50,13 @@ export const InsertBlueprintInstanceSchema = t.Object({
               }),
             ),
           ),
+          blueprint_instances: t.Optional(
+            t.Array(
+              t.Object({
+                related_id: t.String(),
+              }),
+            ),
+          ),
           documents: t.Optional(
             t.Array(
               t.Object({
@@ -104,6 +111,13 @@ export const UpdateBlueprintInstanceSchema = t.Object({
         t.Object({
           id: t.String(),
           characters: t.Optional(
+            t.Array(
+              t.Object({
+                related_id: t.String(),
+              }),
+            ),
+          ),
+          blueprint_instances: t.Optional(
             t.Array(
               t.Object({
                 related_id: t.String(),
