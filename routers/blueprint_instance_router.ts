@@ -101,20 +101,17 @@ export function blueprint_instance_router(app: Elysia) {
                       .execute();
                     return;
                   }
-                  if (field?.random_tables?.length) {
-                    const { random_tables } = field;
-                    await tx
-                      .insertInto("blueprint_instance_random_tables")
-                      .values(
-                        random_tables.map((random_table) => ({
-                          blueprint_field_id: field.id,
-                          blueprint_instance_id: newInstance.id,
-                          related_id: random_table.related_id,
-                        })),
-                      )
-                      .execute();
-                    return;
-                  }
+                  // if (field?.random_table) {
+                  //   const { random_table } = field;
+                  //   await tx
+                  //     .insertInto("blueprint_instance_random_tables")
+                  //     .values({
+                  //       blueprint_field_id: field.id
+                  //       related_id: random_table.related_id,
+                  //     })
+                  //     .execute();
+                  //   return;
+                  // }
                   if (field?.value) {
                     await tx
                       .insertInto("blueprint_instance_value")
@@ -331,6 +328,7 @@ export function blueprint_instance_router(app: Elysia) {
                     .whereRef("blueprint_fields.parent_id", "=", "blueprint_instances.parent_id")
                     .select([
                       "id",
+                      "field_type",
                       (ebb) =>
                         jsonObjectFrom(
                           ebb
@@ -414,9 +412,25 @@ export function blueprint_instance_router(app: Elysia) {
                             .selectFrom("blueprint_instance_random_tables")
                             .whereRef("blueprint_instance_random_tables.blueprint_field_id", "=", "blueprint_fields.id")
                             .where("blueprint_instance_random_tables.blueprint_instance_id", "=", params.id)
-
                             .select(["related_id", "option_id", "suboption_id"]),
                         ).as("random_table"),
+                      (ebb) =>
+                        jsonObjectFrom(
+                          ebb
+                            .selectFrom("blueprint_instance_calendars")
+                            .whereRef("blueprint_instance_calendars.blueprint_field_id", "=", "blueprint_fields.id")
+                            .where("blueprint_instance_calendars.blueprint_instance_id", "=", params.id)
+
+                            .select([
+                              "related_id",
+                              "start_day",
+                              "start_month_id",
+                              "start_year",
+                              "end_day",
+                              "end_month_id",
+                              "end_year",
+                            ]),
+                        ).as("calendar"),
                       (ebb) =>
                         jsonArrayFrom(
                           ebb
@@ -515,7 +529,6 @@ export function blueprint_instance_router(app: Elysia) {
                         .execute(),
                     );
                   }
-
                   if (field.documents?.length) {
                     await tx
                       .deleteFrom("blueprint_instance_documents")
@@ -581,6 +594,27 @@ export function blueprint_instance_router(app: Elysia) {
                         related_id: field.random_table.related_id,
                         option_id: field.random_table.option_id,
                         suboption_id: field.random_table.suboption_id,
+                      })
+                      .execute();
+                  }
+                  if (field.calendar) {
+                    await tx
+                      .deleteFrom("blueprint_instance_calendars")
+                      .where("blueprint_instance_id", "=", params.id)
+                      .where("blueprint_field_id", "=", field.id)
+                      .execute();
+                    return tx
+                      .insertInto("blueprint_instance_calendars")
+                      .values({
+                        blueprint_field_id: field.id,
+                        blueprint_instance_id: params.id,
+                        related_id: field.calendar.related_id,
+                        start_day: field.calendar.start_day,
+                        start_month_id: field.calendar.start_month_id,
+                        start_year: field.calendar.start_year,
+                        end_day: field.calendar.end_day,
+                        end_month_id: field.calendar.end_month_id,
+                        end_year: field.calendar.end_year,
                       })
                       .execute();
                   }

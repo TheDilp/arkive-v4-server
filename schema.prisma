@@ -146,7 +146,6 @@ model blueprints {
   project_id String
 
   title_name String
-  // title_width FieldWidth @default(full)
 
   blueprint_instance blueprint_instances[]
   blueprint_fields   blueprint_fields[]
@@ -159,13 +158,17 @@ model blueprint_fields {
   sort Int @default(0)
   // width FieldWidth
 
-  field_type      BlueprintFieldType
-  options         Json?              @db.JsonB
-  formula         String?
-  random_table    random_tables?     @relation(fields: [random_table_id], references: [id], onDelete: SetNull)
+  field_type BlueprintFieldType
+  options    Json?              @db.JsonB
+  formula    String?
+  blueprint  blueprints?        @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  parent_id  String?
+
+  random_table    random_tables? @relation(fields: [random_table_id], references: [id], onDelete: SetNull)
   random_table_id String?
-  blueprint       blueprints?        @relation(fields: [parent_id], references: [id], onDelete: Cascade)
-  parent_id       String?
+
+  calendar    calendars? @relation(fields: [calendar_id], references: [id], onDelete: SetNull)
+  calendar_id String?
 
   characters                             blueprint_instance_characters[]
   documents                              blueprint_instance_documents[]
@@ -174,6 +177,7 @@ model blueprint_fields {
   random_tables                          blueprint_instance_random_tables[]
   value                                  blueprint_instance_value[]
   blueprint_instance_blueprint_instances blueprint_instance_blueprint_instances[]
+  blueprint_instance_calendars           blueprint_instance_calendars[]
 }
 
 model blueprint_instances {
@@ -195,6 +199,7 @@ model blueprint_instances {
   value                                  blueprint_instance_value[]
   related_blueprint_instances            blueprint_instance_blueprint_instances[] @relation(name: "related_blueprint_instances")
   blueprint_instance_blueprint_instances blueprint_instance_blueprint_instances[] @relation(name: "main_instances")
+  blueprint_instance_calendars           blueprint_instance_calendars[]
 }
 
 model blueprint_instance_characters {
@@ -277,6 +282,30 @@ model blueprint_instance_random_tables {
 
   random_table_suboption random_table_suboptions? @relation(fields: [suboption_id], references: [id])
   suboption_id           String?
+
+  @@id([blueprint_instance_id, blueprint_field_id, related_id])
+  @@unique([blueprint_instance_id, blueprint_field_id, related_id])
+}
+
+model blueprint_instance_calendars {
+  blueprint_instance    blueprint_instances @relation(fields: [blueprint_instance_id], references: [id], onDelete: Cascade)
+  blueprint_instance_id String
+
+  blueprint_field    blueprint_fields @relation(fields: [blueprint_field_id], references: [id], onDelete: Cascade)
+  blueprint_field_id String
+
+  calendar   calendars @relation(fields: [related_id], references: [id], onDelete: Cascade)
+  related_id String
+
+  start_day      Int?
+  start_month    months? @relation(name: "startMonth", fields: [start_month_id], references: [id])
+  start_month_id String?
+  start_year     Int?
+
+  end_day      Int?
+  end_month    months? @relation(name: "endMonth", fields: [end_month_id], references: [id])
+  end_month_id String?
+  end_year     Int?
 
   @@id([blueprint_instance_id, blueprint_field_id, related_id])
   @@unique([blueprint_instance_id, blueprint_field_id, related_id])
@@ -777,8 +806,10 @@ model calendars {
   days   String[]
   events events[]
 
-  tags      tags[]
-  timelines timelines[]
+  tags                         tags[]
+  timelines                    timelines[]
+  blueprint_fields             blueprint_fields[]
+  blueprint_instance_calendars blueprint_instance_calendars[]
 }
 
 model months {
@@ -786,9 +817,11 @@ model months {
   title String
   days  Int
 
-  calendar  calendars @relation(fields: [parent_id], references: [id], onDelete: Cascade)
-  sort      Int       @default(0)
-  parent_id String
+  calendar                 calendars                      @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  sort                     Int                            @default(0)
+  parent_id                String
+  start_instance_calendars blueprint_instance_calendars[] @relation(name: "startMonth")
+  end_instance_calendars   blueprint_instance_calendars[] @relation(name: "endMonth")
 }
 
 model events {

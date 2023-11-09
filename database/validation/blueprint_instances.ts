@@ -78,12 +78,29 @@ export const InsertBlueprintInstanceSchema = t.Object({
               }),
             ),
           ),
-          random_tables: t.Optional(
-            t.Array(
+          random_table: t.Optional(
+            t.Union([
               t.Object({
+                option_id: t.Optional(t.Union([t.Null(), t.String()])),
+                suboption_id: t.Optional(t.Union([t.Null(), t.String()])),
                 related_id: t.String(),
               }),
-            ),
+              t.Null(),
+            ]),
+          ),
+          calendar: t.Optional(
+            t.Union([
+              t.Object({
+                start_day: t.Optional(t.Union([t.Number(), t.Null()])),
+                start_year: t.Optional(t.Union([t.Number(), t.Null()])),
+                start_month_id: t.Optional(t.Union([t.String(), t.Null()])),
+                end_day: t.Optional(t.Union([t.Number(), t.Null()])),
+                end_month_id: t.Optional(t.Union([t.String(), t.Null()])),
+                end_year: t.Optional(t.Union([t.Number(), t.Null()])),
+                related_id: t.String(),
+              }),
+              t.Null(),
+            ]),
           ),
           value: t.Optional(
             t.Union([
@@ -151,6 +168,20 @@ export const UpdateBlueprintInstanceSchema = t.Object({
               t.Object({
                 option_id: t.Optional(t.Union([t.Null(), t.String()])),
                 suboption_id: t.Optional(t.Union([t.Null(), t.String()])),
+                related_id: t.String(),
+              }),
+              t.Null(),
+            ]),
+          ),
+          calendar: t.Optional(
+            t.Union([
+              t.Object({
+                start_day: t.Optional(t.Union([t.Number(), t.Null()])),
+                start_year: t.Optional(t.Union([t.Number(), t.Null()])),
+                start_month_id: t.Optional(t.Union([t.String(), t.Null()])),
+                end_day: t.Optional(t.Union([t.Number(), t.Null()])),
+                end_month_id: t.Optional(t.Union([t.String(), t.Null()])),
+                end_year: t.Optional(t.Union([t.Number(), t.Null()])),
                 related_id: t.String(),
               }),
               t.Null(),

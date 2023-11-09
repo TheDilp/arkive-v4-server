@@ -150,6 +150,25 @@ export function blueprint_router(app: Elysia) {
                                 ).as("random_table_options"),
                             ]),
                         ).as("random_table"),
+                      (eb) =>
+                        jsonObjectFrom(
+                          eb
+                            .selectFrom("calendars")
+                            .whereRef("blueprint_fields.calendar_id", "=", "calendars.id")
+                            .select([
+                              "id",
+                              "title",
+                              "days",
+                              (ebb) =>
+                                jsonArrayFrom(
+                                  ebb
+                                    .selectFrom("months")
+                                    .whereRef("calendars.id", "=", "months.parent_id")
+                                    .select(["months.id", "months.title", "months.days"])
+                                    .orderBy("months.sort"),
+                                ).as("months"),
+                            ]),
+                        ).as("calendar"),
                     ])
                     .orderBy("sort"),
                 ).as("blueprint_fields"),
