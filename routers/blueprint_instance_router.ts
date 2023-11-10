@@ -204,7 +204,7 @@ export function blueprint_instance_router(app: Elysia) {
                                     ebbb
                                       .selectFrom("blueprint_instances")
                                       .whereRef("related_id", "=", "blueprint_instances.id")
-                                      .select(["id", "title"]),
+                                      .select(["id", "title", "blueprint_instances.parent_id"]),
                                   ).as("blueprint_instance"),
                               ]),
                           ).as("blueprint_instances"),
@@ -383,7 +383,12 @@ export function blueprint_instance_router(app: Elysia) {
                                     .selectFrom("blueprint_instances")
                                     .whereRef("related_id", "=", "blueprint_instances.id")
                                     .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
-                                    .select(["blueprint_instances.id", "blueprint_instances.title", "blueprints.icon as icon"]),
+                                    .select([
+                                      "blueprint_instances.id",
+                                      "blueprint_instances.title",
+                                      "blueprints.icon as icon",
+                                      "blueprint_instances.parent_id",
+                                    ]),
                                 ).as("blueprint_instance"),
                             ]),
                         ).as("blueprint_instances"),
