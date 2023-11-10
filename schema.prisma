@@ -147,8 +147,9 @@ model blueprints {
 
   title_name String
 
-  blueprint_instance blueprint_instances[]
-  blueprint_fields   blueprint_fields[]
+  blueprint_instance       blueprint_instances[]
+  blueprint_fields         blueprint_fields[]
+  related_blueprint_fields blueprint_fields[]    @relation(name: "related_blueprint")
 }
 
 model blueprint_fields {
@@ -169,6 +170,9 @@ model blueprint_fields {
 
   calendar    calendars? @relation(fields: [calendar_id], references: [id], onDelete: SetNull)
   calendar_id String?
+
+  related_blueprint blueprints? @relation(name: "related_blueprint", fields: [blueprint_id], references: [id], onDelete: SetNull)
+  blueprint_id      String?
 
   characters                             blueprint_instance_characters[]
   documents                              blueprint_instance_documents[]
