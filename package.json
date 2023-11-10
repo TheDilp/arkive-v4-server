@@ -6,7 +6,8 @@
   "scripts": {
     "start": "bun --watch index.ts",
     "build": "bun build index.ts",
-    "email": "email dev"
+    "email": "email dev",
+    "migrate:dev": "bunx prisma migrate dev --name dev_migration && bun run kysely-codegen"
   },
   "keywords": [],
   "author": "",
