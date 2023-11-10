@@ -205,7 +205,7 @@ export function blueprint_instance_router(app: Elysia) {
                                       .selectFrom("blueprint_instances")
                                       .whereRef("related_id", "=", "blueprint_instances.id")
                                       .select(["id", "title"]),
-                                  ).as("character"),
+                                  ).as("blueprint_instance"),
                               ]),
                           ).as("blueprint_instances"),
                         (ebb) =>
@@ -436,7 +436,6 @@ export function blueprint_instance_router(app: Elysia) {
                             .selectFrom("blueprint_instance_calendars")
                             .whereRef("blueprint_instance_calendars.blueprint_field_id", "=", "blueprint_fields.id")
                             .where("blueprint_instance_calendars.blueprint_instance_id", "=", params.id)
-
                             .select([
                               "related_id",
                               "start_day",
