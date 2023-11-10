@@ -123,6 +123,14 @@ export function blueprint_router(app: Elysia) {
                       "blueprint_fields.sort",
                       "blueprint_fields.formula",
                       "blueprint_fields.random_table_id",
+                      "blueprint_fields.blueprint_id",
+                      (eb) =>
+                        jsonObjectFrom(
+                          eb
+                            .selectFrom("blueprints")
+                            .whereRef("blueprints.id", "=", "blueprint_fields.blueprint_id")
+                            .select(["id", "title", "icon"]),
+                        ).as("blueprint"),
                       (eb) =>
                         jsonObjectFrom(
                           eb
@@ -242,7 +250,7 @@ export function blueprint_router(app: Elysia) {
                       tx
                         .updateTable("blueprint_fields")
                         .where("blueprint_fields.id", "=", item.id as string)
-                        .set({ ...omit(item, ["id"]), options: JSON.stringify(item.options || []) })
+                        .set({ ...omit(item, ["id"]), options: item.options ? JSON.stringify(item.options) : null })
                         .execute(),
                     ),
                   );
