@@ -7,7 +7,7 @@ export type SearchableEntities =
   | "documents"
   | "maps"
   | "map_pins"
-  | "boards"
+  | "graphs"
   | "nodes"
   | "edges"
   | "blueprints"
@@ -19,7 +19,7 @@ export type SearchableEntities =
   | "events"
   | "words"
   | "tags";
-export type SearchableMentionEntities = "characters" | "documents" | "maps" | "map_pins" | "boards" | "nodes" | "words";
+export type SearchableMentionEntities = "characters" | "documents" | "maps" | "map_pins" | "graphs" | "nodes" | "words";
 
 export type RequestFilterOperatorType = keyof typeof FilterEnum;
 

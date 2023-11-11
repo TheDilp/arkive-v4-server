@@ -3,6 +3,7 @@ export * from "./asset_router";
 export * from "./authentication_router";
 export * from "./blueprint_instance_router";
 export * from "./blueprint_router";
+export * from "./bulk_router";
 export * from "./calendar_router";
 export * from "./character_fields_router";
 export * from "./character_fields_template_router";

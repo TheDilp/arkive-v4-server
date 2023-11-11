@@ -97,9 +97,9 @@ export function search_router(app: Elysia) {
             .$if(type === "nodes", (eb) =>
               eb
                 .leftJoin("characters", "characters.id", "nodes.character_id")
-                .leftJoin("boards", "boards.id", "nodes.parent_id")
+                .leftJoin("graphs", "graphs.id", "nodes.parent_id")
                 .select([
-                  "boards.title as parent_title",
+                  "graphs.title as parent_title",
                   "characters.id as character_id",
                   "characters.first_name",
                   "characters.last_name",
@@ -107,7 +107,7 @@ export function search_router(app: Elysia) {
                 ]),
             )
             .$if(type === "edges", (eb) =>
-              eb.leftJoin("boards", "boards.id", "nodes.parent_id").select(["boards.title as parent_title"]),
+              eb.leftJoin("graphs", "graphs.id", "nodes.parent_id").select(["graphs.title as parent_title"]),
             )
             .$if(type === "map_pins", (eb) =>
               eb.leftJoin("maps", "maps.id", "map_pins.parent_id").select(["maps.title as parent_title"]),
@@ -221,9 +221,9 @@ export function search_router(app: Elysia) {
               ok: true,
             };
           }
-          if (type === "boards") {
+          if (type === "graphs") {
             const data = await db
-              .selectFrom("boards")
+              .selectFrom("graphs")
               .select(["id", "title"])
               .where("title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
               .where("project_id", "=", params.project_id)
@@ -367,10 +367,10 @@ export function search_router(app: Elysia) {
               .limit(5),
           };
           const graphSearch = {
-            name: "boards",
+            name: "graphs",
             request: db
-              .selectFrom("boards")
-              .where("boards.title", "ilike", `%${search_term}%`)
+              .selectFrom("graphs")
+              .where("graphs.title", "ilike", `%${search_term}%`)
               .where("project_id", "=", project_id)
               .select(["id", "title", "icon"])
               .limit(5),
@@ -379,18 +379,18 @@ export function search_router(app: Elysia) {
             name: "nodes",
             request: db
               .selectFrom("nodes")
-              .leftJoin("boards", "boards.id", "nodes.parent_id")
+              .leftJoin("graphs", "graphs.id", "nodes.parent_id")
               .leftJoin("characters", "characters.id", "nodes.character_id")
               .where((eb) =>
                 eb.or([eb("label", "ilike", `%${search_term}%`), eb("characters.first_name", "ilike", `%${search_term}%`)]),
               )
-              .where("boards.project_id", "=", project_id)
+              .where("graphs.project_id", "=", project_id)
               .select([
                 "nodes.id",
                 "nodes.label",
                 "nodes.parent_id",
                 "nodes.image_id",
-                "boards.title as parent_title",
+                "graphs.title as parent_title",
                 "characters.first_name",
                 "characters.last_name",
                 "characters.portrait_id",
@@ -402,9 +402,9 @@ export function search_router(app: Elysia) {
             request: db
               .selectFrom("edges")
               .where("label", "ilike", `%${search_term}%`)
-              .leftJoin("boards", "boards.id", "edges.parent_id")
-              .where("boards.project_id", "=", project_id)
-              .select(["edges.id", "edges.label", "edges.parent_id", "boards.title as parent_title"])
+              .leftJoin("graphs", "graphs.id", "edges.parent_id")
+              .where("graphs.project_id", "=", project_id)
+              .select(["edges.id", "edges.label", "edges.parent_id", "graphs.title as parent_title"])
               .limit(5),
           };
           const calendarSearch = {
@@ -492,7 +492,6 @@ export function search_router(app: Elysia) {
               if (entity_name === "characters")
                 fields.push("characters.first_name", "characters.last_name", "characters.portrait_id");
               else if (entity_name === "nodes" || entity_name === "edges") fields.push("label");
-              else if (entity_name !== "cards") fields.push(`${entity_name}.title`);
               if (SubEntityEnum.includes(entity_name)) fields.push("parent_id");
 
               return {

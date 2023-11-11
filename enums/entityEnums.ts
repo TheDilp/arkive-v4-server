@@ -25,7 +25,7 @@ export const SubEntityEnum = ["alter_names", "map_pins", "character_map_pins", "
 export const EntitiesWithTagsTables: TagsRelationTables[] = [
   "_charactersTotags",
   "_documentsTotags",
-  "_boardsTotags",
+  "_graphsTotags",
   "_mapsTotags",
   "_calendarsTotags",
   "_cardsTotags",

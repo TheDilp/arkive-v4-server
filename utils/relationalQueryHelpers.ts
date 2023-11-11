@@ -144,7 +144,7 @@ export function GetEntityChildren(qb: SelectQueryBuilder<DB, EntitiesWithChildre
           .orderBy("title", "asc"),
       ).as("children"),
     );
-  } else if (table_name === "boards") {
+  } else if (table_name === "graphs") {
     return qb.select((eb) =>
       jsonArrayFrom(
         eb

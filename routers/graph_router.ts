@@ -27,10 +27,10 @@ export function graph_router(app: Elysia) {
         "/create",
         async ({ body }) => {
           await db.transaction().execute(async (tx) => {
-            const graph = await tx.insertInto("boards").values(body.data).returning("id").executeTakeFirstOrThrow();
+            const graph = await tx.insertInto("graphs").values(body.data).returning("id").executeTakeFirstOrThrow();
 
             if (body?.relations?.tags)
-              await CreateTagRelations({ tx, relationalTable: "_boardsTotags", id: graph.id, tags: body.relations.tags });
+              await CreateTagRelations({ tx, relationalTable: "_graphsTotags", id: graph.id, tags: body.relations.tags });
           });
           return { message: `Graph ${MessageEnum.successfully_created}`, ok: true };
         },
@@ -43,12 +43,12 @@ export function graph_router(app: Elysia) {
         "/",
         async ({ body }) => {
           const data = await db
-            .selectFrom("boards")
+            .selectFrom("graphs")
             .where("project_id", "=", body.data.project_id)
             .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "boards">[]))
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "graphs">[]))
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
-              qb = constructFilter("boards", qb, body.filters);
+              qb = constructFilter("graphs", qb, body.filters);
               return qb;
             })
             .limit(body?.pagination?.limit || 10)
@@ -70,10 +70,10 @@ export function graph_router(app: Elysia) {
         async ({ params, body }) => {
           const data = await db
 
-            .selectFrom("boards")
-            .where("boards.id", "=", params.id)
+            .selectFrom("graphs")
+            .where("graphs.id", "=", params.id)
             .$if(!!body?.relations?.children, (qb) =>
-              GetEntityChildren(qb as SelectQueryBuilder<DB, EntitiesWithChildren, {}>, "boards"),
+              GetEntityChildren(qb as SelectQueryBuilder<DB, EntitiesWithChildren, {}>, "graphs"),
             )
             .$if(!!body?.relations?.nodes, (qb) =>
               qb.select((eb) =>
@@ -111,24 +111,24 @@ export function graph_router(app: Elysia) {
               ),
             )
 
-            .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_boardsTotags", "boards")))
+            .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_graphsTotags", "graphs")))
             .select([
-              "boards.id",
-              "boards.title",
-              "boards.icon",
-              "boards.is_folder",
-              "boards.is_public",
-              "boards.parent_id",
-              "boards.default_node_shape",
-              "boards.default_node_color",
-              "boards.default_edge_color",
+              "graphs.id",
+              "graphs.title",
+              "graphs.icon",
+              "graphs.is_folder",
+              "graphs.is_public",
+              "graphs.parent_id",
+              "graphs.default_node_shape",
+              "graphs.default_node_color",
+              "graphs.default_edge_color",
             ])
             .executeTakeFirstOrThrow();
           const edges = body?.relations?.edges
             ? await db.selectFrom("edges").selectAll().where("edges.parent_id", "=", params.id).execute()
             : [];
 
-          const parents = body?.relations?.parents ? await GetBreadcrumbs({ db, id: params.id, table_name: "boards" }) : [];
+          const parents = body?.relations?.parents ? await GetBreadcrumbs({ db, id: params.id, table_name: "graphs" }) : [];
           const finalData: typeof data & { parents?: any[]; edges?: any[] } = { ...data };
 
           if (parents.length) {
@@ -154,12 +154,12 @@ export function graph_router(app: Elysia) {
         async ({ params, body }) => {
           await db.transaction().execute(async (tx) => {
             if (body.data) {
-              await tx.updateTable("boards").where("id", "=", params.id).set(body.data).executeTakeFirstOrThrow();
+              await tx.updateTable("graphs").where("id", "=", params.id).set(body.data).executeTakeFirstOrThrow();
             }
             if (body?.relations) {
               if (body.relations?.tags)
                 await UpdateTagRelations({
-                  relationalTable: "_boardsTotags",
+                  relationalTable: "_graphsTotags",
                   id: params.id,
                   newTags: body.relations.tags,
                   tx,
@@ -179,7 +179,7 @@ export function graph_router(app: Elysia) {
         async ({ body }) => {
           let graphId = "";
           await db.transaction().execute(async (tx) => {
-            const { id } = await tx.insertInto("boards").values(body.data).returning("id").executeTakeFirstOrThrow();
+            const { id } = await tx.insertInto("graphs").values(body.data).returning("id").executeTakeFirstOrThrow();
             graphId = id;
             const { nodes, edges } = body.relations;
 
@@ -211,7 +211,7 @@ export function graph_router(app: Elysia) {
         { body: GenerateGraphSchema, response: ResponseWithDataSchema },
       )
       .delete("/:id", async ({ params }) => {
-        await db.deleteFrom("boards").where("boards.id", "=", params.id).execute();
+        await db.deleteFrom("graphs").where("graphs.id", "=", params.id).execute();
         return { message: `Graph ${MessageEnum.successfully_deleted}`, ok: true };
       }),
   );

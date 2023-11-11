@@ -8,6 +8,7 @@ import {
   asset_router,
   blueprint_instance_router,
   blueprint_router,
+  bulk_router,
   calendar_router,
   character_fields_router,
   character_fields_templates_router,
@@ -108,7 +109,8 @@ export const app = new Elysia()
       .use(random_table_router)
       .use(random_table_option_router)
       .use(search_router)
-      .use(message_router),
+      .use(message_router)
+      .use(bulk_router),
   )
   .use(websocket_router)
   .listen((process.env.PORT as string) || 3000);
