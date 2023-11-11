@@ -14,7 +14,7 @@ import {
   UpdateDocumentSchema,
 } from "../database/validation/documents";
 import { MessageEnum } from "../enums/requestEnums";
-import { afterCreateHandler, afterDeleteHandler } from "../handlers";
+import { afterHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -34,7 +34,7 @@ export function document_router(app: Elysia) {
       .state("auth", { userId: "" })
       .post(
         "/create",
-        async ({ body }) => {
+        async ({ body, request }) => {
           await db.transaction().execute(async (tx) => {
             const document = await tx.insertInto("documents").values(body.data).returning("id").executeTakeFirstOrThrow();
 
@@ -56,12 +56,11 @@ export function document_router(app: Elysia) {
               await CreateTagRelations({ tx, relationalTable: "_documentsTotags", id: document.id, tags });
             }
           });
+          const token = request.headers.get("authorization");
+          if (token) afterHandler(body.data, "documents", token, "create");
           return { message: `Document ${MessageEnum.successfully_created}`, ok: true };
         },
         {
-          afterHandle: (args) => {
-            afterCreateHandler(args.body, "documents", args.store?.auth?.userId);
-          },
           body: InsertDocumentSchema,
           response: ResponseSchema,
         },
@@ -243,13 +242,14 @@ export function document_router(app: Elysia) {
         },
         { body: GenerateDocumentSchema, response: ResponseWithDataSchema },
       )
-      .delete("/:id", async ({ params, store }) => {
-        const { title, project_id } = await db
+      .delete("/:id", async ({ params, request }) => {
+        const data = await db
           .deleteFrom("documents")
           .where("documents.id", "=", params.id)
           .returning(["title", "project_id"])
           .executeTakeFirstOrThrow();
-        afterDeleteHandler({ title, project_id }, "documents", store?.auth?.userId);
+        const token = request.headers.get("authorization");
+        if (token) afterHandler(data, "documents", token, "create");
         return { message: `Document ${MessageEnum.successfully_deleted}.`, ok: true };
       }),
   );

@@ -28,11 +28,9 @@ export const EntitiesWithTagsTables: TagsRelationTables[] = [
   "_graphsTotags",
   "_mapsTotags",
   "_calendarsTotags",
-  "_cardsTotags",
   "_dictionariesTotags",
   "_edgesTotags",
   "_nodesTotags",
-  "_screensTotags",
 ];
 
 export const EntitiesWithoutProjectId = ["map_pins", "character_map_pins", "map_layers", "nodes", "edges", "events"];

@@ -1,8 +1,7 @@
 import { cors } from "@elysiajs/cors";
-// import { staticPlugin } from "@elysiajs/static";
-import { swagger } from "@elysiajs/swagger";
 import { Elysia, ws } from "elysia";
-import { clerkPlugin } from "elysia-clerk";
+import { verify } from "jsonwebtoken";
+import * as jwtToPem from "jwk-to-pem";
 
 import {
   asset_router,
@@ -45,14 +44,13 @@ class UnauthorizedError extends Error {
 export const app = new Elysia()
   .state("auth", { userId: "" })
   .use(cors({ origin: process.env.NODE_ENV === "development" ? "*" : "https://thearkive.app" }))
-  .use(swagger())
   .use(ws())
-  // .use(staticPlugin())
   .addError({
     UNAUTHORIZED: UnauthorizedError,
   })
   .onError(({ code, error, set }) => {
     if (code === "UNAUTHORIZED") {
+      console.log("TEST");
       set.status = 403;
       return { message: "UNAUTHORIZED", ok: false };
     }
@@ -73,14 +71,35 @@ export const app = new Elysia()
     return { message: "There was an error with your request.", ok: false };
   })
   .use(health_check_router)
-  .use(clerkPlugin())
 
   .group("/api/v1", (server) =>
     // @ts-ignore
     server
-      .onBeforeHandle(({ store }) => {
-        // @ts-ignore
-        if ("auth" in store && !store?.auth?.userId) {
+      .onBeforeHandle(async ({ request }) => {
+        const token = request.headers.get("authorization");
+        if (token) {
+          const jwtoken = token.replace("Bearer ", "");
+
+          const jwtPublicKeyRes = await fetch(process.env.JWT_VERIFY_URL as string);
+          const jwtPublicKey = await jwtPublicKeyRes.json();
+          const publicKey = jwtToPem.default(jwtPublicKey.keys[0]);
+          const verifiedToken: any = verify(jwtoken, publicKey, (err, result) => {
+            if (err)
+              return {
+                name: "TokenExpiredError",
+                message: "Session ended.",
+                expiredAt: Date.now(),
+                error: true,
+              };
+            return result;
+          });
+          if (verifiedToken.error) {
+            throw new UnauthorizedError("UNAUTHORIZED");
+          }
+          if (verifiedToken.azp !== process.env.JWT_VERIFY_HOST || verifiedToken.exp * 1000 < Date.now()) {
+            throw new UnauthorizedError("UNAUTHORIZED");
+          }
+        } else {
           throw new UnauthorizedError("UNAUTHORIZED");
         }
       })

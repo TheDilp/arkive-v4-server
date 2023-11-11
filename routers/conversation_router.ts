@@ -11,7 +11,7 @@ import {
   UpdateConversationSchema,
 } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
-import { afterCreateHandler, afterDeleteHandler } from "../handlers";
+import { afterHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -22,12 +22,12 @@ export function conversation_router(app: Elysia) {
     server
       .post(
         "/create",
-        async ({ body }) => {
+        async ({ body, request }) => {
           await db.transaction().execute(async (tx) => {
             const conversation = await tx
               .insertInto("conversations")
               .values(body.data)
-              .returning(["id", "title"])
+              .returning("id")
               .executeTakeFirstOrThrow();
 
             await tx
@@ -35,11 +35,13 @@ export function conversation_router(app: Elysia) {
               .values(body.relations.characters.map((char) => ({ A: char.id, B: conversation.id })))
               .execute();
           });
-
+          const token = request.headers.get("authorization");
+          if (token) {
+            afterHandler(body.data, "conversations", token, "create");
+          }
           return { message: `Conversation ${MessageEnum.successfully_created}`, ok: true };
         },
         {
-          afterHandle: (args) => afterCreateHandler(args, "conversations"),
           body: InsertConversationSchema,
           response: ResponseSchema,
         },
@@ -173,14 +175,15 @@ export function conversation_router(app: Elysia) {
       )
       .delete(
         "/:id",
-        async ({ params }) => {
-          const { title, project_id } = await db
+        async ({ params, request }) => {
+          const data = await db
             .deleteFrom("conversations")
             .where("conversations.id", "=", params.id)
             .returning(["conversations.title", "conversations.project_id"])
             .executeTakeFirstOrThrow();
 
-          afterDeleteHandler({ title, project_id }, "conversations");
+          const token = request.headers.get("authorization");
+          if (token) afterHandler(data, "characters", token, "create");
 
           return { message: `Character ${MessageEnum.successfully_deleted}`, ok: true };
         },

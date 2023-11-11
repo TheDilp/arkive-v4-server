@@ -2,6 +2,8 @@ import { t } from "elysia";
 
 import { FilterEnum } from "../enums/requestEnums";
 
+export type AfterHandlerActionType = "create" | "update" | "delete" | "delete_many";
+
 export type SearchableEntities =
   | "characters"
   | "documents"
@@ -109,3 +111,5 @@ export const RequestBodySchema = t.Object({
 
 export const ResponseSchema = t.Object({ message: t.String(), ok: t.Boolean() });
 export const ResponseWithDataSchema = t.Object({ data: t.Any(), message: t.String(), ok: t.Boolean() });
+
+export type JWTPayloadType = { image_url: string; auth_id: string; name: string };

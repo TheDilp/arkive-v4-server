@@ -9,7 +9,7 @@ import uniqBy from "lodash.uniqby";
 import { db } from "../database/db";
 import { InsertCharacterSchema, ListCharacterSchema, ReadCharacterSchema, UpdateCharacterSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
-import { afterCreateHandler, afterDeleteHandler, afterUpdateHandler } from "../handlers";
+import { afterHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, constructTagFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -27,7 +27,7 @@ export function character_router(app: Elysia) {
     server
       .post(
         "/create",
-        async ({ body }) => {
+        async ({ body, request }) => {
           await db.transaction().execute(async (tx) => {
             const character = await tx.insertInto("characters").values(body.data).returning("id").executeTakeFirstOrThrow();
 
@@ -82,14 +82,24 @@ export function character_router(app: Elysia) {
               }
             }
           });
+          const token = request.headers.get("authorization");
+          if (token)
+            afterHandler(
+              {
+                first_name: body.data.first_name,
+                last_name: body.data.last_name,
+                project_id: body.data.project_id,
+                image_id: body.data.portrait_id,
+              },
+              "characters",
+              token,
+              "create",
+            );
           return { message: `Character ${MessageEnum.successfully_created}`, ok: true };
         },
         {
           body: InsertCharacterSchema,
           response: ResponseSchema,
-          afterHandle: ({ body, store }) => {
-            afterCreateHandler(body, "characters", store?.auth?.userId);
-          },
         },
       )
       .post(
@@ -567,7 +577,7 @@ export function character_router(app: Elysia) {
       )
       .post(
         "/update/:id",
-        async ({ params, body, store }) => {
+        async ({ params, body, request }) => {
           await db.transaction().execute(async (tx) => {
             let deletedTags: string[] | null = null;
 
@@ -716,8 +726,8 @@ export function character_router(app: Elysia) {
                 .set(body.data)
                 .returning(["first_name", "last_name", "project_id", "portrait_id as image_id"])
                 .executeTakeFirstOrThrow();
-
-              afterUpdateHandler(updatedChar, "characters", store?.auth?.userId);
+              const token = request.headers.get("authorization");
+              if (token) afterHandler(updatedChar, "characters", token, "update");
             }
           });
           return { message: `Character ${MessageEnum.successfully_updated}`, ok: true };
@@ -783,14 +793,14 @@ export function character_router(app: Elysia) {
       )
       .delete(
         "/:id",
-        async ({ params, store }) => {
-          const { first_name, last_name, project_id } = await db
+        async ({ params, request }) => {
+          const data = await db
             .deleteFrom("characters")
             .where("characters.id", "=", params.id)
-            .returning(["first_name", "last_name", "project_id"])
+            .returning(["first_name", "last_name", "project_id", "portrait_id as image_id"])
             .executeTakeFirstOrThrow();
-
-          afterDeleteHandler({ first_name, last_name, project_id }, "characters", store?.auth?.userId);
+          const token = request.headers.get("authorization");
+          if (token) afterHandler(data, "characters", token, "create");
 
           return { message: `Character ${MessageEnum.successfully_deleted}`, ok: true };
         },

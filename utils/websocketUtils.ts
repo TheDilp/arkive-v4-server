@@ -10,6 +10,7 @@ export function sendNotification(
     image_id?: string | null;
     userId: string;
     nickname?: string;
+    userImageUrl?: string;
   },
 ) {
   app.server.publish(`notifications/${room}`, JSON.stringify(notification));

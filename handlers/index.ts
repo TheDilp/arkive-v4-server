@@ -1,3 +1,1 @@
-export * from "./afterCreateHandler";
-export * from "./afterDeleteHandler";
-export * from "./afterUpdateHandler";
+export * from "./afterHandler";
