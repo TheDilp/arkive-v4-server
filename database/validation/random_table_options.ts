@@ -39,13 +39,18 @@ export const RandomTableSubOptionSchema = t.Object({
 });
 
 export const InsertRandomTableSubOptionSchema = t.Object({
-  title: t.String(),
-  parent_id: t.String(),
-  description: t.Optional(t.Union([t.String(), t.Null()])),
+  data: t.Object({
+    title: t.String(),
+    parent_id: t.String(),
+    description: t.Optional(t.Union([t.String(), t.Null()])),
+  }),
 });
 export const UpdateRandomTableSubOptionSchema = t.Object({
-  title: t.String(),
-  description: t.Optional(t.Union([t.String(), t.Null()])),
+  data: t.Object({
+    id: t.String(),
+    title: t.Optional(t.String()),
+    description: t.Optional(t.Union([t.String(), t.Null()])),
+  }),
 });
 
 export const InsertRandomTableOptionItemSchema = t.Object({

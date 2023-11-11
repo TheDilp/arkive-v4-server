@@ -30,10 +30,13 @@ export function random_table_option_router(app: Elysia) {
               .values(body.data.map((opt) => opt.data))
               .execute();
 
-            if (body?.relations?.random_table_suboptions?.length) {
+            if (body?.relations?.random_table_suboptions) {
               const { random_table_suboptions } = body.relations;
               if (random_table_suboptions?.length) {
-                await tx.insertInto("random_table_suboptions").values(random_table_suboptions).execute();
+                await tx
+                  .insertInto("random_table_suboptions")
+                  .values(random_table_suboptions.map((subopt) => subopt.data))
+                  .execute();
               }
             }
           });
@@ -84,7 +87,6 @@ export function random_table_option_router(app: Elysia) {
 
             .selectFrom("random_table_options")
             .where("random_table_options.id", "=", params.id)
-
             .select([
               "random_table_options.id",
               "random_table_options.title",
@@ -187,7 +189,7 @@ export function random_table_option_router(app: Elysia) {
           await db.transaction().execute(async (tx) => {
             await tx.updateTable("random_table_options").where("id", "=", params.id).set(body.data).execute();
 
-            if (body?.relations?.random_table_suboptions?.length) {
+            if (body?.relations?.random_table_suboptions) {
               const existingIds = await tx
                 .selectFrom("random_table_suboptions")
                 .select(["id"])
@@ -196,7 +198,7 @@ export function random_table_option_router(app: Elysia) {
 
               const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
                 existingIds.map((item) => item.id),
-                body.relations.random_table_suboptions,
+                body.relations.random_table_suboptions.map((subopt) => subopt.data),
               );
 
               if (idsToRemove.length) {

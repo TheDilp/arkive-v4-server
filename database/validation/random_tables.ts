@@ -1,7 +1,6 @@
 import { t } from "elysia";
 
 import { RequestBodySchema } from "../../types/requestTypes";
-import { InsertRandomTableOptionItemSchema } from ".";
 
 export const ReadRandomTableSchema = t.Intersect([
   RequestBodySchema,
@@ -31,7 +30,11 @@ export const InsertRandomTableSchema = t.Object({
   }),
   relations: t.Optional(
     t.Object({
-      random_table_options: t.Array(t.Object({ data: InsertRandomTableOptionItemSchema })),
+      random_table_options: t.Array(
+        t.Object({
+          data: t.Object({ title: t.String(), description: t.Optional(t.String()) }),
+        }),
+      ),
     }),
   ),
 });
@@ -44,4 +47,13 @@ export const UpdateRandomTableSchema = t.Object({
     is_folder: t.Optional(t.Union([t.Boolean(), t.Null()])),
     is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
   }),
+  relations: t.Optional(
+    t.Object({
+      random_table_options: t.Array(
+        t.Object({
+          data: t.Object({ id: t.String(), title: t.String(), description: t.Optional(t.String()) }),
+        }),
+      ),
+    }),
+  ),
 });

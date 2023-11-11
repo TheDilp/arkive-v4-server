@@ -11,7 +11,7 @@ import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { GetBreadcrumbs, GetEntityChildren } from "../utils/relationalQueryHelpers";
+import { GetBreadcrumbs, GetEntityChildren, GetRelationsForUpdating } from "../utils/relationalQueryHelpers";
 
 export function random_table_router(app: Elysia) {
   return app.group("/random_tables", (server) =>
@@ -25,10 +25,7 @@ export function random_table_router(app: Elysia) {
             if (body?.relations) {
               if (body.relations?.random_table_options) {
                 const { random_table_options } = body.relations;
-                const withParentId = random_table_options.map((opt) => {
-                  opt.data.parent_id = id;
-                  return opt.data;
-                });
+                const withParentId = random_table_options.map((opt) => ({ ...opt.data, parent_id: id }));
                 await tx.insertInto("random_table_options").values(withParentId).execute();
               }
             }
@@ -122,7 +119,52 @@ export function random_table_router(app: Elysia) {
       .post(
         "/update/:id",
         async ({ params, body }) => {
-          await db.updateTable("random_tables").where("id", "=", params.id).set(body.data).execute();
+          await db.transaction().execute(async (tx) => {
+            await tx.updateTable("random_tables").where("id", "=", params.id).set(body.data).executeTakeFirstOrThrow();
+
+            if (body?.relations) {
+              if (body.relations?.random_table_options) {
+                const { random_table_options } = body.relations;
+                const existingCharacterFields = await tx
+                  .selectFrom("random_table_options")
+                  .select(["id"])
+                  .where("random_table_options.parent_id", "=", params.id)
+                  .execute();
+                const existingIds = existingCharacterFields.map((field) => field.id);
+                const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+                  existingIds,
+                  random_table_options.map((opt) => opt.data),
+                );
+                if (idsToRemove.length) {
+                  await tx.deleteFrom("random_table_options").where("id", "in", idsToRemove).execute();
+                }
+                if (itemsToAdd.length) {
+                  await tx
+                    .insertInto("random_table_options")
+                    .values(
+                      itemsToAdd.map((item) => ({
+                        parent_id: params.id,
+                        title: item.title,
+                        description: item.description,
+                      })),
+                    )
+                    .execute();
+                }
+                if (itemsToUpdate.length) {
+                  await Promise.all(
+                    itemsToUpdate.map(async (item) => {
+                      await tx
+                        .updateTable("random_table_options")
+                        .where("parent_id", "=", params.id)
+                        .where("id", "=", item.id)
+                        .set({ title: item.title, description: item.description })
+                        .execute();
+                    }),
+                  );
+                }
+              }
+            }
+          });
 
           return { message: `Random table ${MessageEnum.successfully_updated}.`, ok: true };
         },

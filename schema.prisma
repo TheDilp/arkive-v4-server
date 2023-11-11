@@ -94,7 +94,7 @@ model projects {
   documents                    documents[]
   maps                         maps[]
   boards                       boards[]
-  screens                      screens[]
+  // screens                      screens[]
   dictionaries                 dictionaries[]
   calendars                    calendars[]
   random_tables                random_tables[]
@@ -495,7 +495,7 @@ model documents {
   tags        tags[]
   alter_names alter_names[]
 
-  cards                        cards[]
+  // cards                        cards[]
   events                       events[]
   characters                   characters[]
   blueprint_instance_documents blueprint_instance_documents[]
@@ -696,56 +696,56 @@ model edges {
   // @@unique([source_id, target_id,])
 }
 
-model screens {
-  id         String   @id @default(dbgenerated("gen_random_uuid()"))
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now())
+// model screens {
+//   id         String   @id @default(dbgenerated("gen_random_uuid()"))
+//   created_at DateTime @default(now())
+//   updated_at DateTime @default(now())
 
-  title      String
-  project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  project_id String
+//   title      String
+//   project    projects @relation(fields: [project_id], references: [id], onDelete: Cascade)
+//   project_id String
 
-  parent_id String?
-  parent    screens?  @relation("parentChildScreens", fields: [parent_id], references: [id], onDelete: Cascade)
-  children  screens[] @relation("parentChildScreens")
+//   parent_id String?
+//   parent    screens?  @relation("parentChildScreens", fields: [parent_id], references: [id], onDelete: Cascade)
+//   children  screens[] @relation("parentChildScreens")
 
-  icon      String?
-  is_folder Boolean?
-  is_public Boolean?
+//   icon      String?
+//   is_folder Boolean?
+//   is_public Boolean?
 
-  section_size String?
-  sections     sections[]
-  tags         tags[]
-}
+//   section_size String?
+//   sections     sections[]
+//   tags         tags[]
+// }
 
-model sections {
-  id        String  @id @default(dbgenerated("gen_random_uuid()"))
-  title     String
-  sort      Int     @default(0)
-  card_size String?
+// model sections {
+//   id        String  @id @default(dbgenerated("gen_random_uuid()"))
+//   title     String
+//   sort      Int     @default(0)
+//   card_size String?
 
-  screens   screens? @relation(fields: [parent_id], references: [id], onDelete: Cascade)
-  parent_id String?
+//   screens   screens? @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+//   parent_id String?
 
-  cards cards[]
-}
+//   cards cards[]
+// }
 
-model cards {
-  id   String @id @default(dbgenerated("gen_random_uuid()"))
-  sort Int    @default(0)
+// model cards {
+//   id   String @id @default(dbgenerated("gen_random_uuid()"))
+//   sort Int    @default(0)
 
-  content Json? @db.JsonB
+//   content Json? @db.JsonB
 
-  document    documents @relation(fields: [document_id], references: [id], onDelete: Cascade)
-  document_id String
+//   document    documents @relation(fields: [document_id], references: [id], onDelete: Cascade)
+//   document_id String
 
-  sections  sections? @relation(fields: [parent_id], references: [id], onDelete: Cascade)
-  parent_id String?
+//   sections  sections? @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+//   parent_id String?
 
-  tags tags[]
+//   tags tags[]
 
-  @@unique([parent_id, document_id])
-}
+//   @@unique([parent_id, document_id])
+// }
 
 model dictionaries {
   id         String   @id @default(dbgenerated("gen_random_uuid()"))
@@ -944,8 +944,8 @@ model tags {
   boards                     boards[]
   nodes                      nodes[]
   edges                      edges[]
-  screens                    screens[]
-  cards                      cards[]
+  // screens                    screens[]
+  // cards                      cards[]
   dictionaries               dictionaries[]
   calendars                  calendars[]
   events                     events[]
