@@ -3,6 +3,7 @@ import { SelectExpression, SelectQueryBuilder, sql } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 import merge from "lodash.merge";
+import uniq from "lodash.uniq";
 
 import { db } from "../database/db";
 import { EntitiesWithChildren } from "../database/types";
@@ -28,6 +29,11 @@ import {
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
 import { getCharacterFullName, insertSenderToMessage } from "../utils/transform";
+
+function getAutoLinkerFields(type: "documents" | "characters") {
+  if (type === "characters") return ["id", "full_name as title", "portrait_id as image_id"] as const;
+  return ["id", "title", "image_id"] as const;
+}
 
 export function document_router(app: Elysia) {
   return app.group("/documents", (server) =>
@@ -246,18 +252,30 @@ export function document_router(app: Elysia) {
       .post(
         "/autolink",
         async ({ body }) => {
-          const string = `${body.data.text}`
-            .split(" ")
-            .map((word) => `'${word}'`)
-            .join(" | ")
-            .replaceAll(".", "");
+          const splitWords = uniq(
+            `${body.data.text}`
+              .replaceAll("-", "")
+              .replaceAll(".", "")
+              .replaceAll("/", "")
+              .replaceAll("\\", "")
+              // eslint-disable-next-line quotes
+              .replaceAll('"', "")
+              .replaceAll("'", "")
+              .split(" "),
+          )
+            .filter((word) => !!word && !["the", "a", "an", "and", "or", "of", "in", "out", "at"].includes(word))
+            .map((word) => `'${word}'`);
 
-          const formattedString = `(${string}) & ! '${body.data.ignore}'`;
+          const string = splitWords.join(" | ");
 
+          const formattedString = `(${string}) ${body.data.ignore ? `& ! '${body.data.ignore}'` : ""}`;
+          const fields = getAutoLinkerFields(body.data.type);
           const res = await db
-            .selectFrom("documents")
-            .select(["id", "title", "project_id"])
-            .where("documents.ts", "@@", sql`to_tsquery(${sql.lit("english")}, ${formattedString})`)
+            .selectFrom(body.data.type)
+            .select(fields)
+            .where("project_id", "=", body.data.project_id)
+
+            .where("ts", "@@", sql`to_tsquery(${sql.lit("english")}, ${formattedString})`)
             .execute();
 
           return { data: res, message: MessageEnum.success, ok: true };
