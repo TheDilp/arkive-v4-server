@@ -96,3 +96,10 @@ export const GenerateDocumentSchema = t.Object({
     content: t.Optional(t.String()),
   }),
 });
+
+export const AutolinkerSchema = t.Object({
+  data: t.Object({
+    project_id: t.String(),
+    text: t.String(),
+  }),
+});

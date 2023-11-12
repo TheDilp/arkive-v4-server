@@ -1,5 +1,5 @@
 import Elysia from "elysia";
-import { SelectExpression, SelectQueryBuilder } from "kysely";
+import { SelectExpression, SelectQueryBuilder, sql } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 import merge from "lodash.merge";
@@ -7,6 +7,7 @@ import merge from "lodash.merge";
 import { db } from "../database/db";
 import { EntitiesWithChildren } from "../database/types";
 import {
+  AutolinkerSchema,
   GenerateDocumentSchema,
   InsertDocumentSchema,
   ListDocumentSchema,
@@ -241,6 +242,20 @@ export function document_router(app: Elysia) {
           return { data: [], ok: false, message: "error" };
         },
         { body: GenerateDocumentSchema, response: ResponseWithDataSchema },
+      )
+      .post(
+        "/autolink",
+        async ({ body }) => {
+          const string = body.data.text;
+          const res = await db
+            .selectFrom("documents")
+            .select(["title"])
+            .where("documents.ts", "@@", sql`websearch_to_tsquery('simple', ${string})`)
+            .execute();
+
+          return { data: res, message: MessageEnum.success, ok: true };
+        },
+        { body: AutolinkerSchema, response: ResponseWithDataSchema },
       )
       .delete("/:id", async ({ params, request }) => {
         const data = await db
