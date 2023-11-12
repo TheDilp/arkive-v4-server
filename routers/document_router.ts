@@ -246,11 +246,18 @@ export function document_router(app: Elysia) {
       .post(
         "/autolink",
         async ({ body }) => {
-          const string = body.data.text;
+          const string = `${body.data.text}`
+            .split(" ")
+            .map((word) => `'${word}'`)
+            .join(" | ")
+            .replaceAll(".", "");
+
+          const formattedString = `(${string}) & ! '${body.data.ignore}'`;
+
           const res = await db
             .selectFrom("documents")
-            .select(["title"])
-            .where("documents.ts", "@@", sql`websearch_to_tsquery('simple', ${string})`)
+            .select(["id", "title", "project_id"])
+            .where("documents.ts", "@@", sql`to_tsquery(${sql.lit("english")}, ${formattedString})`)
             .execute();
 
           return { data: res, message: MessageEnum.success, ok: true };

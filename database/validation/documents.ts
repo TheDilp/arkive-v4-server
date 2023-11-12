@@ -101,5 +101,6 @@ export const AutolinkerSchema = t.Object({
   data: t.Object({
     project_id: t.String(),
     text: t.String(),
+    ignore: t.String(),
   }),
 });
