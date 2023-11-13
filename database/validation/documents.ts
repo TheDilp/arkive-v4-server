@@ -102,6 +102,13 @@ export const AutolinkerSchema = t.Object({
     project_id: t.String(),
     text: t.String(),
     ignore: t.String(),
-    type: t.Union([t.Literal("documents"), t.Literal("characters")]),
+    type: t.Union([
+      t.Literal("documents"),
+      t.Literal("characters"),
+      t.Literal("blueprint_instances"),
+      t.Literal("maps"),
+      t.Literal("graphs"),
+      t.Literal("words"),
+    ]),
   }),
 });

@@ -631,7 +631,8 @@ CREATE TABLE public.blueprint_instances (
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     parent_id text NOT NULL,
-    title text NOT NULL
+    title text NOT NULL,
+    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED
 );
 
 
@@ -961,7 +962,8 @@ CREATE TABLE public.maps (
     icon text,
     project_id text NOT NULL,
     parent_id text,
-    image_id text
+    image_id text,
+    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED
 );
 
 
@@ -1155,7 +1157,8 @@ CREATE TABLE public.words (
     title text NOT NULL,
     description text,
     translation text NOT NULL,
-    parent_id text NOT NULL
+    parent_id text NOT NULL,
+    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED
 );
 
 
@@ -1784,6 +1787,13 @@ CREATE UNIQUE INDEX blueprint_instance_random_tables_blueprint_instance_id_blue_
 
 
 --
+-- Name: bpi_ts_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX bpi_ts_index ON public.blueprint_instances USING gin (ts);
+
+
+--
 -- Name: character_relationship_types_project_id_title_key; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1816,6 +1826,13 @@ CREATE UNIQUE INDEX dictionaries_project_id_title_key ON public.dictionaries USI
 --
 
 CREATE UNIQUE INDEX images_project_image_id_key ON public.images USING btree (project_image_id);
+
+
+--
+-- Name: maps_ts_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX maps_ts_index ON public.maps USING gin (ts);
 
 
 --
@@ -1858,6 +1875,13 @@ CREATE UNIQUE INDEX webhooks_id_user_id_key ON public.webhooks USING btree (id, 
 --
 
 CREATE UNIQUE INDEX words_title_translation_parent_id_key ON public.words USING btree (title, translation, parent_id);
+
+
+--
+-- Name: words_ts_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX words_ts_index ON public.words USING gin (ts);
 
 
 --
@@ -2888,4 +2912,8 @@ CREATE EVENT TRIGGER pg_roll_handle_drop ON sql_drop
 INSERT INTO public.schema_migrations (version) VALUES
     ('20231112095433'),
     ('20231112190702'),
-    ('20231112192351');
+    ('20231112192351'),
+    ('20231113075416'),
+    ('20231113095003'),
+    ('20231113095242'),
+    ('20231113095419');

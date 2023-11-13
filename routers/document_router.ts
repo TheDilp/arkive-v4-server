@@ -30,8 +30,11 @@ import {
 } from "../utils/relationalQueryHelpers";
 import { getCharacterFullName, insertSenderToMessage } from "../utils/transform";
 
-function getAutoLinkerFields(type: "documents" | "characters") {
+function getAutoLinkerFields(type: "characters" | "documents" | "blueprint_instances" | "maps" | "graphs" | "words") {
   if (type === "characters") return ["id", "full_name as title", "portrait_id as image_id"] as const;
+  if (type === "blueprint_instances") return ["id", "title", "parent_id"] as const;
+  if (type === "maps" || type === "graphs") return ["id", "title"] as const;
+  if (type === "words") return ["id", "title", "parent_id"] as const;
   return ["id", "title", "image_id"] as const;
 }
 
@@ -263,8 +266,26 @@ export function document_router(app: Elysia) {
           const res = await db
             .selectFrom(body.data.type)
             .select(fields)
-            .where("project_id", "=", body.data.project_id)
 
+            .$if(body.data.type === "blueprint_instances", (qb) => {
+              if (body.data.type === "blueprint_instances") {
+                qb.leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+                  .clearWhere()
+                  .where("blueprints.project_id", "=", body.data.project_id);
+              }
+              return qb;
+            })
+            .$if(body.data.type === "words", (qb) => {
+              if (body.data.type === "words") {
+                qb.leftJoin("dictionaries", "dictionaries.id", "words.parent_id")
+                  .clearWhere()
+                  .where("dictionaries.project_id", "=", body.data.project_id);
+              }
+              return qb;
+            })
+            .$if(!["blueprint_instances", "words"].includes(body.data.type), (qb) => {
+              return qb.where("project_id", "=", body.data.project_id);
+            })
             .where("ts", "@@", sql`to_tsquery(${sql.lit("english")}, ${formattedString})`)
             .execute();
 
