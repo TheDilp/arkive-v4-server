@@ -12,12 +12,13 @@ import {
   GenerateDocumentSchema,
   InsertDocumentSchema,
   ListDocumentSchema,
+  MentionsInDocumentSchema,
   ReadDocumentSchema,
   UpdateDocumentSchema,
 } from "../database/validation/documents";
 import { MessageEnum } from "../enums/requestEnums";
 import { afterHandler } from "../handlers";
-import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { ResponseSchema, ResponseWithDataSchema, SearchableMentionEntities } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import {
@@ -294,6 +295,26 @@ export function document_router(app: Elysia) {
           return { data: res, message: MessageEnum.success, ok: true };
         },
         { body: AutolinkerSchema, response: ResponseWithDataSchema },
+      )
+      .post(
+        "/mentions",
+        async ({ body }) => {
+          const res = await Promise.all(
+            Object.entries(body.data.mentions).map(async ([type, mentions]) =>
+              db
+                .selectFrom(type as SearchableMentionEntities)
+                .select(type === "characters" ? ["id", "full_name as title", "portrait_id as image_id"] : ["id", "title"])
+                .where(
+                  "id",
+                  "in",
+                  mentions.map((m) => m.id),
+                )
+                .execute(),
+            ),
+          );
+          return { data: Object.values(res).flatMap((m) => m), message: MessageEnum.success, ok: true };
+        },
+        { body: MentionsInDocumentSchema, response: ResponseWithDataSchema },
       )
       .delete("/:id", async ({ params, request }) => {
         const data = await db

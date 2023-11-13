@@ -112,3 +112,25 @@ export const AutolinkerSchema = t.Object({
     ]),
   }),
 });
+
+export const MentionsInDocumentSchema = t.Object({
+  data: t.Object({
+    mentions: t.Record(
+      t.Union([
+        t.Optional(t.Literal("documents")),
+        t.Optional(t.Literal("characters")),
+        t.Optional(t.Literal("blueprint_instances")),
+        t.Optional(t.Literal("maps")),
+        t.Optional(t.Literal("graphs")),
+        t.Optional(t.Literal("words")),
+      ]),
+      t.Optional(
+        t.Array(
+          t.Object({
+            id: t.String(),
+          }),
+        ),
+      ),
+    ),
+  }),
+});
