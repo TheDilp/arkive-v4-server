@@ -252,19 +252,9 @@ export function document_router(app: Elysia) {
       .post(
         "/autolink",
         async ({ body }) => {
-          const splitWords = uniq(
-            `${body.data.text}`
-              .replaceAll("-", "")
-              .replaceAll(".", "")
-              .replaceAll("/", "")
-              .replaceAll("\\", "")
-              // eslint-disable-next-line quotes
-              .replaceAll('"', "")
-              .replaceAll("'", "")
-              .split(" "),
-          )
+          const splitWords = uniq(`${body.data.text}`.split(" "))
             .filter((word) => !!word && !["the", "a", "an", "and", "or", "of", "in", "out", "at"].includes(word))
-            .map((word) => `'${word}'`);
+            .map((word) => `${word}`);
 
           const string = splitWords.join(" | ");
 
