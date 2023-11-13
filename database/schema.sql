@@ -892,7 +892,8 @@ CREATE TABLE public.graphs (
     default_node_color text DEFAULT '#595959'::text NOT NULL,
     default_edge_color text DEFAULT '#595959'::text NOT NULL,
     project_id text NOT NULL,
-    parent_id text
+    parent_id text,
+    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED
 );
 
 
@@ -1819,6 +1820,13 @@ CREATE UNIQUE INDEX characters_relationships_character_a_id_character_b_id_rela_
 --
 
 CREATE UNIQUE INDEX dictionaries_project_id_title_key ON public.dictionaries USING btree (project_id, title);
+
+
+--
+-- Name: graphs_ts_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX graphs_ts_index ON public.graphs USING gin (ts);
 
 
 --
@@ -2916,4 +2924,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20231113075416'),
     ('20231113095003'),
     ('20231113095242'),
-    ('20231113095419');
+    ('20231113095419'),
+    ('20231113115145');

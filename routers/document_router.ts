@@ -256,8 +256,10 @@ export function document_router(app: Elysia) {
         "/autolink",
         async ({ body }) => {
           const splitWords = uniq(`${body.data.text}`.split(" "))
-            .filter((word) => !!word && !["the", "a", "an", "and", "or", "of", "in", "out", "at"].includes(word))
-            .map((word) => `${word}`);
+            .filter(
+              (word) => !!word && word.length > 1 && !["the", "a", "an", "and", "or", "of", "in", "out", "at"].includes(word),
+            )
+            .map((word) => `${word.replaceAll("'", "")}`);
 
           const string = splitWords.join(" | ");
 
