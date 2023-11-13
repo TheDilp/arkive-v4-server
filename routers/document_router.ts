@@ -12,6 +12,7 @@ import {
   GenerateDocumentSchema,
   InsertDocumentSchema,
   ListDocumentSchema,
+  MentionedInSchema,
   MentionsInDocumentSchema,
   ReadDocumentSchema,
   UpdateDocumentSchema,
@@ -315,6 +316,23 @@ export function document_router(app: Elysia) {
           return { data: Object.values(res).flatMap((m) => m), message: MessageEnum.success, ok: true };
         },
         { body: MentionsInDocumentSchema, response: ResponseWithDataSchema },
+      )
+      .post(
+        "/mentioned_in",
+        async ({ body }) => {
+          const data = await db
+            .selectFrom("documents")
+            .select(["id", "title"])
+            .where(sql`documents.content->>'content'`, "ilike", `%${body.data.id as string}%`)
+            .where("project_id", "=", body.data.project_id)
+            .execute();
+
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: MentionedInSchema,
+          response: ResponseWithDataSchema,
+        },
       )
       .delete("/:id", async ({ params, request }) => {
         const data = await db
