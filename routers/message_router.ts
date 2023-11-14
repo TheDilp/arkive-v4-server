@@ -12,6 +12,7 @@ import {
 } from "../database/validation/messages";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { constructOrdering } from "../utils/orderByConstructor";
 
 export function message_router(app: Elysia) {
   return app.group("/messages", (server) =>
@@ -31,6 +32,8 @@ export function message_router(app: Elysia) {
             .selectFrom("messages")
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "messages">[]))
+            .where("messages.parent_id", "=", body.data.conversation_id)
+            .$if(!!body.orderBy?.length, (qb) => constructOrdering(body.orderBy, qb))
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
             .limit(body.pagination?.limit || 10)
             .execute();
