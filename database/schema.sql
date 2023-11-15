@@ -673,6 +673,17 @@ CREATE TABLE public.calendars (
 
 
 --
+-- Name: character_blueprint_instance_fields; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.character_blueprint_instance_fields (
+    character_id text NOT NULL,
+    character_field_id text NOT NULL,
+    related_id text NOT NULL
+);
+
+
+--
 -- Name: character_documents_fields; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -710,6 +721,28 @@ CREATE TABLE public.character_fields_templates (
     title text NOT NULL,
     project_id text NOT NULL,
     sort integer DEFAULT 0 NOT NULL
+);
+
+
+--
+-- Name: character_images_fields; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.character_images_fields (
+    character_id text NOT NULL,
+    character_field_id text NOT NULL,
+    related_id text NOT NULL
+);
+
+
+--
+-- Name: character_locations_fields; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.character_locations_fields (
+    character_id text NOT NULL,
+    character_field_id text NOT NULL,
+    related_id text NOT NULL
 );
 
 
@@ -1276,6 +1309,14 @@ ALTER TABLE ONLY public.calendars
 
 
 --
+-- Name: character_blueprint_instance_fields character_blueprint_instance_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_blueprint_instance_fields
+    ADD CONSTRAINT character_blueprint_instance_fields_pkey PRIMARY KEY (character_id, character_field_id, related_id);
+
+
+--
 -- Name: character_documents_fields character_documents_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1297,6 +1338,22 @@ ALTER TABLE ONLY public.character_fields
 
 ALTER TABLE ONLY public.character_fields_templates
     ADD CONSTRAINT character_fields_templates_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: character_images_fields character_images_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_images_fields
+    ADD CONSTRAINT character_images_fields_pkey PRIMARY KEY (character_id, character_field_id, related_id);
+
+
+--
+-- Name: character_locations_fields character_locations_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_locations_fields
+    ADD CONSTRAINT character_locations_fields_pkey PRIMARY KEY (character_id, character_field_id, related_id);
 
 
 --
@@ -2469,6 +2526,30 @@ ALTER TABLE ONLY public.calendars
 
 
 --
+-- Name: character_blueprint_instance_fields character_blueprint_instance_fields_character_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_blueprint_instance_fields
+    ADD CONSTRAINT character_blueprint_instance_fields_character_field_id_fkey FOREIGN KEY (character_field_id) REFERENCES public.character_fields(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: character_blueprint_instance_fields character_blueprint_instance_fields_character_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_blueprint_instance_fields
+    ADD CONSTRAINT character_blueprint_instance_fields_character_id_fkey FOREIGN KEY (character_id) REFERENCES public.characters(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: character_blueprint_instance_fields character_blueprint_instance_fields_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_blueprint_instance_fields
+    ADD CONSTRAINT character_blueprint_instance_fields_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.blueprint_instances(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: character_documents_fields character_documents_fields_character_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2506,6 +2587,54 @@ ALTER TABLE ONLY public.character_fields
 
 ALTER TABLE ONLY public.character_fields_templates
     ADD CONSTRAINT character_fields_templates_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: character_images_fields character_images_fields_character_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_images_fields
+    ADD CONSTRAINT character_images_fields_character_field_id_fkey FOREIGN KEY (character_field_id) REFERENCES public.character_fields(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: character_images_fields character_images_fields_character_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_images_fields
+    ADD CONSTRAINT character_images_fields_character_id_fkey FOREIGN KEY (character_id) REFERENCES public.characters(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: character_images_fields character_images_fields_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_images_fields
+    ADD CONSTRAINT character_images_fields_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.images(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: character_locations_fields character_locations_fields_character_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_locations_fields
+    ADD CONSTRAINT character_locations_fields_character_field_id_fkey FOREIGN KEY (character_field_id) REFERENCES public.character_fields(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: character_locations_fields character_locations_fields_character_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_locations_fields
+    ADD CONSTRAINT character_locations_fields_character_id_fkey FOREIGN KEY (character_id) REFERENCES public.characters(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: character_locations_fields character_locations_fields_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_locations_fields
+    ADD CONSTRAINT character_locations_fields_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.map_pins(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -2934,4 +3063,7 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20231113095242'),
     ('20231113115145'),
     ('20231115075556'),
-    ('20231115080322');
+    ('20231115080322'),
+    ('20231115084021'),
+    ('20231115094355'),
+    ('20231115094748');
