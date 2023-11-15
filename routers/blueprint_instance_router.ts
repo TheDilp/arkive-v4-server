@@ -101,17 +101,21 @@ export function blueprint_instance_router(app: Elysia) {
                       .execute();
                     return;
                   }
-                  // if (field?.random_table) {
-                  //   const { random_table } = field;
-                  //   await tx
-                  //     .insertInto("blueprint_instance_random_tables")
-                  //     .values({
-                  //       blueprint_field_id: field.id
-                  //       related_id: random_table.related_id,
-                  //     })
-                  //     .execute();
-                  //   return;
-                  // }
+                  if (field?.random_table) {
+                    const { random_table } = field;
+                    console.log(random_table);
+                    await tx
+                      .insertInto("blueprint_instance_random_tables")
+                      .values({
+                        blueprint_field_id: field.id,
+                        blueprint_instance_id: newInstance.id,
+                        related_id: random_table.related_id,
+                        option_id: random_table?.option_id,
+                        suboption_id: random_table?.suboption_id,
+                      })
+                      .execute();
+                    return;
+                  }
                   if (field?.value) {
                     await tx
                       .insertInto("blueprint_instance_value")

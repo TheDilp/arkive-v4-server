@@ -35,8 +35,6 @@ export const ListBlueprintSchema = t.Intersect([
       relations: t.Optional(
         t.Object({
           blueprint_fields: t.Optional(t.Boolean()),
-
-          // tags: t.Optional(t.Boolean())
         }),
       ),
     }),
@@ -52,8 +50,6 @@ export const ReadBlueprintSchema = t.Intersect([
         blueprint_fields: t.Optional(t.Boolean()),
         blueprint_instances: t.Optional(t.Boolean()),
         random_table_options: t.Optional(t.Boolean()),
-
-        // tags: t.Optional(t.Boolean())
       }),
     ),
   }),
