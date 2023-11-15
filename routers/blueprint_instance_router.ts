@@ -116,6 +116,22 @@ export function blueprint_instance_router(app: Elysia) {
                       .execute();
                     return;
                   }
+                  if (field?.calendar) {
+                    await tx
+                      .insertInto("blueprint_instance_calendars")
+                      .values({
+                        blueprint_field_id: field.id,
+                        blueprint_instance_id: newInstance.id,
+                        related_id: field.calendar.related_id,
+                        start_day: field.calendar?.start_day,
+                        start_month_id: field.calendar?.start_month_id,
+                        start_year: field.calendar?.start_year,
+                        end_day: field.calendar?.end_day,
+                        end_month_id: field.calendar?.end_month_id,
+                        end_year: field.calendar?.end_year,
+                      })
+                      .execute();
+                  }
                   if (field?.value) {
                     await tx
                       .insertInto("blueprint_instance_value")
