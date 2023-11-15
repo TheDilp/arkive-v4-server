@@ -42,7 +42,7 @@ export const InsertBlueprintInstanceSchema = t.Object({
       tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
       blueprint_fields: t.Array(
         t.Object({
-          id: t.String(),
+          id: t.String(), //id of the blueprint field
           characters: t.Optional(
             t.Array(
               t.Object({

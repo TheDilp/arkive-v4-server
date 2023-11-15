@@ -39,6 +39,78 @@ export function character_router(app: Elysia) {
                   .values(images.map((img) => ({ A: character.id, B: img.id })))
                   .execute();
               }
+              if (body.relations?.character_fields?.length) {
+                await Promise.all(
+                  body.relations.character_fields.map(async (field) => {
+                    if (field?.value) {
+                      await tx
+                        .insertInto("character_value_fields")
+                        .values({
+                          character_field_id: field.id,
+                          character_id: character.id,
+                          value: JSON.stringify(field.value),
+                        })
+                        .execute();
+                    }
+                    if (field?.documents?.length) {
+                      const { documents } = field;
+                      await tx
+                        .insertInto("character_documents_fields")
+                        .values(
+                          documents.map((doc) => ({
+                            character_field_id: field.id,
+                            character_id: character.id,
+                            related_id: doc.related_id,
+                          })),
+                        )
+                        .execute();
+                      return;
+                    }
+                    if (field?.map_pins?.length) {
+                      const { map_pins } = field;
+                      await tx
+                        .insertInto("character_locations_fields")
+                        .values(
+                          map_pins.map((map_pin) => ({
+                            character_field_id: field.id,
+                            character_id: character.id,
+                            related_id: map_pin.related_id,
+                          })),
+                        )
+                        .execute();
+                      return;
+                    }
+                    if (field?.images?.length) {
+                      const { images } = field;
+                      await tx
+                        .insertInto("character_images_fields")
+                        .values(
+                          images.map((image) => ({
+                            character_field_id: field.id,
+                            character_id: character.id,
+                            related_id: image.related_id,
+                          })),
+                        )
+                        .execute();
+                      return;
+                    }
+                    if (field?.blueprint_instances?.length) {
+                      const { blueprint_instances } = field;
+                      await tx
+                        .insertInto("character_blueprint_instance_fields")
+                        .values(
+                          blueprint_instances.map((instance) => ({
+                            character_field_id: field.id,
+                            character_id: character.id,
+                            related_id: instance.related_id,
+                          })),
+                        )
+                        .execute();
+                      return;
+                    }
+                  }),
+                );
+              }
               // if (body.relations?.character_fields?.length) {
               //   const { character_fields } = body.relations;
               //   await tx
@@ -165,21 +237,85 @@ export function character_router(app: Elysia) {
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "characters">[]))
             .where("characters.id", "=", params.id)
             .$if(!!body.relations, (qb) => {
-              // if (body?.relations?.character_fields) {
-              //   qb = qb.select((eb) =>
-              //     jsonArrayFrom(
-              //       eb
-              //         .selectFrom("characters_to_character_fields")
-              //         .select([
-              //           "characters_to_character_fields.character_field_id as id",
-              //           "characters_to_character_fields.value",
-              //         ])
-              //         .whereRef("characters_to_character_fields.character_id", "=", "characters.id")
-              //         .leftJoin("character_fields", "character_fields.id", "character_field_id")
-              //         .select(["character_fields.parent_id as template_id"]),
-              //     ).as("character_fields"),
-              //   );
-              // }
+              if (body?.relations?.character_fields) {
+                qb = qb.select([
+                  (eb) =>
+                    jsonArrayFrom(
+                      eb
+                        .selectFrom("character_documents_fields")
+                        .whereRef("character_documents_fields.character_id", "=", "characters.id")
+                        .select([
+                          "character_field_id as id",
+                          "related_id",
+                          (ebb) =>
+                            jsonArrayFrom(
+                              ebb
+                                .selectFrom("documents")
+                                .whereRef("documents.id", "=", "character_documents_fields.related_id")
+                                .select(["id", "title", "icon"]),
+                            ).as("documents"),
+                        ]),
+                    ).as("documents"),
+                  (eb) =>
+                    jsonArrayFrom(
+                      eb
+                        .selectFrom("character_images_fields")
+                        .whereRef("character_images_fields.character_id", "=", "characters.id")
+                        .select([
+                          "character_field_id as id",
+                          "related_id",
+                          (ebb) =>
+                            jsonArrayFrom(
+                              ebb
+                                .selectFrom("images")
+                                .whereRef("images.id", "=", "character_images_fields.related_id")
+                                .select(["id", "title"]),
+                            ).as("images"),
+                        ]),
+                    ).as("field_images"),
+                  (eb) =>
+                    jsonArrayFrom(
+                      eb
+                        .selectFrom("character_locations_fields")
+                        .whereRef("character_locations_fields.character_id", "=", "characters.id")
+                        .select([
+                          "character_field_id as id",
+                          "related_id",
+                          (ebb) =>
+                            jsonArrayFrom(
+                              ebb
+                                .selectFrom("map_pins")
+                                .whereRef("map_pins.id", "=", "character_locations_fields.related_id")
+                                .select(["id", "title", "icon", "parent_id"]),
+                            ).as("map_pins"),
+                        ]),
+                    ).as("field_locations"),
+                  (eb) =>
+                    jsonArrayFrom(
+                      eb
+                        .selectFrom("character_blueprint_instance_fields")
+                        .whereRef("character_blueprint_instance_fields.character_id", "=", "characters.id")
+                        .select([
+                          "character_field_id as id",
+                          "related_id",
+                          (ebb) =>
+                            jsonArrayFrom(
+                              ebb
+                                .selectFrom("blueprint_instances")
+                                .whereRef("blueprint_instances.id", "=", "character_blueprint_instance_fields.related_id")
+                                .select(["id", "title", "parent_id"]),
+                            ).as("blueprint_instances"),
+                        ]),
+                    ).as("blueprint_instances"),
+                  (eb) =>
+                    jsonArrayFrom(
+                      eb
+                        .selectFrom("character_value_fields")
+                        .whereRef("character_value_fields.character_id", "=", "characters.id")
+                        .select(["character_field_id as id", "value"]),
+                    ).as("value"),
+                ]);
+              }
               if (body?.relations?.relationships) {
                 qb = qb.select((eb) =>
                   jsonArrayFrom(
@@ -367,7 +503,51 @@ export function character_router(app: Elysia) {
           if (data?.related_other) {
             data.related_other = uniqBy(data.related_other, "id");
           }
-          return { data, message: MessageEnum.success, ok: true };
+          const { documents, field_images, field_locations, blueprint_instances, value, ...rest } = data;
+          rest.character_fields = [
+            ...(documents || []).map(
+              (d: {
+                id: string;
+                related_id: string;
+                documents: { document: { id: string; title: string; icon: string | null } }[];
+              }) => ({
+                ...d,
+                documents: d.documents.map((document) => ({ document })),
+              }),
+            ),
+            ...(field_images || []).map(
+              (d: {
+                id: string;
+                related_id: string;
+                images: { image: { id: string; title: string; icon: string | null } }[];
+              }) => ({
+                ...d,
+                images: d.images.map((image) => ({ image })),
+              }),
+            ),
+            ...(field_locations || []).map(
+              (d: {
+                id: string;
+                related_id: string;
+                map_pins: { map_pin: { id: string; title: string; icon: string | null } }[];
+              }) => ({
+                ...d,
+                map_pins: d.map_pins.map((map_pin) => ({ map_pin })),
+              }),
+            ),
+            ...(blueprint_instances || []).map(
+              (d: {
+                id: string;
+                related_id: string;
+                blueprint_instances: { blueprint_instance: { id: string; title: string; icon: string | null } }[];
+              }) => ({
+                ...d,
+                blueprint_instances: d.blueprint_instances.map((blueprint_instance) => ({ blueprint_instance })),
+              }),
+            ),
+            ...(value || []),
+          ];
+          return { data: rest, message: MessageEnum.success, ok: true };
         },
         {
           body: ReadCharacterSchema,

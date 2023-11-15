@@ -52,7 +52,8 @@ CREATE TYPE public."BlueprintFieldType" AS ENUM (
     'number',
     'textarea',
     'blueprints_single',
-    'blueprints_multiple'
+    'blueprints_multiple',
+    'boolean'
 );
 
 
@@ -87,7 +88,8 @@ CREATE TYPE public."FieldType" AS ENUM (
     'number',
     'textarea',
     'blueprints_single',
-    'blueprints_multiple'
+    'blueprints_multiple',
+    'boolean'
 );
 
 
@@ -760,6 +762,17 @@ CREATE TABLE public.character_relationship_types (
 
 
 --
+-- Name: character_value_fields; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.character_value_fields (
+    character_id text NOT NULL,
+    character_field_id text NOT NULL,
+    value jsonb
+);
+
+
+--
 -- Name: characters; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1362,6 +1375,14 @@ ALTER TABLE ONLY public.character_locations_fields
 
 ALTER TABLE ONLY public.character_relationship_types
     ADD CONSTRAINT character_relationship_types_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: character_value_fields character_value_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_value_fields
+    ADD CONSTRAINT character_value_fields_pkey PRIMARY KEY (character_id, character_field_id);
 
 
 --
@@ -2646,6 +2667,22 @@ ALTER TABLE ONLY public.character_relationship_types
 
 
 --
+-- Name: character_value_fields character_value_fields_character_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_value_fields
+    ADD CONSTRAINT character_value_fields_character_field_id_fkey FOREIGN KEY (character_field_id) REFERENCES public.character_fields(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: character_value_fields character_value_fields_character_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_value_fields
+    ADD CONSTRAINT character_value_fields_character_id_fkey FOREIGN KEY (character_id) REFERENCES public.characters(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: characters characters_portrait_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3066,4 +3103,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20231115080322'),
     ('20231115084021'),
     ('20231115094355'),
-    ('20231115094748');
+    ('20231115094748'),
+    ('20231115132655');

@@ -3,9 +3,10 @@ import { t } from "elysia";
 import { RequestBodySchema } from "../../types/requestTypes";
 
 // const FieldWidthSchema = t.Union([t.Literal("full"), t.Literal("half")]);
-const FieldTypeSchema = t.Union([
+const BlueprintFieldTypeSchema = t.Union([
   t.Literal("text"),
   t.Literal("textarea"),
+  t.Literal("boolean"),
   t.Literal("number"),
   t.Literal("select"),
   t.Literal("select_multiple"),
@@ -71,7 +72,7 @@ export const InsertBlueprintSchema = t.Object({
       blueprint_fields: t.Array(
         t.Object({
           title: t.String(),
-          field_type: FieldTypeSchema,
+          field_type: BlueprintFieldTypeSchema,
           // width: FieldWidthSchema,
           sort: t.Optional(t.Number()),
           formula: t.Optional(t.Union([t.String(), t.Null()])),
@@ -98,7 +99,7 @@ export const UpdateBlueprintSchema = t.Object({
       blueprint_fields: t.Array(
         t.Object({
           title: t.String(),
-          field_type: FieldTypeSchema,
+          field_type: BlueprintFieldTypeSchema,
           // width: FieldWidthSchema,
           sort: t.Optional(t.Number()),
           formula: t.Optional(t.Union([t.String(), t.Null()])),

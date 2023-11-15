@@ -2,6 +2,26 @@ import { t } from "elysia";
 
 import { RequestBodySchema } from "../../types/requestTypes";
 
+const FieldTypeSchema = t.Union([
+  t.Literal("text"),
+  t.Literal("textarea"),
+  t.Literal("boolean"),
+  t.Literal("number"),
+  t.Literal("select"),
+  t.Literal("select_multiple"),
+  t.Literal("dice_roll"),
+  t.Literal("date"),
+  t.Literal("random_table"),
+  t.Literal("documents_single"),
+  t.Literal("documents_multiple"),
+  t.Literal("images_single"),
+  t.Literal("images_multiple"),
+  t.Literal("locations_single"),
+  t.Literal("locations_multiple"),
+  t.Literal("blueprints_single"),
+  t.Literal("blueprints_multiple"),
+]);
+
 export const ListCharacterFieldsTemplateSchema = t.Intersect([
   RequestBodySchema,
   t.Object({
@@ -33,7 +53,7 @@ export const InsertCharacterFieldsTemplateSchema = t.Object({
       character_fields: t.Array(
         t.Object({
           title: t.String(),
-          field_type: t.String(),
+          field_type: FieldTypeSchema,
           sort: t.Optional(t.Number()),
           formula: t.Optional(t.Union([t.String(), t.Null()])),
           options: t.Optional(t.Array(t.Object({ id: t.String(), value: t.String() }))),
@@ -58,7 +78,7 @@ export const UpdateTemplateSchema = t.Object({
         t.Object({
           id: t.String(),
           title: t.String(),
-          field_type: t.String(),
+          field_type: FieldTypeSchema,
           sort: t.Optional(t.Number()),
           formula: t.Optional(t.Union([t.String(), t.Null()])),
           options: t.Optional(t.Array(t.Object({ id: t.String(), value: t.String() }))),
