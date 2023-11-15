@@ -673,6 +673,17 @@ CREATE TABLE public.calendars (
 
 
 --
+-- Name: character_documents_fields; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.character_documents_fields (
+    character_id text NOT NULL,
+    character_field_id text NOT NULL,
+    related_id text NOT NULL
+);
+
+
+--
 -- Name: character_fields; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -744,17 +755,6 @@ CREATE TABLE public.characters_relationships (
     character_b_id text NOT NULL,
     relation_type_id text NOT NULL,
     id text DEFAULT gen_random_uuid() NOT NULL
-);
-
-
---
--- Name: characters_to_character_fields; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.characters_to_character_fields (
-    character_id text NOT NULL,
-    character_field_id text NOT NULL,
-    value jsonb
 );
 
 
@@ -1276,6 +1276,14 @@ ALTER TABLE ONLY public.calendars
 
 
 --
+-- Name: character_documents_fields character_documents_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_documents_fields
+    ADD CONSTRAINT character_documents_fields_pkey PRIMARY KEY (character_id, character_field_id, related_id);
+
+
+--
 -- Name: character_fields character_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1313,14 +1321,6 @@ ALTER TABLE ONLY public.characters
 
 ALTER TABLE ONLY public.characters_relationships
     ADD CONSTRAINT characters_relationships_pkey PRIMARY KEY (id);
-
-
---
--- Name: characters_to_character_fields characters_to_character_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.characters_to_character_fields
-    ADD CONSTRAINT characters_to_character_fields_pkey PRIMARY KEY (character_id, character_field_id);
 
 
 --
@@ -2469,6 +2469,30 @@ ALTER TABLE ONLY public.calendars
 
 
 --
+-- Name: character_documents_fields character_documents_fields_character_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_documents_fields
+    ADD CONSTRAINT character_documents_fields_character_field_id_fkey FOREIGN KEY (character_field_id) REFERENCES public.character_fields(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: character_documents_fields character_documents_fields_character_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_documents_fields
+    ADD CONSTRAINT character_documents_fields_character_id_fkey FOREIGN KEY (character_id) REFERENCES public.characters(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: character_documents_fields character_documents_fields_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_documents_fields
+    ADD CONSTRAINT character_documents_fields_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.documents(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: character_fields character_fields_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2530,22 +2554,6 @@ ALTER TABLE ONLY public.characters_relationships
 
 ALTER TABLE ONLY public.characters_relationships
     ADD CONSTRAINT characters_relationships_relation_type_id_fkey FOREIGN KEY (relation_type_id) REFERENCES public.character_relationship_types(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: characters_to_character_fields characters_to_character_fields_character_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.characters_to_character_fields
-    ADD CONSTRAINT characters_to_character_fields_character_field_id_fkey FOREIGN KEY (character_field_id) REFERENCES public.character_fields(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: characters_to_character_fields characters_to_character_fields_character_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.characters_to_character_fields
-    ADD CONSTRAINT characters_to_character_fields_character_id_fkey FOREIGN KEY (character_id) REFERENCES public.characters(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -2924,4 +2932,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20231113075416'),
     ('20231113095003'),
     ('20231113095242'),
-    ('20231113115145');
+    ('20231113115145'),
+    ('20231115075556'),
+    ('20231115080322');

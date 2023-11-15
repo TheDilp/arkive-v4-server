@@ -39,19 +39,19 @@ export function character_router(app: Elysia) {
                   .values(images.map((img) => ({ A: character.id, B: img.id })))
                   .execute();
               }
-              if (body.relations?.character_fields?.length) {
-                const { character_fields } = body.relations;
-                await tx
-                  .insertInto("characters_to_character_fields")
-                  .values(
-                    character_fields.map((field) => ({
-                      character_field_id: field.id,
-                      value: JSON.stringify(field.value),
-                      character_id: character.id,
-                    })),
-                  )
-                  .executeTakeFirst();
-              }
+              // if (body.relations?.character_fields?.length) {
+              //   const { character_fields } = body.relations;
+              //   await tx
+              //     .insertInto("characters_to_character_fields")
+              //     .values(
+              //       character_fields.map((field) => ({
+              //         character_field_id: field.id,
+              //         value: JSON.stringify(field.value),
+              //         character_id: character.id,
+              //       })),
+              //     )
+              //     .execute();
+              // }
               if (body.relations?.tags?.length) {
                 const { tags } = body.relations;
                 await CreateTagRelations({ tx, relationalTable: "_charactersTotags", id: character.id, tags });
@@ -66,7 +66,7 @@ export function character_router(app: Elysia) {
                       B: doc.id,
                     })),
                   )
-                  .executeTakeFirst();
+                  .execute();
               }
               if (body.relations?.related_to?.length) {
                 await tx
@@ -165,21 +165,21 @@ export function character_router(app: Elysia) {
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "characters">[]))
             .where("characters.id", "=", params.id)
             .$if(!!body.relations, (qb) => {
-              if (body?.relations?.character_fields) {
-                qb = qb.select((eb) =>
-                  jsonArrayFrom(
-                    eb
-                      .selectFrom("characters_to_character_fields")
-                      .select([
-                        "characters_to_character_fields.character_field_id as id",
-                        "characters_to_character_fields.value",
-                      ])
-                      .whereRef("characters_to_character_fields.character_id", "=", "characters.id")
-                      .leftJoin("character_fields", "character_fields.id", "character_field_id")
-                      .select(["character_fields.parent_id as template_id"]),
-                  ).as("character_fields"),
-                );
-              }
+              // if (body?.relations?.character_fields) {
+              //   qb = qb.select((eb) =>
+              //     jsonArrayFrom(
+              //       eb
+              //         .selectFrom("characters_to_character_fields")
+              //         .select([
+              //           "characters_to_character_fields.character_field_id as id",
+              //           "characters_to_character_fields.value",
+              //         ])
+              //         .whereRef("characters_to_character_fields.character_id", "=", "characters.id")
+              //         .leftJoin("character_fields", "character_fields.id", "character_field_id")
+              //         .select(["character_fields.parent_id as template_id"]),
+              //     ).as("character_fields"),
+              //   );
+              // }
               if (body?.relations?.relationships) {
                 qb = qb.select((eb) =>
                   jsonArrayFrom(
@@ -581,46 +581,46 @@ export function character_router(app: Elysia) {
           await db.transaction().execute(async (tx) => {
             let deletedTags: string[] | null = null;
 
-            if (body.relations?.character_fields) {
-              const existingCharacterFields = await tx
-                .selectFrom("characters_to_character_fields")
-                .select(["characters_to_character_fields.character_field_id as id", "characters_to_character_fields.value"])
-                .where("characters_to_character_fields.character_id", "=", params.id)
-                .execute();
-              const existingIds = existingCharacterFields.map((field) => field.id);
-              const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
-                existingIds,
-                body.relations?.character_fields,
-              );
+            // if (body.relations?.character_fields) {
+            //   const existingCharacterFields = await tx
+            //     .selectFrom("characters_to_character_fields")
+            //     .select(["characters_to_character_fields.character_field_id as id", "characters_to_character_fields.value"])
+            //     .where("characters_to_character_fields.character_id", "=", params.id)
+            //     .execute();
+            //   const existingIds = existingCharacterFields.map((field) => field.id);
+            //   const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+            //     existingIds,
+            //     body.relations?.character_fields,
+            //   );
 
-              if (idsToRemove.length) {
-                await tx.deleteFrom("characters_to_character_fields").where("character_field_id", "in", idsToRemove).execute();
-              }
-              if (itemsToAdd.length) {
-                await tx
-                  .insertInto("characters_to_character_fields")
-                  .values(
-                    itemsToAdd.map((item) => ({
-                      character_id: params.id,
-                      character_field_id: item.id,
-                      value: JSON.stringify(item.value),
-                    })),
-                  )
-                  .execute();
-              }
-              if (itemsToUpdate.length) {
-                await Promise.all(
-                  itemsToUpdate.map(async (item) => {
-                    await tx
-                      .updateTable("characters_to_character_fields")
-                      .where("character_id", "=", params.id)
-                      .where("character_field_id", "=", item.id)
-                      .set({ value: JSON.stringify(item.value) })
-                      .execute();
-                  }),
-                );
-              }
-            }
+            //   if (idsToRemove.length) {
+            //     await tx.deleteFrom("characters_to_character_fields").where("character_field_id", "in", idsToRemove).execute();
+            //   }
+            //   if (itemsToAdd.length) {
+            //     await tx
+            //       .insertInto("characters_to_character_fields")
+            //       .values(
+            //         itemsToAdd.map((item) => ({
+            //           character_id: params.id,
+            //           character_field_id: item.id,
+            //           value: JSON.stringify(item.value),
+            //         })),
+            //       )
+            //       .execute();
+            //   }
+            //   if (itemsToUpdate.length) {
+            //     await Promise.all(
+            //       itemsToUpdate.map(async (item) => {
+            //         await tx
+            //           .updateTable("characters_to_character_fields")
+            //           .where("character_id", "=", params.id)
+            //           .where("character_field_id", "=", item.id)
+            //           .set({ value: JSON.stringify(item.value) })
+            //           .execute();
+            //       }),
+            //     );
+            //   }
+            // }
             if (body.relations?.tags) {
               if (body.relations.tags.length) {
                 const tagsToDelete = await UpdateTagRelations({
@@ -639,36 +639,35 @@ export function character_router(app: Elysia) {
 
               if (deletedTags !== null) {
                 if (deletedTags?.length) {
-                  const templates = await tx
-                    .selectFrom("character_fields_templates")
-                    .select(["id"])
-                    .leftJoin(
-                      "_character_fields_templatesTotags",
-                      "_character_fields_templatesTotags.A",
-                      "character_fields_templates.id",
-                    )
-                    .where("_character_fields_templatesTotags.B", "in", deletedTags)
-                    .execute();
-
-                  const templateIds = templates.map((t) => t.id);
-                  if (templateIds?.length) {
-                    await tx
-                      .deleteFrom("characters_to_character_fields")
-                      .using("character_fields")
-                      .where("characters_to_character_fields.character_id", "=", params.id)
-                      .whereRef("characters_to_character_fields.character_field_id", "=", "character_fields.id")
-                      .where("character_fields.parent_id", "in", templateIds)
-                      .returningAll()
-                      .execute();
-                  }
+                  // const templates = await tx
+                  //   .selectFrom("character_fields_templates")
+                  //   .select(["id"])
+                  //   .leftJoin(
+                  //     "_character_fields_templatesTotags",
+                  //     "_character_fields_templatesTotags.A",
+                  //     "character_fields_templates.id",
+                  //   )
+                  //   .where("_character_fields_templatesTotags.B", "in", deletedTags)
+                  //   .execute();
+                  // const templateIds = templates.map((t) => t.id);
+                  // if (templateIds?.length) {
+                  //   await tx
+                  //     .deleteFrom("characters_to_character_fields")
+                  //     .using("character_fields")
+                  //     .where("characters_to_character_fields.character_id", "=", params.id)
+                  //     .whereRef("characters_to_character_fields.character_field_id", "=", "character_fields.id")
+                  //     .where("character_fields.parent_id", "in", templateIds)
+                  //     .returningAll()
+                  //     .execute();
+                  // }
                 }
                 // if all tags are removed, remove all fields
-                else {
-                  await tx
-                    .deleteFrom("characters_to_character_fields")
-                    .where("characters_to_character_fields.character_id", "=", params.id)
-                    .execute();
-                }
+                // else {
+                //   await tx
+                //     .deleteFrom("characters_to_character_fields")
+                //     .where("characters_to_character_fields.character_id", "=", params.id)
+                //     .execute();
+                // }
               }
             }
 
