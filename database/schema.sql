@@ -686,6 +686,23 @@ CREATE TABLE public.character_blueprint_instance_fields (
 
 
 --
+-- Name: character_calendar_fields; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.character_calendar_fields (
+    character_id text NOT NULL,
+    character_field_id text NOT NULL,
+    related_id text NOT NULL,
+    end_month_id text,
+    start_month_id text,
+    end_day integer,
+    end_year integer,
+    start_day integer,
+    start_year integer
+);
+
+
+--
 -- Name: character_documents_fields; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1330,6 +1347,14 @@ ALTER TABLE ONLY public.character_blueprint_instance_fields
 
 
 --
+-- Name: character_calendar_fields character_calendar_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_calendar_fields
+    ADD CONSTRAINT character_calendar_fields_pkey PRIMARY KEY (character_id, character_field_id, related_id);
+
+
+--
 -- Name: character_documents_fields character_documents_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1870,6 +1895,13 @@ CREATE UNIQUE INDEX blueprint_instance_random_tables_blueprint_instance_id_blue_
 --
 
 CREATE INDEX bpi_ts_index ON public.blueprint_instances USING gin (ts);
+
+
+--
+-- Name: character_calendar_fields_character_id_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX character_calendar_fields_character_id_key ON public.character_calendar_fields USING btree (character_id, character_field_id, related_id);
 
 
 --
@@ -2571,6 +2603,46 @@ ALTER TABLE ONLY public.character_blueprint_instance_fields
 
 
 --
+-- Name: character_calendar_fields character_calendar_fields_character_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_calendar_fields
+    ADD CONSTRAINT character_calendar_fields_character_field_id_fkey FOREIGN KEY (character_field_id) REFERENCES public.character_fields(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: character_calendar_fields character_calendar_fields_character_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_calendar_fields
+    ADD CONSTRAINT character_calendar_fields_character_id_fkey FOREIGN KEY (character_id) REFERENCES public.characters(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: character_calendar_fields character_calendar_fields_end_month_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_calendar_fields
+    ADD CONSTRAINT character_calendar_fields_end_month_id_fkey FOREIGN KEY (end_month_id) REFERENCES public.months(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: character_calendar_fields character_calendar_fields_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_calendar_fields
+    ADD CONSTRAINT character_calendar_fields_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.calendars(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: character_calendar_fields character_calendar_fields_start_month_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_calendar_fields
+    ADD CONSTRAINT character_calendar_fields_start_month_id_fkey FOREIGN KEY (start_month_id) REFERENCES public.months(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
 -- Name: character_documents_fields character_documents_fields_character_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3104,4 +3176,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20231115084021'),
     ('20231115094355'),
     ('20231115094748'),
-    ('20231115132655');
+    ('20231115132655'),
+    ('20231116133905');

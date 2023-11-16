@@ -243,7 +243,7 @@ export function character_router(app: Elysia) {
                     jsonArrayFrom(
                       eb
                         .selectFrom("character_documents_fields")
-                        .whereRef("character_documents_fields.character_id", "=", "characters.id")
+                        .where("character_documents_fields.character_id", "=", params.id)
                         .select([
                           "character_field_id as id",
                           "related_id",
@@ -260,7 +260,7 @@ export function character_router(app: Elysia) {
                     jsonArrayFrom(
                       eb
                         .selectFrom("character_images_fields")
-                        .whereRef("character_images_fields.character_id", "=", "characters.id")
+                        .where("character_images_fields.character_id", "=", params.id)
                         .select([
                           "character_field_id as id",
                           "related_id",
@@ -277,7 +277,7 @@ export function character_router(app: Elysia) {
                     jsonArrayFrom(
                       eb
                         .selectFrom("character_locations_fields")
-                        .whereRef("character_locations_fields.character_id", "=", "characters.id")
+                        .where("character_locations_fields.character_id", "=", params.id)
                         .select([
                           "character_field_id as id",
                           "related_id",
@@ -294,7 +294,7 @@ export function character_router(app: Elysia) {
                     jsonArrayFrom(
                       eb
                         .selectFrom("character_blueprint_instance_fields")
-                        .whereRef("character_blueprint_instance_fields.character_id", "=", "characters.id")
+                        .where("character_blueprint_instance_fields.character_id", "=", params.id)
                         .select([
                           "character_field_id as id",
                           "related_id",
@@ -307,6 +307,22 @@ export function character_router(app: Elysia) {
                             ).as("blueprint_instances"),
                         ]),
                     ).as("blueprint_instances"),
+                  (ebb) =>
+                    jsonArrayFrom(
+                      ebb
+                        .selectFrom("character_calendar_fields")
+                        .where("character_calendar_fields.character_id", "=", params.id)
+                        .select([
+                          "character_field_id as id",
+                          "related_id",
+                          "start_day",
+                          "start_month_id",
+                          "start_year",
+                          "end_day",
+                          "end_month_id",
+                          "end_year",
+                        ]),
+                    ).as("calendars"),
                   (eb) =>
                     jsonArrayFrom(
                       eb
@@ -503,7 +519,7 @@ export function character_router(app: Elysia) {
           if (data?.related_other) {
             data.related_other = uniqBy(data.related_other, "id");
           }
-          const { documents, field_images, field_locations, blueprint_instances, value, ...rest } = data;
+          const { documents, field_images, field_locations, blueprint_instances, calendars, value, ...rest } = data;
           rest.character_fields = [
             ...(documents || []).map(
               (d: {
@@ -552,6 +568,29 @@ export function character_router(app: Elysia) {
                   related_id: d.related_id,
                   blueprint_instance,
                 })),
+              }),
+            ),
+            ...(calendars || []).map(
+              (d: {
+                id: string;
+                related_id: string;
+                start_day?: number;
+                start_month_id?: string;
+                start_year?: number;
+                end_day?: number;
+                end_month_id?: string;
+                end_year?: number;
+              }) => ({
+                id: d.id,
+                calendar: {
+                  related_id: d.related_id,
+                  start_day: d.start_day,
+                  start_month_id: d.start_month_id,
+                  start_year: d.start_year,
+                  end_day: d.end_day,
+                  end_month_id: d.end_month_id,
+                  end_year: d.end_year,
+                },
               }),
             ),
             ...(value || []),
@@ -872,27 +911,27 @@ export function character_router(app: Elysia) {
                   //     })
                   //     .execute();
                   // }
-                  // if (field.calendar) {
-                  //   await tx
-                  //     .deleteFrom("blueprint_instance_calendars")
-                  //     .where("character_id", "=", params.id)
-                  //     .where("character_field_id", "=", field.id)
-                  //     .execute();
-                  //   return tx
-                  //     .insertInto("blueprint_instance_calendars")
-                  //     .values({
-                  //       character_field_id: field.id,
-                  //       character_id: params.id,
-                  //       related_id: field.calendar.related_id,
-                  //       start_day: field.calendar.start_day,
-                  //       start_month_id: field.calendar.start_month_id,
-                  //       start_year: field.calendar.start_year,
-                  //       end_day: field.calendar.end_day,
-                  //       end_month_id: field.calendar.end_month_id,
-                  //       end_year: field.calendar.end_year,
-                  //     })
-                  //     .execute();
-                  // }
+                  if (field.calendar) {
+                    await tx
+                      .deleteFrom("character_calendar_fields")
+                      .where("character_id", "=", params.id)
+                      .where("character_field_id", "=", field.id)
+                      .execute();
+                    return tx
+                      .insertInto("character_calendar_fields")
+                      .values({
+                        character_field_id: field.id,
+                        character_id: params.id,
+                        related_id: field.calendar.related_id,
+                        start_day: field.calendar.start_day,
+                        start_month_id: field.calendar.start_month_id,
+                        start_year: field.calendar.start_year,
+                        end_day: field.calendar.end_day,
+                        end_month_id: field.calendar.end_month_id,
+                        end_year: field.calendar.end_year,
+                      })
+                      .execute();
+                  }
                 }),
               );
             }

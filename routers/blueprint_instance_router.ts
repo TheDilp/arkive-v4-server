@@ -541,16 +541,18 @@ export function blueprint_instance_router(app: Elysia) {
                       .where("blueprint_instance_id", "=", params.id)
                       .where("blueprint_field_id", "=", field.id)
                       .execute();
-                    return field.characters.map((char) =>
-                      tx
-                        .insertInto("blueprint_instance_characters")
-                        .values({
-                          blueprint_field_id: field.id,
-                          blueprint_instance_id: params.id,
-                          related_id: char.related_id,
-                        })
-                        .execute(),
-                    );
+                    if (field.characters.length) {
+                      return field.characters.map((char) =>
+                        tx
+                          .insertInto("blueprint_instance_characters")
+                          .values({
+                            blueprint_field_id: field.id,
+                            blueprint_instance_id: params.id,
+                            related_id: char.related_id,
+                          })
+                          .execute(),
+                      );
+                    }
                   }
                   if (field.blueprint_instances) {
                     await tx
@@ -558,33 +560,37 @@ export function blueprint_instance_router(app: Elysia) {
                       .where("blueprint_instance_id", "=", params.id)
                       .where("blueprint_field_id", "=", field.id)
                       .execute();
-                    return field.blueprint_instances.map((char) =>
-                      tx
-                        .insertInto("blueprint_instance_blueprint_instances")
-                        .values({
-                          blueprint_field_id: field.id,
-                          blueprint_instance_id: params.id,
-                          related_id: char.related_id,
-                        })
-                        .execute(),
-                    );
+                    if (field.blueprint_instances.length) {
+                      return field.blueprint_instances.map((char) =>
+                        tx
+                          .insertInto("blueprint_instance_blueprint_instances")
+                          .values({
+                            blueprint_field_id: field.id,
+                            blueprint_instance_id: params.id,
+                            related_id: char.related_id,
+                          })
+                          .execute(),
+                      );
+                    }
                   }
                   if (field.documents) {
-                    await tx
-                      .deleteFrom("blueprint_instance_documents")
-                      .where("blueprint_instance_id", "=", params.id)
-                      .where("blueprint_field_id", "=", field.id)
-                      .execute();
-                    return field.documents.map((char) =>
-                      tx
-                        .insertInto("blueprint_instance_documents")
-                        .values({
-                          blueprint_field_id: field.id,
-                          blueprint_instance_id: params.id,
-                          related_id: char.related_id,
-                        })
-                        .execute(),
-                    );
+                    if (field.documents.length) {
+                      await tx
+                        .deleteFrom("blueprint_instance_documents")
+                        .where("blueprint_instance_id", "=", params.id)
+                        .where("blueprint_field_id", "=", field.id)
+                        .execute();
+                      return field.documents.map((char) =>
+                        tx
+                          .insertInto("blueprint_instance_documents")
+                          .values({
+                            blueprint_field_id: field.id,
+                            blueprint_instance_id: params.id,
+                            related_id: char.related_id,
+                          })
+                          .execute(),
+                      );
+                    }
                   }
                   if (field.map_pins) {
                     await tx
@@ -592,16 +598,18 @@ export function blueprint_instance_router(app: Elysia) {
                       .where("blueprint_instance_id", "=", params.id)
                       .where("blueprint_field_id", "=", field.id)
                       .execute();
-                    return field.map_pins.map((char) =>
-                      tx
-                        .insertInto("blueprint_instance_map_pins")
-                        .values({
-                          blueprint_field_id: field.id,
-                          blueprint_instance_id: params.id,
-                          related_id: char.related_id,
-                        })
-                        .execute(),
-                    );
+                    if (field.map_pins.length) {
+                      return field.map_pins.map((char) =>
+                        tx
+                          .insertInto("blueprint_instance_map_pins")
+                          .values({
+                            blueprint_field_id: field.id,
+                            blueprint_instance_id: params.id,
+                            related_id: char.related_id,
+                          })
+                          .execute(),
+                      );
+                    }
                   }
                   if (field.images) {
                     await tx
@@ -609,16 +617,18 @@ export function blueprint_instance_router(app: Elysia) {
                       .where("blueprint_instance_id", "=", params.id)
                       .where("blueprint_field_id", "=", field.id)
                       .execute();
-                    return field.images.map((char) =>
-                      tx
-                        .insertInto("blueprint_instance_images")
-                        .values({
-                          blueprint_field_id: field.id,
-                          blueprint_instance_id: params.id,
-                          related_id: char.related_id,
-                        })
-                        .execute(),
-                    );
+                    if (field.images.length) {
+                      return field.images.map((char) =>
+                        tx
+                          .insertInto("blueprint_instance_images")
+                          .values({
+                            blueprint_field_id: field.id,
+                            blueprint_instance_id: params.id,
+                            related_id: char.related_id,
+                          })
+                          .execute(),
+                      );
+                    }
                   }
                   if (field.random_table) {
                     await tx
