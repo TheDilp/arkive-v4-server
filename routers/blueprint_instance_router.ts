@@ -103,7 +103,6 @@ export function blueprint_instance_router(app: Elysia) {
                   }
                   if (field?.random_table) {
                     const { random_table } = field;
-                    console.log(random_table);
                     await tx
                       .insertInto("blueprint_instance_random_tables")
                       .values({

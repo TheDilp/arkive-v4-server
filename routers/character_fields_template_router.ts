@@ -118,11 +118,42 @@ export function character_fields_templates_router(app: Elysia) {
                                 "calendars.days",
                                 (sb) =>
                                   jsonArrayFrom(
-                                    sb.selectFrom("months").select(["months.id", "months.title", "months.days"]),
+                                    sb
+                                      .selectFrom("months")
+                                      .select(["months.id", "months.title", "months.days"])
+                                      .orderBy("months.sort")
+                                      .whereRef("months.parent_id", "=", "calendars.id"),
                                   ).as("months"),
                               ])
                               .whereRef("calendars.id", "=", "character_fields.calendar_id"),
                           ).as("calendar"),
+                        (eb) =>
+                          jsonObjectFrom(
+                            eb
+                              .selectFrom("random_tables")
+                              .select([
+                                "random_tables.id",
+                                "random_tables.title",
+                                (ebb) =>
+                                  jsonArrayFrom(
+                                    ebb
+                                      .selectFrom("random_table_options")
+                                      .whereRef("random_tables.id", "=", "random_table_options.parent_id")
+                                      .select([
+                                        "id",
+                                        "title",
+                                        (ebbb) =>
+                                          jsonArrayFrom(
+                                            ebbb
+                                              .selectFrom("random_table_suboptions")
+                                              .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id")
+                                              .select(["id", "title"]),
+                                          ).as("random_table_suboptions"),
+                                      ]),
+                                  ).as("random_table_options"),
+                              ])
+                              .whereRef("random_tables.id", "=", "character_fields.random_table_id"),
+                          ).as("random_table"),
                       ]),
                   ).as("character_fields"),
                 );

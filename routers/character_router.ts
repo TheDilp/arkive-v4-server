@@ -310,6 +310,13 @@ export function character_router(app: Elysia) {
                   (ebb) =>
                     jsonArrayFrom(
                       ebb
+                        .selectFrom("character_random_table_fields")
+                        .where("character_random_table_fields.character_id", "=", params.id)
+                        .select(["character_field_id as id", "related_id", "option_id", "suboption_id"]),
+                    ).as("random_tables"),
+                  (ebb) =>
+                    jsonArrayFrom(
+                      ebb
                         .selectFrom("character_calendar_fields")
                         .where("character_calendar_fields.character_id", "=", params.id)
                         .select([
@@ -519,7 +526,8 @@ export function character_router(app: Elysia) {
           if (data?.related_other) {
             data.related_other = uniqBy(data.related_other, "id");
           }
-          const { documents, field_images, field_locations, blueprint_instances, calendars, value, ...rest } = data;
+          const { documents, field_images, field_locations, blueprint_instances, calendars, random_tables, value, ...rest } =
+            data;
           rest.character_fields = [
             ...(documents || []).map(
               (d: {
@@ -590,6 +598,16 @@ export function character_router(app: Elysia) {
                   end_day: d.end_day,
                   end_month_id: d.end_month_id,
                   end_year: d.end_year,
+                },
+              }),
+            ),
+            ...(random_tables || []).map(
+              (d: { id: string; related_id: string; option_id?: string; suboption_id?: string }) => ({
+                id: d.id,
+                random_table: {
+                  related_id: d.related_id,
+                  option_id: d.option_id,
+                  suboption_id: d.suboption_id,
                 },
               }),
             ),
@@ -894,23 +912,23 @@ export function character_router(app: Elysia) {
                         .execute(),
                     );
                   }
-                  // if (field.random_table) {
-                  //   await tx
-                  //     .deleteFrom("blueprint_instance_random_tables")
-                  //     .where("character_id", "=", params.id)
-                  //     .where("character_field_id", "=", field.id)
-                  //     .execute();
-                  //   return tx
-                  //     .insertInto("blueprint_instance_random_tables")
-                  //     .values({
-                  //       character_field_id: field.id,
-                  //       character_id: params.id,
-                  //       related_id: field.random_table.related_id,
-                  //       option_id: field.random_table.option_id,
-                  //       suboption_id: field.random_table.suboption_id,
-                  //     })
-                  //     .execute();
-                  // }
+                  if (field.random_table) {
+                    await tx
+                      .deleteFrom("character_random_table_fields")
+                      .where("character_id", "=", params.id)
+                      .where("character_field_id", "=", field.id)
+                      .execute();
+                    return tx
+                      .insertInto("character_random_table_fields")
+                      .values({
+                        character_field_id: field.id,
+                        character_id: params.id,
+                        related_id: field.random_table.related_id,
+                        option_id: field.random_table.option_id,
+                        suboption_id: field.random_table.suboption_id,
+                      })
+                      .execute();
+                  }
                   if (field.calendar) {
                     await tx
                       .deleteFrom("character_calendar_fields")

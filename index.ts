@@ -50,7 +50,6 @@ export const app = new Elysia()
   })
   .onError(({ code, error, set }) => {
     if (code === "UNAUTHORIZED") {
-      console.log("TEST");
       set.status = 403;
       return { message: "UNAUTHORIZED", ok: false };
     }

@@ -6,7 +6,6 @@ export function health_check_router(app: Elysia) {
       return { message: "Recieved", ok: true };
     })
     .post("/webhook_check", ({ body }) => {
-      console.log(body);
       return { message: "Success", ok: true };
     });
 }
