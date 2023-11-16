@@ -535,7 +535,7 @@ export function blueprint_instance_router(app: Elysia) {
                       )
                       .execute();
                   }
-                  if (field.characters?.length) {
+                  if (field.characters) {
                     await tx
                       .deleteFrom("blueprint_instance_characters")
                       .where("blueprint_instance_id", "=", params.id)
@@ -552,7 +552,7 @@ export function blueprint_instance_router(app: Elysia) {
                         .execute(),
                     );
                   }
-                  if (field.blueprint_instances?.length) {
+                  if (field.blueprint_instances) {
                     await tx
                       .deleteFrom("blueprint_instance_blueprint_instances")
                       .where("blueprint_instance_id", "=", params.id)
@@ -569,7 +569,7 @@ export function blueprint_instance_router(app: Elysia) {
                         .execute(),
                     );
                   }
-                  if (field.documents?.length) {
+                  if (field.documents) {
                     await tx
                       .deleteFrom("blueprint_instance_documents")
                       .where("blueprint_instance_id", "=", params.id)
@@ -586,7 +586,7 @@ export function blueprint_instance_router(app: Elysia) {
                         .execute(),
                     );
                   }
-                  if (field.map_pins?.length) {
+                  if (field.map_pins) {
                     await tx
                       .deleteFrom("blueprint_instance_map_pins")
                       .where("blueprint_instance_id", "=", params.id)
@@ -603,7 +603,7 @@ export function blueprint_instance_router(app: Elysia) {
                         .execute(),
                     );
                   }
-                  if (field.images?.length) {
+                  if (field.images) {
                     await tx
                       .deleteFrom("blueprint_instance_images")
                       .where("blueprint_instance_id", "=", params.id)
