@@ -511,8 +511,8 @@ export function character_router(app: Elysia) {
                 related_id: string;
                 documents: { document: { id: string; title: string; icon: string | null } }[];
               }) => ({
-                ...d,
-                documents: d.documents.map((document) => ({ document })),
+                id: d.id,
+                documents: d.documents.map((document) => ({ related_id: d.related_id, document })),
               }),
             ),
             ...(field_images || []).map(
@@ -521,8 +521,11 @@ export function character_router(app: Elysia) {
                 related_id: string;
                 images: { image: { id: string; title: string; icon: string | null } }[];
               }) => ({
-                ...d,
-                images: d.images.map((image) => ({ image })),
+                id: d.id,
+                images: d.images.map((image) => ({
+                  related_id: d.related_id,
+                  image,
+                })),
               }),
             ),
             ...(field_locations || []).map(
@@ -531,8 +534,11 @@ export function character_router(app: Elysia) {
                 related_id: string;
                 map_pins: { map_pin: { id: string; title: string; icon: string | null } }[];
               }) => ({
-                ...d,
-                map_pins: d.map_pins.map((map_pin) => ({ map_pin })),
+                id: d.id,
+                map_pins: d.map_pins.map((map_pin) => ({
+                  related_id: d.related_id,
+                  map_pin,
+                })),
               }),
             ),
             ...(blueprint_instances || []).map(
@@ -541,8 +547,11 @@ export function character_router(app: Elysia) {
                 related_id: string;
                 blueprint_instances: { blueprint_instance: { id: string; title: string; icon: string | null } }[];
               }) => ({
-                ...d,
-                blueprint_instances: d.blueprint_instances.map((blueprint_instance) => ({ blueprint_instance })),
+                id: d.id,
+                blueprint_instances: d.blueprint_instances.map((blueprint_instance) => ({
+                  related_id: d.related_id,
+                  blueprint_instance,
+                })),
               }),
             ),
             ...(value || []),
@@ -819,35 +828,122 @@ export function character_router(app: Elysia) {
 
               if (deletedTags !== null) {
                 if (deletedTags?.length) {
-                  // const templates = await tx
-                  //   .selectFrom("character_fields_templates")
-                  //   .select(["id"])
-                  //   .leftJoin(
-                  //     "_character_fields_templatesTotags",
-                  //     "_character_fields_templatesTotags.A",
-                  //     "character_fields_templates.id",
-                  //   )
-                  //   .where("_character_fields_templatesTotags.B", "in", deletedTags)
-                  //   .execute();
-                  // const templateIds = templates.map((t) => t.id);
-                  // if (templateIds?.length) {
-                  //   await tx
-                  //     .deleteFrom("characters_to_character_fields")
-                  //     .using("character_fields")
-                  //     .where("characters_to_character_fields.character_id", "=", params.id)
-                  //     .whereRef("characters_to_character_fields.character_field_id", "=", "character_fields.id")
-                  //     .where("character_fields.parent_id", "in", templateIds)
-                  //     .returningAll()
-                  //     .execute();
-                  // }
+                  const templates = await tx
+                    .selectFrom("character_fields_templates")
+                    .select([
+                      "id",
+                      (eb) =>
+                        jsonArrayFrom(
+                          eb
+                            .selectFrom("character_fields")
+                            .select(["id", "field_type"])
+                            .whereRef("character_fields.parent_id", "=", "character_fields_templates.id"),
+                        ).as("character_fields"),
+                    ])
+                    .leftJoin(
+                      "_character_fields_templatesTotags",
+                      "_character_fields_templatesTotags.A",
+                      "character_fields_templates.id",
+                    )
+                    .where("_character_fields_templatesTotags.B", "in", deletedTags)
+                    .execute();
+                  const documentFields: { id: string; field_type: string }[] = [];
+                  const mapPinFields: { id: string; field_type: string }[] = [];
+                  const blueprintInstanceFields: { id: string; field_type: string }[] = [];
+                  const imageFields: { id: string; field_type: string }[] = [];
+                  // const randomTableFields = [];
+                  // const calendarFields = [];
+                  const valueFields: { id: string; field_type: string }[] = [];
+                  templates
+                    .flatMap((t) => t.character_fields)
+                    .forEach((field) => {
+                      if (field.field_type.includes("documents")) documentFields.push(field);
+                      if (field.field_type.includes("location")) mapPinFields.push(field);
+                      if (field.field_type.includes("blueprint")) blueprintInstanceFields.push(field);
+                      if (field.field_type.includes("images")) imageFields.push(field);
+                      valueFields.push(field);
+                    });
+                  if (documentFields.length) {
+                    await tx
+                      .deleteFrom("character_documents_fields")
+                      .where(
+                        "character_field_id",
+                        "in",
+                        documentFields.map((f) => f.id),
+                      )
+                      .where("character_documents_fields.character_id", "=", params.id)
+                      .execute();
+                  }
+                  if (mapPinFields.length) {
+                    await tx
+                      .deleteFrom("character_locations_fields")
+                      .where(
+                        "character_field_id",
+                        "in",
+                        mapPinFields.map((f) => f.id),
+                      )
+                      .where("character_locations_fields.character_id", "=", params.id)
+                      .execute();
+                  }
+                  if (blueprintInstanceFields.length) {
+                    await tx
+                      .deleteFrom("character_blueprint_instance_fields")
+                      .where(
+                        "character_field_id",
+                        "in",
+                        blueprintInstanceFields.map((f) => f.id),
+                      )
+                      .where("character_blueprint_instance_fields.character_id", "=", params.id)
+                      .execute();
+                  }
+                  if (imageFields.length) {
+                    await tx
+                      .deleteFrom("character_images_fields")
+                      .where(
+                        "character_field_id",
+                        "in",
+                        imageFields.map((f) => f.id),
+                      )
+                      .where("character_images_fields.character_id", "=", params.id)
+                      .execute();
+                  }
+                  if (valueFields.length) {
+                    await tx
+                      .deleteFrom("character_value_fields")
+                      .where(
+                        "character_field_id",
+                        "in",
+                        valueFields.map((f) => f.id),
+                      )
+                      .where("character_value_fields.character_id", "=", params.id)
+                      .execute();
+                  }
                 }
                 // if all tags are removed, remove all fields
-                // else {
-                //   await tx
-                //     .deleteFrom("characters_to_character_fields")
-                //     .where("characters_to_character_fields.character_id", "=", params.id)
-                //     .execute();
-                // }
+                else {
+                  await Promise.all([
+                    tx
+                      .deleteFrom("character_documents_fields")
+                      .where("character_documents_fields.character_id", "=", params.id)
+                      .execute(),
+                    tx
+                      .deleteFrom("character_images_fields")
+                      .where("character_images_fields.character_id", "=", params.id)
+                      .execute(),
+                    tx
+                      .deleteFrom("character_blueprint_instance_fields")
+                      .where("character_blueprint_instance_fields.character_id", "=", params.id)
+                      .execute(),
+                    tx
+                      .deleteFrom("character_locations_fields")
+                      .where("character_locations_fields.character_id", "=", params.id)
+                      .execute(),
+                    tx
+                      .deleteFrom("character_value_fields")
+                      .where("character_value_fields.character_id", "=", params.id)
+                      .execute(),
+                  ]);
+                }
               }
             }
 
