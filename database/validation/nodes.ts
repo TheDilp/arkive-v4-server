@@ -51,6 +51,7 @@ export const InsertNodeSchema = t.Object({
     id: t.String(),
     parent_id: t.String(),
     label: t.Optional(t.Union([t.String(), t.Null()])),
+    icon: t.Optional(t.Union([t.String(), t.Null()])),
     type: NodeShapeEnum,
     width: t.Optional(t.Number()),
     height: t.Optional(t.Number()),

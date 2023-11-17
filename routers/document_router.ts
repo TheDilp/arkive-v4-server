@@ -219,9 +219,12 @@ export function document_router(app: Elysia) {
                     .insertInto("document_mentions")
                     .values(idsToInsert.map((mention_id) => ({ parent_document_id: params.id, mention_id })))
                     .execute();
+              } else {
+                await tx
+                  .deleteFrom("document_mentions")
+                  .where("document_mentions.parent_document_id", "in", params.id)
+                  .execute();
               }
-            } else {
-              await tx.deleteFrom("document_mentions").where("document_mentions.parent_document_id", "in", params.id).execute();
             }
           });
 
@@ -351,7 +354,7 @@ export function document_router(app: Elysia) {
           const data = await db
             .selectFrom("document_mentions")
             .leftJoin("documents", "documents.id", "document_mentions.parent_document_id")
-            .select(["documents.id", "documents.title"])
+            .select(["documents.id", "documents.title", "documents.icon"])
             .where("mention_id", "=", params.id)
             .execute();
 

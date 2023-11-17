@@ -914,7 +914,8 @@ CREATE TABLE public.nodes (
     character_id uuid,
     event_id uuid,
     map_id uuid,
-    map_pin_id uuid
+    map_pin_id uuid,
+    icon text
 );
 
 
@@ -3017,4 +3018,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20231116133905'),
     ('20231116150742'),
     ('20231117074514'),
-    ('20231117094721');
+    ('20231117094721'),
+    ('20231117104543');

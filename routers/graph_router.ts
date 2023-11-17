@@ -85,6 +85,7 @@ export function graph_router(app: Elysia) {
                     .select((sb) => [
                       "nodes.id",
                       "nodes.label",
+                      "nodes.icon",
                       "nodes.background_color",
                       "nodes.background_opacity",
                       "nodes.font_color",
