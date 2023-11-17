@@ -186,7 +186,7 @@ export function blueprint_instance_router(app: Elysia) {
                           jsonObjectFrom(
                             ebb
                               .selectFrom("random_tables")
-                              .where("random_tables.id", "=", "blueprint_fields.random_table_id")
+                              .whereRef("random_tables.id", "=", "blueprint_fields.random_table_id")
                               .select(["id", "title"]),
                           ).as("random_table_data"),
                         (ebb) =>
@@ -368,7 +368,7 @@ export function blueprint_instance_router(app: Elysia) {
                         jsonObjectFrom(
                           ebb
                             .selectFrom("random_tables")
-                            .where("random_tables.id", "=", "blueprint_fields.random_table_id")
+                            .whereRef("random_tables.id", "=", "blueprint_fields.random_table_id")
                             .select(["id", "title"]),
                         ).as("random_table_data"),
                       (ebb) =>
