@@ -830,7 +830,7 @@ export function character_router(app: Elysia) {
             if (body.relations?.character_fields) {
               await Promise.all(
                 body.relations.character_fields.flatMap(async (field) => {
-                  if (field.value) {
+                  if (field.value || field.value === "") {
                     return tx
                       .insertInto("character_value_fields")
                       .values({
