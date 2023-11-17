@@ -1,3 +1,5 @@
+import { MentionType } from "../types/entityTypes";
+
 export function capitalizeFirstLetter(word: string): string {
   return word.charAt(0).toUpperCase() + word.slice(1);
 }
@@ -93,4 +95,24 @@ export function insertSenderToMessage(content: { type: string; content: any }, m
       }
     }
   }
+}
+
+export function findObjectsByType(obj: Record<string, any>, targetType: string): MentionType[] {
+  let foundObjects: MentionType[] = [];
+
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      const value = obj[key];
+
+      if (typeof value === "object" && value !== null) {
+        if (value.type === targetType) {
+          foundObjects.push(value);
+        } else {
+          foundObjects = foundObjects.concat(findObjectsByType(value, targetType));
+        }
+      }
+    }
+  }
+
+  return foundObjects;
 }

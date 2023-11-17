@@ -51,3 +51,16 @@ export type AvailableSubEntityType =
   | "character_fields"
   | "blueprint_instances"
   | "messages";
+
+export type MentionType = {
+  type: "mentionAtom";
+  attrs: {
+    alterId?: string | null;
+    projectId: string;
+    icon?: string | null;
+    parentId?: string | null;
+    id: string;
+    label: string | undefined;
+    name: "characters" | "blueprint_instances" | "documents" | "maps" | "graphs" | "words";
+  };
+};

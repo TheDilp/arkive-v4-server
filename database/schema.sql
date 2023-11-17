@@ -10,24 +10,38 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: pgroll; Type: SCHEMA; Schema: -; Owner: -
---
-
-CREATE SCHEMA pgroll;
-
-
---
--- Name: public; Type: SCHEMA; Schema: -; Owner: -
---
-
--- *not* creating schema, since initdb creates it
-
-
---
 -- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
 --
 
 COMMENT ON SCHEMA public IS '';
+
+
+--
+-- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
+
+
+--
+-- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
 
 
 --
@@ -113,228 +127,17 @@ CREATE TYPE public."ImageType" AS ENUM (
 );
 
 
---
--- Name: is_active_migration_period(name); Type: FUNCTION; Schema: pgroll; Owner: -
---
-
-CREATE FUNCTION pgroll.is_active_migration_period(schemaname name) RETURNS boolean
-    LANGUAGE sql STABLE
-    AS $$ SELECT EXISTS (SELECT 1 FROM "pgroll".migrations WHERE schema=schemaname AND done=false) $$;
-
-
---
--- Name: latest_version(name); Type: FUNCTION; Schema: pgroll; Owner: -
---
-
-CREATE FUNCTION pgroll.latest_version(schemaname name) RETURNS text
-    LANGUAGE sql STABLE SECURITY DEFINER
-    SET search_path TO 'pgroll', 'pg_catalog', 'pg_temp'
-    AS $$
-  SELECT p.name FROM "pgroll".migrations p
-  WHERE NOT EXISTS (
-    SELECT 1 FROM "pgroll".migrations c WHERE schema=schemaname AND c.parent=p.name
-  )
-  AND schema=schemaname $$;
-
-
---
--- Name: previous_version(name); Type: FUNCTION; Schema: pgroll; Owner: -
---
-
-CREATE FUNCTION pgroll.previous_version(schemaname name) RETURNS text
-    LANGUAGE sql STABLE
-    AS $$
-  WITH RECURSIVE find_ancestor AS (
-    SELECT schema, name, parent, migration_type FROM pgroll.migrations
-      WHERE name = (SELECT "pgroll".latest_version(schemaname)) AND schema = schemaname
-
-    UNION ALL
-
-    SELECT m.schema, m.name, m.parent, m.migration_type FROM pgroll.migrations m
-      INNER JOIN find_ancestor fa ON fa.parent = m.name AND fa.schema = m.schema
-      WHERE m.migration_type = 'inferred'
-  )
-  SELECT a.parent
-  FROM find_ancestor AS a
-  JOIN pgroll.migrations AS b ON a.parent = b.name AND a.schema = b.schema
-  WHERE b.migration_type = 'pgroll';
-$$;
-
-
---
--- Name: raw_migration(); Type: FUNCTION; Schema: pgroll; Owner: -
---
-
-CREATE FUNCTION pgroll.raw_migration() RETURNS event_trigger
-    LANGUAGE plpgsql SECURITY DEFINER
-    SET search_path TO 'pgroll', 'pg_catalog', 'pg_temp'
-    AS $$
-DECLARE
-	schemaname TEXT;
-BEGIN
-	-- Ignore migrations done by pgroll
-	IF (pg_catalog.current_setting('pgroll.internal', 'TRUE') <> 'TRUE') THEN
-		RETURN;
-	END IF;
-
-	IF tg_event = 'sql_drop' THEN
-		-- Guess the schema from drop commands
-		SELECT schema_name INTO schemaname FROM pg_catalog.pg_event_trigger_dropped_objects() WHERE schema_name IS NOT NULL;
-
-	ELSIF tg_event = 'ddl_command_end' THEN
-		-- Guess the schema from ddl commands, ignore migrations that touch several schemas
-		IF (SELECT pg_catalog.count(DISTINCT schema_name) FROM pg_catalog.pg_event_trigger_ddl_commands() WHERE schema_name IS NOT NULL) > 1 THEN
-			RAISE NOTICE 'pgroll: ignoring migration that changes several schemas';
-			RETURN;
-		END IF;
-
-		SELECT schema_name INTO schemaname FROM pg_catalog.pg_event_trigger_ddl_commands() WHERE schema_name IS NOT NULL;
-	END IF;
-
-	IF schemaname IS NULL THEN
-		RAISE NOTICE 'pgroll: ignoring migration with null schema';
-		RETURN;
-	END IF;
-
-	-- Ignore migrations done during a migration period
-	IF "pgroll".is_active_migration_period(schemaname) THEN
-		RAISE NOTICE 'pgroll: ignoring migration during active migration period';
-		RETURN;
-	END IF;
-
-	-- Someone did a schema change without pgroll, include it in the history
-	INSERT INTO "pgroll".migrations (schema, name, migration, resulting_schema, done, parent, migration_type)
-	VALUES (
-		schemaname,
-		pg_catalog.format('sql_%s',pg_catalog.substr(pg_catalog.md5(pg_catalog.random()::text), 0, 15)),
-		pg_catalog.json_build_object('sql', pg_catalog.json_build_object('up', pg_catalog.current_query())),
-		"pgroll".read_schema(schemaname),
-		true,
-		"pgroll".latest_version(schemaname),
-		'inferred'
-	);
-END;
-$$;
-
-
---
--- Name: read_schema(text); Type: FUNCTION; Schema: pgroll; Owner: -
---
-
-CREATE FUNCTION pgroll.read_schema(schemaname text) RETURNS jsonb
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-	tables jsonb;
-BEGIN
-	SELECT json_build_object(
-		'name', schemaname,
-		'tables', (
-			SELECT json_object_agg(t.relname, jsonb_build_object(
-				'name', t.relname,
-				'oid', t.oid,
-				'comment', descr.description,
-				'columns', (
-					SELECT json_object_agg(name, c) FROM (
-						SELECT
-							attr.attname AS name,
-							pg_get_expr(def.adbin, def.adrelid) AS default,
-							NOT (
-								attr.attnotnull
-								OR tp.typtype = 'd'
-								AND tp.typnotnull
-							) AS nullable,
-							CASE
-								WHEN 'character varying' :: regtype = ANY(ARRAY [attr.atttypid, tp.typelem]) THEN REPLACE(
-									format_type(attr.atttypid, attr.atttypmod),
-									'character varying',
-									'varchar'
-								)
-								WHEN 'timestamp with time zone' :: regtype = ANY(ARRAY [attr.atttypid, tp.typelem]) THEN REPLACE(
-									format_type(attr.atttypid, attr.atttypmod),
-									'timestamp with time zone',
-									'timestamptz'
-								)
-								ELSE format_type(attr.atttypid, attr.atttypmod)
-							END AS type,
-							descr.description AS comment
-						FROM
-							pg_attribute AS attr
-							INNER JOIN pg_type AS tp ON attr.atttypid = tp.oid
-							LEFT JOIN pg_attrdef AS def ON attr.attrelid = def.adrelid
-							AND attr.attnum = def.adnum
-							LEFT JOIN pg_description AS descr ON attr.attrelid = descr.objoid
-							AND attr.attnum = descr.objsubid
-						WHERE
-							attr.attnum > 0
-							AND NOT attr.attisdropped
-							AND attr.attrelid = t.oid
-						ORDER BY
-							attr.attnum
-					) c
-				),
-				'primaryKey', (
-					SELECT json_agg(pg_attribute.attname) AS primary_key_columns
-					FROM pg_index, pg_attribute
-					WHERE
-						indrelid = t.oid AND
-						nspname = schemaname AND
-						pg_attribute.attrelid = t.oid AND
-						pg_attribute.attnum = any(pg_index.indkey)
-						AND indisprimary
-				),
-				'indexes', (
-				  SELECT json_object_agg(pi.indexrelid::regclass, json_build_object(
-				    'name', pi.indexrelid::regclass
-				  ))
-				  FROM pg_index pi
-				  WHERE pi.indrelid = t.oid::regclass
-				)
-			)) FROM pg_class AS t
-				INNER JOIN pg_namespace AS ns ON t.relnamespace = ns.oid
-				LEFT JOIN pg_description AS descr ON t.oid = descr.objoid
-				AND descr.objsubid = 0
-			WHERE
-				ns.nspname = schemaname
-				AND t.relkind IN ('r', 'p') -- tables only (ignores views, materialized views & foreign tables)
-			)
-		)
-	INTO tables;
-
-	RETURN tables;
-END;
-$$;
-
-
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
-
---
--- Name: migrations; Type: TABLE; Schema: pgroll; Owner: -
---
-
-CREATE TABLE pgroll.migrations (
-    schema name NOT NULL,
-    name text NOT NULL,
-    migration jsonb NOT NULL,
-    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    parent text,
-    done boolean DEFAULT false NOT NULL,
-    resulting_schema jsonb DEFAULT '{}'::jsonb NOT NULL,
-    migration_type character varying(32) DEFAULT 'pgroll'::character varying,
-    CONSTRAINT migration_type_check CHECK (((migration_type)::text = ANY ((ARRAY['pgroll'::character varying, 'inferred'::character varying])::text[])))
-);
-
 
 --
 -- Name: _blueprint_instancesTotags; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public."_blueprint_instancesTotags" (
-    "A" text NOT NULL,
-    "B" text NOT NULL
+    "A" uuid NOT NULL,
+    "B" uuid NOT NULL
 );
 
 
@@ -343,8 +146,8 @@ CREATE TABLE public."_blueprint_instancesTotags" (
 --
 
 CREATE TABLE public."_calendarsTotags" (
-    "A" text NOT NULL,
-    "B" text NOT NULL
+    "A" uuid NOT NULL,
+    "B" uuid NOT NULL
 );
 
 
@@ -353,8 +156,8 @@ CREATE TABLE public."_calendarsTotags" (
 --
 
 CREATE TABLE public."_calendarsTotimelines" (
-    "A" text NOT NULL,
-    "B" text NOT NULL
+    "A" uuid NOT NULL,
+    "B" uuid NOT NULL
 );
 
 
@@ -363,8 +166,8 @@ CREATE TABLE public."_calendarsTotimelines" (
 --
 
 CREATE TABLE public."_character_fields_templatesTotags" (
-    "A" text NOT NULL,
-    "B" text NOT NULL
+    "A" uuid NOT NULL,
+    "B" uuid NOT NULL
 );
 
 
@@ -373,8 +176,8 @@ CREATE TABLE public."_character_fields_templatesTotags" (
 --
 
 CREATE TABLE public."_charactersToconversations" (
-    "A" text NOT NULL,
-    "B" text NOT NULL
+    "A" uuid NOT NULL,
+    "B" uuid NOT NULL
 );
 
 
@@ -383,8 +186,8 @@ CREATE TABLE public."_charactersToconversations" (
 --
 
 CREATE TABLE public."_charactersTodocuments" (
-    "A" text NOT NULL,
-    "B" text NOT NULL
+    "A" uuid NOT NULL,
+    "B" uuid NOT NULL
 );
 
 
@@ -393,8 +196,8 @@ CREATE TABLE public."_charactersTodocuments" (
 --
 
 CREATE TABLE public."_charactersToimages" (
-    "A" text NOT NULL,
-    "B" text NOT NULL
+    "A" uuid NOT NULL,
+    "B" uuid NOT NULL
 );
 
 
@@ -403,8 +206,8 @@ CREATE TABLE public."_charactersToimages" (
 --
 
 CREATE TABLE public."_charactersTotags" (
-    "A" text NOT NULL,
-    "B" text NOT NULL
+    "A" uuid NOT NULL,
+    "B" uuid NOT NULL
 );
 
 
@@ -413,8 +216,8 @@ CREATE TABLE public."_charactersTotags" (
 --
 
 CREATE TABLE public."_dictionariesTotags" (
-    "A" text NOT NULL,
-    "B" text NOT NULL
+    "A" uuid NOT NULL,
+    "B" uuid NOT NULL
 );
 
 
@@ -423,8 +226,8 @@ CREATE TABLE public."_dictionariesTotags" (
 --
 
 CREATE TABLE public."_documentsTotags" (
-    "A" text NOT NULL,
-    "B" text NOT NULL
+    "A" uuid NOT NULL,
+    "B" uuid NOT NULL
 );
 
 
@@ -433,8 +236,8 @@ CREATE TABLE public."_documentsTotags" (
 --
 
 CREATE TABLE public."_edgesTotags" (
-    "A" text NOT NULL,
-    "B" text NOT NULL
+    "A" uuid NOT NULL,
+    "B" uuid NOT NULL
 );
 
 
@@ -443,8 +246,8 @@ CREATE TABLE public."_edgesTotags" (
 --
 
 CREATE TABLE public."_eventsTotags" (
-    "A" text NOT NULL,
-    "B" text NOT NULL
+    "A" uuid NOT NULL,
+    "B" uuid NOT NULL
 );
 
 
@@ -453,8 +256,8 @@ CREATE TABLE public."_eventsTotags" (
 --
 
 CREATE TABLE public."_graphsTotags" (
-    "A" text NOT NULL,
-    "B" text NOT NULL
+    "A" uuid NOT NULL,
+    "B" uuid NOT NULL
 );
 
 
@@ -463,8 +266,8 @@ CREATE TABLE public."_graphsTotags" (
 --
 
 CREATE TABLE public."_map_pinsTotags" (
-    "A" text NOT NULL,
-    "B" text NOT NULL
+    "A" uuid NOT NULL,
+    "B" uuid NOT NULL
 );
 
 
@@ -473,8 +276,8 @@ CREATE TABLE public."_map_pinsTotags" (
 --
 
 CREATE TABLE public."_mapsTotags" (
-    "A" text NOT NULL,
-    "B" text NOT NULL
+    "A" uuid NOT NULL,
+    "B" uuid NOT NULL
 );
 
 
@@ -483,8 +286,8 @@ CREATE TABLE public."_mapsTotags" (
 --
 
 CREATE TABLE public."_nodesTotags" (
-    "A" text NOT NULL,
-    "B" text NOT NULL
+    "A" uuid NOT NULL,
+    "B" uuid NOT NULL
 );
 
 
@@ -493,8 +296,8 @@ CREATE TABLE public."_nodesTotags" (
 --
 
 CREATE TABLE public._project_members (
-    "A" text NOT NULL,
-    "B" text NOT NULL
+    "A" uuid NOT NULL,
+    "B" uuid NOT NULL
 );
 
 
@@ -503,10 +306,10 @@ CREATE TABLE public._project_members (
 --
 
 CREATE TABLE public.alter_names (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     title text DEFAULT 'New Document'::text NOT NULL,
-    project_id text NOT NULL,
-    parent_id text NOT NULL
+    project_id uuid NOT NULL,
+    parent_id uuid NOT NULL
 );
 
 
@@ -515,16 +318,16 @@ CREATE TABLE public.alter_names (
 --
 
 CREATE TABLE public.blueprint_fields (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     title text NOT NULL,
     sort integer DEFAULT 0 NOT NULL,
     options jsonb,
     formula text,
-    parent_id text,
+    parent_id uuid,
     field_type public."BlueprintFieldType" NOT NULL,
-    random_table_id text,
-    calendar_id text,
-    blueprint_id text
+    random_table_id uuid,
+    calendar_id uuid,
+    blueprint_id uuid
 );
 
 
@@ -533,9 +336,9 @@ CREATE TABLE public.blueprint_fields (
 --
 
 CREATE TABLE public.blueprint_instance_blueprint_instances (
-    blueprint_instance_id text NOT NULL,
-    blueprint_field_id text NOT NULL,
-    related_id text NOT NULL
+    blueprint_instance_id uuid NOT NULL,
+    blueprint_field_id uuid NOT NULL,
+    related_id uuid NOT NULL
 );
 
 
@@ -544,11 +347,11 @@ CREATE TABLE public.blueprint_instance_blueprint_instances (
 --
 
 CREATE TABLE public.blueprint_instance_calendars (
-    blueprint_instance_id text NOT NULL,
-    blueprint_field_id text NOT NULL,
-    related_id text NOT NULL,
-    end_month_id text,
-    start_month_id text,
+    blueprint_instance_id uuid NOT NULL,
+    blueprint_field_id uuid NOT NULL,
+    related_id uuid NOT NULL,
+    end_month_id uuid,
+    start_month_id uuid,
     end_day integer,
     end_year integer,
     start_day integer,
@@ -561,9 +364,9 @@ CREATE TABLE public.blueprint_instance_calendars (
 --
 
 CREATE TABLE public.blueprint_instance_characters (
-    blueprint_instance_id text NOT NULL,
-    blueprint_field_id text NOT NULL,
-    related_id text NOT NULL
+    blueprint_instance_id uuid NOT NULL,
+    blueprint_field_id uuid NOT NULL,
+    related_id uuid NOT NULL
 );
 
 
@@ -572,9 +375,9 @@ CREATE TABLE public.blueprint_instance_characters (
 --
 
 CREATE TABLE public.blueprint_instance_documents (
-    blueprint_instance_id text NOT NULL,
-    blueprint_field_id text NOT NULL,
-    related_id text NOT NULL
+    blueprint_instance_id uuid NOT NULL,
+    blueprint_field_id uuid NOT NULL,
+    related_id uuid NOT NULL
 );
 
 
@@ -583,9 +386,9 @@ CREATE TABLE public.blueprint_instance_documents (
 --
 
 CREATE TABLE public.blueprint_instance_images (
-    blueprint_instance_id text NOT NULL,
-    blueprint_field_id text NOT NULL,
-    related_id text NOT NULL
+    blueprint_instance_id uuid NOT NULL,
+    blueprint_field_id uuid NOT NULL,
+    related_id uuid NOT NULL
 );
 
 
@@ -594,9 +397,9 @@ CREATE TABLE public.blueprint_instance_images (
 --
 
 CREATE TABLE public.blueprint_instance_map_pins (
-    blueprint_instance_id text NOT NULL,
-    blueprint_field_id text NOT NULL,
-    related_id text NOT NULL
+    blueprint_instance_id uuid NOT NULL,
+    blueprint_field_id uuid NOT NULL,
+    related_id uuid NOT NULL
 );
 
 
@@ -605,11 +408,11 @@ CREATE TABLE public.blueprint_instance_map_pins (
 --
 
 CREATE TABLE public.blueprint_instance_random_tables (
-    blueprint_instance_id text NOT NULL,
-    blueprint_field_id text NOT NULL,
-    related_id text NOT NULL,
-    option_id text,
-    suboption_id text
+    blueprint_instance_id uuid NOT NULL,
+    blueprint_field_id uuid NOT NULL,
+    related_id uuid NOT NULL,
+    option_id uuid,
+    suboption_id uuid
 );
 
 
@@ -618,8 +421,8 @@ CREATE TABLE public.blueprint_instance_random_tables (
 --
 
 CREATE TABLE public.blueprint_instance_value (
-    blueprint_instance_id text NOT NULL,
-    blueprint_field_id text NOT NULL,
+    blueprint_instance_id uuid NOT NULL,
+    blueprint_field_id uuid NOT NULL,
     value jsonb
 );
 
@@ -629,10 +432,10 @@ CREATE TABLE public.blueprint_instance_value (
 --
 
 CREATE TABLE public.blueprint_instances (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    parent_id text NOT NULL,
+    parent_id uuid NOT NULL,
     title text NOT NULL,
     ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED
 );
@@ -643,11 +446,11 @@ CREATE TABLE public.blueprint_instances (
 --
 
 CREATE TABLE public.blueprints (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     title text NOT NULL,
-    project_id text NOT NULL,
+    project_id uuid NOT NULL,
     title_name text NOT NULL,
     icon text
 );
@@ -658,12 +461,12 @@ CREATE TABLE public.blueprints (
 --
 
 CREATE TABLE public.calendars (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     title text NOT NULL,
-    project_id text NOT NULL,
-    parent_id text,
+    project_id uuid NOT NULL,
+    parent_id uuid,
     icon text,
     is_folder boolean,
     is_public boolean,
@@ -679,9 +482,9 @@ CREATE TABLE public.calendars (
 --
 
 CREATE TABLE public.character_blueprint_instance_fields (
-    character_id text NOT NULL,
-    character_field_id text NOT NULL,
-    related_id text NOT NULL
+    character_id uuid NOT NULL,
+    character_field_id uuid NOT NULL,
+    related_id uuid NOT NULL
 );
 
 
@@ -690,11 +493,11 @@ CREATE TABLE public.character_blueprint_instance_fields (
 --
 
 CREATE TABLE public.character_calendar_fields (
-    character_id text NOT NULL,
-    character_field_id text NOT NULL,
-    related_id text NOT NULL,
-    end_month_id text,
-    start_month_id text,
+    character_id uuid NOT NULL,
+    character_field_id uuid NOT NULL,
+    related_id uuid NOT NULL,
+    end_month_id uuid,
+    start_month_id uuid,
     end_day integer,
     end_year integer,
     start_day integer,
@@ -707,9 +510,9 @@ CREATE TABLE public.character_calendar_fields (
 --
 
 CREATE TABLE public.character_documents_fields (
-    character_id text NOT NULL,
-    character_field_id text NOT NULL,
-    related_id text NOT NULL
+    character_id uuid NOT NULL,
+    character_field_id uuid NOT NULL,
+    related_id uuid NOT NULL
 );
 
 
@@ -718,16 +521,16 @@ CREATE TABLE public.character_documents_fields (
 --
 
 CREATE TABLE public.character_fields (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     title text NOT NULL,
     sort integer DEFAULT 0 NOT NULL,
     field_type text NOT NULL,
     formula text,
-    random_table_id text,
-    parent_id text,
+    random_table_id uuid,
+    parent_id uuid,
     options jsonb,
-    calendar_id text,
-    blueprint_id text
+    calendar_id uuid,
+    blueprint_id uuid
 );
 
 
@@ -736,9 +539,9 @@ CREATE TABLE public.character_fields (
 --
 
 CREATE TABLE public.character_fields_templates (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     title text NOT NULL,
-    project_id text NOT NULL,
+    project_id uuid NOT NULL,
     sort integer DEFAULT 0 NOT NULL
 );
 
@@ -748,9 +551,9 @@ CREATE TABLE public.character_fields_templates (
 --
 
 CREATE TABLE public.character_images_fields (
-    character_id text NOT NULL,
-    character_field_id text NOT NULL,
-    related_id text NOT NULL
+    character_id uuid NOT NULL,
+    character_field_id uuid NOT NULL,
+    related_id uuid NOT NULL
 );
 
 
@@ -759,9 +562,9 @@ CREATE TABLE public.character_images_fields (
 --
 
 CREATE TABLE public.character_locations_fields (
-    character_id text NOT NULL,
-    character_field_id text NOT NULL,
-    related_id text NOT NULL
+    character_id uuid NOT NULL,
+    character_field_id uuid NOT NULL,
+    related_id uuid NOT NULL
 );
 
 
@@ -770,11 +573,11 @@ CREATE TABLE public.character_locations_fields (
 --
 
 CREATE TABLE public.character_random_table_fields (
-    character_id text NOT NULL,
-    character_field_id text NOT NULL,
-    related_id text NOT NULL,
-    option_id text,
-    suboption_id text
+    character_id uuid NOT NULL,
+    character_field_id uuid NOT NULL,
+    related_id uuid NOT NULL,
+    option_id uuid,
+    suboption_id uuid
 );
 
 
@@ -783,9 +586,9 @@ CREATE TABLE public.character_random_table_fields (
 --
 
 CREATE TABLE public.character_relationship_types (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     title text NOT NULL,
-    project_id text NOT NULL,
+    project_id uuid NOT NULL,
     ascendant_title text,
     descendant_title text
 );
@@ -796,8 +599,8 @@ CREATE TABLE public.character_relationship_types (
 --
 
 CREATE TABLE public.character_value_fields (
-    character_id text NOT NULL,
-    character_field_id text NOT NULL,
+    character_id uuid NOT NULL,
+    character_field_id uuid NOT NULL,
     value jsonb
 );
 
@@ -807,16 +610,16 @@ CREATE TABLE public.character_value_fields (
 --
 
 CREATE TABLE public.characters (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    project_id text NOT NULL,
+    project_id uuid NOT NULL,
     is_favorite boolean,
     first_name text NOT NULL,
     last_name text,
     nickname text,
     age integer,
-    portrait_id text,
+    portrait_id uuid,
     ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, ((COALESCE(first_name, ''::text) || ' '::text) || COALESCE(last_name, ''::text)))) STORED,
     full_name text GENERATED ALWAYS AS (((COALESCE(first_name, ''::text) || ' '::text) || COALESCE(last_name, ''::text))) STORED
 );
@@ -827,10 +630,10 @@ CREATE TABLE public.characters (
 --
 
 CREATE TABLE public.characters_relationships (
-    character_a_id text NOT NULL,
-    character_b_id text NOT NULL,
-    relation_type_id text NOT NULL,
-    id text DEFAULT gen_random_uuid() NOT NULL
+    character_a_id uuid NOT NULL,
+    character_b_id uuid NOT NULL,
+    relation_type_id uuid NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -839,11 +642,11 @@ CREATE TABLE public.characters_relationships (
 --
 
 CREATE TABLE public.conversations (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     title text NOT NULL,
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    project_id text NOT NULL
+    project_id uuid NOT NULL
 );
 
 
@@ -852,15 +655,26 @@ CREATE TABLE public.conversations (
 --
 
 CREATE TABLE public.dictionaries (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     title text NOT NULL,
-    project_id text NOT NULL,
+    project_id uuid NOT NULL,
     icon text,
     is_folder boolean,
     is_public boolean,
-    parent_id text
+    parent_id uuid
+);
+
+
+--
+-- Name: document_mentions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.document_mentions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    parent_document_id uuid NOT NULL,
+    mention_id uuid NOT NULL
 );
 
 
@@ -869,7 +683,7 @@ CREATE TABLE public.dictionaries (
 --
 
 CREATE TABLE public.documents (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     title text DEFAULT 'New Document'::text NOT NULL,
@@ -880,9 +694,9 @@ CREATE TABLE public.documents (
     is_template boolean,
     properties jsonb,
     dice_color text,
-    project_id text NOT NULL,
-    parent_id text,
-    image_id text,
+    project_id uuid NOT NULL,
+    parent_id uuid,
+    image_id uuid,
     ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED
 );
 
@@ -892,7 +706,7 @@ CREATE TABLE public.documents (
 --
 
 CREATE TABLE public.edges (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     label text,
     curve_style text,
     line_style text,
@@ -921,9 +735,9 @@ CREATE TABLE public.edges (
     font_color text,
     font_family text,
     z_index integer,
-    source_id text NOT NULL,
-    target_id text NOT NULL,
-    parent_id text NOT NULL
+    source_id uuid NOT NULL,
+    target_id uuid NOT NULL,
+    parent_id uuid NOT NULL
 );
 
 
@@ -932,7 +746,7 @@ CREATE TABLE public.edges (
 --
 
 CREATE TABLE public.events (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     title text NOT NULL,
     description text,
     is_public boolean,
@@ -940,9 +754,9 @@ CREATE TABLE public.events (
     text_color text,
     hours integer,
     minutes integer,
-    document_id text,
-    image_id text,
-    parent_id text NOT NULL,
+    document_id uuid,
+    image_id uuid,
+    parent_id uuid NOT NULL,
     end_day integer,
     end_month integer,
     end_year integer,
@@ -957,7 +771,7 @@ CREATE TABLE public.events (
 --
 
 CREATE TABLE public.graphs (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     title text DEFAULT 'New graph'::text NOT NULL,
@@ -967,8 +781,8 @@ CREATE TABLE public.graphs (
     default_node_shape text DEFAULT 'rectangle'::text NOT NULL,
     default_node_color text DEFAULT '#595959'::text NOT NULL,
     default_edge_color text DEFAULT '#595959'::text NOT NULL,
-    project_id text NOT NULL,
-    parent_id text,
+    project_id uuid NOT NULL,
+    parent_id uuid,
     ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED
 );
 
@@ -978,11 +792,11 @@ CREATE TABLE public.graphs (
 --
 
 CREATE TABLE public.images (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     title text NOT NULL,
-    project_id text,
-    project_image_id text,
-    character_id text,
+    project_id uuid,
+    project_image_id uuid,
+    character_id uuid,
     type public."ImageType" DEFAULT 'images'::public."ImageType" NOT NULL
 );
 
@@ -992,11 +806,11 @@ CREATE TABLE public.images (
 --
 
 CREATE TABLE public.map_layers (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     title text DEFAULT 'New Layer'::text NOT NULL,
-    parent_id text NOT NULL,
+    parent_id uuid NOT NULL,
     is_public boolean,
-    image_id text NOT NULL
+    image_id uuid NOT NULL
 );
 
 
@@ -1005,9 +819,9 @@ CREATE TABLE public.map_layers (
 --
 
 CREATE TABLE public.map_pins (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     title text,
-    parent_id text NOT NULL,
+    parent_id uuid NOT NULL,
     lat double precision NOT NULL,
     lng double precision NOT NULL,
     color text,
@@ -1018,9 +832,9 @@ CREATE TABLE public.map_pins (
     show_border boolean DEFAULT true NOT NULL,
     is_public boolean,
     map_link text,
-    doc_id text,
-    image_id text,
-    character_id text
+    doc_id uuid,
+    image_id uuid,
+    character_id uuid
 );
 
 
@@ -1029,7 +843,7 @@ CREATE TABLE public.map_pins (
 --
 
 CREATE TABLE public.maps (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     title text DEFAULT 'New Map'::text NOT NULL,
@@ -1037,9 +851,9 @@ CREATE TABLE public.maps (
     is_public boolean,
     cluster_pins boolean,
     icon text,
-    project_id text NOT NULL,
-    parent_id text,
-    image_id text,
+    project_id uuid NOT NULL,
+    parent_id uuid,
+    image_id uuid,
     ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED
 );
 
@@ -1049,13 +863,13 @@ CREATE TABLE public.maps (
 --
 
 CREATE TABLE public.messages (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     content jsonb NOT NULL,
-    sender_id text,
+    sender_id uuid,
     type public."ConversationMessageType" NOT NULL,
-    parent_id text NOT NULL
+    parent_id uuid NOT NULL
 );
 
 
@@ -1064,11 +878,11 @@ CREATE TABLE public.messages (
 --
 
 CREATE TABLE public.months (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     title text NOT NULL,
     days integer NOT NULL,
     sort integer DEFAULT 0 NOT NULL,
-    parent_id text NOT NULL
+    parent_id uuid NOT NULL
 );
 
 
@@ -1077,7 +891,7 @@ CREATE TABLE public.months (
 --
 
 CREATE TABLE public.nodes (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     label text,
     type text,
     width integer,
@@ -1094,13 +908,13 @@ CREATE TABLE public.nodes (
     is_locked boolean,
     is_template boolean,
     z_index integer,
-    parent_id text NOT NULL,
-    image_id text,
-    doc_id text,
-    character_id text,
-    event_id text,
-    map_id text,
-    map_pin_id text
+    parent_id uuid NOT NULL,
+    image_id uuid,
+    doc_id uuid,
+    character_id uuid,
+    event_id uuid,
+    map_id uuid,
+    map_pin_id uuid
 );
 
 
@@ -1109,11 +923,11 @@ CREATE TABLE public.nodes (
 --
 
 CREATE TABLE public.projects (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     title text DEFAULT 'New Project'::text NOT NULL,
-    image_id text,
-    owner_id text NOT NULL,
+    image_id uuid,
+    owner_id uuid NOT NULL,
     default_dice_color text
 );
 
@@ -1123,10 +937,10 @@ CREATE TABLE public.projects (
 --
 
 CREATE TABLE public.random_table_options (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     title text NOT NULL,
     description text,
-    parent_id text NOT NULL,
+    parent_id uuid NOT NULL,
     icon text,
     icon_color text
 );
@@ -1137,10 +951,10 @@ CREATE TABLE public.random_table_options (
 --
 
 CREATE TABLE public.random_table_suboptions (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     title text NOT NULL,
     description text,
-    parent_id text NOT NULL
+    parent_id uuid NOT NULL
 );
 
 
@@ -1149,13 +963,13 @@ CREATE TABLE public.random_table_suboptions (
 --
 
 CREATE TABLE public.random_tables (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     title text NOT NULL,
     description text,
-    project_id text NOT NULL,
-    parent_id text,
+    project_id uuid NOT NULL,
+    parent_id uuid,
     icon text,
     is_folder boolean,
     is_public boolean
@@ -1176,10 +990,10 @@ CREATE TABLE public.schema_migrations (
 --
 
 CREATE TABLE public.tags (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     title text NOT NULL,
     color text NOT NULL,
-    project_id text NOT NULL
+    project_id uuid NOT NULL
 );
 
 
@@ -1188,12 +1002,12 @@ CREATE TABLE public.tags (
 --
 
 CREATE TABLE public.timelines (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     title text NOT NULL,
-    project_id text NOT NULL,
-    parent_id text,
+    project_id uuid NOT NULL,
+    parent_id uuid,
     icon text,
     is_folder boolean,
     is_public boolean
@@ -1205,7 +1019,7 @@ CREATE TABLE public.timelines (
 --
 
 CREATE TABLE public.users (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     auth_id text,
     nickname text NOT NULL,
     email text NOT NULL,
@@ -1218,10 +1032,10 @@ CREATE TABLE public.users (
 --
 
 CREATE TABLE public.webhooks (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     title text NOT NULL,
     url text NOT NULL,
-    user_id text NOT NULL
+    user_id uuid NOT NULL
 );
 
 
@@ -1230,21 +1044,13 @@ CREATE TABLE public.webhooks (
 --
 
 CREATE TABLE public.words (
-    id text DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     title text NOT NULL,
     description text,
     translation text NOT NULL,
-    parent_id text NOT NULL,
+    parent_id uuid NOT NULL,
     ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED
 );
-
-
---
--- Name: migrations migrations_pkey; Type: CONSTRAINT; Schema: pgroll; Owner: -
---
-
-ALTER TABLE ONLY pgroll.migrations
-    ADD CONSTRAINT migrations_pkey PRIMARY KEY (schema, name);
 
 
 --
@@ -1464,6 +1270,14 @@ ALTER TABLE ONLY public.dictionaries
 
 
 --
+-- Name: document_mentions document_mentions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_mentions
+    ADD CONSTRAINT document_mentions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: documents documents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1629,27 +1443,6 @@ ALTER TABLE ONLY public.webhooks
 
 ALTER TABLE ONLY public.words
     ADD CONSTRAINT words_pkey PRIMARY KEY (id);
-
-
---
--- Name: history_is_linear; Type: INDEX; Schema: pgroll; Owner: -
---
-
-CREATE UNIQUE INDEX history_is_linear ON pgroll.migrations USING btree (schema, parent);
-
-
---
--- Name: only_first_migration_without_parent; Type: INDEX; Schema: pgroll; Owner: -
---
-
-CREATE UNIQUE INDEX only_first_migration_without_parent ON pgroll.migrations USING btree (schema) WHERE (parent IS NULL);
-
-
---
--- Name: only_one_active; Type: INDEX; Schema: pgroll; Owner: -
---
-
-CREATE UNIQUE INDEX only_one_active ON pgroll.migrations USING btree (schema, name, done) WHERE (done = false);
 
 
 --
@@ -2028,14 +1821,6 @@ CREATE UNIQUE INDEX words_title_translation_parent_id_key ON public.words USING 
 --
 
 CREATE INDEX words_ts_index ON public.words USING gin (ts);
-
-
---
--- Name: migrations migrations_schema_parent_fkey; Type: FK CONSTRAINT; Schema: pgroll; Owner: -
---
-
-ALTER TABLE ONLY pgroll.migrations
-    ADD CONSTRAINT migrations_schema_parent_fkey FOREIGN KEY (schema, parent) REFERENCES pgroll.migrations(schema, name);
 
 
 --
@@ -3207,22 +2992,6 @@ ALTER TABLE ONLY public.words
 
 
 --
--- Name: pg_roll_handle_ddl; Type: EVENT TRIGGER; Schema: -; Owner: -
---
-
-CREATE EVENT TRIGGER pg_roll_handle_ddl ON ddl_command_end
-   EXECUTE FUNCTION pgroll.raw_migration();
-
-
---
--- Name: pg_roll_handle_drop; Type: EVENT TRIGGER; Schema: -; Owner: -
---
-
-CREATE EVENT TRIGGER pg_roll_handle_drop ON sql_drop
-   EXECUTE FUNCTION pgroll.raw_migration();
-
-
---
 -- PostgreSQL database dump complete
 --
 
@@ -3246,4 +3015,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20231115094748'),
     ('20231115132655'),
     ('20231116133905'),
-    ('20231116150742');
+    ('20231116150742'),
+    ('20231117074514'),
+    ('20231117094721');

@@ -12,7 +12,6 @@ import {
   GenerateDocumentSchema,
   InsertDocumentSchema,
   ListDocumentSchema,
-  MentionedInSchema,
   MentionsInDocumentSchema,
   ReadDocumentSchema,
   UpdateDocumentSchema,
@@ -30,7 +29,7 @@ import {
   TagQuery,
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
-import { getCharacterFullName, insertSenderToMessage } from "../utils/transform";
+import { findObjectsByType, getCharacterFullName, insertSenderToMessage } from "../utils/transform";
 
 function getAutoLinkerFields(type: "characters" | "documents" | "blueprint_instances" | "maps" | "graphs" | "words") {
   if (type === "characters") return ["id", "full_name as title", "portrait_id as image_id"] as const;
@@ -43,7 +42,6 @@ function getAutoLinkerFields(type: "characters" | "documents" | "blueprint_insta
 export function document_router(app: Elysia) {
   return app.group("/documents", (server) =>
     server
-      .state("auth", { userId: "" })
       .post(
         "/create",
         async ({ body, request }) => {
@@ -196,7 +194,37 @@ export function document_router(app: Elysia) {
                 );
               }
             }
+            if (body.data.content) {
+              const mentions = findObjectsByType(body.data.content, "mentionAtom");
+
+              const uniqueMentionIds = uniq(
+                mentions.map((mention: { attrs: { id: string } }) => mention?.attrs?.id).filter((id) => !!id),
+              );
+              if (uniqueMentionIds.length) {
+                const existingMentions = await tx
+                  .selectFrom("document_mentions")
+                  .where("document_mentions.parent_document_id", "=", params.id)
+                  .select(["document_mentions.mention_id"])
+                  .execute();
+                const existingMentionIds = existingMentions.map((item) => item.mention_id);
+
+                const idsToDelete = existingMentionIds.filter((id) => !uniqueMentionIds.includes(id));
+                const idsToInsert = uniqueMentionIds.filter((id) => !existingMentionIds.includes(id));
+
+                if (idsToDelete.length)
+                  await tx.deleteFrom("document_mentions").where("document_mentions.mention_id", "in", idsToDelete).execute();
+
+                if (idsToInsert.length)
+                  await tx
+                    .insertInto("document_mentions")
+                    .values(idsToInsert.map((mention_id) => ({ parent_document_id: params.id, mention_id })))
+                    .execute();
+              }
+            } else {
+              await tx.deleteFrom("document_mentions").where("document_mentions.parent_document_id", "in", params.id).execute();
+            }
           });
+
           return { message: `Document ${MessageEnum.successfully_updated}`, ok: true };
         },
         {
@@ -298,7 +326,7 @@ export function document_router(app: Elysia) {
         { body: AutolinkerSchema, response: ResponseWithDataSchema },
       )
       .post(
-        "/mentions",
+        "/mentions_in_document",
         async ({ body }) => {
           const res = await Promise.all(
             Object.entries(body.data.mentions).map(async ([type, mentions]) =>
@@ -317,20 +345,19 @@ export function document_router(app: Elysia) {
         },
         { body: MentionsInDocumentSchema, response: ResponseWithDataSchema },
       )
-      .post(
-        "/mentioned_in",
-        async ({ body }) => {
+      .get(
+        "/mentioned_in/:id",
+        async ({ params }) => {
           const data = await db
-            .selectFrom("documents")
-            .select(["id", "title"])
-            .where(sql`documents.content->>'content'`, "ilike", `%${body.data.id as string}%`)
-            .where("project_id", "=", body.data.project_id)
+            .selectFrom("document_mentions")
+            .leftJoin("documents", "documents.id", "document_mentions.parent_document_id")
+            .select(["documents.id", "documents.title"])
+            .where("mention_id", "=", params.id)
             .execute();
 
           return { data, message: MessageEnum.success, ok: true };
         },
         {
-          body: MentionedInSchema,
           response: ResponseWithDataSchema,
         },
       )

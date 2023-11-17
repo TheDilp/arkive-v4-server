@@ -134,10 +134,3 @@ export const MentionsInDocumentSchema = t.Object({
     ),
   }),
 });
-
-export const MentionedInSchema = t.Object({
-  data: t.Object({
-    id: t.String(),
-    project_id: t.String(),
-  }),
-});
