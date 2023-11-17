@@ -210,7 +210,8 @@ export function character_fields_templates_router(app: Elysia) {
                             .select(["id", "title"])
                             .whereRef("calendars.id", "=", "character_fields.calendar_id"),
                         ).as("calendar"),
-                    ]),
+                    ])
+                    .orderBy("sort"),
                 ).as("character_fields"),
               ),
             )
