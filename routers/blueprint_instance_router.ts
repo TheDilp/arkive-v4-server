@@ -202,7 +202,7 @@ export function blueprint_instance_router(app: Elysia) {
                                     ebbb
                                       .selectFrom("characters")
                                       .whereRef("related_id", "=", "characters.id")
-                                      .select(["id", "first_name", "last_name", "portrait_id"]),
+                                      .select(["id", "full_name", "portrait_id"]),
                                   ).as("character"),
                               ]),
                           ).as("characters"),
@@ -390,7 +390,7 @@ export function blueprint_instance_router(app: Elysia) {
                                   ebbb
                                     .selectFrom("characters")
                                     .whereRef("related_id", "=", "characters.id")
-                                    .select(["id", "first_name", "last_name", "portrait_id"]),
+                                    .select(["id", "full_name", "portrait_id"]),
                                 ).as("character"),
                             ]),
                         ).as("characters"),
