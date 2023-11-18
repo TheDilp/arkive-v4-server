@@ -87,6 +87,12 @@ export function document_router(app: Elysia) {
               qb = constructFilter("documents", qb, body.filters);
               return qb;
             })
+            .$if(!!body.relations?.tags, (qb) => {
+              if (body?.relations?.tags) {
+                return qb.select((eb) => TagQuery(eb, "_documentsTotags", "documents"));
+              }
+              return qb;
+            })
             .$if(!!body.orderBy, (qb) => constructOrdering(body.orderBy, qb))
 
             .execute();

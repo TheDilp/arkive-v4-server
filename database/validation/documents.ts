@@ -17,7 +17,10 @@ export const ReadDocumentSchema = t.Intersect([
     }),
   ),
 ]);
-export const ListDocumentSchema = t.Intersect([RequestBodySchema, t.Object({ data: t.Object({ project_id: t.String() }) })]);
+export const ListDocumentSchema = t.Intersect([
+  RequestBodySchema,
+  t.Object({ data: t.Object({ project_id: t.String() }), relations: t.Optional(t.Object({ tags: t.Optional(t.Boolean()) })) }),
+]);
 
 export const InsertDocumentSchema = t.Object({
   data: t.Object({

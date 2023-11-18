@@ -149,7 +149,20 @@ export function GetEntityChildren(qb: SelectQueryBuilder<DB, EntitiesWithChildre
       jsonArrayFrom(
         eb
           .selectFrom(`${table_name} as children`)
-          .select(["children.id", "children.title", "children.icon", "children.is_folder"])
+          .select([
+            "children.id",
+            "children.title",
+            "children.icon",
+            "children.is_folder",
+            (eb) =>
+              jsonArrayFrom(
+                eb
+                  .selectFrom("tags")
+                  .leftJoin(`_${table_name}Totags as tag_relation`, "tag_relation.B", "tags.id")
+                  .whereRef("children.id", "=", "tag_relation.A")
+                  .select(["tags.id", "tags.title", "tags.color"]),
+              ).as("tags"),
+          ])
           .whereRef("children.parent_id", "=", `${table_name}.id`)
           .orderBy("is_folder", "asc")
           .orderBy("title", "asc"),
@@ -171,7 +184,21 @@ export function GetEntityChildren(qb: SelectQueryBuilder<DB, EntitiesWithChildre
     jsonArrayFrom(
       eb
         .selectFrom(`${table_name} as children`)
-        .select(["children.id", "children.title", "children.icon", "children.is_folder", "children.image_id"])
+        .select([
+          "children.id",
+          "children.title",
+          "children.icon",
+          "children.is_folder",
+          "children.image_id",
+          (eb) =>
+            jsonArrayFrom(
+              eb
+                .selectFrom("tags")
+                .leftJoin(`_${table_name}Totags as tag_relation`, "tag_relation.B", "tags.id")
+                .whereRef("children.id", "=", "tag_relation.A")
+                .select(["tags.id", "tags.title", "tags.color"]),
+            ).as("tags"),
+        ])
         .whereRef("children.parent_id", "=", `${table_name}.id`)
         .orderBy("is_folder", "asc")
         .orderBy("title", "asc"),
