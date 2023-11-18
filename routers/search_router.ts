@@ -31,11 +31,7 @@ function getSearchFields(type: SearchableEntities): string[] {
 
 function getSearchWhere(eb: ExpressionBuilder<DB, keyof DB>, type: SearchableEntities, search_term: string) {
   if (type === "characters") {
-    return eb.or([
-      eb("first_name", "ilike", `%${search_term}%`),
-      eb("nickname", "ilike", `%${search_term}%`),
-      eb("last_name", "ilike", `%${search_term}%`),
-    ]);
+    return eb.or([eb("full_name", "ilike", `%${search_term}%`), eb("nickname", "ilike", `%${search_term}%`)]);
   }
   if (type === "edges") {
     return eb("label", "ilike", `%${search_term}%`);
