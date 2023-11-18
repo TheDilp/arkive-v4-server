@@ -228,7 +228,7 @@ export function document_router(app: Elysia) {
               } else {
                 await tx
                   .deleteFrom("document_mentions")
-                  .where("document_mentions.parent_document_id", "in", params.id)
+                  .where("document_mentions.parent_document_id", "=", params.id)
                   .execute();
               }
             }
