@@ -9,11 +9,10 @@ import { EntitiesWithTagsTables, SubEntityEnum } from "../enums/entityEnums";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseWithDataSchema, SearchableEntities } from "../types/requestTypes";
 import { getSearchTableFromType } from "../utils/requestUtils";
-import { getCharacterFullName } from "../utils/transform";
 
 function getSearchFields(type: SearchableEntities): string[] {
   const fields = type === "map_images" ? ["images.id"] : [`${type}.id`];
-  if (type === "characters") fields.push("first_name", "nickname", "last_name", "portrait_id");
+  if (type === "characters") fields.push("full_name", "nickname", "portrait_id");
   else if (type === "tags") fields.push("title", "color");
   else if (type === "nodes") fields.push("label", "nodes.parent_id", "nodes.image_id");
   else if (type === "edges") fields.push("label", "edges.parent_id");
@@ -97,8 +96,7 @@ export function search_router(app: Elysia) {
                 .select([
                   "graphs.title as parent_title",
                   "characters.id as character_id",
-                  "characters.first_name",
-                  "characters.last_name",
+                  "characters.full_name",
                   "characters.portrait_id",
                 ]),
             )
@@ -129,7 +127,7 @@ export function search_router(app: Elysia) {
               value: item.id,
               label:
                 type === "characters" || (type === "nodes" && item?.first_name)
-                  ? `${item.first_name} ${item?.last_name || ""}`
+                  ? item.full_name
                   : item?.title || item?.label || "",
               color: type === "tags" ? item.color : "",
               image:
@@ -152,25 +150,20 @@ export function search_router(app: Elysia) {
           const { type } = params;
           const fields = ["id"];
 
-          if (type === "characters") fields.push("first_name", "nickname", "last_name", "portrait_id");
+          if (type === "characters") fields.push("full_name", "portrait_id");
           else fields.push("title");
 
           if (type === "characters") {
             const characters = await db
               .selectFrom("characters")
-              .select(["id", "first_name", "last_name", "portrait_id"])
-              .where((wb) =>
-                wb.or([
-                  wb("first_name", "ilike", `%${body.data.search_term.toLowerCase()}%`),
-                  wb("last_name", "ilike", `%${body.data.search_term.toLowerCase()}%`),
-                ]),
-              )
+              .select(["id", "full_name", "portrait_id"])
+              .where("full_name", "ilike", `%${body.data.search_term}%`)
               .where("project_id", "=", params.project_id)
               .limit(body.limit || 10)
               .execute();
             const data = characters.map((char) => ({
               id: char.id,
-              title: getCharacterFullName(char.first_name, undefined, char.last_name),
+              title: char.full_name,
               portrait_id: char.portrait_id,
             }));
             return {
@@ -292,13 +285,8 @@ export function search_router(app: Elysia) {
             name: "characters",
             request: db
               .selectFrom("characters")
-              .select(["id", "first_name", "last_name", "portrait_id"])
-              .where((eb) =>
-                eb.or([
-                  eb("characters.first_name", "ilike", `%${search_term}%`),
-                  eb("characters.last_name", "ilike", `%${search_term}%`),
-                ]),
-              )
+              .select(["id", "full_name", "portrait_id"])
+              .where("characters.full_name", "ilike", `%${search_term}%`)
               .where("project_id", "=", project_id)
               .limit(5),
           };
@@ -346,19 +334,13 @@ export function search_router(app: Elysia) {
               .leftJoin("maps", "maps.id", "map_pins.parent_id")
               .where("map_pins.character_id", "is not", null)
               .leftJoin("characters", "characters.id", "map_pins.character_id")
-              .where((eb) =>
-                eb.or([
-                  eb("characters.first_name", "ilike", `%${search_term}%`),
-                  eb("characters.last_name", "ilike", `%${search_term}%`),
-                ]),
-              )
+              .where("characters.full_name", "ilike", `%${search_term}%`)
               .select([
                 "map_pins.id",
                 "map_pins.icon",
                 "map_pins.parent_id",
                 "maps.title as parent_title",
-                "characters.first_name",
-                "characters.last_name",
+                "characters.full_name",
                 "characters.portrait_id",
               ])
               .limit(5),
@@ -486,8 +468,7 @@ export function search_router(app: Elysia) {
 
               const fields = [`${entity_name}.id`];
 
-              if (entity_name === "characters")
-                fields.push("characters.first_name", "characters.last_name", "characters.portrait_id");
+              if (entity_name === "characters") fields.push("characters.full_name", "characters.portrait_id");
               else if (entity_name === "nodes" || entity_name === "edges") fields.push("label");
               if (SubEntityEnum.includes(entity_name)) fields.push("parent_id");
 
