@@ -954,46 +954,6 @@ export function character_router(app: Elysia) {
               );
             }
 
-            // if (body.relations?.character_fields) {
-            //   const existingCharacterFields = await tx
-            //     .selectFrom("characters_to_character_fields")
-            //     .select(["characters_to_character_fields.character_field_id as id", "characters_to_character_fields.value"])
-            //     .where("characters_to_character_fields.character_id", "=", params.id)
-            //     .execute();
-            //   const existingIds = existingCharacterFields.map((field) => field.id);
-            //   const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
-            //     existingIds,
-            //     body.relations?.character_fields,
-            //   );
-
-            //   if (idsToRemove.length) {
-            //     await tx.deleteFrom("characters_to_character_fields").where("character_field_id", "in", idsToRemove).execute();
-            //   }
-            //   if (itemsToAdd.length) {
-            //     await tx
-            //       .insertInto("characters_to_character_fields")
-            //       .values(
-            //         itemsToAdd.map((item) => ({
-            //           character_id: params.id,
-            //           character_field_id: item.id,
-            //           value: JSON.stringify(item.value),
-            //         })),
-            //       )
-            //       .execute();
-            //   }
-            //   if (itemsToUpdate.length) {
-            //     await Promise.all(
-            //       itemsToUpdate.map(async (item) => {
-            //         await tx
-            //           .updateTable("characters_to_character_fields")
-            //           .where("character_id", "=", params.id)
-            //           .where("character_field_id", "=", item.id)
-            //           .set({ value: JSON.stringify(item.value) })
-            //           .execute();
-            //       }),
-            //     );
-            //   }
-            // }
             if (body.relations?.tags) {
               if (body.relations.tags.length) {
                 const tagsToDelete = await UpdateTagRelations({
