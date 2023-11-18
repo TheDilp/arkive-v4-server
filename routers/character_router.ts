@@ -111,19 +111,7 @@ export function character_router(app: Elysia) {
                   }),
                 );
               }
-              // if (body.relations?.character_fields?.length) {
-              //   const { character_fields } = body.relations;
-              //   await tx
-              //     .insertInto("characters_to_character_fields")
-              //     .values(
-              //       character_fields.map((field) => ({
-              //         character_field_id: field.id,
-              //         value: JSON.stringify(field.value),
-              //         character_id: character.id,
-              //       })),
-              //     )
-              //     .execute();
-              // }
+
               if (body.relations?.tags?.length) {
                 const { tags } = body.relations;
                 await CreateTagRelations({ tx, relationalTable: "_charactersTotags", id: character.id, tags });

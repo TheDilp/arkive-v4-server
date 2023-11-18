@@ -14,7 +14,7 @@ import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, constructTagFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { CreateTagRelations } from "../utils/relationalQueryHelpers";
+import { CreateTagRelations, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 
 export function blueprint_instance_router(app: Elysia) {
   return app.group("/blueprint_instances", (server) =>
@@ -329,6 +329,12 @@ export function blueprint_instance_router(app: Elysia) {
               qb = constructOrdering(body.orderBy, qb);
               return qb;
             })
+            .$if(!!body.relations?.tags, (qb) => {
+              if (body?.relations?.tags) {
+                return qb.select((eb) => TagQuery(eb, "_blueprint_instancesTotags", "blueprint_instances"));
+              }
+              return qb;
+            })
             .execute();
           return { data, message: MessageEnum.success, ok: true };
         },
@@ -493,12 +499,17 @@ export function blueprint_instance_router(app: Elysia) {
                           .as("value"),
                     ]),
                 ).as("blueprint_fields"),
+
+              (eb) =>
+                jsonArrayFrom(
+                  eb
+                    .selectFrom("tags")
+                    .leftJoin("_blueprint_instancesTotags", "_blueprint_instancesTotags.B", "tags.id")
+                    .select(["tags.id", "tags.title", "tags.color"])
+                    .where("_blueprint_instancesTotags.A", "=", params.id),
+                ).as("tags"),
             ])
             .executeTakeFirstOrThrow();
-
-          // .$if(!!body?.relations?.tags, (qb) =>
-          //   qb.select((eb) => TagQuery(eb, "_blueprint_instancesTotags", "blueprint_instances")),
-          // )
 
           return { data, message: MessageEnum.success, ok: true };
         },
@@ -669,6 +680,14 @@ export function blueprint_instance_router(app: Elysia) {
                   }
                 }),
               );
+            }
+            if (body.relations?.tags) {
+              await UpdateTagRelations({
+                relationalTable: "_blueprint_instancesTotags",
+                id: params.id,
+                newTags: body.relations.tags,
+                tx,
+              });
             }
           });
 
