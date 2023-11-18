@@ -4,11 +4,16 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { EntityListSchema, UpdateMonthSchema } from "../database/validation";
-import { InsertCalendarSchema, ReadCalendarSchema, UpdateCalendarSchema } from "../database/validation/calendars";
+import { UpdateMonthSchema } from "../database/validation";
+import {
+  InsertCalendarSchema,
+  ListCalendarSchema,
+  ReadCalendarSchema,
+  UpdateCalendarSchema,
+} from "../database/validation/calendars";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { CreateTagRelations, GetRelationsForUpdating, TagQuery } from "../utils/relationalQueryHelpers";
+import { CreateTagRelations, GetRelationsForUpdating, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 
 export function calendar_router(app: Elysia) {
   return app.group("/calendars", (server) =>
@@ -46,12 +51,18 @@ export function calendar_router(app: Elysia) {
             .where("calendars.project_id", "=", body?.data?.project_id)
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "calendars">[]))
+            .$if(!!body.relations?.tags, (qb) => {
+              if (body?.relations?.tags) {
+                return qb.select((eb) => TagQuery(eb, "_calendarsTotags", "calendars"));
+              }
+              return qb;
+            })
             .execute();
 
           return { data, message: MessageEnum.success, ok: true };
         },
         {
-          body: EntityListSchema,
+          body: ListCalendarSchema,
           response: ResponseWithDataSchema,
         },
       )
@@ -121,6 +132,14 @@ export function calendar_router(app: Elysia) {
                   }),
                 );
               }
+            }
+            if (body?.relations?.tags) {
+              await UpdateTagRelations({
+                relationalTable: "_calendarsTotags",
+                id: params.id,
+                newTags: body.relations.tags,
+                tx,
+              });
             }
           });
           return { message: MessageEnum.success, ok: true };

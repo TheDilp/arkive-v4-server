@@ -29,7 +29,10 @@ export const ReadCalendarSchema = t.Intersect([
     }),
   ),
 ]);
-
+export const ListCalendarSchema = t.Intersect([
+  RequestBodySchema,
+  t.Object({ data: t.Object({ project_id: t.String() }), relations: t.Optional(t.Object({ tags: t.Optional(t.Boolean()) })) }),
+]);
 export const InsertCalendarSchema = t.Object({
   data: t.Object({
     title: t.String(),
