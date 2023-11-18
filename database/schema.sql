@@ -45,6 +45,20 @@ COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunction
 
 
 --
+-- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION pg_trgm; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
+
+
+--
 -- Name: BlueprintFieldType; Type: TYPE; Schema: public; Owner: -
 --
 
@@ -1762,6 +1776,13 @@ CREATE INDEX graphs_ts_index ON public.graphs USING gin (ts);
 
 
 --
+-- Name: idx_documents_title_ilike; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_documents_title_ilike ON public.documents USING gin (title public.gin_trgm_ops);
+
+
+--
 -- Name: images_project_image_id_key; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3019,4 +3040,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20231116150742'),
     ('20231117074514'),
     ('20231117094721'),
-    ('20231117104543');
+    ('20231117104543'),
+    ('20231118100320');
