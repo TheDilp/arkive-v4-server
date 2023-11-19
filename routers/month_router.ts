@@ -1,6 +1,7 @@
-import Elysia, { t } from "elysia";
+import Elysia from "elysia";
 
 import { db } from "../database/db";
+import { ListMonthSchema } from "../database/validation/months";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema } from "../types/requestTypes";
 
@@ -14,7 +15,7 @@ export function month_router(app: Elysia) {
         return { data, message: MessageEnum.success, ok: true };
       },
       {
-        body: t.Object({ data: t.Object({ parent_id: t.String() }) }),
+        body: ListMonthSchema,
         response: ResponseSchema,
       },
     ),

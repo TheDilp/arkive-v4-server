@@ -115,8 +115,6 @@ export function search_router(app: Elysia) {
             .$if(type === "blueprint_instances", (eb) =>
               eb.leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id").select(["blueprints.icon as icon"]),
             )
-            // .$if(!EntitiesWithoutProjectId.includes(type), (eb) => eb.where("project_id", "=", project_id))
-            // .$if(type === "map_images", (eb) => eb.where("type", "=", "map_images"))
             .$if(type === "images", (eb) => eb.where("type", "=", "images"))
             .where((eb) => getSearchWhere(eb, type as SearchableEntities, body.data.search_term))
             .limit(body.limit || 10)
@@ -242,7 +240,22 @@ export function search_router(app: Elysia) {
               ok: true,
             };
           }
+          if (type === "events") {
+            const data = await db
+              .selectFrom("events")
+              .select(["events.id", "events.title"])
+              .leftJoin("calendars", "calendars.id", "events.parent_id")
+              .where("calendars.project_id", "=", params.project_id)
+              .where("events.title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
+              .limit(body.limit || 10)
+              .execute();
 
+            return {
+              data,
+              message: MessageEnum.success,
+              ok: true,
+            };
+          }
           if (type === "blueprint_instances") {
             const data = await db
               .selectFrom("blueprint_instances")
