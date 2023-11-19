@@ -1776,6 +1776,13 @@ CREATE INDEX graphs_ts_index ON public.graphs USING gin (ts);
 
 
 --
+-- Name: idx_characters_full_name_ilike; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_characters_full_name_ilike ON public.characters USING gin (full_name public.gin_trgm_ops);
+
+
+--
 -- Name: idx_documents_title_ilike; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3041,4 +3048,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20231117074514'),
     ('20231117094721'),
     ('20231117104543'),
-    ('20231118100320');
+    ('20231118100320'),
+    ('20231118112502');
