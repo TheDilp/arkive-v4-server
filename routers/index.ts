@@ -28,5 +28,6 @@ export * from "./random_table_router";
 export * from "./search_router";
 export * from "./tags_router";
 export * from "./user_router";
+export * from "./webhook_router";
 export * from "./websocket_router";
 export * from "./word_router";

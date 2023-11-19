@@ -31,6 +31,7 @@ import {
   search_router,
   tag_router,
   user_router,
+  webhook_router,
   websocket_router,
   word_router,
 } from "./routers";
@@ -126,6 +127,7 @@ export const app = new Elysia()
       .use(word_router)
       .use(random_table_router)
       .use(random_table_option_router)
+      .use(webhook_router)
       .use(search_router)
       .use(message_router)
       .use(bulk_router),
