@@ -34,12 +34,22 @@ export function webhook_router(app: Elysia) {
       .post(
         "/:id",
         async ({ body }) => {
-          const data = await db.selectFrom("webhooks").where("id", "=", body.data.id).executeTakeFirstOrThrow();
+          const data = await db.selectFrom("webhooks").selectAll().where("id", "=", body.data.id).executeTakeFirstOrThrow();
           return { data, message: MessageEnum.success, ok: true };
         },
         {
           body: ReadWebhookSchema,
           response: ResponseWithDataSchema,
+        },
+      )
+      .delete(
+        "/:id",
+        async ({ params }) => {
+          await db.deleteFrom("webhooks").where("id", "=", params.id).execute();
+          return { message: `Webhook ${MessageEnum.successfully_deleted}`, ok: true };
+        },
+        {
+          response: ResponseSchema,
         },
       ),
   );
