@@ -243,7 +243,7 @@ export function search_router(app: Elysia) {
           if (type === "events") {
             const data = await db
               .selectFrom("events")
-              .select(["events.id", "events.title"])
+              .select(["events.id", "events.title", "events.parent_id"])
               .leftJoin("calendars", "calendars.id", "events.parent_id")
               .where("calendars.project_id", "=", params.project_id)
               .where("events.title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
