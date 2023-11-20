@@ -9,6 +9,7 @@ export const ReadUserSchema = t.Intersect([
       relations: t.Optional(
         t.Object({
           projects: t.Optional(t.Boolean()),
+          webhooks: t.Optional(t.Boolean()),
         }),
       ),
     }),

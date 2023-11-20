@@ -1,5 +1,6 @@
 import Elysia from "elysia";
 import { SelectExpression } from "kysely";
+import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
@@ -29,6 +30,13 @@ export function user_router(app: Elysia) {
             .selectFrom("users")
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "users">[]))
+            .$if(!!body.relations?.webhooks, (qb) =>
+              qb.select((eb) =>
+                jsonArrayFrom(
+                  eb.selectFrom("webhooks").whereRef("webhooks.user_id", "=", "users.id").select(["id", "title"]),
+                ).as("webhooks"),
+              ),
+            )
             .where("auth_id", "=", params.auth_id)
             .executeTakeFirstOrThrow();
           return { data, message: MessageEnum.success, ok: true };
