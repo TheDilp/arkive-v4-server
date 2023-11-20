@@ -36,6 +36,7 @@ export const InsertBlueprintInstanceSchema = t.Object({
   data: t.Object({
     parent_id: t.String(),
     title: t.String(),
+    is_public: t.Optional(t.Boolean()),
   }),
   relations: t.Optional(
     t.Object({
@@ -121,6 +122,7 @@ export const UpdateBlueprintInstanceSchema = t.Object({
   data: t.Object({
     id: t.String(),
     title: t.Optional(t.String()),
+    is_public: t.Optional(t.Boolean()),
   }),
   relations: t.Optional(
     t.Object({

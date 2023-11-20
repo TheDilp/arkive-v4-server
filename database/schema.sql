@@ -451,7 +451,8 @@ CREATE TABLE public.blueprint_instances (
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     parent_id uuid NOT NULL,
     title text NOT NULL,
-    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED
+    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
+    is_public boolean
 );
 
 
@@ -3049,4 +3050,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20231117094721'),
     ('20231117104543'),
     ('20231118100320'),
-    ('20231118112502');
+    ('20231118112502'),
+    ('20231120082407');
