@@ -1,4 +1,5 @@
-import { MentionType } from "../types/entityTypes";
+import { baseURLS } from "../enums/baseEnums";
+import { AssetType, AvailableEntityType, AvailableSubEntityType, MentionType } from "../types/entityTypes";
 
 export function capitalizeFirstLetter(word: string): string {
   return word.charAt(0).toUpperCase() + word.slice(1);
@@ -115,4 +116,38 @@ export function findObjectsByType(obj: Record<string, any>, targetType: string):
   }
 
   return foundObjects;
+}
+
+export function getImageURL(project_id: string, type: AssetType, image_id?: string | null, isGraphImage?: boolean): string {
+  if (!image_id) return "";
+  return `https://${process.env.DO_SPACES_NAME}.${
+    isGraphImage ? process.env.DO_SPACES_ENDPOINT : process.env.DO_SPACES_CDN_ENDPOINT
+  }/assets/${project_id}/${type}/${image_id}.webp`;
+}
+
+export function createEntityURL(project_id: string, type: string, id: string): string {
+  return `${baseURLS.basePublicServer}/${project_id}/${type}/${id}`;
+}
+export function getIconUrlFromIconEnum(icon: string, color?: string) {
+  const iconComponents = icon.split(":");
+  return `https://api.iconify.design/${iconComponents[0]}/${iconComponents[1]}.svg${
+    color ? `?color=${color.replace("#", "%23")}` : ""
+  }`;
+}
+
+export function getDefaultEntityIcon(type: AvailableEntityType | AvailableSubEntityType) {
+  if (type === "characters") return "ph:user";
+  if (type === "documents") return "ph:files-fill";
+  if (type === "maps") return "ph:map-trifold";
+  if (type === "graphs") return "ph:graph-light";
+  if (type === "calendars") return "ph:calendar-blank-light";
+  if (type === "dictionaries") return "ph:book-bookmark-light";
+  if (type === "nodes") return "ph:graph-light";
+  if (type === "edges") return "ph:graph-light";
+  if (type === "random_tables") return "game-icons:perspective-dice-six-faces-random";
+  if (type === "character_fields_templates") return "ph:textbox";
+  if (type === "events") return "ph:flag";
+  if (type === "blueprints" || type === "blueprint_instances") return "ph:compass-tool";
+
+  return "";
 }
