@@ -10,7 +10,7 @@ import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { GetRelationsForUpdating } from "../utils/relationalQueryHelpers";
+import { CreateTagRelations, GetRelationsForUpdating } from "../utils/relationalQueryHelpers";
 
 export function blueprint_router(app: Elysia) {
   return app.group("/blueprints", (server) =>
@@ -37,14 +37,14 @@ export function blueprint_router(app: Elysia) {
                 )
                 .execute();
             }
-            // if (body.relations?.tags) {
-            //   await CreateTagRelations({
-            //     tx,
-            //     relationalTable: "_blueprint_fields_templatesTotags",
-            //     id: newTemplate.id,
-            //     tags: body.relations.tags,
-            //   });
-            // }
+            if (body.relations?.tags) {
+              await CreateTagRelations({
+                tx,
+                relationalTable: "_blueprint_fields_templatesTotags",
+                id: newTemplate.id,
+                tags: body.relations.tags,
+              });
+            }
           });
           return { message: `Blueprint ${MessageEnum.successfully_created}`, ok: true };
         },
