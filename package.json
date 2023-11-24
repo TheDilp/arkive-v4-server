@@ -5,7 +5,7 @@
   "module": "index.ts",
   "scripts": {
     "start": "bun --watch index.ts",
-    "build": "bun build index.ts",
+    "build": "bun build index.ts --target=bun --outdir ./dist --minify",
     "email": "email dev",
     "generate-schema": "bun run kysely-codegen"
   },
