@@ -6,7 +6,7 @@
   "scripts": {
     "start:dev": "bun --watch index.ts",
     "start:": "bun dist/index.js",
-    "build": "bun run kysely-codegen && tsc",
+    "build": "bun run install && bun run kysely-codegen && tsc",
     "email": "email dev",
     "generate-schema": "bun run kysely-codegen"
   },
