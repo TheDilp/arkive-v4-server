@@ -17,6 +17,7 @@ export const InsertWebhookSchema = t.Object({
 export const SendWebhookSchema = t.Object({
   data: t.Union([
     t.Object({ title: t.String(), description: t.String(), type: t.Literal("document_text") }),
+    t.Object({ title: t.String(), description: t.Optional(t.String()), type: t.Literal("random_table_roll") }),
     t.Object({ id: t.String(), type: t.Union([t.Literal("document"), t.Literal("image")]) }),
   ]),
 });

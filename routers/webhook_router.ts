@@ -81,6 +81,8 @@ export function webhook_router(app: Elysia) {
             if (data.project_id) {
               content.image = { url: getImageURL(data.project_id, "images", data.id) };
             }
+          } else if (body.data.type === "random_table_roll") {
+            content.title = body.data.title;
           }
           await fetch(url, {
             method: "POST",
