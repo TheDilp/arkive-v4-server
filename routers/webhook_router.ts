@@ -70,6 +70,17 @@ export function webhook_router(app: Elysia) {
             content.title = data.title;
             if (data?.image_id) content.thumbnail = { url: getImageURL(data.project_id, "images", data.image_id) };
             else content.thumbnail = { url: getIconUrlFromIconEnum(data.icon || getDefaultEntityIcon("documents")) };
+          } else if (body.data.type === "image") {
+            const data = await db
+              .selectFrom("images")
+              .where("id", "=", body.data.id)
+              .select(["images.id", "images.title", "images.project_id"])
+              .executeTakeFirstOrThrow();
+            content.title = data.title;
+
+            if (data.project_id) {
+              content.image = { url: getImageURL(data.project_id, "images", data.id) };
+            }
           }
           await fetch(url, {
             method: "POST",
