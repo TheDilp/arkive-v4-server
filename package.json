@@ -5,8 +5,8 @@
   "module": "index.ts",
   "scripts": {
     "start:dev": "bun --watch index.ts",
-    "start:": "bun dist/index.js",
-    "build": "bun run generate-schema && run kysely-codegen && tsc",
+    "start:": "bun index.ts",
+    "build": "bun run generate-schema",
     "email": "email dev",
     "generate-schema": "bun run kysely-codegen"
   },
