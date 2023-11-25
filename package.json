@@ -37,7 +37,7 @@
     "react-email": "^1.9.5",
     "remirror": "^2.0.37",
     "resend": "^1.1.0",
-    "sharp": "^0.32.6"
+    "sharp": "^v0.33.0-rc.2"
   },
   "trustedDependencies": [
     "sharp",

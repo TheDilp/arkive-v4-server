@@ -71,7 +71,7 @@ export const app = new Elysia()
     return { message: "There was an error with your request.", ok: false };
   })
   .use(health_check_router)
-
+  // Test
   .group("/api/v1", (server) =>
     // @ts-ignore
     server
