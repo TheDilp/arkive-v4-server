@@ -135,6 +135,6 @@ export const app = new Elysia()
   .use(websocket_router)
   .listen((process.env.PORT as string) || 3000);
 
-console.log("LISTENING ON", process.env.port);
+console.log("LISTENING ON", process.env.PORT);
 
 export type App = typeof app;
