@@ -6,7 +6,7 @@
   "scripts": {
     "start:dev": "bun --watch index.ts",
     "start": "bun index.ts",
-    "build": "bun run generate-schema && bun install --os=linux --cpu=x64 sharp",
+    "build": "bun run generate-schema",
     "email": "email dev",
     "generate-schema": "bun run kysely-codegen"
   },
