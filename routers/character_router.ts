@@ -23,7 +23,7 @@ import {
 import { getCharacterFullName } from "../utils/transform";
 
 export function character_router(app: Elysia) {
-  return app.state("auth", { userId: "" }).group("/characters", (server) =>
+  return app.group("/characters", (server) =>
     server
       .post(
         "/create",
@@ -343,9 +343,7 @@ export function character_router(app: Elysia) {
                       .where("character_relationship_types.ascendant_title", "is not", null)
                       .select([
                         "character_b_id as id",
-                        "characters.first_name",
-                        "characters.nickname",
-                        "characters.last_name",
+                        "characters.full_name",
                         "characters.portrait_id",
                         "characters_relationships.relation_type_id",
                         "characters_relationships.id as character_relationship_id",
@@ -369,9 +367,7 @@ export function character_router(app: Elysia) {
                       .where("character_relationship_types.ascendant_title", "is not", null)
                       .select([
                         "character_a_id as id",
-                        "characters.first_name",
-                        "characters.nickname",
-                        "characters.last_name",
+                        "characters.full_name",
                         "characters.portrait_id",
                         "characters_relationships.relation_type_id",
                         "characters_relationships.id as character_relationship_id",
@@ -395,9 +391,7 @@ export function character_router(app: Elysia) {
                       .leftJoin("characters", "characters.id", "character_b_id")
                       .select([
                         "character_b_id as id",
-                        "characters.first_name",
-                        "characters.nickname",
-                        "characters.last_name",
+                        "characters.full_name",
                         "characters.portrait_id",
                         "characters_relationships.relation_type_id",
                         "characters_relationships.id as character_relationship_id",
@@ -417,9 +411,7 @@ export function character_router(app: Elysia) {
                           .leftJoin("characters", "characters.id", "character_a_id")
                           .select([
                             "character_a_id as id",
-                            "characters.first_name",
-                            "characters.nickname",
-                            "characters.last_name",
+                            "characters.full_name",
                             "characters.portrait_id",
                             "characters_relationships.relation_type_id",
                             "characters_relationships.id as character_relationship_id",
