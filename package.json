@@ -6,7 +6,7 @@
   "scripts": {
     "start:dev": "bun --watch index.ts",
     "start": "bun dist/index.js",
-    "build": "bun run generate-schema && tsc",
+    "build": "bun run generate-schema && tsc && bun install --os=linux --cpu=x64 sharp",
     "email": "email dev",
     "generate-schema": "bun run kysely-codegen"
   },
@@ -37,7 +37,7 @@
     "react-email": "^1.9.5",
     "remirror": "^2.0.37",
     "resend": "^1.1.0",
-    "sharp": "^v0.33.0-rc.2"
+    "sharp": "^0.32.6"
   },
   "trustedDependencies": [
     "sharp",
