@@ -5,8 +5,8 @@
   "module": "index.ts",
   "scripts": {
     "start:dev": "bun --watch index.ts",
-    "start": "bun dist/index.js",
-    "build": "bun run generate-schema && tsc && bun install --os=linux --cpu=x64 sharp",
+    "start": "bun index.ts",
+    "build": "bun run generate-schema && bun install --os=linux --cpu=x64 sharp",
     "email": "email dev",
     "generate-schema": "bun run kysely-codegen"
   },
