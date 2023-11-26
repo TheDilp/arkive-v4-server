@@ -84,6 +84,10 @@ export function webhook_router(app: Elysia) {
           } else if (body.data.type === "random_table_roll") {
             content.title = body.data.title;
             content.description = body.data?.description ?? "";
+          } else if (body.data.type === "word") {
+            const data = await db.selectFrom("words").select(["title", "description", "translation"]).executeTakeFirstOrThrow();
+            content.title = `${data.title} (${data.translation})`;
+            if (data?.description) content.description = data.description;
           }
           await fetch(url, {
             method: "POST",
