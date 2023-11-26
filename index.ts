@@ -94,12 +94,17 @@ export const app = new Elysia()
             return result;
           });
           if (verifiedToken.error) {
+            console.error(verifiedToken.error);
             throw new UnauthorizedError("UNAUTHORIZED");
           }
           if (verifiedToken.azp !== process.env.JWT_VERIFY_HOST || verifiedToken.exp * 1000 < Date.now()) {
+            console.error("EXPIRED");
+
             throw new UnauthorizedError("UNAUTHORIZED");
           }
         } else {
+          console.error("NO TOKEN");
+
           throw new UnauthorizedError("UNAUTHORIZED");
         }
       })
