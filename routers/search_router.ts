@@ -117,6 +117,7 @@ export function search_router(app: Elysia) {
             )
             .$if(type === "images", (eb) => eb.where("type", "=", "images"))
             .where((eb) => getSearchWhere(eb, type as SearchableEntities, body.data.search_term))
+            .where("project_id", "=", body.data.project_id)
             .limit(body.limit || 10)
             .$if(!body.limit, (qb) => qb.clearLimit())
             .execute();

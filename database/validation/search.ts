@@ -1,6 +1,9 @@
 import { t } from "elysia";
 
-export const BasicSearchSchema = t.Object({ data: t.Object({ search_term: t.String() }), limit: t.Optional(t.Number()) });
+export const BasicSearchSchema = t.Object({
+  data: t.Object({ search_term: t.String(), project_id: t.String() }),
+  limit: t.Optional(t.Number()),
+});
 
 export const CategorySearchSchema = t.Object({ data: t.Object({ search_term: t.String() }), limit: t.Optional(t.Number()) });
 
