@@ -83,9 +83,7 @@ export const app = new Elysia()
           const jwtPublicKeyRes = await fetch(process.env.JWT_VERIFY_URL as string);
           const jwtPublicKey = await jwtPublicKeyRes.json();
           const publicKey = jwtToPem.default(jwtPublicKey.keys[0]);
-          console.log(jwtPublicKeyRes, jwtPublicKey, publicKey);
           const verifiedToken: any = verify(jwtoken, publicKey, (err, result) => {
-            console.log(err);
             if (err)
               return {
                 name: "TokenExpiredError",
@@ -96,7 +94,7 @@ export const app = new Elysia()
             return result;
           });
           if (verifiedToken.error) {
-            console.error(verifiedToken.error);
+            console.error("ERROR VERIFYING TOKEN");
             throw new UnauthorizedError("UNAUTHORIZED");
           }
           if (verifiedToken.azp !== process.env.JWT_VERIFY_HOST || verifiedToken.exp * 1000 < Date.now()) {
