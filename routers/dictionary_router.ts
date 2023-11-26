@@ -55,18 +55,18 @@ export function dictionary_router(app: Elysia) {
             .$if(!!body?.relations?.children, (qb) =>
               GetEntityChildren(qb as SelectQueryBuilder<DB, EntitiesWithChildren, {}>, "dictionaries"),
             )
-            .select([
-              "dictionaries.id",
-              "dictionaries.title",
-              "dictionaries.icon",
-              (eb) =>
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "dictionaries">[]))
+            .$if(!!body.relations?.words, (qb) =>
+              qb.select((eb) =>
                 jsonArrayFrom(
                   eb
                     .selectFrom("words")
                     .select(["words.id", "words.title", "words.translation"])
                     .where("words.parent_id", "=", params.id),
                 ).as("words"),
-            ])
+              ),
+            )
 
             .executeTakeFirstOrThrow();
           if (body?.relations?.parents) {
