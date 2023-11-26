@@ -83,7 +83,9 @@ export const app = new Elysia()
           const jwtPublicKeyRes = await fetch(process.env.JWT_VERIFY_URL as string);
           const jwtPublicKey = await jwtPublicKeyRes.json();
           const publicKey = jwtToPem.default(jwtPublicKey.keys[0]);
+          console.log(jwtPublicKeyRes, jwtPublicKey, publicKey);
           const verifiedToken: any = verify(jwtoken, publicKey, (err, result) => {
+            console.log(err);
             if (err)
               return {
                 name: "TokenExpiredError",
