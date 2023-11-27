@@ -134,7 +134,7 @@ export function map_router(app: Elysia) {
         async ({ params, body }) => {
           await db.transaction().execute(async (tx) => {
             if (body.data) {
-              await tx.updateTable("maps").set(body.data).executeTakeFirstOrThrow();
+              await tx.updateTable("maps").where("id", "=", params.id).set(body.data).execute();
             }
             if (body?.relations) {
               if (body.relations?.tags)
