@@ -53,14 +53,19 @@ export function webhook_router(app: Elysia) {
       .post(
         "/send/:id",
         async ({ params, body }) => {
-          const { url } = await db.selectFrom("webhooks").select("url").where("id", "=", params.id).executeTakeFirstOrThrow();
+          const { url, image, nickname } = await db
+            .selectFrom("webhooks")
+            .leftJoin("users", "users.id", "webhooks.user_id")
+            .select(["url", "users.image", "users.nickname"])
+            .where("webhooks.id", "=", params.id)
+            .executeTakeFirstOrThrow();
 
           let content: { [key: string]: any } = {};
 
           if (body.data.type === "document_text") {
             content.title = body.data.title;
             content.description = body.data.description;
-          } else if (body.data.type === "document") {
+          } else if (body.data.type === "documents") {
             const data = await db
               .selectFrom("documents")
               .where("id", "=", body.data.id)
@@ -68,9 +73,21 @@ export function webhook_router(app: Elysia) {
               .executeTakeFirstOrThrow();
             content.url = `${createEntityURL(data.project_id, "documents", data.id)}`;
             content.title = data.title;
-            if (data?.image_id) content.thumbnail = { url: getImageURL(data.project_id, "images", data.image_id) };
+            if (data?.image_id) content.image = { url: getImageURL(data.project_id, "images", data.image_id) };
             else content.thumbnail = { url: getIconUrlFromIconEnum(data.icon || getDefaultEntityIcon("documents")) };
-          } else if (body.data.type === "image") {
+          } else if (body.data.type === "maps") {
+            const data = await db
+              .selectFrom("maps")
+              .where("id", "=", body.data.id)
+              .select(["id", "title", "image_id", "icon", "project_id"])
+              .executeTakeFirstOrThrow();
+
+            content.title = data.title;
+            content.url = `${createEntityURL(data.project_id, "documents", data.id)}`;
+            content.thumbnail = { url: getIconUrlFromIconEnum(data.icon || getDefaultEntityIcon("maps")) };
+
+            if (data?.image_id) content.image = { url: getImageURL(data.project_id, "map_images", data.image_id) };
+          } else if (body.data.type === "images") {
             const data = await db
               .selectFrom("images")
               .where("id", "=", body.data.id)
@@ -84,17 +101,20 @@ export function webhook_router(app: Elysia) {
           } else if (body.data.type === "random_table_roll") {
             content.title = body.data.title;
             content.description = body.data?.description ?? "";
-          } else if (body.data.type === "word") {
+          } else if (body.data.type === "words") {
             const data = await db.selectFrom("words").select(["title", "description", "translation"]).executeTakeFirstOrThrow();
             content.title = `${data.title} (${data.translation})`;
             if (data?.description) content.description = data.description;
           }
+
           await fetch(url, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
+              username: nickname,
+              "avatar-url": image,
               embeds: [content],
             }),
           });
