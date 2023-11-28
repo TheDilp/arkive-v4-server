@@ -47,6 +47,7 @@ export const InsertCharacterSchema = t.Object({
     portrait_id: t.Optional(t.Union([t.String(), t.Null()])),
     map_pin_id: t.Optional(t.Union([t.String(), t.Null()])),
     is_favorite: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
   }),
   relations: t.Optional(
     t.Object({
@@ -137,6 +138,7 @@ export const UpdateCharacterSchema = t.Object({
       portrait_id: t.Optional(t.Union([t.String(), t.Null()])),
       map_pin_id: t.Optional(t.Union([t.String(), t.Null()])),
       is_favorite: t.Optional(t.Union([t.Boolean(), t.Null()])),
+      is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
     }),
   ),
   relations: t.Optional(
