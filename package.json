@@ -10,7 +10,8 @@
     "email": "email dev",
     "generate-schema": "bun run kysely-codegen",
     "lint": "eslint '*.{ts,tsx}' --fix --report-unused-disable-directives --max-warnings 0",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "precommit": "bun run lint --fix"
   },
   "keywords": [],
   "author": "",
