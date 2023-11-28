@@ -24,7 +24,13 @@ export const SendWebhookSchema = t.Object({
     }),
     t.Object({
       id: t.String(),
-      type: t.Union([t.Literal("documents"), t.Literal("images"), t.Literal("words"), t.Literal("maps")]),
+      type: t.Union([
+        t.Literal("characters"),
+        t.Literal("documents"),
+        t.Literal("images"),
+        t.Literal("words"),
+        t.Literal("maps"),
+      ]),
     }),
   ]),
 });

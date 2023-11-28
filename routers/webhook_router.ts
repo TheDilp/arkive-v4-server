@@ -61,8 +61,17 @@ export function webhook_router(app: Elysia) {
             .executeTakeFirstOrThrow();
 
           let content: { [key: string]: any } = {};
+          if (body.data.type === "characters") {
+            const data = await db
+              .selectFrom("characters")
+              .where("id", "=", body.data.id)
+              .select(["id", "full_name", "portrait_id", "project_id"])
+              .executeTakeFirstOrThrow();
 
-          if (body.data.type === "document_text") {
+            content.url = `${createEntityURL(data.project_id, "characters", data.id)}`;
+            content.title = `${data.full_name} (Character)`;
+            if (data?.portrait_id) content.image = { url: getImageURL(data.project_id, "images", data.portrait_id) };
+          } else if (body.data.type === "document_text") {
             content.title = body.data.title;
             content.description = body.data.description;
           } else if (body.data.type === "documents") {
@@ -72,7 +81,7 @@ export function webhook_router(app: Elysia) {
               .select(["id", "title", "image_id", "icon", "project_id"])
               .executeTakeFirstOrThrow();
             content.url = `${createEntityURL(data.project_id, "documents", data.id)}`;
-            content.title = data.title;
+            content.title = `${data.title} (Document)`;
             if (data?.image_id) content.image = { url: getImageURL(data.project_id, "images", data.image_id) };
             else content.thumbnail = { url: getIconUrlFromIconEnum(data.icon || getDefaultEntityIcon("documents")) };
           } else if (body.data.type === "maps") {
@@ -82,7 +91,7 @@ export function webhook_router(app: Elysia) {
               .select(["id", "title", "image_id", "icon", "project_id"])
               .executeTakeFirstOrThrow();
 
-            content.title = data.title;
+            content.title = `${data.title} (Map)`;
             content.url = `${createEntityURL(data.project_id, "documents", data.id)}`;
             content.thumbnail = { url: getIconUrlFromIconEnum(data.icon || getDefaultEntityIcon("maps")) };
 
