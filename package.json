@@ -47,6 +47,8 @@
     "elysia"
   ],
   "devDependencies": {
+    "@commitlint/cli": "^18.4.3",
+    "@commitlint/config-conventional": "^18.4.3",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/jwk-to-pem": "^2.0.3",
     "@types/lodash.groupby": "^4.6.7",
