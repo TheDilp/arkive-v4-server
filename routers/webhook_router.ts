@@ -92,7 +92,7 @@ export function webhook_router(app: Elysia) {
               .executeTakeFirstOrThrow();
 
             content.title = `${data.title} (Map)`;
-            content.url = `${createEntityURL(data.project_id, "documents", data.id)}`;
+            content.url = `${createEntityURL(data.project_id, "maps", data.id)}`;
             content.thumbnail = { url: getIconUrlFromIconEnum(data.icon || getDefaultEntityIcon("maps")) };
 
             if (data?.image_id) content.image = { url: getImageURL(data.project_id, "map_images", data.image_id) };
@@ -122,7 +122,18 @@ export function webhook_router(app: Elysia) {
               .executeTakeFirstOrThrow();
 
             content.title = `${data.title} (Dictionary)`;
-            content.url = `${createEntityURL(data.project_id, "documents", data.id)}`;
+            content.url = `${createEntityURL(data.project_id, "dictionaries", data.id)}`;
+            content.thumbnail = { url: getIconUrlFromIconEnum(data.icon || getDefaultEntityIcon("dictionaries")) };
+          } else if (body.data.type === "blueprint_instances") {
+            const data = await db
+              .selectFrom("blueprint_instances")
+              .where("blueprint_instances.id", "=", body.data.id)
+              .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+              .select(["blueprint_instances.id", "blueprint_instances.title", "blueprints.icon", "blueprints.project_id"])
+              .executeTakeFirstOrThrow();
+
+            content.title = `${data.title} (Blueprint instance)`;
+            if (data.project_id) content.url = `${createEntityURL(data.project_id, "blueprint_instances", data.id)}`;
             content.thumbnail = { url: getIconUrlFromIconEnum(data.icon || getDefaultEntityIcon("dictionaries")) };
           }
 

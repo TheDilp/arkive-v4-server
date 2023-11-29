@@ -27,6 +27,7 @@ export const SendWebhookSchema = t.Object({
       type: t.Union([
         t.Literal("characters"),
         t.Literal("dictionaries"),
+        t.Literal("blueprint_instances"),
         t.Literal("documents"),
         t.Literal("images"),
         t.Literal("words"),
