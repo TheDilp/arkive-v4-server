@@ -114,6 +114,16 @@ export function webhook_router(app: Elysia) {
             const data = await db.selectFrom("words").select(["title", "description", "translation"]).executeTakeFirstOrThrow();
             content.title = `${data.title} (${data.translation})`;
             if (data?.description) content.description = data.description;
+          } else if (body.data.type === "dictionaries") {
+            const data = await db
+              .selectFrom("dictionaries")
+              .where("id", "=", body.data.id)
+              .select(["id", "title", "icon", "project_id"])
+              .executeTakeFirstOrThrow();
+
+            content.title = `${data.title} (Dictionary)`;
+            content.url = `${createEntityURL(data.project_id, "documents", data.id)}`;
+            content.thumbnail = { url: getIconUrlFromIconEnum(data.icon || getDefaultEntityIcon("dictionaries")) };
           }
 
           await fetch(url, {
