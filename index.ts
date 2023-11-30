@@ -26,6 +26,7 @@ import {
   month_router,
   node_router,
   project_router,
+  public_router,
   random_table_option_router,
   random_table_router,
   search_router,
@@ -133,7 +134,8 @@ export const app = new Elysia()
       .use(webhook_router)
       .use(search_router)
       .use(message_router)
-      .use(bulk_router),
+      .use(bulk_router)
+      .use(public_router),
   )
   .use(websocket_router)
   .listen((process.env.PORT as string) || 3000);

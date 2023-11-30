@@ -23,6 +23,7 @@ export * from "./message_router";
 export * from "./month_router";
 export * from "./node_router";
 export * from "./project_router";
+export * from "./public_router";
 export * from "./random_table_option_router";
 export * from "./random_table_router";
 export * from "./search_router";
