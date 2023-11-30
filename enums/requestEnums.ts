@@ -21,4 +21,5 @@ export const MessageEnum = {
   successfully_updated: "successfully updated.",
   successfully_deleted: "successfully deleted.",
   error_image_upload: "There was an error uploading your image(s).",
+  error_entity_not_public: "Access forbidden - this entity is not public.",
 };

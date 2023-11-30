@@ -306,7 +306,6 @@ export function document_router(app: Elysia) {
           const res = await db
             .selectFrom(body.data.type)
             .select(fields)
-
             .$if(body.data.type === "blueprint_instances", (qb) => {
               if (body.data.type === "blueprint_instances") {
                 qb.leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")

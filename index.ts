@@ -3,6 +3,7 @@ import { Elysia } from "elysia";
 import { verify } from "jsonwebtoken";
 import * as jwtToPem from "jwk-to-pem";
 
+import { NoPublicAccess, UnauthorizedError } from "./enums";
 import {
   asset_router,
   blueprint_instance_router,
@@ -37,21 +38,20 @@ import {
   word_router,
 } from "./routers";
 
-class UnauthorizedError extends Error {
-  constructor(public message: string) {
-    super(message);
-  }
-}
-
 export const app = new Elysia()
   .use(cors({ origin: process.env.NODE_ENV === "development" ? true : "https://thearkive.app" }))
   .error({
     UNAUTHORIZED: UnauthorizedError,
+    NO_PUBLIC_ACCESS: NoPublicAccess,
   })
   .onError(({ code, error, set }) => {
     if (code === "UNAUTHORIZED") {
       set.status = 403;
       return { message: "UNAUTHORIZED", ok: false };
+    }
+    if (code === "NO_PUBLIC_ACCESS") {
+      set.status = 403;
+      return { message: "NO_PUBLIC_ACCESS", ok: false };
     }
     if (code === "NOT_FOUND") {
       set.status = 404;
