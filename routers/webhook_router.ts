@@ -135,6 +135,15 @@ export function webhook_router(app: Elysia) {
             content.title = `${data.title} (Blueprint instance)`;
             if (data.project_id) content.url = `${createEntityURL(data.project_id, "blueprint_instances", data.id)}`;
             content.thumbnail = { url: getIconUrlFromIconEnum(data.icon || getDefaultEntityIcon("dictionaries")) };
+          } else if (body.data.type === "graphs") {
+            const data = await db
+              .selectFrom("graphs")
+              .where("id", "=", body.data.id)
+              .select(["id", "title", "project_id"])
+              .executeTakeFirstOrThrow();
+            content.url = `${createEntityURL(data.project_id, "graphs", data.id)}`;
+            content.title = `${data.title} (Graph)`;
+            content.thumbnail = { url: getIconUrlFromIconEnum(getDefaultEntityIcon("graphs")) };
           }
 
           await fetch(url, {
