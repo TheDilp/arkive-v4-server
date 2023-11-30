@@ -134,9 +134,9 @@ export const app = new Elysia()
       .use(webhook_router)
       .use(search_router)
       .use(message_router)
-      .use(bulk_router)
-      .use(public_router),
+      .use(bulk_router),
   )
+  .use(public_router)
   .use(websocket_router)
   .listen((process.env.PORT as string) || 3000);
 
