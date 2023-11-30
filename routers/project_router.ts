@@ -69,7 +69,8 @@ export function project_router(app: Elysia) {
                       "character_relationship_types.title",
                       "character_relationship_types.ascendant_title",
                       "character_relationship_types.descendant_title",
-                    ]),
+                    ])
+                    .where("project_id", "=", params.id),
                 ).as("character_relationship_types"),
               ),
             )
