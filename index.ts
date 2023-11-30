@@ -1,5 +1,5 @@
 import { cors } from "@elysiajs/cors";
-import { Elysia, ws } from "elysia";
+import { Elysia } from "elysia";
 import { verify } from "jsonwebtoken";
 import * as jwtToPem from "jwk-to-pem";
 
@@ -43,10 +43,8 @@ class UnauthorizedError extends Error {
 }
 
 export const app = new Elysia()
-  .state("auth", { userId: "" })
-  .use(cors({ origin: process.env.NODE_ENV === "development" ? "*" : "https://thearkive.app" }))
-  .use(ws())
-  .addError({
+  .use(cors({ origin: process.env.NODE_ENV === "development" ? true : "https://thearkive.app" }))
+  .error({
     UNAUTHORIZED: UnauthorizedError,
   })
   .onError(({ code, error, set }) => {
