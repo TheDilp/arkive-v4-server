@@ -61,6 +61,7 @@ export function webhook_router(app: Elysia) {
             .executeTakeFirstOrThrow();
 
           let content: { [key: string]: any } = {};
+
           if (body.data.type === "characters") {
             const data = await db
               .selectFrom("characters")
