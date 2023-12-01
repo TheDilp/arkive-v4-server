@@ -88,7 +88,7 @@ export function blueprint_router(app: Elysia) {
         },
         {
           body: ListBlueprintSchema,
-          response: ResponseSchema,
+          response: ResponseWithDataSchema,
         },
       )
       .post(

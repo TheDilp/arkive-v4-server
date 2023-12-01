@@ -340,7 +340,7 @@ export function blueprint_instance_router(app: Elysia) {
         },
         {
           body: ListBlueprintInstanceSchema,
-          response: ResponseSchema,
+          response: ResponseWithDataSchema,
         },
       )
       .post(
