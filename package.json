@@ -10,7 +10,7 @@
     "email": "email dev",
     "generate-schema": "bun run kysely-codegen",
     "lint": "eslint '*.{ts,tsx}' --fix --report-unused-disable-directives --max-warnings 0",
-    "prepare": "is-ci || husky install",
+    "prepare": "if [ -z \"$NODE_ENV\" == \"development\" ]; then husky install;fi",
     "precommit": "bun run lint --fix"
   },
   "keywords": [],
@@ -70,7 +70,6 @@
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-simple-import-sort": "^10.0.0",
     "husky": "^8.0.3",
-    "is-ci": "^3.0.1",
     "kysely-codegen": "^0.10.1",
     "prettier": "^2.8.0",
     "typescript": "^5.1.6"
