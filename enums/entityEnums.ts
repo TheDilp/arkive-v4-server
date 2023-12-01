@@ -29,6 +29,7 @@ export const EntitiesWithTagsTables: TagsRelationTables[] = [
   "_mapsTotags",
   "_calendarsTotags",
   "_dictionariesTotags",
+  "_blueprint_instancesTotags",
   "_edgesTotags",
   "_nodesTotags",
 ];
