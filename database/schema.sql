@@ -17,34 +17,6 @@ COMMENT ON SCHEMA public IS '';
 
 
 --
--- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
-
-
---
--- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
-
-
---
--- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
-
-
---
--- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
-
-
---
 -- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -139,6 +111,15 @@ CREATE TYPE public."ImageType" AS ENUM (
     'images',
     'map_images'
 );
+
+
+--
+-- Name: updated_at_change(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.updated_at_change() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $$;
 
 
 SET default_tablespace = '';
@@ -778,7 +759,8 @@ CREATE TABLE public.events (
     end_year integer,
     start_day integer NOT NULL,
     start_month integer NOT NULL,
-    start_year integer NOT NULL
+    start_year integer NOT NULL,
+    updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 
@@ -1852,6 +1834,97 @@ CREATE UNIQUE INDEX words_title_translation_parent_id_key ON public.words USING 
 --
 
 CREATE INDEX words_ts_index ON public.words USING gin (ts);
+
+
+--
+-- Name: blueprint_instances update_modified_time; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_modified_time BEFORE UPDATE ON public.blueprint_instances FOR EACH ROW EXECUTE FUNCTION public.updated_at_change();
+
+
+--
+-- Name: blueprints update_modified_time; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_modified_time BEFORE UPDATE ON public.blueprints FOR EACH ROW EXECUTE FUNCTION public.updated_at_change();
+
+
+--
+-- Name: calendars update_modified_time; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_modified_time BEFORE UPDATE ON public.calendars FOR EACH ROW EXECUTE FUNCTION public.updated_at_change();
+
+
+--
+-- Name: characters update_modified_time; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_modified_time BEFORE UPDATE ON public.characters FOR EACH ROW EXECUTE FUNCTION public.updated_at_change();
+
+
+--
+-- Name: conversations update_modified_time; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_modified_time BEFORE UPDATE ON public.conversations FOR EACH ROW EXECUTE FUNCTION public.updated_at_change();
+
+
+--
+-- Name: dictionaries update_modified_time; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_modified_time BEFORE UPDATE ON public.dictionaries FOR EACH ROW EXECUTE FUNCTION public.updated_at_change();
+
+
+--
+-- Name: documents update_modified_time; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_modified_time BEFORE UPDATE ON public.documents FOR EACH ROW EXECUTE FUNCTION public.updated_at_change();
+
+
+--
+-- Name: events update_modified_time; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_modified_time BEFORE UPDATE ON public.events FOR EACH ROW EXECUTE FUNCTION public.updated_at_change();
+
+
+--
+-- Name: graphs update_modified_time; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_modified_time BEFORE UPDATE ON public.graphs FOR EACH ROW EXECUTE FUNCTION public.updated_at_change();
+
+
+--
+-- Name: maps update_modified_time; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_modified_time BEFORE UPDATE ON public.maps FOR EACH ROW EXECUTE FUNCTION public.updated_at_change();
+
+
+--
+-- Name: messages update_modified_time; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_modified_time BEFORE UPDATE ON public.messages FOR EACH ROW EXECUTE FUNCTION public.updated_at_change();
+
+
+--
+-- Name: random_tables update_modified_time; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_modified_time BEFORE UPDATE ON public.random_tables FOR EACH ROW EXECUTE FUNCTION public.updated_at_change();
+
+
+--
+-- Name: users update_modified_time; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER update_modified_time BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION public.updated_at_change();
 
 
 --
@@ -3053,4 +3126,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20231118100320'),
     ('20231118112502'),
     ('20231120082407'),
-    ('20231128071324');
+    ('20231128071324'),
+    ('20231204150951'),
+    ('20231204151051');
