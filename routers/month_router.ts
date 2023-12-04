@@ -3,7 +3,7 @@ import Elysia from "elysia";
 import { db } from "../database/db";
 import { ListMonthSchema } from "../database/validation/months";
 import { MessageEnum } from "../enums/requestEnums";
-import { ResponseSchema } from "../types/requestTypes";
+import { ResponseWithDataSchema } from "../types/requestTypes";
 
 export function month_router(app: Elysia) {
   return app.group("/months", (server) =>
@@ -16,7 +16,7 @@ export function month_router(app: Elysia) {
       },
       {
         body: ListMonthSchema,
-        response: ResponseSchema,
+        response: ResponseWithDataSchema,
       },
     ),
   );
