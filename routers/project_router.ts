@@ -1,5 +1,5 @@
 import Elysia from "elysia";
-import { SelectExpression } from "kysely";
+import { SelectExpression, sql } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
@@ -106,6 +106,114 @@ export function project_router(app: Elysia) {
           response: ResponseSchema,
         },
       )
+      .get("/:id/dashboard", async ({ params }) => {
+        const requests = [
+          {
+            name: "characters",
+            request: db
+              .selectFrom("characters")
+              .select(["id", "full_name as title", "portrait_id"])
+              .where("project_id", "=", params.id)
+              .limit(5)
+              .orderBy("updated_at desc")
+              .execute(),
+          },
+          {
+            name: "documents",
+            request: db
+              .selectFrom("documents")
+              .select(["id", "title", "icon"])
+              .where("project_id", "=", params.id)
+              .orderBy("updated_at desc")
+              .limit(5)
+              .execute(),
+          },
+
+          {
+            name: "blueprint_instances",
+            request: db
+              .selectFrom("blueprint_instances")
+              .select(["blueprint_instances.id", "blueprint_instances.title", "blueprint_instances.parent_id"])
+              .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+              .where("blueprints.project_id", "=", params.id)
+              .orderBy("blueprint_instances.updated_at desc")
+              .limit(5)
+              .execute(),
+          },
+          {
+            name: "maps",
+            request: db
+              .selectFrom("maps")
+              .select(["id", "title", "icon"])
+              .orderBy("updated_at desc")
+              .where("project_id", "=", params.id)
+              .limit(5)
+              .execute(),
+          },
+          {
+            name: "graphs",
+            request: db
+              .selectFrom("graphs")
+              .select(["id", "title"])
+              .where("graphs.project_id", "=", params.id)
+              .orderBy("updated_at desc")
+              .limit(5)
+              .execute(),
+          },
+          {
+            name: "calendars",
+            request: db
+              .selectFrom("calendars")
+              .select(["id", "title"])
+              .where("calendars.project_id", "=", params.id)
+              .orderBy("updated_at desc")
+              .limit(5)
+              .execute(),
+          },
+          {
+            name: "events",
+            request: db
+              .selectFrom("events")
+              .select(["events.id", "events.title", "events.parent_id"])
+              .leftJoin("calendars", "calendars.id", "events.parent_id")
+              .where("calendars.project_id", "=", params.id)
+              .orderBy("events.updated_at desc")
+              .limit(5)
+              .execute(),
+          },
+          {
+            name: "conversations",
+            request: db
+              .selectFrom("conversations")
+              .leftJoin("messages", "conversations.id", "messages.parent_id")
+              .select(["conversations.id", "conversations.title", sql<any>`MAX(messages.created_at)`.as("created_at")])
+              .where("conversations.project_id", "=", params.id)
+              .groupBy(["conversations.id", "conversations.title"])
+              .orderBy("created_at asc")
+              .limit(5)
+              .execute(),
+          },
+          {
+            name: "dictionaries",
+            request: db
+              .selectFrom("dictionaries")
+              .select(["id", "title"])
+              .where("dictionaries.project_id", "=", params.id)
+              .orderBy("updated_at desc")
+              .limit(5)
+              .execute(),
+          },
+        ];
+
+        const data = await Promise.all(
+          requests.map(async (item) => ({
+            name: item.name,
+            result: await item.request,
+          })),
+        );
+
+        return { data, message: MessageEnum.success, ok: true };
+      })
       .delete("/:id", async ({ params }) => {
         await db.deleteFrom("projects").where("projects.id", "=", params.id).execute();
         return { message: `Project ${MessageEnum.successfully_deleted}`, ok: true };
