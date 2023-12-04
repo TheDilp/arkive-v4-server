@@ -58,7 +58,7 @@ export function event_router(app: Elysia) {
         },
         {
           body: EntityListSchema,
-          response: ResponseSchema,
+          response: ResponseWithDataSchema,
         },
       )
       .post(
