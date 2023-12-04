@@ -67,7 +67,7 @@ export function conversation_router(app: Elysia) {
                       .selectFrom("_charactersToconversations")
                       .whereRef("conversations.id", "=", "_charactersToconversations.B")
                       .leftJoin("characters", "characters.id", "_charactersToconversations.A")
-                      .select(["characters.id", "characters.first_name", "characters.last_name", "characters.portrait_id"]),
+                      .select(["characters.id", "characters.full_name", "characters.portrait_id"]),
                   ).as("characters"),
                 );
               }
@@ -110,7 +110,7 @@ export function conversation_router(app: Elysia) {
                       .selectFrom("_charactersToconversations")
                       .whereRef("conversations.id", "=", "_charactersToconversations.B")
                       .leftJoin("characters", "characters.id", "_charactersToconversations.A")
-                      .select(["characters.id", "characters.first_name", "characters.last_name", "characters.portrait_id"]),
+                      .select(["characters.id", "characters.full_name", "characters.portrait_id"]),
                   ).as("characters"),
                 );
               }
