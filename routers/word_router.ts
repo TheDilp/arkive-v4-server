@@ -6,6 +6,7 @@ import { db } from "../database/db";
 import { InserWordSchema, ListWordSchema, ReadWordSchema, UpdateWordSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 
 export function word_router(app: Elysia) {
@@ -33,6 +34,10 @@ export function word_router(app: Elysia) {
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "words">[]))
             .$if(!!body.orderBy?.length, (qb) => {
               qb = constructOrdering(body.orderBy, qb);
+              return qb;
+            })
+            .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
+              qb = constructFilter("words", qb, body.filters);
               return qb;
             })
             .where("parent_id", "=", body.data.parent_id)

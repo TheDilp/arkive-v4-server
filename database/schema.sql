@@ -17,6 +17,34 @@ COMMENT ON SCHEMA public IS '';
 
 
 --
+-- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
+
+
+--
+-- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
+
+
+--
 -- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
 --
 
