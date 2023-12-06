@@ -10,7 +10,7 @@
     "email": "email dev",
     "generate-schema": "bun run kysely-codegen",
     "lint": "eslint '*.{ts,tsx}' --fix --report-unused-disable-directives --max-warnings 0",
-    "prepare": "if [ -z \"$NODE_ENV\" == \"development\" ]; then husky install;fi",
+    "prepare": "husky install  || echo Skipping schema build",
     "precommit": "bun run lint --fix"
   },
   "keywords": [],
@@ -40,11 +40,11 @@
     "react-email": "^1.9.5",
     "remirror": "^2.0.37",
     "resend": "^1.1.0",
-    "sharp": "v0.33.0-rc.2"
+    "sharp": "^0.33.0"
   },
   "trustedDependencies": [
-    "sharp",
-    "elysia"
+    "elysia",
+    "sharp"
   ],
   "devDependencies": {
     "@commitlint/cli": "^18.4.3",
