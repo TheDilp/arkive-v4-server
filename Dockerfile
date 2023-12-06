@@ -6,8 +6,7 @@ ENV HUSKY=0
 ENV NODE_ENV=production
 COPY package.json bun.lockb /usr/src/app/
 RUN bun install --production --force
-
 # run the app
 USER bun
 EXPOSE 5174/tcp
-ENTRYPOINT [ "bun", "run", "index.ts" ]
+ENTRYPOINT [ "bun", "run", "/usr/src/app/index.ts" ]
