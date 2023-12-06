@@ -1,5 +1,6 @@
 import Elysia from "elysia";
 import { SelectExpression } from "kysely";
+import { jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
@@ -72,6 +73,16 @@ export function event_router(app: Elysia) {
             .$if(!!body?.relations, (qb) => {
               if (body?.relations?.tags) {
                 qb = qb.select((eb) => TagQuery(eb, "_eventsTotags", "events"));
+              }
+              if (body?.relations?.document) {
+                qb = qb.select((eb) =>
+                  jsonObjectFrom(
+                    eb
+                      .selectFrom("documents")
+                      .whereRef("documents.id", "=", "events.document_id")
+                      .select(["id", "title", "icon"]),
+                  ).as("document"),
+                );
               }
               return qb;
             })

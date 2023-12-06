@@ -10,6 +10,7 @@ export const ReadEventSchema = t.Intersect([
       relations: t.Optional(
         t.Object({
           tags: t.Optional(t.Boolean()),
+          document: t.Optional(t.Boolean()),
         }),
       ),
     }),
