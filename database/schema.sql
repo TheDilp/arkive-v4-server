@@ -497,7 +497,8 @@ CREATE TABLE public.calendars (
     "offset" integer DEFAULT 0 NOT NULL,
     hours integer,
     minutes integer,
-    days text[]
+    days text[],
+    starts_on_day integer DEFAULT 1 NOT NULL
 );
 
 
@@ -3156,4 +3157,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20231120082407'),
     ('20231128071324'),
     ('20231204150951'),
-    ('20231204151051');
+    ('20231204151051'),
+    ('20231206075437');

@@ -41,6 +41,7 @@ export const InsertCalendarSchema = t.Object({
     icon: t.Optional(t.Union([t.String(), t.Null()])),
     project_id: t.String(),
     // offset: z.number(),
+    starts_on_day: t.Optional(t.Union([t.Number(), t.Null()])),
     hours: t.Optional(t.Union([t.Number(), t.Null()])),
     minutes: t.Optional(t.Union([t.Number(), t.Null()])),
     parent_id: t.Optional(t.Union([t.String(), t.Null()])),
@@ -61,6 +62,7 @@ export const UpdateCalendarSchema = t.Object({
     icon: t.Optional(t.Union([t.String(), t.Null()])),
     parent_id: t.Optional(t.Union([t.String(), t.Null()])),
     days: t.Optional(t.Array(t.String(), { minItems: 1 })),
+    starts_on_day: t.Optional(t.Union([t.Number(), t.Null()])),
   }),
   relations: t.Object({
     months: t.Union([t.Array(InsertMonthSchema, { minItems: 1 }), t.Array(UpdateMonthSchema, { minItems: 1 })]),
