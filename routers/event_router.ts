@@ -84,6 +84,13 @@ export function event_router(app: Elysia) {
                   ).as("document"),
                 );
               }
+              if (body?.relations?.image) {
+                qb = qb.select((eb) =>
+                  jsonObjectFrom(
+                    eb.selectFrom("images").whereRef("images.id", "=", "events.image_id").select(["id", "title"]),
+                  ).as("image"),
+                );
+              }
               return qb;
             })
             .executeTakeFirstOrThrow();
