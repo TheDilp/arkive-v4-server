@@ -17,6 +17,34 @@ COMMENT ON SCHEMA public IS '';
 
 
 --
+-- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
+
+
+--
+-- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
+
+
+--
 -- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -800,6 +828,18 @@ CREATE TABLE public.images (
 
 
 --
+-- Name: leap_days; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.leap_days (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    parent_id uuid NOT NULL,
+    month_id uuid NOT NULL,
+    conditions jsonb
+);
+
+
+--
 -- Name: map_layers; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -880,8 +920,7 @@ CREATE TABLE public.months (
     title text NOT NULL,
     days integer NOT NULL,
     sort integer DEFAULT 0 NOT NULL,
-    parent_id uuid NOT NULL,
-    leap_days integer DEFAULT 0
+    parent_id uuid NOT NULL
 );
 
 
@@ -1315,6 +1354,14 @@ ALTER TABLE ONLY public.graphs
 
 ALTER TABLE ONLY public.images
     ADD CONSTRAINT images_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: leap_days leap_days_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.leap_days
+    ADD CONSTRAINT leap_days_pkey PRIMARY KEY (id);
 
 
 --
@@ -2881,6 +2928,22 @@ ALTER TABLE ONLY public.images
 
 
 --
+-- Name: leap_days leap_days_month_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.leap_days
+    ADD CONSTRAINT leap_days_month_id_fkey FOREIGN KEY (month_id) REFERENCES public.months(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: leap_days leap_days_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.leap_days
+    ADD CONSTRAINT leap_days_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.calendars(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: map_layers map_layers_image_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3106,32 +3169,4 @@ ALTER TABLE ONLY public.words
 --
 
 INSERT INTO public.schema_migrations (version) VALUES
-    ('20231112095433'),
-    ('20231112190702'),
-    ('20231112192351'),
-    ('20231113075416'),
-    ('20231113095003'),
-    ('20231113095242'),
-    ('20231113115145'),
-    ('20231115075556'),
-    ('20231115080322'),
-    ('20231115084021'),
-    ('20231115094355'),
-    ('20231115094748'),
-    ('20231115132655'),
-    ('20231116133905'),
-    ('20231116150742'),
-    ('20231117074514'),
-    ('20231117094721'),
-    ('20231117104543'),
-    ('20231118100320'),
-    ('20231118112502'),
-    ('20231120082407'),
-    ('20231128071324'),
-    ('20231204150951'),
-    ('20231204151051'),
-    ('20231206075437'),
-    ('20231206181526'),
-    ('20231206185246'),
-    ('20231207071651'),
-    ('20231207074749');
+    ('20231207093813');

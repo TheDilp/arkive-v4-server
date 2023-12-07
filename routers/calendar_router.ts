@@ -80,14 +80,7 @@ export function calendar_router(app: Elysia) {
                   jsonArrayFrom(
                     eb
                       .selectFrom("months")
-                      .select([
-                        "months.id",
-                        "months.days",
-                        "months.sort",
-                        "months.title",
-                        "months.parent_id",
-                        "months.leap_days",
-                      ])
+                      .select(["months.id", "months.days", "months.sort", "months.title", "months.parent_id"])
                       .where("months.parent_id", "=", params.id),
                   ).as("months"),
                 );
