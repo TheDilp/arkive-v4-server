@@ -466,11 +466,10 @@ CREATE TABLE public.calendars (
     icon text,
     is_folder boolean,
     is_public boolean,
-    "offset" integer DEFAULT 0 NOT NULL,
     hours integer,
     minutes integer,
     days text[],
-    starts_on_day integer DEFAULT 1 NOT NULL
+    starts_on_day integer DEFAULT 0
 );
 
 
@@ -797,6 +796,17 @@ CREATE TABLE public.images (
     project_image_id uuid,
     character_id uuid,
     type public."ImageType" DEFAULT 'images'::public."ImageType" NOT NULL
+);
+
+
+--
+-- Name: leap_days; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.leap_days (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    parent_id uuid NOT NULL,
+    month integer NOT NULL
 );
 
 
@@ -1315,6 +1325,14 @@ ALTER TABLE ONLY public.graphs
 
 ALTER TABLE ONLY public.images
     ADD CONSTRAINT images_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: leap_days leap_days_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.leap_days
+    ADD CONSTRAINT leap_days_pkey PRIMARY KEY (id);
 
 
 --
@@ -2881,6 +2899,14 @@ ALTER TABLE ONLY public.images
 
 
 --
+-- Name: leap_days leap_days_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.leap_days
+    ADD CONSTRAINT leap_days_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.calendars(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: map_layers map_layers_image_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3130,4 +3156,7 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20231128071324'),
     ('20231204150951'),
     ('20231204151051'),
-    ('20231206075437');
+    ('20231206075437'),
+    ('20231206181526'),
+    ('20231206185246'),
+    ('20231207071651');
