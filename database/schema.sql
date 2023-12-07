@@ -800,17 +800,6 @@ CREATE TABLE public.images (
 
 
 --
--- Name: leap_days; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.leap_days (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    parent_id uuid NOT NULL,
-    month integer NOT NULL
-);
-
-
---
 -- Name: map_layers; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -891,7 +880,8 @@ CREATE TABLE public.months (
     title text NOT NULL,
     days integer NOT NULL,
     sort integer DEFAULT 0 NOT NULL,
-    parent_id uuid NOT NULL
+    parent_id uuid NOT NULL,
+    leap_days integer DEFAULT 0
 );
 
 
@@ -1325,14 +1315,6 @@ ALTER TABLE ONLY public.graphs
 
 ALTER TABLE ONLY public.images
     ADD CONSTRAINT images_pkey PRIMARY KEY (id);
-
-
---
--- Name: leap_days leap_days_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.leap_days
-    ADD CONSTRAINT leap_days_pkey PRIMARY KEY (id);
 
 
 --
@@ -2899,14 +2881,6 @@ ALTER TABLE ONLY public.images
 
 
 --
--- Name: leap_days leap_days_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.leap_days
-    ADD CONSTRAINT leap_days_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.calendars(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
 -- Name: map_layers map_layers_image_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3159,4 +3133,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20231206075437'),
     ('20231206181526'),
     ('20231206185246'),
-    ('20231207071651');
+    ('20231207071651'),
+    ('20231207074749');

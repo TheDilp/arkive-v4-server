@@ -168,7 +168,7 @@ export function character_fields_templates_router(app: Elysia) {
         },
         {
           body: ListCharacterFieldsTemplateSchema,
-          response: ResponseSchema,
+          response: ResponseWithDataSchema,
         },
       )
       .post(

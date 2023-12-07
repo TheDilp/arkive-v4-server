@@ -80,11 +80,19 @@ export function calendar_router(app: Elysia) {
                   jsonArrayFrom(
                     eb
                       .selectFrom("months")
-                      .select(["months.id", "months.days", "months.sort", "months.title", "months.parent_id"])
+                      .select([
+                        "months.id",
+                        "months.days",
+                        "months.sort",
+                        "months.title",
+                        "months.parent_id",
+                        "months.leap_days",
+                      ])
                       .where("months.parent_id", "=", params.id),
                   ).as("months"),
                 );
               }
+
               if (body?.relations?.tags) {
                 qb = qb.select((eb) => TagQuery(eb, "_calendarsTotags", "calendars"));
               }
