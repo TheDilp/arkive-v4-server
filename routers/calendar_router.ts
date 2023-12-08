@@ -4,7 +4,6 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { UpdateMonthSchema } from "../database/validation";
 import {
   InsertCalendarSchema,
   ListCalendarSchema,
@@ -85,7 +84,16 @@ export function calendar_router(app: Elysia) {
                   ).as("months"),
                 );
               }
-
+              if (body.relations?.leap_days) {
+                qb = qb.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("leap_days")
+                      .select(["leap_days.id", "leap_days.month_id", "leap_days.parent_id", "leap_days.conditions"])
+                      .where("leap_days.parent_id", "=", params.id),
+                  ).as("leap_days"),
+                );
+              }
               if (body?.relations?.tags) {
                 qb = qb.select((eb) => TagQuery(eb, "_calendarsTotags", "calendars"));
               }
@@ -105,6 +113,43 @@ export function calendar_router(app: Elysia) {
         async ({ params, body }) => {
           await db.transaction().execute(async (tx) => {
             await tx.updateTable("calendars").where("calendars.id", "=", params.id).set(body.data).execute();
+
+            if (body.relations.leap_days) {
+              const existingLeapDays = await tx
+                .selectFrom("leap_days")
+                .where("leap_days.parent_id", "=", params.id)
+                .select(["id"])
+                .execute();
+              const existingLeapDayIds = existingLeapDays.map((month) => month.id);
+
+              const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+                existingLeapDayIds,
+                body.relations.leap_days,
+              );
+              if (idsToRemove.length) {
+                await tx.deleteFrom("leap_days").where("leap_days.id", "in", idsToRemove).execute();
+              }
+              if (itemsToAdd.length) {
+                await tx
+                  .insertInto("leap_days")
+                  .values(
+                    itemsToAdd.map((m) => ({ ...(m as any), conditions: JSON.stringify(m.conditions), parent_id: params.id })),
+                  )
+                  .execute();
+              }
+              if (itemsToUpdate.length) {
+                await Promise.all(
+                  itemsToUpdate.map(async (item) => {
+                    await tx
+                      .updateTable("leap_days")
+                      .where("parent_id", "=", params.id)
+                      .where("id", "=", item.id)
+                      .set(item)
+                      .execute();
+                  }),
+                );
+              }
+            }
 
             if (body.relations.months) {
               const existingMonths = await tx
@@ -128,12 +173,17 @@ export function calendar_router(app: Elysia) {
               if (itemsToUpdate.length) {
                 await Promise.all(
                   itemsToUpdate.map(async (item) => {
-                    const parsedMonth = UpdateMonthSchema.parse(item);
-                    await tx.updateTable("months").where("parent_id", "=", params.id).set(parsedMonth).execute();
+                    await tx
+                      .updateTable("months")
+                      .where("parent_id", "=", params.id)
+                      .where("months.id", "=", item.id)
+                      .set(item)
+                      .execute();
                   }),
                 );
               }
             }
+
             if (body?.relations?.tags) {
               await UpdateTagRelations({
                 relationalTable: "_calendarsTotags",

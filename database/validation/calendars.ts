@@ -16,12 +16,24 @@ export const UpdateMonthSchema = t.Object({
   sort: t.Optional(t.Number()),
 });
 
+export const InsertLeapDaySchema = t.Object({
+  month_id: t.String(),
+  parent_id: t.String(),
+  conditions: t.Any(),
+});
+
+export const UpdateLeapDaySchema = t.Object({
+  month_id: t.Optional(t.String()),
+  conditions: t.Optional(t.Any()),
+});
+
 export const ReadCalendarSchema = t.Intersect([
   RequestBodySchema,
   t.Optional(
     t.Object({
       relations: t.Optional(
         t.Object({
+          leap_days: t.Optional(t.Boolean()),
           months: t.Optional(t.Boolean()),
           tags: t.Optional(t.Boolean()),
         }),
@@ -50,6 +62,7 @@ export const InsertCalendarSchema = t.Object({
   relations: t.Object({
     months: t.Array(InsertMonthSchema, { minItems: 1 }),
     tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
+    leap_days: t.Optional(t.Array(InsertLeapDaySchema)),
   }),
 });
 
@@ -67,5 +80,6 @@ export const UpdateCalendarSchema = t.Object({
   relations: t.Object({
     months: t.Union([t.Array(InsertMonthSchema, { minItems: 1 }), t.Array(UpdateMonthSchema, { minItems: 1 })]),
     tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
+    leap_days: t.Optional(t.Union([t.Array(InsertLeapDaySchema), t.Array(UpdateLeapDaySchema)])),
   }),
 });
