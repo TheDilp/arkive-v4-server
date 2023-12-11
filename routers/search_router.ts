@@ -20,6 +20,7 @@ function getSearchFields(type: SearchableEntities): string[] {
   else fields.push(`${type}.title`);
 
   if (type === "documents") fields.push("documents.image_id");
+  if (type === "maps") fields.push("maps.image_id");
   if (type === "events") fields.push("events.parent_id");
   if (type === "map_pins") fields.push("map_pins.parent_id", "map_pins.icon", "map_pins.image_id");
   if (type === "words") fields.push("words.parent_id");
@@ -198,7 +199,7 @@ export function search_router(app: Elysia) {
           if (type === "maps") {
             const data = await db
               .selectFrom("maps")
-              .select(["id", "title"])
+              .select(["id", "title", "image_id"])
               .where("title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
               .where("project_id", "=", params.project_id)
               .limit(body.limit || 10)

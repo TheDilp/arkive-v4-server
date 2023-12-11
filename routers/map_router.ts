@@ -85,7 +85,7 @@ export function map_router(app: Elysia) {
                           eb
                             .selectFrom("characters")
                             .whereRef("characters.id", "=", "map_pins.character_id")
-                            .select(["id", "first_name", "last_name", "portrait_id"]),
+                            .select(["id", "full_name", "portrait_id"]),
                         ).as("character"),
                     ])
                     .whereRef("map_pins.parent_id", "=", "maps.id"),

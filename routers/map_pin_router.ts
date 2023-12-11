@@ -51,7 +51,7 @@ export function map_pin_router(app: Elysia) {
                     eb
                       .selectFrom("characters")
                       .whereRef("characters.id", "=", "map_pins.character_id")
-                      .select(["id", "first_name", "last_name", "portrait_id"]),
+                      .select(["id", "full_name", "portrait_id"]),
                   ).as("character"),
               ]),
             )
@@ -87,8 +87,16 @@ export function map_pin_router(app: Elysia) {
                 eb
                   .selectFrom("characters")
                   .whereRef("characters.id", "=", "map_pins.character_id")
-                  .select(["id", "first_name", "last_name", "portrait_id"]),
+                  .select(["id", "full_name", "portrait_id"]),
               ).as("character"),
+            (eb) =>
+              jsonObjectFrom(
+                eb.selectFrom("documents").whereRef("documents.id", "=", "map_pins.doc_id").select(["id", "title"]),
+              ).as("document"),
+            (eb) =>
+              jsonObjectFrom(
+                eb.selectFrom("maps").whereRef("maps.id", "=", "map_pins.map_link").select(["id", "title", "image_id"]),
+              ).as("linked_map"),
           ])
           .where("map_pins.id", "=", params.id)
           .executeTakeFirstOrThrow();

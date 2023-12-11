@@ -869,7 +869,7 @@ CREATE TABLE public.map_pins (
     show_background boolean DEFAULT true NOT NULL,
     show_border boolean DEFAULT true NOT NULL,
     is_public boolean,
-    map_link text,
+    map_link uuid,
     doc_id uuid,
     image_id uuid,
     character_id uuid
@@ -3169,4 +3169,5 @@ ALTER TABLE ONLY public.words
 --
 
 INSERT INTO public.schema_migrations (version) VALUES
-    ('20231207093813');
+    ('20231207093813'),
+    ('20231211135552');
