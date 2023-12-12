@@ -142,6 +142,21 @@ CREATE TYPE public."ImageType" AS ENUM (
 
 
 --
+-- Name: MentionTypeEnum; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public."MentionTypeEnum" AS ENUM (
+    'characters',
+    'documents',
+    'maps',
+    'graphs',
+    'blueprint_instances',
+    'words',
+    'events'
+);
+
+
+--
 -- Name: updated_at_change(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -699,7 +714,8 @@ CREATE TABLE public.dictionaries (
 CREATE TABLE public.document_mentions (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     parent_document_id uuid NOT NULL,
-    mention_id uuid NOT NULL
+    mention_id uuid NOT NULL,
+    mention_type public."MentionTypeEnum" NOT NULL
 );
 
 
@@ -3170,4 +3186,5 @@ ALTER TABLE ONLY public.words
 
 INSERT INTO public.schema_migrations (version) VALUES
     ('20231207093813'),
-    ('20231211135552');
+    ('20231211135552'),
+    ('20231212074504');
