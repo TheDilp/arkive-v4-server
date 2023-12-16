@@ -80,6 +80,7 @@ export function map_router(app: Elysia) {
                       "map_pins.map_link",
                       "map_pins.show_background",
                       "map_pins.show_border",
+                      "map_pins.map_pin_type_id",
                       (eb) =>
                         jsonObjectFrom(
                           eb
