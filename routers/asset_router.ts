@@ -18,6 +18,7 @@ import { s3Client } from "../utils/s3Client";
 async function createFile(data: Blob) {
   const buff = await data.arrayBuffer();
 
+  // @ts-ignore
   if (data.name.endsWith(".gif")) {
     const sharpData = sharp(buff, { pages: -1 });
     return sharpData.toFormat("webp").toBuffer();

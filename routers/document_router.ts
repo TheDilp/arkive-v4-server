@@ -4,6 +4,7 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 import merge from "lodash.merge";
 import uniq from "lodash.uniq";
+import uniqBy from "lodash.uniqby";
 
 import { db } from "../database/db";
 import { EntitiesWithChildren } from "../database/types";
@@ -18,6 +19,7 @@ import {
 } from "../database/validation/documents";
 import { MessageEnum } from "../enums/requestEnums";
 import { afterHandler } from "../handlers";
+import { MentionType } from "../types/entityTypes";
 import { ResponseSchema, ResponseWithDataSchema, SearchableMentionEntities } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -202,28 +204,35 @@ export function document_router(app: Elysia) {
             }
             if (body.data.content) {
               const mentions = findObjectsByType(body.data.content, "mentionAtom");
-
-              const uniqueMentionIds = uniq(
-                mentions.map((mention: { attrs: { id: string } }) => mention?.attrs?.id).filter((id) => !!id),
-              );
+              const uniqueMentionIds = uniq(mentions.map((mention: MentionType) => mention?.attrs?.id).filter((id) => !!id));
               if (uniqueMentionIds.length) {
                 const existingMentions = await tx
                   .selectFrom("document_mentions")
                   .where("document_mentions.parent_document_id", "=", params.id)
                   .select(["document_mentions.mention_id"])
                   .execute();
+
                 const existingMentionIds = existingMentions.map((item) => item.mention_id);
 
                 const idsToDelete = existingMentionIds.filter((id) => !uniqueMentionIds.includes(id));
-                const idsToInsert = uniqueMentionIds.filter((id) => !existingMentionIds.includes(id));
+                const mentionsToInsert = uniqBy(
+                  mentions.filter((m) => uniqueMentionIds.includes(m.attrs.id)),
+                  "attrs.id",
+                );
 
                 if (idsToDelete.length)
                   await tx.deleteFrom("document_mentions").where("document_mentions.mention_id", "in", idsToDelete).execute();
 
-                if (idsToInsert.length)
+                if (mentionsToInsert.length)
                   await tx
                     .insertInto("document_mentions")
-                    .values(idsToInsert.map((mention_id) => ({ parent_document_id: params.id, mention_id })))
+                    .values(
+                      mentionsToInsert.map((mention) => ({
+                        parent_document_id: params.id,
+                        mention_id: mention.attrs.id,
+                        mention_type: mention.attrs.name,
+                      })),
+                    )
                     .execute();
               } else {
                 await tx
@@ -355,19 +364,42 @@ export function document_router(app: Elysia) {
       .get(
         "/mentioned_in/:id",
         async ({ params }) => {
-          const data = await db
+          const nodes = await db
             .selectFrom("document_mentions")
+            .distinctOn("document_mentions.parent_document_id")
             .leftJoin("documents", "documents.id", "document_mentions.parent_document_id")
             .select(["documents.id", "documents.title", "documents.icon"])
             .where("mention_id", "=", params.id)
             .execute();
 
-          return { data, message: MessageEnum.success, ok: true };
+          const edges = nodes.map((d) => ({ source_id: d.id, target_id: params.id }));
+
+          return { data: { nodes, edges }, message: MessageEnum.success, ok: true };
         },
         {
           response: ResponseWithDataSchema,
         },
       )
+      .get("/mentions/:project_id", async ({ params }) => {
+        const { project_id } = params;
+
+        const connections = await db
+          .selectFrom("document_mentions")
+          .select(["parent_document_id as source_id", "mention_id as target_id"])
+          .leftJoin("documents as sources", "sources.id", "document_mentions.parent_document_id")
+          .leftJoin("documents as targets", "targets.id", "document_mentions.mention_id")
+          .where("sources.project_id", "=", project_id)
+          .where("targets.project_id", "=", project_id)
+          .execute();
+
+        const nodes = new Set(connections.flatMap((c) => [c.source_id, c.target_id]));
+        const finalNodes =
+          nodes.size > 0
+            ? await db.selectFrom("documents").select(["id", "title", "icon"]).where("id", "in", Array.from(nodes)).execute()
+            : [];
+
+        return { data: { nodes: finalNodes, edges: connections }, message: MessageEnum.success, ok: true };
+      })
       .delete("/:id", async ({ params, request }) => {
         const data = await db
           .deleteFrom("documents")

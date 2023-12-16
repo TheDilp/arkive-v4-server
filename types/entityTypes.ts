@@ -52,6 +52,8 @@ export type AvailableSubEntityType =
   | "blueprint_instances"
   | "messages";
 
+export type MentionEntityType = "blueprint_instances" | "characters" | "documents" | "events" | "graphs" | "maps" | "words";
+
 export type MentionType = {
   type: "mentionAtom";
   attrs: {
@@ -61,6 +63,6 @@ export type MentionType = {
     parentId?: string | null;
     id: string;
     label: string | undefined;
-    name: "characters" | "blueprint_instances" | "documents" | "maps" | "graphs" | "words";
+    name: MentionEntityType;
   };
 };
