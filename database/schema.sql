@@ -869,6 +869,17 @@ CREATE TABLE public.map_layers (
 
 
 --
+-- Name: map_pin_types; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.map_pin_types (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    project_id uuid NOT NULL,
+    title text NOT NULL
+);
+
+
+--
 -- Name: map_pins; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -888,7 +899,8 @@ CREATE TABLE public.map_pins (
     map_link uuid,
     doc_id uuid,
     image_id uuid,
-    character_id uuid
+    character_id uuid,
+    map_pin_type_id uuid
 );
 
 
@@ -1386,6 +1398,14 @@ ALTER TABLE ONLY public.leap_days
 
 ALTER TABLE ONLY public.map_layers
     ADD CONSTRAINT map_layers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: map_pin_types map_pin_types_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.map_pin_types
+    ADD CONSTRAINT map_pin_types_pkey PRIMARY KEY (id);
 
 
 --
@@ -2976,6 +2996,22 @@ ALTER TABLE ONLY public.map_layers
 
 
 --
+-- Name: map_pins map_pin_types_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.map_pins
+    ADD CONSTRAINT map_pin_types_id_fkey FOREIGN KEY (map_pin_type_id) REFERENCES public.map_pin_types(id) ON UPDATE CASCADE;
+
+
+--
+-- Name: map_pin_types map_pin_types_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.map_pin_types
+    ADD CONSTRAINT map_pin_types_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: map_pins map_pins_image_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3187,4 +3223,5 @@ ALTER TABLE ONLY public.words
 INSERT INTO public.schema_migrations (version) VALUES
     ('20231207093813'),
     ('20231211135552'),
-    ('20231212074504');
+    ('20231212074504'),
+    ('20231216102520');
