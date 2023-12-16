@@ -22,6 +22,7 @@ import {
   graph_router,
   health_check_router,
   map_pin_router,
+  map_pin_types_router,
   map_router,
   message_router,
   month_router,
@@ -119,6 +120,7 @@ export const app = new Elysia()
       .use(document_router)
       .use(map_router)
       .use(map_pin_router)
+      .use(map_pin_types_router)
       .use(graph_router)
       .use(node_router)
       .use(edge_router)

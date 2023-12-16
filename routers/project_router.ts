@@ -74,6 +74,16 @@ export function project_router(app: Elysia) {
                 ).as("character_relationship_types"),
               ),
             )
+            .$if(!!body?.relations?.map_pin_types, (qb) =>
+              qb.select((eb) =>
+                jsonArrayFrom(
+                  eb
+                    .selectFrom("map_pin_types")
+                    .select(["map_pin_types.id", "map_pin_types.title"])
+                    .where("project_id", "=", params.id),
+                ).as("map_pin_types"),
+              ),
+            )
             .$if(!!body?.relations?.members, (qb) =>
               qb.select((eb) =>
                 jsonArrayFrom(
