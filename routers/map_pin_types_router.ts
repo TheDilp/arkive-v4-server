@@ -1,7 +1,7 @@
 import Elysia from "elysia";
 
 import { db } from "../database/db";
-import { InsertMapPinTypeSchema, UpdateMapPinTypeSchema } from "../database/validation/map_pin_types";
+import { InsertMapPinTypeSchema, ListMapPinTypeSchema, UpdateMapPinTypeSchema } from "../database/validation/map_pin_types";
 import { MessageEnum } from "../enums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 
@@ -21,6 +21,22 @@ export function map_pin_types_router(app: Elysia) {
         },
       )
       .post(
+        "/",
+        async ({ body }) => {
+          const data = await db
+            .selectFrom("map_pin_types")
+            .where("project_id", "=", body.data.project_id)
+            .select(["id", "title"])
+            .execute();
+
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: ListMapPinTypeSchema,
+          response: ResponseWithDataSchema,
+        },
+      )
+      .post(
         "/:id",
         async ({ params }) => {
           const data = await db
@@ -29,7 +45,7 @@ export function map_pin_types_router(app: Elysia) {
             .select(["id", "title", "project_id"])
             .executeTakeFirstOrThrow();
 
-          return { data, message: `Map pin type ${MessageEnum.successfully_updated}`, ok: true };
+          return { data, message: MessageEnum.success, ok: true };
         },
         {
           response: ResponseWithDataSchema,
