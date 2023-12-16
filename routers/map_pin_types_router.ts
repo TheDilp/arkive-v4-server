@@ -42,7 +42,7 @@ export function map_pin_types_router(app: Elysia) {
           const data = await db
             .selectFrom("map_pin_types")
             .where("id", "=", params.id)
-            .select(["id", "title", "project_id"])
+            .select(["id", "title", "project_id", "default_icon", "default_icon_color"])
             .executeTakeFirstOrThrow();
 
           return { data, message: MessageEnum.success, ok: true };

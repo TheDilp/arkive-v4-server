@@ -79,7 +79,12 @@ export function project_router(app: Elysia) {
                 jsonArrayFrom(
                   eb
                     .selectFrom("map_pin_types")
-                    .select(["map_pin_types.id", "map_pin_types.title"])
+                    .select([
+                      "map_pin_types.id",
+                      "map_pin_types.title",
+                      "map_pin_types.default_icon",
+                      "map_pin_types.default_icon_color",
+                    ])
                     .where("project_id", "=", params.id),
                 ).as("map_pin_types"),
               ),

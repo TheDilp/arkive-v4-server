@@ -875,7 +875,9 @@ CREATE TABLE public.map_layers (
 CREATE TABLE public.map_pin_types (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     project_id uuid NOT NULL,
-    title text NOT NULL
+    title text NOT NULL,
+    default_icon text,
+    default_icon_color text
 );
 
 
@@ -3224,4 +3226,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20231207093813'),
     ('20231211135552'),
     ('20231212074504'),
-    ('20231216102520');
+    ('20231216102520'),
+    ('20231216124629');
