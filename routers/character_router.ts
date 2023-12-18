@@ -243,7 +243,7 @@ export function character_router(app: Elysia) {
                                 .select(["id", "title", "icon"]),
                             ).as("documents"),
                         ]),
-                    ).as("documents"),
+                    ).as("field_documents"),
                   (eb) =>
                     jsonArrayFrom(
                       eb
@@ -294,14 +294,14 @@ export function character_router(app: Elysia) {
                                 .select(["id", "title", "parent_id"]),
                             ).as("blueprint_instances"),
                         ]),
-                    ).as("blueprint_instances"),
+                    ).as("field_blueprint_instances"),
                   (ebb) =>
                     jsonArrayFrom(
                       ebb
                         .selectFrom("character_random_table_fields")
                         .where("character_random_table_fields.character_id", "=", params.id)
                         .select(["character_field_id as id", "related_id", "option_id", "suboption_id"]),
-                    ).as("random_tables"),
+                    ).as("field_random_tables"),
                   (ebb) =>
                     jsonArrayFrom(
                       ebb
@@ -317,14 +317,14 @@ export function character_router(app: Elysia) {
                           "end_month_id",
                           "end_year",
                         ]),
-                    ).as("calendars"),
+                    ).as("field_calendars"),
                   (eb) =>
                     jsonArrayFrom(
                       eb
                         .selectFrom("character_value_fields")
                         .whereRef("character_value_fields.character_id", "=", "characters.id")
                         .select(["character_field_id as id", "value"]),
-                    ).as("value"),
+                    ).as("field_values"),
                 ]);
               }
               if (body?.relations?.relationships) {
@@ -506,94 +506,102 @@ export function character_router(app: Elysia) {
           if (data?.related_other) {
             data.related_other = uniqBy(data.related_other, "id");
           }
-          // const { documents, field_images, field_locations, blueprint_instances, calendars, random_tables, value, ...rest } =
-          //   data;
-          // rest.character_fields = [
-          //   ...(documents || []).map(
-          //     (d: {
-          //       id: string;
-          //       related_id: string;
-          //       documents: { document: { id: string; title: string; icon: string | null } }[];
-          //     }) => ({
-          //       id: d.id,
-          //       documents: (d?.documents || []).map((document) => ({ related_id: d.related_id, document })),
-          //     }),
-          //   ),
-          //   ...(field_images || []).map(
-          //     (d: {
-          //       id: string;
-          //       related_id: string;
-          //       images: { image: { id: string; title: string; icon: string | null } }[];
-          //     }) => ({
-          //       id: d.id,
-          //       images: d.images.map((image) => ({
-          //         related_id: d.related_id,
-          //         image,
-          //       })),
-          //     }),
-          //   ),
-          //   ...(field_locations || []).map(
-          //     (d: {
-          //       id: string;
-          //       related_id: string;
-          //       map_pins: { map_pin: { id: string; title: string; icon: string | null } }[];
-          //     }) => ({
-          //       id: d.id,
-          //       map_pins: d.map_pins.map((map_pin) => ({
-          //         related_id: d.related_id,
-          //         map_pin,
-          //       })),
-          //     }),
-          //   ),
-          //   ...(blueprint_instances || []).map(
-          //     (d: {
-          //       id: string;
-          //       related_id: string;
-          //       blueprint_instances: { blueprint_instance: { id: string; title: string; icon: string | null } }[];
-          //     }) => ({
-          //       id: d.id,
-          //       blueprint_instances: d.blueprint_instances.map((blueprint_instance) => ({
-          //         related_id: d.related_id,
-          //         blueprint_instance,
-          //       })),
-          //     }),
-          //   ),
-          //   ...(calendars || []).map(
-          //     (d: {
-          //       id: string;
-          //       related_id: string;
-          //       start_day?: number;
-          //       start_month_id?: string;
-          //       start_year?: number;
-          //       end_day?: number;
-          //       end_month_id?: string;
-          //       end_year?: number;
-          //     }) => ({
-          //       id: d.id,
-          //       calendar: {
-          //         related_id: d.related_id,
-          //         start_day: d.start_day,
-          //         start_month_id: d.start_month_id,
-          //         start_year: d.start_year,
-          //         end_day: d.end_day,
-          //         end_month_id: d.end_month_id,
-          //         end_year: d.end_year,
-          //       },
-          //     }),
-          //   ),
-          //   ...(random_tables || []).map(
-          //     (d: { id: string; related_id: string; option_id?: string; suboption_id?: string }) => ({
-          //       id: d.id,
-          //       random_table: {
-          //         related_id: d.related_id,
-          //         option_id: d.option_id,
-          //         suboption_id: d.suboption_id,
-          //       },
-          //     }),
-          //   ),
-          //   ...(value || []),
-          // ];
-          return { data, message: MessageEnum.success, ok: true };
+          const {
+            field_documents,
+            field_images,
+            field_locations,
+            field_blueprint_instances,
+            field_calendars,
+            field_random_tables,
+            field_values,
+            ...rest
+          } = data;
+          rest.character_fields = [
+            ...(field_documents || []).map(
+              (d: {
+                id: string;
+                related_id: string;
+                documents: { document: { id: string; title: string; icon: string | null } }[];
+              }) => ({
+                id: d.id,
+                documents: (d?.documents || []).map((document) => ({ related_id: d.related_id, document })),
+              }),
+            ),
+            ...(field_images || []).map(
+              (d: {
+                id: string;
+                related_id: string;
+                images: { image: { id: string; title: string; icon: string | null } }[];
+              }) => ({
+                id: d.id,
+                images: d.images.map((image) => ({
+                  related_id: d.related_id,
+                  image,
+                })),
+              }),
+            ),
+            ...(field_locations || []).map(
+              (d: {
+                id: string;
+                related_id: string;
+                map_pins: { map_pin: { id: string; title: string; icon: string | null } }[];
+              }) => ({
+                id: d.id,
+                map_pins: d.map_pins.map((map_pin) => ({
+                  related_id: d.related_id,
+                  map_pin,
+                })),
+              }),
+            ),
+            ...(field_blueprint_instances || []).map(
+              (d: {
+                id: string;
+                related_id: string;
+                blueprint_instances: { blueprint_instance: { id: string; title: string; icon: string | null } }[];
+              }) => ({
+                id: d.id,
+                blueprint_instances: d.blueprint_instances.map((blueprint_instance) => ({
+                  related_id: d.related_id,
+                  blueprint_instance,
+                })),
+              }),
+            ),
+            ...(field_calendars || []).map(
+              (d: {
+                id: string;
+                related_id: string;
+                start_day?: number;
+                start_month_id?: string;
+                start_year?: number;
+                end_day?: number;
+                end_month_id?: string;
+                end_year?: number;
+              }) => ({
+                id: d.id,
+                calendar: {
+                  related_id: d.related_id,
+                  start_day: d.start_day,
+                  start_month_id: d.start_month_id,
+                  start_year: d.start_year,
+                  end_day: d.end_day,
+                  end_month_id: d.end_month_id,
+                  end_year: d.end_year,
+                },
+              }),
+            ),
+            ...(field_random_tables || []).map(
+              (d: { id: string; related_id: string; option_id?: string; suboption_id?: string }) => ({
+                id: d.id,
+                random_table: {
+                  related_id: d.related_id,
+                  option_id: d.option_id,
+                  suboption_id: d.suboption_id,
+                },
+              }),
+            ),
+            ...(field_values || []),
+          ];
+          return { data: rest, message: MessageEnum.success, ok: true };
         },
         {
           body: ReadCharacterSchema,
