@@ -1,6 +1,8 @@
 import { decodeJwt } from "jose";
+import { TableExpression } from "kysely";
 import { DB } from "kysely-codegen";
 
+import { AvailableEntityType, AvailableSubEntityType } from "../types/entityTypes";
 import { AfterHandlerActionType, JWTPayloadType, SearchableEntities } from "../types/requestTypes";
 
 export function getSearchTableFromType(type: SearchableEntities | keyof DB): keyof DB {
@@ -32,4 +34,12 @@ export function getEntityFromPath(path: string): string {
   const entity = path.split("/")[3];
   if (entity === "character_map_pins") return "map_pins";
   return entity;
+}
+
+export function getParentEntity(sub_entity: string): TableExpression<DB, AvailableEntityType | AvailableSubEntityType> | null {
+  if (sub_entity === "blueprint_instances") return "blueprints";
+  if (sub_entity === "events") return "calendars";
+  if (sub_entity === "words") return "dictionaries";
+  if (sub_entity === "map_pins") return "maps";
+  return null;
 }

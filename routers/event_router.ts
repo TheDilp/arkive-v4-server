@@ -30,11 +30,16 @@ export function event_router(app: Elysia) {
               }
             });
           }
-          return { message: MessageEnum.success, ok: true };
+          const data = await db
+            .selectFrom("calendars")
+            .select(["project_id"])
+            .where("id", "=", body.data.parent_id)
+            .executeTakeFirstOrThrow();
+          return { data: { title: body.data.title, project_id: data.project_id }, message: MessageEnum.success, ok: true };
         },
         {
           body: InsertEventSchema,
-          response: ResponseSchema,
+          response: ResponseWithDataSchema,
         },
       )
       .post(

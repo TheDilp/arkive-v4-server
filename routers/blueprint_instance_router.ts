@@ -153,11 +153,21 @@ export function blueprint_instance_router(app: Elysia) {
               });
             }
           });
-          return { message: `Blueprint instance ${MessageEnum.successfully_created}`, ok: true };
+          const data = await db
+            .selectFrom("blueprints")
+            .select(["project_id"])
+            .where("id", "=", body.data.parent_id)
+            .executeTakeFirstOrThrow();
+
+          return {
+            data: { project_id: data.project_id, title: body.data.title },
+            message: `Blueprint instance ${MessageEnum.successfully_created}`,
+            ok: true,
+          };
         },
         {
           body: InsertBlueprintInstanceSchema,
-          response: ResponseSchema,
+          response: ResponseWithDataSchema,
         },
       )
       .post(

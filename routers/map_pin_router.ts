@@ -26,11 +26,20 @@ export function map_pin_router(app: Elysia) {
                 .execute();
             }
           });
-          return { message: `Map pin ${MessageEnum.successfully_created}`, ok: true };
+          const data = await db
+            .selectFrom("maps")
+            .select(["project_id"])
+            .where("id", "=", body.data.parent_id)
+            .executeTakeFirstOrThrow();
+          return {
+            data: { title: body.data.title, project_id: data.project_id },
+            message: `Map pin ${MessageEnum.successfully_created}`,
+            ok: true,
+          };
         },
         {
           body: InsertMapPinSchema,
-          response: ResponseSchema,
+          response: ResponseWithDataSchema,
         },
       )
       .post(

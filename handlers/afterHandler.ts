@@ -1,8 +1,14 @@
 import { db } from "../database/db";
-import { UserNotificationEntities } from "../enums";
+import { SubEntityEnum, UserNotificationEntities } from "../enums";
 import { AvailableEntityType, AvailableSubEntityType } from "../types/entityTypes";
 import { AfterHandlerActionType } from "../types/requestTypes";
-import { decodeUserJwt, getAfterHandlerActionFromType, getEntityFromPath, getOperationFromPath } from "../utils/requestUtils";
+import {
+  decodeUserJwt,
+  getAfterHandlerActionFromType,
+  getEntityFromPath,
+  getOperationFromPath,
+  getParentEntity,
+} from "../utils/requestUtils";
 import { getCharacterFullName, getSingularEntityType } from "../utils/transform";
 import { sendNotification } from "../utils/websocketUtils";
 
@@ -51,15 +57,35 @@ export async function tempAfterHandle(context: any, response: any) {
           const { project_id, first_name, last_name } = context.body.data;
           afterHandler({ project_id, title: getCharacterFullName(first_name, undefined, last_name) }, entity, token, action);
         } else {
-          const { project_id, title } = context.body.data;
+          const project_id = context.body.data.project_id || context.response.data.project_id;
+          const title = context.body.data.title || context.response.data.title;
           afterHandler({ project_id, title }, entity, token, action);
         }
       } else if (action === "update") {
-        const data = await db
-          .selectFrom(entity)
-          .where("id", "=", context.params.id)
-          .select(entity === "characters" ? ["id", "full_name as title", "project_id"] : ["id", "title", "project_id"])
-          .executeTakeFirstOrThrow();
+        // @ts-ignore
+        let query = db.selectFrom(entity).where(`${entity}.id`, "=", context.params.id);
+
+        if (SubEntityEnum.includes(entity)) {
+          // @ts-ignore
+          query = query.select([`${entity}.id`, `${entity}.title`]);
+          const parentEntity = getParentEntity(entity);
+          if (parentEntity) {
+            query = query
+              // @ts-ignore
+              .leftJoin(parentEntity, `${parentEntity}.id`, `${entity}.parent_id`)
+              // @ts-ignore
+              .select([`${parentEntity}.project_id`]);
+          }
+        } else {
+          if (entity === "characters") {
+            query = query.select(["id", "full_name as title", "project_id"]);
+          } else {
+            query = query.select(["id", "title", "project_id"]);
+          }
+        }
+
+        const data: any = await query.executeTakeFirstOrThrow();
+        console.log(data);
         afterHandler(data, entity, token, action);
       } else if (action === "delete") {
         const { data } = context.response;

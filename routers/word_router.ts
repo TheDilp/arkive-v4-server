@@ -16,11 +16,22 @@ export function word_router(app: Elysia) {
         "/create",
         async ({ body }) => {
           await db.insertInto("words").values(body.data).execute();
-          return { ok: true, message: `Word ${MessageEnum.successfully_created}` };
+
+          const data = await db
+            .selectFrom("dictionaries")
+            .select(["project_id"])
+            .where("id", "=", body.data.parent_id)
+            .executeTakeFirstOrThrow();
+
+          return {
+            data: { title: body.data.title, project_id: data.project_id },
+            ok: true,
+            message: `Word ${MessageEnum.successfully_created}`,
+          };
         },
         {
           body: InserWordSchema,
-          response: ResponseSchema,
+          response: ResponseWithDataSchema,
         },
       )
       .post(
