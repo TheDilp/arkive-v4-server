@@ -1092,7 +1092,9 @@ CREATE TABLE public.users (
     auth_id text,
     nickname text NOT NULL,
     email text NOT NULL,
-    image text
+    image text,
+    feature_flags jsonb,
+    updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 
@@ -3227,4 +3229,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20231211135552'),
     ('20231212074504'),
     ('20231216102520'),
-    ('20231216124629');
+    ('20231216124629'),
+    ('20231218101511'),
+    ('20231218103101');
