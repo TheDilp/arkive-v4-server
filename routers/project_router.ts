@@ -1,5 +1,5 @@
 import Elysia from "elysia";
-import { SelectExpression, sql } from "kysely";
+import { SelectExpression } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
@@ -196,18 +196,7 @@ export function project_router(app: Elysia) {
               .limit(5)
               .execute(),
           },
-          {
-            name: "conversations",
-            request: db
-              .selectFrom("conversations")
-              .leftJoin("messages", "conversations.id", "messages.parent_id")
-              .select(["conversations.id", "conversations.title", sql<any>`MAX(messages.created_at)`.as("created_at")])
-              .where("conversations.project_id", "=", params.id)
-              .groupBy(["conversations.id", "conversations.title"])
-              .orderBy("created_at asc")
-              .limit(5)
-              .execute(),
-          },
+
           {
             name: "dictionaries",
             request: db
