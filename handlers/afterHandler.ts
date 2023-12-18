@@ -34,6 +34,7 @@ export async function afterHandler(
         userId: auth_id,
         nickname: name,
         userImageUrl: image_url,
+        notification_type: `${entity}_${action}_notification`,
       });
     }
   }
