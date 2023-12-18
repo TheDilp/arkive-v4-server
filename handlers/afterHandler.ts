@@ -54,8 +54,13 @@ export async function tempAfterHandle(context: any, response: any) {
     if (UserNotificationEntities.includes(entity)) {
       if (action === "create") {
         if (entity === "characters") {
-          const { project_id, first_name, last_name } = context.body.data;
-          afterHandler({ project_id, title: getCharacterFullName(first_name, undefined, last_name) }, entity, token, action);
+          const { project_id, first_name, last_name, portrait_id: image_id } = context.body.data;
+          afterHandler(
+            { project_id, title: getCharacterFullName(first_name, undefined, last_name), image_id },
+            entity,
+            token,
+            action,
+          );
         } else {
           const project_id = context.body.data.project_id || context.response.data.project_id;
           const title = context.body.data.title || context.response.data.title;
@@ -78,14 +83,13 @@ export async function tempAfterHandle(context: any, response: any) {
           }
         } else {
           if (entity === "characters") {
-            query = query.select(["id", "full_name as title", "project_id"]);
+            query = query.select(["id", "full_name as title", "project_id", "portrait_id as image_id"]);
           } else {
             query = query.select(["id", "title", "project_id"]);
           }
         }
 
         const data: any = await query.executeTakeFirstOrThrow();
-        console.log(data);
         afterHandler(data, entity, token, action);
       } else if (action === "delete") {
         const { data } = context.response;
