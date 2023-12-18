@@ -148,10 +148,21 @@ export function document_router(app: Elysia) {
       )
       .post(
         "/update/:id",
-        async ({ params, body }) => {
+        async ({ params, body, request }) => {
+          const token = request.headers.get("authorization");
+
           await db.transaction().execute(async (tx) => {
             if (body.data) {
-              await tx.updateTable("documents").where("documents.id", "=", params.id).set(body.data).execute();
+              const res = await tx
+                .updateTable("documents")
+                .where("documents.id", "=", params.id)
+                .set(body.data)
+                .returning(["id", "project_id", "title"])
+                .executeTakeFirstOrThrow();
+              if (token) afterHandler(res, "documents", token, "update");
+            } else {
+              const res = await tx.selectFrom("documents").select(["id", "title", "project_id"]).executeTakeFirstOrThrow();
+              if (token) afterHandler(res, "documents", token, "update");
             }
             if (body.relations?.tags) {
               await UpdateTagRelations({
@@ -241,6 +252,7 @@ export function document_router(app: Elysia) {
                   .execute();
               }
             }
+            return { message: `Document ${MessageEnum.successfully_updated}`, ok: true };
           });
 
           return { message: `Document ${MessageEnum.successfully_updated}`, ok: true };
@@ -407,7 +419,7 @@ export function document_router(app: Elysia) {
           .returning(["title", "project_id"])
           .executeTakeFirstOrThrow();
         const token = request.headers.get("authorization");
-        if (token) afterHandler(data, "documents", token, "create");
+        if (token) afterHandler(data, "documents", token, "delete");
         return { message: `Document ${MessageEnum.successfully_deleted}.`, ok: true };
       }),
   );
