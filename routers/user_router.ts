@@ -4,7 +4,7 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertUserSchema, InviteUserSchema, ReadUserSchema } from "../database/validation";
+import { InsertUserSchema, InviteUserSchema, ReadUserSchema, UpdateUserSchema } from "../database/validation";
 import { EmailInvite } from "../emails/EmailInvite";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
@@ -45,6 +45,15 @@ export function user_router(app: Elysia) {
           body: ReadUserSchema,
           response: ResponseWithDataSchema,
         },
+      )
+      .post(
+        "/update/:id",
+        async ({ params, body }) => {
+          console.log(body.data);
+          await db.updateTable("users").where("id", "=", params.id).set(body.data).execute();
+          return { message: `User ${MessageEnum.successfully_updated}`, ok: true };
+        },
+        { body: UpdateUserSchema, response: ResponseSchema },
       )
       .post(
         "/invite",

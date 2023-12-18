@@ -17,6 +17,11 @@ export const ReadUserSchema = t.Intersect([
 ]);
 
 export const InsertUserSchema = t.Object({});
+export const UpdateUserSchema = t.Object({
+  data: t.Object({
+    feature_flags: t.Optional(t.Union([t.Any(), t.Null()])),
+  }),
+});
 export const InviteUserSchema = t.Object({
   data: t.Object({
     email: t.String(),
