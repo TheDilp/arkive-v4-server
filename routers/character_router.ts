@@ -506,94 +506,94 @@ export function character_router(app: Elysia) {
           if (data?.related_other) {
             data.related_other = uniqBy(data.related_other, "id");
           }
-          const { documents, field_images, field_locations, blueprint_instances, calendars, random_tables, value, ...rest } =
-            data;
-          rest.character_fields = [
-            ...(documents || []).map(
-              (d: {
-                id: string;
-                related_id: string;
-                documents: { document: { id: string; title: string; icon: string | null } }[];
-              }) => ({
-                id: d.id,
-                documents: d.documents.map((document) => ({ related_id: d.related_id, document })),
-              }),
-            ),
-            ...(field_images || []).map(
-              (d: {
-                id: string;
-                related_id: string;
-                images: { image: { id: string; title: string; icon: string | null } }[];
-              }) => ({
-                id: d.id,
-                images: d.images.map((image) => ({
-                  related_id: d.related_id,
-                  image,
-                })),
-              }),
-            ),
-            ...(field_locations || []).map(
-              (d: {
-                id: string;
-                related_id: string;
-                map_pins: { map_pin: { id: string; title: string; icon: string | null } }[];
-              }) => ({
-                id: d.id,
-                map_pins: d.map_pins.map((map_pin) => ({
-                  related_id: d.related_id,
-                  map_pin,
-                })),
-              }),
-            ),
-            ...(blueprint_instances || []).map(
-              (d: {
-                id: string;
-                related_id: string;
-                blueprint_instances: { blueprint_instance: { id: string; title: string; icon: string | null } }[];
-              }) => ({
-                id: d.id,
-                blueprint_instances: d.blueprint_instances.map((blueprint_instance) => ({
-                  related_id: d.related_id,
-                  blueprint_instance,
-                })),
-              }),
-            ),
-            ...(calendars || []).map(
-              (d: {
-                id: string;
-                related_id: string;
-                start_day?: number;
-                start_month_id?: string;
-                start_year?: number;
-                end_day?: number;
-                end_month_id?: string;
-                end_year?: number;
-              }) => ({
-                id: d.id,
-                calendar: {
-                  related_id: d.related_id,
-                  start_day: d.start_day,
-                  start_month_id: d.start_month_id,
-                  start_year: d.start_year,
-                  end_day: d.end_day,
-                  end_month_id: d.end_month_id,
-                  end_year: d.end_year,
-                },
-              }),
-            ),
-            ...(random_tables || []).map(
-              (d: { id: string; related_id: string; option_id?: string; suboption_id?: string }) => ({
-                id: d.id,
-                random_table: {
-                  related_id: d.related_id,
-                  option_id: d.option_id,
-                  suboption_id: d.suboption_id,
-                },
-              }),
-            ),
-            ...(value || []),
-          ];
-          return { data: rest, message: MessageEnum.success, ok: true };
+          // const { documents, field_images, field_locations, blueprint_instances, calendars, random_tables, value, ...rest } =
+          //   data;
+          // rest.character_fields = [
+          //   ...(documents || []).map(
+          //     (d: {
+          //       id: string;
+          //       related_id: string;
+          //       documents: { document: { id: string; title: string; icon: string | null } }[];
+          //     }) => ({
+          //       id: d.id,
+          //       documents: (d?.documents || []).map((document) => ({ related_id: d.related_id, document })),
+          //     }),
+          //   ),
+          //   ...(field_images || []).map(
+          //     (d: {
+          //       id: string;
+          //       related_id: string;
+          //       images: { image: { id: string; title: string; icon: string | null } }[];
+          //     }) => ({
+          //       id: d.id,
+          //       images: d.images.map((image) => ({
+          //         related_id: d.related_id,
+          //         image,
+          //       })),
+          //     }),
+          //   ),
+          //   ...(field_locations || []).map(
+          //     (d: {
+          //       id: string;
+          //       related_id: string;
+          //       map_pins: { map_pin: { id: string; title: string; icon: string | null } }[];
+          //     }) => ({
+          //       id: d.id,
+          //       map_pins: d.map_pins.map((map_pin) => ({
+          //         related_id: d.related_id,
+          //         map_pin,
+          //       })),
+          //     }),
+          //   ),
+          //   ...(blueprint_instances || []).map(
+          //     (d: {
+          //       id: string;
+          //       related_id: string;
+          //       blueprint_instances: { blueprint_instance: { id: string; title: string; icon: string | null } }[];
+          //     }) => ({
+          //       id: d.id,
+          //       blueprint_instances: d.blueprint_instances.map((blueprint_instance) => ({
+          //         related_id: d.related_id,
+          //         blueprint_instance,
+          //       })),
+          //     }),
+          //   ),
+          //   ...(calendars || []).map(
+          //     (d: {
+          //       id: string;
+          //       related_id: string;
+          //       start_day?: number;
+          //       start_month_id?: string;
+          //       start_year?: number;
+          //       end_day?: number;
+          //       end_month_id?: string;
+          //       end_year?: number;
+          //     }) => ({
+          //       id: d.id,
+          //       calendar: {
+          //         related_id: d.related_id,
+          //         start_day: d.start_day,
+          //         start_month_id: d.start_month_id,
+          //         start_year: d.start_year,
+          //         end_day: d.end_day,
+          //         end_month_id: d.end_month_id,
+          //         end_year: d.end_year,
+          //       },
+          //     }),
+          //   ),
+          //   ...(random_tables || []).map(
+          //     (d: { id: string; related_id: string; option_id?: string; suboption_id?: string }) => ({
+          //       id: d.id,
+          //       random_table: {
+          //         related_id: d.related_id,
+          //         option_id: d.option_id,
+          //         suboption_id: d.suboption_id,
+          //       },
+          //     }),
+          //   ),
+          //   ...(value || []),
+          // ];
+          return { data, message: MessageEnum.success, ok: true };
         },
         {
           body: ReadCharacterSchema,
@@ -1181,6 +1181,51 @@ export function character_router(app: Elysia) {
                   .values(filteredRequestIds.map((id) => ({ A: params.id, B: id })))
                   .execute();
               }
+            }
+          });
+          return { message: MessageEnum.success, ok: true };
+        },
+        {
+          body: UpdateCharacterSchema,
+          response: ResponseSchema,
+        },
+      )
+      .post(
+        "/remove/:id",
+        async ({ params, body }) => {
+          await db.transaction().execute(async (tx) => {
+            if (body?.relations?.documents) {
+              await tx
+                .deleteFrom("_charactersTodocuments")
+                .where("A", "=", params.id)
+                .where(
+                  "B",
+                  "in",
+                  body.relations.documents.map((d) => d.id),
+                )
+                .execute();
+            }
+            if (body?.relations?.images) {
+              await tx
+                .deleteFrom("_charactersToimages")
+                .where("A", "=", params.id)
+                .where(
+                  "B",
+                  "in",
+                  body.relations.images.map((d) => d.id),
+                )
+                .execute();
+            }
+            if (body?.relations?.tags) {
+              await tx
+                .deleteFrom("_charactersTotags")
+                .where("A", "=", params.id)
+                .where(
+                  "B",
+                  "in",
+                  body.relations.tags.map((d) => d.id),
+                )
+                .execute();
             }
           });
           return { message: MessageEnum.success, ok: true };
