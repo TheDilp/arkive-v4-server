@@ -128,11 +128,22 @@ export function event_router(app: Elysia) {
       .delete(
         "/:id",
         async ({ params }) => {
-          await db.deleteFrom("events").where("id", "=", params.id).execute();
-          return { message: `Event ${MessageEnum.successfully_deleted}`, ok: true };
+          const res = await db
+            .deleteFrom("events")
+            .where("events.id", "=", params.id)
+            .returning(["events.parent_id", "events.title"])
+            .executeTakeFirstOrThrow();
+
+          const data = await db
+            .selectFrom("calendars")
+            .where("id", "=", res.parent_id)
+            .select(["project_id"])
+            .executeTakeFirstOrThrow();
+
+          return { data, message: `Event ${MessageEnum.successfully_deleted}.`, ok: true };
         },
         {
-          response: ResponseSchema,
+          response: ResponseWithDataSchema,
         },
       ),
   );

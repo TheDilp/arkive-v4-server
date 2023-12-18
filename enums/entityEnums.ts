@@ -2,25 +2,32 @@ import { TagsRelationTables } from "../database/types";
 
 export const AllEntities = [
   "characters",
+  "blueprints",
+  "blueprint_instances",
   "documents",
   "maps",
-  "map_pins",
-  "map_layers",
   "graphs",
-  "nodes",
-  "edges",
   "calendars",
-  "events",
   "dictionaries",
-  "words",
-  "screens",
   "character_fields_templates",
   "character_fields",
   "conversations",
+  "random_tables",
   "tags",
 ];
 
-export const SubEntityEnum = ["alter_names", "map_pins", "character_map_pins", "map_layers", "nodes", "edges"];
+export const SubEntityEnum = [
+  "alter_names",
+  "map_pins",
+  "character_map_pins",
+  "map_layers",
+  "nodes",
+  "edges",
+  "events",
+  "random_table_options",
+  "random_table_suboptions",
+  "words",
+];
 
 export const EntitiesWithTagsTables: TagsRelationTables[] = [
   "_charactersTotags",
@@ -35,3 +42,19 @@ export const EntitiesWithTagsTables: TagsRelationTables[] = [
 ];
 
 export const EntitiesWithoutProjectId = ["map_pins", "character_map_pins", "map_layers", "nodes", "edges", "events"];
+
+export const UserNotificationEntities = [
+  "characters",
+  "blueprints",
+  "blueprint_instances",
+  "documents",
+  "maps",
+  "map_pins",
+  "graphs",
+  "calendars",
+  "events",
+  "dictionaries",
+  "words",
+  "character_fields_templates",
+  "tags",
+];

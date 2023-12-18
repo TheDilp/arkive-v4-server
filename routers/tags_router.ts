@@ -44,6 +44,7 @@ export function tag_router(app: Elysia) {
         },
         { body: EntityListSchema, response: ResponseWithDataSchema },
       )
+
       .post(
         "/update/:id",
         async ({ params, body }) => {
@@ -58,11 +59,15 @@ export function tag_router(app: Elysia) {
       .delete(
         "/:id",
         async ({ params }) => {
-          await db.deleteFrom("tags").where("id", "=", params.id).execute();
-          return { message: `Tag ${MessageEnum.successfully_deleted}`, ok: true };
+          const data = await db
+            .deleteFrom("tags")
+            .where("id", "=", params.id)
+            .returning(["id", "title", "project_id"])
+            .executeTakeFirstOrThrow();
+          return { data, message: `Tag ${MessageEnum.successfully_deleted}`, ok: true };
         },
         {
-          response: ResponseSchema,
+          response: ResponseWithDataSchema,
         },
       ),
   );

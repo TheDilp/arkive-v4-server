@@ -211,9 +211,20 @@ export function graph_router(app: Elysia) {
         },
         { body: GenerateGraphSchema, response: ResponseWithDataSchema },
       )
-      .delete("/:id", async ({ params }) => {
-        await db.deleteFrom("graphs").where("graphs.id", "=", params.id).execute();
-        return { message: `Graph ${MessageEnum.successfully_deleted}`, ok: true };
-      }),
+      .delete(
+        "/:id",
+        async ({ params }) => {
+          const data = await db
+            .deleteFrom("graphs")
+            .where("graphs.id", "=", params.id)
+            .returning(["id", "title", "project_id"])
+            .executeTakeFirstOrThrow();
+
+          return { data, message: `Graph ${MessageEnum.successfully_deleted}.`, ok: true };
+        },
+        {
+          response: ResponseWithDataSchema,
+        },
+      ),
   );
 }

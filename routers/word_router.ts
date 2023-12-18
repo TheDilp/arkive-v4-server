@@ -76,11 +76,22 @@ export function word_router(app: Elysia) {
       .delete(
         "/:id",
         async ({ params }) => {
-          await db.deleteFrom("words").where("id", "=", params.id).execute();
-          return { message: `Word ${MessageEnum.successfully_deleted}`, ok: true };
+          const res = await db
+            .deleteFrom("words")
+            .where("words.id", "=", params.id)
+            .returning(["words.parent_id", "words.title"])
+            .executeTakeFirstOrThrow();
+
+          const data = await db
+            .selectFrom("dictionaries")
+            .where("id", "=", res.parent_id)
+            .select(["project_id"])
+            .executeTakeFirstOrThrow();
+
+          return { data, message: `Word ${MessageEnum.successfully_deleted}.`, ok: true };
         },
         {
-          response: ResponseSchema,
+          response: ResponseWithDataSchema,
         },
       ),
   );

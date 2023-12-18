@@ -256,11 +256,16 @@ export function blueprint_router(app: Elysia) {
       .delete(
         "/:id",
         async ({ params }) => {
-          await db.deleteFrom("blueprints").where("id", "=", params.id).execute();
-          return { message: `Blueprint ${MessageEnum.successfully_deleted}`, ok: true };
+          const data = await db
+            .deleteFrom("blueprints")
+            .where("blueprints.id", "=", params.id)
+            .returning(["id", "title", "project_id"])
+            .executeTakeFirstOrThrow();
+
+          return { data, message: `Blueprint ${MessageEnum.successfully_deleted}.`, ok: true };
         },
         {
-          response: ResponseSchema,
+          response: ResponseWithDataSchema,
         },
       ),
   );

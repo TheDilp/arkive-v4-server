@@ -4,6 +4,7 @@ import { verify } from "jsonwebtoken";
 import * as jwtToPem from "jwk-to-pem";
 
 import { NoPublicAccess, UnauthorizedError } from "./enums";
+import { tempAfterHandle } from "./handlers";
 import {
   asset_router,
   blueprint_instance_router,
@@ -107,6 +108,11 @@ export const app = new Elysia()
 
           throw new UnauthorizedError("UNAUTHORIZED");
         }
+      })
+      // @ts-ignore
+      .onAfterHandle(async (context, response) => {
+        await tempAfterHandle(context, response);
+        return response;
       })
       .use(user_router)
       .use(project_router)

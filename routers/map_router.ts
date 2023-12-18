@@ -134,9 +134,6 @@ export function map_router(app: Elysia) {
         "/update/:id",
         async ({ params, body }) => {
           await db.transaction().execute(async (tx) => {
-            if (body.data) {
-              await tx.updateTable("maps").where("maps.id", "=", params.id).set(body.data).execute();
-            }
             if (body?.relations) {
               if (body.relations?.tags)
                 UpdateTagRelations({ relationalTable: "_mapsTotags", id: params.id, newTags: body.relations.tags, tx });
@@ -178,6 +175,7 @@ export function map_router(app: Elysia) {
                 }
               }
             }
+            if (body.data) await tx.updateTable("maps").where("maps.id", "=", params.id).set(body.data).execute();
           });
 
           return { message: `Map ${MessageEnum.successfully_updated}`, ok: true };
@@ -190,11 +188,16 @@ export function map_router(app: Elysia) {
       .delete(
         "/:id",
         async ({ params }) => {
-          await db.deleteFrom("maps").where("maps.id", "=", params.id).execute();
-          return { message: `Map ${MessageEnum.successfully_deleted}`, ok: true };
+          const data = await db
+            .deleteFrom("maps")
+            .where("maps.id", "=", params.id)
+            .returning(["id", "title", "project_id"])
+            .executeTakeFirstOrThrow();
+
+          return { data, message: `Map ${MessageEnum.successfully_deleted}.`, ok: true };
         },
         {
-          response: ResponseSchema,
+          response: ResponseWithDataSchema,
         },
       ),
   );

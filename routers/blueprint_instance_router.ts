@@ -701,11 +701,26 @@ export function blueprint_instance_router(app: Elysia) {
       .delete(
         "/:id",
         async ({ params }) => {
-          await db.deleteFrom("blueprint_instances").where("id", "=", params.id).execute();
-          return { message: `Blueprint instance ${MessageEnum.successfully_deleted}`, ok: true };
+          const res = await db
+            .deleteFrom("blueprint_instances")
+            .where("blueprint_instances.id", "=", params.id)
+            .returning(["blueprint_instances.parent_id", "blueprint_instances.title"])
+            .executeTakeFirstOrThrow();
+
+          const data = await db
+            .selectFrom("blueprints")
+            .where("id", "=", res.parent_id)
+            .select(["project_id"])
+            .executeTakeFirstOrThrow();
+
+          return {
+            data: { project_id: data.project_id, title: res.title },
+            message: `Blueprint instance ${MessageEnum.successfully_deleted}.`,
+            ok: true,
+          };
         },
         {
-          response: ResponseSchema,
+          response: ResponseWithDataSchema,
         },
       ),
   );

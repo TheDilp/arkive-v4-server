@@ -197,9 +197,20 @@ export function calendar_router(app: Elysia) {
         },
         { body: UpdateCalendarSchema, response: ResponseSchema },
       )
-      .delete("/:id", async ({ params }) => {
-        await db.deleteFrom("calendars").where("calendars.id", "=", params.id).execute();
-        return { message: `Calendar ${MessageEnum.successfully_deleted}`, ok: true };
-      }),
+      .delete(
+        "/:id",
+        async ({ params }) => {
+          const data = await db
+            .deleteFrom("calendars")
+            .where("calendars.id", "=", params.id)
+            .returning(["id", "title", "project_id"])
+            .executeTakeFirstOrThrow();
+
+          return { data, message: `Calendar ${MessageEnum.successfully_deleted}.`, ok: true };
+        },
+        {
+          response: ResponseWithDataSchema,
+        },
+      ),
   );
 }

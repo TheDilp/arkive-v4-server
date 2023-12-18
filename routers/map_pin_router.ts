@@ -115,9 +115,29 @@ export function map_pin_router(app: Elysia) {
           response: ResponseSchema,
         },
       )
-      .delete("/:id", async ({ params }) => {
-        await db.deleteFrom("map_pins").where("map_pins.id", "=", params.id).execute();
-        return { message: `Map pin ${MessageEnum.successfully_deleted}`, ok: true };
-      }),
+      .delete(
+        "/:id",
+        async ({ params }) => {
+          const res = await db
+            .deleteFrom("map_pins")
+            .where("map_pins.id", "=", params.id)
+            .returning(["map_pins.parent_id", "map_pins.title"])
+            .executeTakeFirstOrThrow();
+
+          const data = await db
+            .selectFrom("maps")
+            .where("id", "=", res.parent_id)
+            .select(["project_id"])
+            .executeTakeFirstOrThrow();
+          return {
+            data: { project_id: data.project_id, title: res.title },
+            message: `Map pin ${MessageEnum.successfully_deleted}`,
+            ok: true,
+          };
+        },
+        {
+          response: ResponseWithDataSchema,
+        },
+      ),
   );
 }

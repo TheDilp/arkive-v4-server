@@ -61,7 +61,12 @@ export function areArraysEqual(a: string[], b: string[]) {
   return true;
 }
 
-export function getSingularEntityType(type: string) {
+export function getSentenceCase(field: string) {
+  const result = field.replaceAll("_", " ").replace(/([A-Z])/g, " $1");
+  return result.charAt(0).toUpperCase() + result.slice(1);
+}
+
+export function getSingularEntityType(type: string): string {
   if (type === "alter_names") return "alter name";
   if (type === "character_fields") return "character field";
   if (type === "character_fields_templates") return "character field template";
@@ -70,7 +75,10 @@ export function getSingularEntityType(type: string) {
   if (type === "random_table_options") return "random table option";
   if (type === "random_tables") return "random table";
   if (type === "dictionaries") return "dictionary";
-  return type.slice(0, type.length - 1);
+  return type
+    .slice(0, type.length - 1)
+    .replaceAll("_", " ")
+    .replace(/([A-Z])/g, " $1");
 }
 
 export function insertSenderToMessage(content: { type: string; content: any }, mention: any) {

@@ -298,9 +298,19 @@ export function character_fields_templates_router(app: Elysia) {
           response: ResponseSchema,
         },
       )
-      .delete("/:id", async ({ params }) => {
-        await db.deleteFrom("character_fields_templates").where("character_fields_templates.id", "=", params.id).execute();
-        return { message: `Template ${MessageEnum.successfully_deleted}`, ok: true };
-      }),
+      .delete(
+        "/:id",
+        async ({ params }) => {
+          const data = await db
+            .deleteFrom("character_fields_templates")
+            .where("id", "=", params.id)
+            .returning(["id", "title", "project_id"])
+            .executeTakeFirstOrThrow();
+          return { data, message: `Character field template ${MessageEnum.successfully_deleted}`, ok: true };
+        },
+        {
+          response: ResponseWithDataSchema,
+        },
+      ),
   );
 }
