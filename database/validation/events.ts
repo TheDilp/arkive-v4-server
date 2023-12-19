@@ -4,7 +4,7 @@ import { RequestBodySchema } from "../../types/requestTypes";
 
 export const ReadEventSchema = t.Intersect([
   RequestBodySchema,
-  t.Object({ data: t.Object({}) }),
+
   t.Optional(
     t.Object({
       relations: t.Optional(
