@@ -4,7 +4,13 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { BasicSearchSchema, ReadDocumentSchema, ReadGraphSchema, ReadMapSchema } from "../database/validation";
+import {
+  BasicSearchSchema,
+  ReadDictionarySchema,
+  ReadDocumentSchema,
+  ReadGraphSchema,
+  ReadMapSchema,
+} from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 
@@ -198,7 +204,34 @@ export function public_router(app: Elysia) {
           response: ResponseWithDataSchema,
         },
       )
+      .post(
+        "/dictionaries/:id",
+        async ({ params, body }) => {
+          const data = await db
+            .selectFrom("dictionaries")
+            .where("id", "=", params.id)
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "dictionaries">[]))
+            .$if(!!body.relations?.words, (qb) =>
+              qb.select((eb) =>
+                jsonArrayFrom(
+                  eb
+                    .selectFrom("words")
+                    .select(["words.id", "words.title", "words.translation"])
+                    .where("words.parent_id", "=", params.id),
+                ).as("words"),
+              ),
+            )
 
+            .executeTakeFirstOrThrow();
+          if (data?.is_public) return { data, message: MessageEnum.success, ok: true };
+          return { data: { is_public: false }, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: ReadDictionarySchema,
+          response: ResponseWithDataSchema,
+        },
+      )
       .post(
         "/search/:project_id",
         async ({ params, body }) => {
