@@ -53,9 +53,9 @@ export function public_router(app: Elysia) {
             name: "characters",
             request: db
               .selectFrom("characters")
-              .select(["id", "full_name", "portrait_id"])
+              .select(["id as value", "full_name as label", "portrait_id as image_id"])
               .where("characters.full_name", "ilike", `%${search_term}%`)
-              // .where("characters.is_public", "=", true)
+              .where("characters.is_public", "=", true)
               .where("project_id", "=", project_id)
               .limit(5),
           };
@@ -63,7 +63,7 @@ export function public_router(app: Elysia) {
             name: "documents",
             request: db
               .selectFrom("documents")
-              .select(["id", "title", "icon"])
+              .select(["id as value", "title as label", "icon"])
               .where("documents.title", "ilike", `%${search_term}%`)
               .where("documents.is_public", "=", true)
               .where("project_id", "=", project_id)
@@ -74,7 +74,7 @@ export function public_router(app: Elysia) {
             name: "maps",
             request: db
               .selectFrom("maps")
-              .select(["id", "title"])
+              .select(["id as value", "title as label"])
               .where("maps.title", "ilike", `%${search_term}%`)
               .where("maps.is_public", "=", true)
               .where("project_id", "=", project_id)
@@ -100,8 +100,8 @@ export function public_router(app: Elysia) {
               .where("blueprints.project_id", "=", project_id)
               .where("blueprint_instances.is_public", "=", true)
               .select([
-                "blueprint_instances.id",
-                "blueprint_instances.title",
+                "blueprint_instances.id as value",
+                "blueprint_instances.title as label",
                 "blueprints.title as parent_title",
                 "blueprint_instances.parent_id",
                 "blueprints.icon",
