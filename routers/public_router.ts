@@ -1,9 +1,10 @@
 import Elysia, { t } from "elysia";
 import { SelectExpression } from "kysely";
+import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { BasicSearchSchema, ReadDocumentSchema } from "../database/validation";
+import { BasicSearchSchema, ReadDocumentSchema, ReadMapSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 
@@ -24,6 +25,84 @@ export function public_router(app: Elysia) {
         {
           body: ReadDocumentSchema,
           response: ResponseWithDataSchema,
+        },
+      )
+      .post(
+        "/maps/:id",
+        async ({ params, body }) => {
+          const data = await db
+            .selectFrom("maps")
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "maps">[]))
+            .where("maps.id", "=", params.id)
+            .where("maps.is_public", "=", true)
+            .$if(!!body?.relations?.map_pins, (qb) =>
+              qb.select((eb) =>
+                jsonArrayFrom(
+                  eb
+                    .selectFrom("map_pins")
+                    .select([
+                      "map_pins.id",
+                      "map_pins.background_color",
+                      "map_pins.border_color",
+                      "map_pins.color",
+                      "map_pins.character_id",
+                      "map_pins.doc_id",
+                      "map_pins.icon",
+                      "map_pins.title",
+                      "map_pins.parent_id",
+                      "map_pins.is_public",
+                      "map_pins.lat",
+                      "map_pins.lng",
+                      "map_pins.map_link",
+                      "map_pins.show_background",
+                      "map_pins.show_border",
+                      "map_pins.map_pin_type_id",
+                      (eb) =>
+                        jsonObjectFrom(
+                          eb
+                            .selectFrom("characters")
+                            .whereRef("characters.id", "=", "map_pins.character_id")
+                            .select(["id", "full_name", "portrait_id"]),
+                        ).as("character"),
+                    ])
+                    .whereRef("map_pins.parent_id", "=", "maps.id")
+                    .where("map_pins.is_public", "=", true),
+                ).as("map_pins"),
+              ),
+            )
+            .$if(!!body?.relations?.map_layers, (qb) =>
+              qb.select((eb) =>
+                jsonArrayFrom(
+                  eb
+                    .selectFrom("map_layers")
+                    .select([
+                      "map_layers.id",
+                      "map_layers.title",
+                      "map_layers.image_id",
+                      "map_layers.is_public",
+                      "map_layers.parent_id",
+                      (eb) =>
+                        jsonObjectFrom(
+                          eb
+                            .selectFrom("images")
+                            .whereRef("images.id", "=", "map_layers.image_id")
+                            .select(["images.id", "images.title"]),
+                        ).as("image"),
+                    ])
+                    .whereRef("map_layers.parent_id", "=", "maps.id")
+                    .where("map_layers.is_public", "=", true),
+                ).as("map_layers"),
+              ),
+            )
+            .executeTakeFirstOrThrow();
+
+          if (data.is_public) return { data, message: MessageEnum.success, ok: true };
+          return { data: { is_public: false }, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: ReadMapSchema,
+          response: t.Union([ResponseWithDataSchema, ResponseSchema]),
         },
       )
       .post(
