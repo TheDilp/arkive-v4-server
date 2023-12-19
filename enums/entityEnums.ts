@@ -18,6 +18,7 @@ export const AllEntities = [
 
 export const SubEntityEnum = [
   "alter_names",
+  "blueprint_instances",
   "map_pins",
   "character_map_pins",
   "map_layers",

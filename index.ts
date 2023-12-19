@@ -1,5 +1,6 @@
 import { cors } from "@elysiajs/cors";
 import { Elysia } from "elysia";
+import { rateLimit } from "elysia-rate-limit";
 import { verify } from "jsonwebtoken";
 import * as jwtToPem from "jwk-to-pem";
 
@@ -72,41 +73,51 @@ export const app = new Elysia()
     return { message: "There was an error with your request.", ok: false };
   })
   .use(health_check_router)
+  .use(
+    rateLimit({
+      duration: 1000,
+      max: 150,
+    }),
+  )
   // Test
   .group("/api/v1", (server) =>
     // @ts-ignore
     server
       .onBeforeHandle(async ({ request }) => {
-        const token = request.headers.get("authorization");
-        if (token) {
-          const jwtoken = token.replace("Bearer ", "");
+        if (!request.url.includes("public")) {
+          const token = request.headers.get("authorization");
+          if (token) {
+            const jwtoken = token.replace("Bearer ", "");
 
-          const jwtPublicKeyRes = await fetch(process.env.JWT_VERIFY_URL as string);
-          const jwtPublicKey = await jwtPublicKeyRes.json();
-          const publicKey = jwtToPem.default(jwtPublicKey.keys[0]);
-          const verifiedToken: any = verify(jwtoken, publicKey, (err, result) => {
-            if (err)
-              return {
-                name: "TokenExpiredError",
-                message: "Session ended.",
-                expiredAt: Date.now(),
-                error: true,
-              };
-            return result;
-          });
-          if (verifiedToken.error) {
-            console.error("ERROR VERIFYING TOKEN");
-            throw new UnauthorizedError("UNAUTHORIZED");
-          }
-          if (verifiedToken.azp !== process.env.JWT_VERIFY_HOST || verifiedToken.exp * 1000 < Date.now()) {
-            console.error("EXPIRED");
+            const jwtPublicKeyRes = await fetch(process.env.JWT_VERIFY_URL as string);
+            const jwtPublicKey = await jwtPublicKeyRes.json();
+            const publicKey = jwtToPem.default(jwtPublicKey.keys[0]);
+            const verifiedToken: any = verify(jwtoken, publicKey, (err, result) => {
+              if (err)
+                return {
+                  name: "TokenExpiredError",
+                  message: "Session ended.",
+                  expiredAt: Date.now(),
+                  error: true,
+                };
+              return result;
+            });
+            if (verifiedToken.error) {
+              console.error("ERROR VERIFYING TOKEN");
+              throw new UnauthorizedError("UNAUTHORIZED");
+            }
+            if (verifiedToken.azp !== process.env.JWT_VERIFY_HOST || verifiedToken.exp * 1000 < Date.now()) {
+              console.error("EXPIRED");
+
+              throw new UnauthorizedError("UNAUTHORIZED");
+            }
+          } else {
+            console.error("NO TOKEN");
 
             throw new UnauthorizedError("UNAUTHORIZED");
           }
         } else {
-          console.error("NO TOKEN");
-
-          throw new UnauthorizedError("UNAUTHORIZED");
+          console.log(request);
         }
       })
       // @ts-ignore

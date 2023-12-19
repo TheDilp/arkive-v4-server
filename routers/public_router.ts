@@ -4,7 +4,6 @@ import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
 import { BasicSearchSchema, ReadDocumentSchema } from "../database/validation";
-import { NoPublicAccess } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 
@@ -28,22 +27,32 @@ export function public_router(app: Elysia) {
         },
       )
       .post(
-        "/documents/:id",
+        "/:type/:id",
         async ({ params, body }) => {
           const data = await db
-            .selectFrom("documents")
+            .selectFrom(params.type as "characters" | "blueprint_instances" | "documents" | "maps" | "graphs" | "events")
             .where("id", "=", params.id)
             .$if(!body?.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body?.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "documents">[]))
+            .$if(!!body?.fields?.length, (qb) =>
+              qb.clearSelect().select(
+                // @ts-ignore
+                body.fields as SelectExpression<
+                  DB,
+                  "characters" | "blueprint_instances" | "documents" | "maps" | "graphs" | "events"
+                >[],
+              ),
+            )
             .executeTakeFirstOrThrow();
           if (data.is_public) return { data, message: MessageEnum.success, ok: true };
-          else throw new NoPublicAccess("NO_PUBLIC_ACCESS");
+
+          return { data: { is_public: false }, message: MessageEnum.success, ok: true };
         },
         {
           body: ReadDocumentSchema,
           response: t.Union([ResponseWithDataSchema, ResponseSchema]),
         },
       )
+
       .post(
         "/search/:project_id",
         async ({ params, body }) => {
@@ -53,7 +62,7 @@ export function public_router(app: Elysia) {
             name: "characters",
             request: db
               .selectFrom("characters")
-              .select(["id as value", "full_name as label", "portrait_id as image_id"])
+              .select(["id", "full_name as label", "portrait_id as image"])
               .where("characters.full_name", "ilike", `%${search_term}%`)
               .where("characters.is_public", "=", true)
               .where("project_id", "=", project_id)
@@ -63,7 +72,7 @@ export function public_router(app: Elysia) {
             name: "documents",
             request: db
               .selectFrom("documents")
-              .select(["id as value", "title as label", "icon"])
+              .select(["id", "title as label", "icon"])
               .where("documents.title", "ilike", `%${search_term}%`)
               .where("documents.is_public", "=", true)
               .where("project_id", "=", project_id)
@@ -74,7 +83,7 @@ export function public_router(app: Elysia) {
             name: "maps",
             request: db
               .selectFrom("maps")
-              .select(["id as value", "title as label"])
+              .select(["id", "title as label"])
               .where("maps.title", "ilike", `%${search_term}%`)
               .where("maps.is_public", "=", true)
               .where("project_id", "=", project_id)
@@ -100,7 +109,7 @@ export function public_router(app: Elysia) {
               .where("blueprints.project_id", "=", project_id)
               .where("blueprint_instances.is_public", "=", true)
               .select([
-                "blueprint_instances.id as value",
+                "blueprint_instances.id",
                 "blueprint_instances.title as label",
                 "blueprints.title as parent_title",
                 "blueprint_instances.parent_id",
