@@ -4,7 +4,7 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { BasicSearchSchema, ReadDocumentSchema, ReadMapSchema } from "../database/validation";
+import { BasicSearchSchema, ReadDocumentSchema, ReadGraphSchema, ReadMapSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 
@@ -28,6 +28,24 @@ export function public_router(app: Elysia) {
         },
       )
       .post(
+        "/documents/:id",
+        async ({ params, body }) => {
+          const data = await db
+            .selectFrom("documents")
+            .where("id", "=", params.id)
+            .$if(!body?.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body?.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "documents">[]))
+            .executeTakeFirstOrThrow();
+          if (data.is_public) return { data, message: MessageEnum.success, ok: true };
+
+          return { data: { is_public: false }, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: ReadDocumentSchema,
+          response: t.Union([ResponseWithDataSchema, ResponseSchema]),
+        },
+      )
+      .post(
         "/maps/:id",
         async ({ params, body }) => {
           const data = await db
@@ -35,7 +53,6 @@ export function public_router(app: Elysia) {
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "maps">[]))
             .where("maps.id", "=", params.id)
-            .where("maps.is_public", "=", true)
             .$if(!!body?.relations?.map_pins, (qb) =>
               qb.select((eb) =>
                 jsonArrayFrom(
@@ -106,29 +123,79 @@ export function public_router(app: Elysia) {
         },
       )
       .post(
-        "/:type/:id",
+        "/graphs/:id",
         async ({ params, body }) => {
           const data = await db
-            .selectFrom(params.type as "characters" | "blueprint_instances" | "documents" | "maps" | "graphs" | "events")
-            .where("id", "=", params.id)
-            .$if(!body?.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body?.fields?.length, (qb) =>
-              qb.clearSelect().select(
-                // @ts-ignore
-                body.fields as SelectExpression<
-                  DB,
-                  "characters" | "blueprint_instances" | "documents" | "maps" | "graphs" | "events"
-                >[],
+
+            .selectFrom("graphs")
+            .where("graphs.id", "=", params.id)
+            .$if(!!body?.relations?.nodes, (qb) =>
+              qb.select((eb) =>
+                jsonArrayFrom(
+                  eb
+                    .selectFrom("nodes")
+                    .where("nodes.parent_id", "=", params.id)
+                    .select((sb) => [
+                      "nodes.id",
+                      "nodes.label",
+                      "nodes.icon",
+                      "nodes.background_color",
+                      "nodes.background_opacity",
+                      "nodes.font_color",
+                      "nodes.font_family",
+                      "nodes.font_size",
+                      "nodes.type",
+                      "nodes.image_id",
+                      "nodes.text_h_align",
+                      "nodes.text_v_align",
+                      "nodes.x",
+                      "nodes.y",
+                      "nodes.z_index",
+                      "nodes.width",
+                      "nodes.height",
+                      "nodes.is_locked",
+                      jsonObjectFrom(
+                        sb
+                          .selectFrom("characters")
+                          .select(["characters.first_name", "characters.last_name", "characters.portrait_id"])
+                          .whereRef("characters.id", "=", "nodes.character_id"),
+                      ).as("character"),
+                    ]),
+                ).as("nodes"),
               ),
             )
+
+            .select([
+              "graphs.id",
+              "graphs.title",
+              "graphs.icon",
+              "graphs.is_public",
+              "graphs.default_node_shape",
+              "graphs.default_node_color",
+              "graphs.default_edge_color",
+            ])
             .executeTakeFirstOrThrow();
-          if (data.is_public) return { data, message: MessageEnum.success, ok: true };
+          const edges = body?.relations?.edges
+            ? await db.selectFrom("edges").selectAll().where("edges.parent_id", "=", params.id).execute()
+            : [];
+
+          const finalData: typeof data & { parents?: any[]; edges?: any[] } = { ...data };
+
+          if (edges.length) {
+            finalData.edges = edges;
+          }
+          if (data.is_public)
+            return {
+              data: finalData,
+              message: MessageEnum.success,
+              ok: true,
+            };
 
           return { data: { is_public: false }, message: MessageEnum.success, ok: true };
         },
         {
-          body: ReadDocumentSchema,
-          response: t.Union([ResponseWithDataSchema, ResponseSchema]),
+          body: ReadGraphSchema,
+          response: ResponseWithDataSchema,
         },
       )
 
@@ -175,7 +242,7 @@ export function public_router(app: Elysia) {
               .selectFrom("graphs")
               .where("graphs.title", "ilike", `%${search_term}%`)
               .where("project_id", "=", project_id)
-              .select(["id", "title", "icon"])
+              .select(["id", "title as label", "icon"])
               .limit(5),
           };
 
