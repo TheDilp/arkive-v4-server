@@ -21,7 +21,7 @@ export function blueprint_router(app: Elysia) {
           await db.transaction().execute(async (tx) => {
             const newTemplate = await tx.insertInto("blueprints").values(body.data).returning("id").executeTakeFirstOrThrow();
 
-            if (body.relations?.blueprint_fields) {
+            if (body?.relations?.blueprint_fields?.length) {
               await tx
                 .insertInto("blueprint_fields")
                 .values(

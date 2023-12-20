@@ -65,18 +65,20 @@ export const InsertBlueprintSchema = t.Object({
   }),
   relations: t.Optional(
     t.Object({
-      blueprint_fields: t.Array(
-        t.Object({
-          title: t.String(),
-          field_type: BlueprintFieldTypeSchema,
-          // width: FieldWidthSchema,
-          sort: t.Optional(t.Number()),
-          formula: t.Optional(t.Union([t.String(), t.Null()])),
-          options: t.Optional(t.Array(t.Object({ id: t.String(), value: t.String() }))),
-          random_table_id: t.Optional(t.Union([t.String(), t.Null()])),
-          calendar_id: t.Optional(t.Union([t.String(), t.Null()])),
-          blueprint_id: t.Optional(t.Union([t.String(), t.Null()])),
-        }),
+      blueprint_fields: t.Optional(
+        t.Array(
+          t.Object({
+            title: t.String(),
+            field_type: BlueprintFieldTypeSchema,
+            // width: FieldWidthSchema,
+            sort: t.Optional(t.Number()),
+            formula: t.Optional(t.Union([t.String(), t.Null()])),
+            options: t.Optional(t.Array(t.Object({ id: t.String(), value: t.String() }))),
+            random_table_id: t.Optional(t.Union([t.String(), t.Null()])),
+            calendar_id: t.Optional(t.Union([t.String(), t.Null()])),
+            blueprint_id: t.Optional(t.Union([t.String(), t.Null()])),
+          }),
+        ),
       ),
       tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
     }),
