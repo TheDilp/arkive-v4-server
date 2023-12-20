@@ -6,6 +6,8 @@ import { DB } from "kysely-codegen";
 import { db } from "../database/db";
 import {
   BasicSearchSchema,
+  EntityListSchema,
+  ReadCalendarSchema,
   ReadDictionarySchema,
   ReadDocumentSchema,
   ReadGraphSchema,
@@ -13,6 +15,8 @@ import {
 } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { constructFilter } from "../utils/filterConstructor";
+import { constructOrdering } from "../utils/orderByConstructor";
 
 export function public_router(app: Elysia) {
   return app.group("/public", (server) => {
@@ -201,6 +205,73 @@ export function public_router(app: Elysia) {
         },
         {
           body: ReadGraphSchema,
+          response: ResponseWithDataSchema,
+        },
+      )
+      .post(
+        "/calendars/:id",
+        async ({ params, body }) => {
+          const data = await db
+            .selectFrom("calendars")
+            .where("calendars.id", "=", params.id)
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "calendars">[]))
+            .$if(!!body?.relations, (qb) => {
+              if (body.relations?.months) {
+                qb = qb.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("months")
+                      .select(["months.id", "months.days", "months.sort", "months.title", "months.parent_id"])
+                      .where("months.parent_id", "=", params.id),
+                  ).as("months"),
+                );
+              }
+              if (body.relations?.leap_days) {
+                qb = qb.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("leap_days")
+                      .select(["leap_days.id", "leap_days.month_id", "leap_days.parent_id", "leap_days.conditions"])
+                      .where("leap_days.parent_id", "=", params.id),
+                  ).as("leap_days"),
+                );
+              }
+
+              return qb;
+            })
+            .executeTakeFirstOrThrow();
+
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: ReadCalendarSchema,
+          response: ResponseWithDataSchema,
+        },
+      )
+      .post(
+        "/",
+        async ({ body }) => {
+          const data = await db
+            .selectFrom("events")
+
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "events">[]))
+            .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
+              qb = constructFilter("events", qb, body.filters);
+              return qb;
+            })
+            .$if(!!body.orderBy?.length, (qb) => {
+              qb = constructOrdering(body.orderBy, qb);
+              return qb;
+            })
+            .where("is_public", "=", true)
+            .execute();
+
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: EntityListSchema,
           response: ResponseWithDataSchema,
         },
       )
