@@ -1,6 +1,7 @@
 import Elysia, { t } from "elysia";
 
 import { db } from "../database/db";
+import { BulkDeleteEntities } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { BulkDeleteEntitiesType } from "../types/entityTypes";
 import { ResponseSchema } from "../types/requestTypes";
@@ -11,6 +12,9 @@ export function bulk_router(app: Elysia) {
       "/delete/:type",
       async ({ params, body }) => {
         if (params.type) {
+          if (!BulkDeleteEntities.includes(params.type)) {
+            throw new Error("INTERNAL_SERVER_ERROR");
+          }
           await db
             .deleteFrom(params.type as BulkDeleteEntitiesType)
             .where("id", "in", body.data.ids)
