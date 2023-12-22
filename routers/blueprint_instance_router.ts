@@ -380,6 +380,7 @@ export function blueprint_instance_router(app: Elysia) {
                     .select([
                       "id",
                       "field_type",
+                      "sort",
                       (ebb) =>
                         jsonObjectFrom(
                           ebb
