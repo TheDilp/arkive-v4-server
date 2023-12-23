@@ -1,6 +1,5 @@
 import { cors } from "@elysiajs/cors";
 import { Elysia } from "elysia";
-import { rateLimit } from "elysia-rate-limit";
 import { verify } from "jsonwebtoken";
 import * as jwtToPem from "jwk-to-pem";
 
@@ -73,12 +72,12 @@ export const app = new Elysia()
     return { message: "There was an error with your request.", ok: false };
   })
   .use(health_check_router)
-  .use(
-    rateLimit({
-      duration: 1000,
-      max: 150,
-    }),
-  )
+  // .use(
+  //   rateLimit({
+  //     duration: 1000,
+  //     max: 150,
+  //   }),
+  // )
   // Test
   .group("/api/v1", (server) =>
     // @ts-ignore
