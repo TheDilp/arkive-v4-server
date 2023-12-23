@@ -11,6 +11,7 @@ import { InsertCharacterSchema, ListCharacterSchema, ReadCharacterSchema, Update
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
+import { constructOrdering } from "../utils/orderByConstructor";
 import {
   CreateTagRelations,
   GetRelationsForUpdating,
@@ -154,7 +155,9 @@ export function character_router(app: Elysia) {
           const result = await db
             .selectFrom("characters")
             .select(body.fields.map((field) => `characters.${field}`) as SelectExpression<DB, "characters">[])
-            .distinctOn(body.orderBy ? (body.orderBy.map((order) => order.field) as any) : "characters.id")
+            // .distinctOn(
+            //   body.orderBy?.length ? (["characters.id", ...body.orderBy.map((order) => order.field)] as any) : "characters.id",
+            // )
             .where("characters.project_id", "=", body?.data?.project_id)
             .limit(body?.pagination?.limit || 10)
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
@@ -167,7 +170,7 @@ export function character_router(app: Elysia) {
               qb = tagsRelationFilter("characters", "_charactersTotags", qb, body.relationFilters);
               return qb;
             })
-            // .$if(!!body.orderBy?.length, (qb) => constructOrdering(body.orderBy, qb))
+            .$if(!!body.orderBy?.length, (qb) => constructOrdering(body.orderBy, qb))
             .$if(!!body?.relations, (qb) => {
               if (body?.relations?.portrait) {
                 qb = qb.select((eb) =>
