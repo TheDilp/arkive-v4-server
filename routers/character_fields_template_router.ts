@@ -13,7 +13,7 @@ import {
 } from "../database/validation/character_fields_templates";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { constructFilter, constructTagFilter } from "../utils/filterConstructor";
+import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { CreateTagRelations, GetRelationsForUpdating, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 
@@ -64,30 +64,19 @@ export function character_fields_templates_router(app: Elysia) {
           const data = await db
             .selectFrom("character_fields_templates")
             .where("character_fields_templates.project_id", "=", body.data.project_id)
-            .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) =>
-              qb
-                .clearSelect()
-                .select(
-                  (body.fields || [])?.map((field) => `character_fields_templates.${field}`) as SelectExpression<
-                    DB,
-                    "character_fields_templates"
-                  >[],
-                ),
+
+            .select(
+              (body.fields || [])?.map((field) => `character_fields_templates.${field}`) as SelectExpression<
+                DB,
+                "character_fields_templates"
+              >[],
             )
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
               qb = constructFilter("character_fields_templates", qb, body.filters);
               return qb;
             })
-            .$if(!!body?.relationFilters?.tags?.length, (qb) =>
-              constructTagFilter(
-                "character_fields_templates",
-                qb,
-                "_character_fields_templatesTotags",
-                body?.relationFilters?.tags || [],
-                "A",
-                "B",
-              ),
+            .$if(!!body?.relationFilters?.and?.length || !!body?.relationFilters?.or?.length, (qb) =>
+              tagsRelationFilter("character_fields_templates", "_character_fields_templatesTotags", qb, body?.relationFilters),
             )
             .$if(!!body.orderBy?.length, (qb) => {
               qb = constructOrdering(body.orderBy, qb);

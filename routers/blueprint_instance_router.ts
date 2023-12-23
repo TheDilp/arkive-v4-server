@@ -12,7 +12,7 @@ import {
 } from "../database/validation/blueprint_instances";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { constructFilter, constructTagFilter } from "../utils/filterConstructor";
+import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { CreateTagRelations, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 
@@ -175,10 +175,8 @@ export function blueprint_instance_router(app: Elysia) {
         async ({ body }) => {
           const data = await db
             .selectFrom("blueprint_instances")
-            .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) =>
-              qb.clearSelect().select(body.fields as SelectExpression<DB, "blueprint_instances">[]),
-            )
+            .select(body.fields.map((field) => `blueprint_instances.${field}`) as SelectExpression<DB, "blueprint_instances">[])
+
             .$if(!!body.data?.parent_id, (qb) => {
               if (body.data?.parent_id) return qb.where("blueprint_instances.parent_id", "=", body.data.parent_id);
               return qb;
@@ -325,15 +323,8 @@ export function blueprint_instance_router(app: Elysia) {
               qb = constructFilter("blueprint_instances", qb, body.filters);
               return qb;
             })
-            .$if(!!body?.relationFilters?.tags?.length, (qb) =>
-              constructTagFilter(
-                "blueprint_instances",
-                qb,
-                "_blueprint_instancesTotags",
-                body?.relationFilters?.tags || [],
-                "A",
-                "B",
-              ),
+            .$if(!!body?.relationFilters?.and?.length || !!body?.relationFilters?.or?.length, (qb) =>
+              tagsRelationFilter("blueprint_instances", "_blueprint_instancesTotags", qb, body?.relationFilters),
             )
             .$if(!!body.orderBy?.length, (qb) => {
               qb = constructOrdering(body.orderBy, qb);

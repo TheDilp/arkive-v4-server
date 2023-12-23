@@ -62,58 +62,6 @@ export function constructFilter(
   });
 }
 
-export function constructTagFilter(
-  table: DBKeys,
-  queryBuilder: SelectQueryBuilder<DB, any, any>,
-  relation_table: TagsRelationTables,
-  tagIds: string[],
-  relationColumn: "A" | "B",
-  tagColumn: "A" | "B",
-) {
-  return (
-    queryBuilder
-      .leftJoin(`${relation_table} as tagRelationTable`, `tagRelationTable.${relationColumn}`, `${table}.id`)
-      .select([`tagRelationTable.${relationColumn}`, `tagRelationTable.${tagColumn}`])
-      // @ts-ignore
-      .where(`tagRelationTable.${tagColumn}`, "in", tagIds)
-  );
-}
-
-export function relationConstructor(
-  table: DBKeys,
-  queryBuilder: SelectQueryBuilder<DB, any, any>,
-  filters: RequestBodyFiltersType | undefined,
-) {
-  return queryBuilder
-    .leftJoin("_charactersTotags", "characters.id", "_charactersTotags.A")
-    .leftJoin("tags", "_charactersTotags.B", "tags.id")
-    .where(({ eb, and, or }) => {
-      const andFilters = [];
-      const orFilters = [];
-      const finalFilters = [];
-      if (filters?.and?.length) {
-        for (let index = 0; index < filters.and.length; index++) {
-          const { field, operator, value } = filters.and[index];
-          const dbOperator = FilterEnum[operator];
-          // @ts-ignore
-          andFilters.push(eb(`${table}.${field}`, dbOperator, dbOperator === "ilike" ? `%${value}%` : value));
-        }
-      }
-      if (filters?.or?.length) {
-        for (let index = 0; index < filters.or.length; index++) {
-          const { field, operator, value } = filters.or[index];
-          const dbOperator = FilterEnum[operator];
-          // @ts-ignore
-          orFilters.push(eb(`${table}.${field}`, dbOperator, dbOperator === "ilike" ? `%${value}%` : value));
-        }
-      }
-
-      if (andFilters?.length) finalFilters.push(and(andFilters));
-      if (orFilters?.length) finalFilters.push(or(orFilters));
-      return and(finalFilters);
-    });
-}
-
 export function tagsRelationFilter(
   table: DBKeys,
   tagTable: TagsRelationTables,
@@ -139,8 +87,8 @@ export function tagsRelationFilter(
           eb.exists((ebb) =>
             ebb
               .selectFrom(tagTable)
-              .whereRef("characters.id", "=", "_charactersTotags.A")
-              .innerJoin("tags", "_charactersTotags.B", "tags.id")
+              .whereRef(`${table}.id`, "=", `${tagTable}.A`)
+              .innerJoin("tags", `${tagTable}.B`, "tags.id")
               .where("tags.id", "in", orIds as string[])
               .having(({ fn }) => fn.count<number>("tags.id").distinct(), ">=", 1),
           ),
@@ -151,7 +99,7 @@ export function tagsRelationFilter(
       return and(finalFilters);
     })
     .$if(!filters?.or?.length, (qb) => {
-      qb = qb.groupBy(["characters.id"]).having(({ fn }) => fn.count<number>("tags.id").distinct(), ">=", count);
+      qb = qb.groupBy([`${table}.id`]).having(({ fn }) => fn.count<number>("tags.id").distinct(), ">=", count);
 
       return qb;
     });
