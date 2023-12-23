@@ -53,6 +53,7 @@ export function graph_router(app: Elysia) {
             })
             .limit(body?.pagination?.limit || 10)
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
+            .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_graphsTotags", "graphs")))
             .$if(!!body.orderBy?.length, (qb) => {
               qb = constructOrdering(body.orderBy, qb);
               return qb;

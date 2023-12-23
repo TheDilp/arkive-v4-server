@@ -39,6 +39,7 @@ export function map_router(app: Elysia) {
             .where("project_id", "=", body.data.project_id)
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "maps">[]))
+            .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_mapsTotags", "maps")))
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
               qb = constructFilter("maps", qb, body.filters);
               return qb;
