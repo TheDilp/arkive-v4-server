@@ -151,9 +151,7 @@ export function tagsRelationFilter(
       return and(finalFilters);
     })
     .$if(!filters?.or?.length, (qb) => {
-      qb = qb
-        .groupBy(["characters.id", `${tagTable}.A`, `${tagTable}.B`, "tags.id"])
-        .having(({ fn }) => fn.count<number>("tags.id").distinct(), ">=", count);
+      qb = qb.groupBy(["characters.id"]).having(({ fn }) => fn.count<number>("tags.id").distinct(), ">=", count);
 
       return qb;
     });
