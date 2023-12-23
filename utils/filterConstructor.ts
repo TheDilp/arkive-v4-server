@@ -1,4 +1,4 @@
-import { ExpressionBuilder, ExpressionWrapper, SelectQueryBuilder, SqlBool } from "kysely";
+import { ExpressionWrapper, SelectQueryBuilder, SqlBool } from "kysely";
 import { DB } from "kysely-codegen";
 
 import { DBKeys, TagsRelationTables } from "../database/types";
@@ -81,13 +81,12 @@ export function constructTagFilter(
 
 export function relationConstructor(
   table: DBKeys,
-  expressionBuilder: ExpressionBuilder<DB, any>,
+  queryBuilder: SelectQueryBuilder<DB, any, any>,
   filters: RequestBodyFiltersType | undefined,
-  fields: string[],
 ) {
-  return expressionBuilder
-    .selectFrom(table)
-    .select(fields || ["id"])
+  return queryBuilder
+    .leftJoin("_charactersTotags", "characters.id", "_charactersTotags.A")
+    .leftJoin("tags", "_charactersTotags.B", "tags.id")
     .where(({ eb, and, or }) => {
       const andFilters = [];
       const orFilters = [];
@@ -112,6 +111,51 @@ export function relationConstructor(
       if (andFilters?.length) finalFilters.push(and(andFilters));
       if (orFilters?.length) finalFilters.push(or(orFilters));
       return and(finalFilters);
+    });
+}
+
+export function tagsRelationFilter(
+  table: DBKeys,
+  tagTable: TagsRelationTables,
+  queryBuilder: SelectQueryBuilder<DB, any, any>,
+  filters: RequestBodyFiltersType | undefined,
+) {
+  let count = 0;
+  return queryBuilder
+    .innerJoin(tagTable, `${table}.id`, `${tagTable}.A`)
+    .innerJoin("tags", `${tagTable}.B`, "tags.id")
+    .where(({ eb, and }) => {
+      const andFilters = [];
+      const finalFilters = [];
+      if (filters?.and?.length) {
+        count += filters.and.length;
+        const andIds = filters.and.flatMap((filt) => filt.value);
+        andFilters.push(eb("tags.id", "in", andIds as string[]));
+      }
+      if (filters?.or?.length) {
+        count += 1;
+        const orIds = filters.or.flatMap((filt) => filt.value);
+        andFilters.push(
+          eb.exists((ebb) =>
+            ebb
+              .selectFrom(tagTable)
+              .whereRef("characters.id", "=", "_charactersTotags.A")
+              .innerJoin("tags", "_charactersTotags.B", "tags.id")
+              .where("tags.id", "in", orIds as string[])
+              .having(({ fn }) => fn.count<number>("tags.id").distinct(), ">=", 1),
+          ),
+        );
+      }
+
+      if (andFilters?.length) finalFilters.push(and(andFilters));
+      return and(finalFilters);
+    })
+    .$if(!filters?.or?.length, (qb) => {
+      qb = qb
+        .groupBy(["characters.id", `${tagTable}.A`, `${tagTable}.B`, "tags.id"])
+        .having(({ fn }) => fn.count<number>("tags.id").distinct(), ">=", count);
+
+      return qb;
     });
 }
 

@@ -10,8 +10,7 @@ import { db } from "../database/db";
 import { InsertCharacterSchema, ListCharacterSchema, ReadCharacterSchema, UpdateCharacterSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { constructFilter, constructTagFilter } from "../utils/filterConstructor";
-import { constructOrdering } from "../utils/orderByConstructor";
+import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import {
   CreateTagRelations,
   GetRelationsForUpdating,
@@ -154,19 +153,21 @@ export function character_router(app: Elysia) {
         async ({ body }) => {
           const result = await db
             .selectFrom("characters")
+            .select(body.fields.map((field) => `characters.${field}`) as SelectExpression<DB, "characters">[])
+            .distinctOn(body.orderBy ? (body.orderBy.map((order) => order.field) as any) : "characters.id")
             .where("characters.project_id", "=", body?.data?.project_id)
             .limit(body?.pagination?.limit || 10)
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
-            .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "characters">[]))
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
               qb = constructFilter("characters", qb, body.filters);
               return qb;
             })
-            .$if(!!body?.relationFilters?.tags?.length, (qb) =>
-              constructTagFilter("characters", qb, "_charactersTotags", body?.relationFilters?.tags || [], "A", "B"),
-            )
-            .$if(!!body.orderBy?.length, (qb) => constructOrdering(body.orderBy, qb))
+            .$if(!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length, (qb) => {
+              // @ts-ignore
+              qb = tagsRelationFilter("characters", "_charactersTotags", qb, body.relationFilters);
+              return qb;
+            })
+            // .$if(!!body.orderBy?.length, (qb) => constructOrdering(body.orderBy, qb))
             .$if(!!body?.relations, (qb) => {
               if (body?.relations?.portrait) {
                 qb = qb.select((eb) =>
@@ -185,15 +186,8 @@ export function character_router(app: Elysia) {
             })
             .execute();
 
-          //! TODO: Find better solution via SQL for finding items with all tags
-
           return {
-            data: body?.relationFilters?.tags?.length
-              ? uniqBy(result, "id").filter((char) => {
-                  const charTags: string[] = char?.tags?.map((t: { id: string }) => t.id);
-                  return body?.relationFilters?.tags.every((tag_id) => charTags.includes(tag_id));
-                })
-              : result,
+            data: result,
             message: MessageEnum.success,
             ok: true,
           };

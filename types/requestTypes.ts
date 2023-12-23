@@ -60,11 +60,8 @@ export interface RequestBodyType<T extends { data: any; relations: any }> {
   orderBy?: RequestOrderByType[];
   pagination?: RequestPaginationType;
   relations?: T["relations"];
-  filters?: {
-    and?: RequestFilterType[];
-    or?: RequestFilterType[];
-  };
-  relationFilters?: Record<string, string[]>;
+  filters?: RequestBodyFiltersType;
+  relationFilters?: RequestBodyFiltersType;
 }
 
 export const FilterEnumSchema = t.Union([
@@ -100,7 +97,7 @@ const RequestFilterSchema = t.Optional(
 );
 
 export const RequestBodySchema = t.Object({
-  fields: t.Optional(t.Array(t.String())),
+  fields: t.Array(t.String()),
   orderBy: t.Optional(t.Array(t.Object({ field: t.String(), sort: t.Union([t.Literal("asc"), t.Literal("desc")]) }))),
   pagination: t.Optional(
     t.Object({
@@ -114,7 +111,12 @@ export const RequestBodySchema = t.Object({
       or: RequestFilterSchema,
     }),
   ),
-  relationFilters: t.Optional(t.Record(t.String(), t.Array(t.String()))),
+  relationFilters: t.Optional(
+    t.Object({
+      and: RequestFilterSchema,
+      or: RequestFilterSchema,
+    }),
+  ),
 });
 
 export const ResponseSchema = t.Object({ message: t.String(), ok: t.Boolean() });
