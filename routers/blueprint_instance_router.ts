@@ -12,7 +12,12 @@ import {
 } from "../database/validation/blueprint_instances";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { blueprintInstanceRelationFilter, constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
+import {
+  blueprintInstanceRelationFilter,
+  blueprintInstanceValueFilter,
+  constructFilter,
+  tagsRelationFilter,
+} from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { CreateTagRelations, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 import { groupFiltersByField } from "../utils/transform";
@@ -330,7 +335,8 @@ export function blueprint_instance_router(app: Elysia) {
               return qb;
             })
             .$if(!!body?.relationFilters?.and?.length || !!body?.relationFilters?.or?.length, (qb) => {
-              const { characters, documents, map_pins, tags } = groupFiltersByField(body.relationFilters || {});
+              const { characters, documents, map_pins, tags, value } = groupFiltersByField(body.relationFilters || {});
+
               if (tags?.filters?.length)
                 qb = tagsRelationFilter("blueprint_instances", "_blueprint_instancesTotags", qb, tags?.filters || []);
               if (characters?.filters?.length)
@@ -339,6 +345,8 @@ export function blueprint_instance_router(app: Elysia) {
                 qb = blueprintInstanceRelationFilter("blueprint_instance_documents", qb, documents?.filters || []);
               if (map_pins?.filters?.length)
                 qb = blueprintInstanceRelationFilter("blueprint_instance_map_pins", qb, map_pins?.filters || []);
+
+              if (value?.filters?.length) qb = blueprintInstanceValueFilter(qb, value.filters);
               return qb;
             })
             .$if(!!body.orderBy?.length, (qb) => {

@@ -203,3 +203,57 @@ export function blueprintInstanceRelationFilter(
       });
   return queryBuilder;
 }
+
+function getValue(value: string | number | boolean) {
+  if (typeof value === "string") return sql<string>`LOWER(REPLACE(blueprint_instance_value.value::TEXT, '"', ''))`;
+  if (typeof value === "number")
+    return sql<number>`
+  CASE
+        WHEN jsonb_typeof(blueprint_instance_value.value) = 'number' THEN blueprint_instance_value.value::INT
+        ELSE NULL 
+    END 
+  `;
+  // if (typeof value === "boolean") return sql<number>`blueprint_instance_value.value::INT4`;
+  return sql`1`;
+}
+
+export function blueprintInstanceValueFilter(queryBuilder: SelectQueryBuilder<DB, any, any>, filters: GroupedQueryFilter[]) {
+  const andRequestFilters = (filters || []).filter((filt) => filt.type === "AND");
+  const orRequestFilters = (filters || []).filter((filt) => filt.type === "OR");
+
+  return queryBuilder
+    .innerJoin("blueprint_instance_value", "blueprint_instances.id", "blueprint_instance_value.blueprint_instance_id")
+    .where(({ eb, and, or }) => {
+      const andFilters: any[] = [];
+      const orFilters: any[] = [];
+      const finalFilters = [];
+
+      if (andRequestFilters.length) {
+        console.log(andRequestFilters);
+        andRequestFilters.forEach((val) => {
+          andFilters.push(
+            eb(
+              getValue(val.value as string | number | boolean),
+              FilterEnum[val.operator],
+              FilterEnum[val.operator] === "ilike" ? `%${val.value}%` : val.value,
+            ),
+          );
+        });
+      }
+      if (orRequestFilters.length) {
+        orRequestFilters.forEach((val) => {
+          andFilters.push(
+            eb(
+              sql`LOWER(REPLACE(blueprint_instance_value.value::TEXT, '"', ''))`,
+              FilterEnum[val.operator],
+              FilterEnum[val.operator] === "ilike" ? `%${val.value}%` : `${val.value}`,
+            ),
+          );
+        });
+      }
+
+      if (andFilters?.length) finalFilters.push(and(andFilters));
+      if (orFilters?.length) finalFilters.push(or(orFilters));
+      return and(finalFilters);
+    });
+}
