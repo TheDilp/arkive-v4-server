@@ -82,9 +82,9 @@ export function tagsRelationFilter(
         const andFilters = [];
         const finalFilters = [];
         if (andInIds.length) andFilters.push(eb("tags.id", "in", andInIds as string[]));
-        if (orInIds.length) count += 1;
 
         if (orInIds.length) {
+          count += 1;
           andFilters.push(
             eb.exists((ebb) =>
               ebb
@@ -113,6 +113,13 @@ export function blueprintInstanceRelationFilter(
   filters: GroupedQueryFilter[] | undefined,
 ) {
   let count = 0;
+  const andIds = (filters || [])
+    .filter((filt) => filt.type === "AND")
+    .map((filt) => {
+      count += 1;
+      return filt.value;
+    });
+  const orIds = (filters || []).filter((filt) => filt.type === "OR").map((filt) => filt.value);
   const relatedEntity = relatedEntityFromBPIRelationTable(blueprintInstanceRelationTable);
   if (relatedEntity)
     return queryBuilder
@@ -125,16 +132,11 @@ export function blueprintInstanceRelationFilter(
       .where(({ eb, and }) => {
         const andFilters = [];
         const finalFilters = [];
-        const andIds = (filters || [])
-          .filter((filt) => filt.type === "AND")
-          .map((filt) => {
-            count += 1;
-            return filt.value;
-          });
+
         if (andIds.length) andFilters.push(eb(`${relatedEntity}.id`, "in", andIds as string[]));
-        count += 1;
-        const orIds = (filters || []).filter((filt) => filt.type === "OR").map((filt) => filt.value);
-        if (orIds.length)
+        if (orIds.length) {
+          count += 1;
+
           andFilters.push(
             eb.exists((ebb) =>
               ebb
@@ -145,11 +147,12 @@ export function blueprintInstanceRelationFilter(
                 .having(({ fn }) => fn.count<number>("characters.id").distinct(), ">=", 1),
             ),
           );
+        }
 
         if (andFilters?.length) finalFilters.push(and(andFilters));
         return and(finalFilters);
       })
-      .$if(!filters?.length, (qb) => {
+      .$if(!!andIds.length, (qb) => {
         qb = qb
           .groupBy(["blueprint_instances.id"])
           .having(({ fn }) => fn.count<number>(`${relatedEntity}.id`).distinct(), ">=", count);
