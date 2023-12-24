@@ -191,3 +191,21 @@ export function groupFiltersByField(queryStructure: RequestBodyFiltersType): Gro
 
   return groupedQueries;
 }
+
+export function groupByBlueprintFieldId(data: GroupedQueryFilter[]): Record<string, GroupedQueryFilter[]> {
+  const grouped: Record<string, GroupedQueryFilter[]> = {};
+
+  data.forEach((obj) => {
+    if (obj.relationalData) {
+      const { blueprint_field_id } = obj.relationalData;
+
+      if (grouped[blueprint_field_id]) {
+        grouped[blueprint_field_id].push(obj);
+      } else {
+        grouped[blueprint_field_id] = [obj];
+      }
+    }
+  });
+
+  return grouped;
+}

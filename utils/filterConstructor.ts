@@ -1,11 +1,11 @@
-import { ExpressionWrapper, SelectQueryBuilder, SqlBool } from "kysely";
+import { ExpressionWrapper, SelectQueryBuilder, sql, SqlBool } from "kysely";
 import { DB } from "kysely-codegen";
 
 import { BlueprintInstanceRelationTables, DBKeys, TagsRelationTables } from "../database/types";
 import { FilterEnum } from "../enums/requestEnums";
 import { RequestBodyFiltersType } from "../types/requestTypes";
 import { relatedEntityFromBPIRelationTable } from "./requestUtils";
-import { GroupedQueryFilter, groupFiltersByField } from "./transform";
+import { groupByBlueprintFieldId, GroupedQueryFilter, groupFiltersByField } from "./transform";
 
 export function constructFilter(
   table: DBKeys,
@@ -110,16 +110,16 @@ export function tagsRelationFilter(
 export function blueprintInstanceRelationFilter(
   blueprintInstanceRelationTable: BlueprintInstanceRelationTables,
   queryBuilder: SelectQueryBuilder<DB, any, any>,
-  filters: GroupedQueryFilter[] | undefined,
+  filters: GroupedQueryFilter[],
 ) {
   let count = 0;
-  const andIds = (filters || [])
-    .filter((filt) => filt.type === "AND")
-    .map((filt) => {
-      count += 1;
-      return filt.value;
-    });
-  const orIds = (filters || []).filter((filt) => filt.type === "OR").map((filt) => filt.value);
+  const andRequestFilters = (filters || []).filter((filt) => filt.type === "AND");
+  count += andRequestFilters.length;
+
+  const orRequestFilters = (filters || []).filter((filt) => filt.type === "OR");
+
+  console.log(orRequestFilters);
+
   const relatedEntity = relatedEntityFromBPIRelationTable(blueprintInstanceRelationTable);
   if (relatedEntity)
     return queryBuilder
@@ -129,30 +129,74 @@ export function blueprintInstanceRelationFilter(
         `${blueprintInstanceRelationTable}.blueprint_instance_id`,
       )
       .innerJoin(relatedEntity, `${blueprintInstanceRelationTable}.related_id`, `${relatedEntity}.id`)
-      .where(({ eb, and }) => {
+      .where(({ and, exists, selectFrom }) => {
         const andFilters = [];
+        const orFilters = [];
         const finalFilters = [];
+        const groupedAndByBPField = groupByBlueprintFieldId(andRequestFilters);
+        const groupedOrByBPField = groupByBlueprintFieldId(orRequestFilters);
 
-        if (andIds.length) andFilters.push(eb(`${relatedEntity}.id`, "in", andIds as string[]));
-        if (orIds.length) {
+        let whereAndQuery: any;
+        let whereOrQuery: any;
+        if (andRequestFilters.length) {
+          Object.entries(groupedAndByBPField).forEach(([blueprint_field_id, filters], index) => {
+            const entityIds = filters.map((filt) => filt?.value as string);
+            if (index === 0) {
+              whereAndQuery = selectFrom(blueprintInstanceRelationTable)
+                // @ts-ignore
+                .select(sql<number>`1`)
+                .innerJoin(relatedEntity, `${relatedEntity}.id`, `${blueprintInstanceRelationTable}.related_id`)
+                .where(`${blueprintInstanceRelationTable}.blueprint_field_id`, "=", blueprint_field_id)
+                .where(`${relatedEntity}.id`, "in", entityIds)
+                .whereRef(`${blueprintInstanceRelationTable}.blueprint_instance_id`, "=", "blueprint_instances.id");
+            } else {
+              whereAndQuery = whereAndQuery.intersect(
+                selectFrom(blueprintInstanceRelationTable)
+                  // @ts-ignore
+                  .select(sql<number>`1`)
+                  .innerJoin(relatedEntity, `${relatedEntity}.id`, `${blueprintInstanceRelationTable}.related_id`)
+                  .where(`${blueprintInstanceRelationTable}.blueprint_field_id`, "=", blueprint_field_id)
+                  .where(`${relatedEntity}.id`, "in", entityIds)
+                  .whereRef(`${blueprintInstanceRelationTable}.blueprint_instance_id`, "=", "blueprint_instances.id"),
+              );
+            }
+          });
+
+          andFilters.push(exists(whereAndQuery));
+        }
+        if (orRequestFilters.length) {
           count += 1;
 
-          andFilters.push(
-            eb.exists((ebb) =>
-              ebb
-                .selectFrom(blueprintInstanceRelationTable)
-                .whereRef("blueprint_instances.id", "=", `${blueprintInstanceRelationTable}.blueprint_instance_id`)
-                .innerJoin(relatedEntity, `${blueprintInstanceRelationTable}.related_id`, `${relatedEntity}.id`)
-                .where(`${relatedEntity}.id`, "in", orIds as string[])
-                .having(({ fn }) => fn.count<number>("characters.id").distinct(), ">=", 1),
-            ),
-          );
-        }
+          Object.entries(groupedOrByBPField).forEach(([blueprint_field_id, filters], index) => {
+            const entityIds = filters.map((filt) => filt?.value as string);
+            if (index === 0) {
+              whereOrQuery = selectFrom(blueprintInstanceRelationTable)
+                // @ts-ignore
+                .select(sql<number>`1`)
+                .innerJoin(relatedEntity, `${relatedEntity}.id`, `${blueprintInstanceRelationTable}.related_id`)
+                .where(`${blueprintInstanceRelationTable}.blueprint_field_id`, "=", blueprint_field_id)
+                .where(`${relatedEntity}.id`, "in", entityIds)
+                .whereRef(`${blueprintInstanceRelationTable}.blueprint_instance_id`, "=", "blueprint_instances.id");
+            } else {
+              whereOrQuery = whereOrQuery.union(
+                selectFrom(blueprintInstanceRelationTable)
+                  // @ts-ignore
+                  .select(sql<number>`1`)
+                  .innerJoin(relatedEntity, `${relatedEntity}.id`, `${blueprintInstanceRelationTable}.related_id`)
+                  .where(`${blueprintInstanceRelationTable}.blueprint_field_id`, "=", blueprint_field_id)
+                  .where(`${relatedEntity}.id`, "in", entityIds)
+                  .whereRef(`${blueprintInstanceRelationTable}.blueprint_instance_id`, "=", "blueprint_instances.id"),
+              );
+            }
+          });
 
+          orFilters.push(exists(whereOrQuery));
+        }
         if (andFilters?.length) finalFilters.push(and(andFilters));
+        if (orFilters?.length) finalFilters.push(and(orFilters));
         return and(finalFilters);
       })
-      .$if(!!andIds.length, (qb) => {
+      .$if(!!andRequestFilters.length || !!orRequestFilters.length, (qb) => {
         qb = qb
           .groupBy(["blueprint_instances.id"])
           .having(({ fn }) => fn.count<number>(`${relatedEntity}.id`).distinct(), ">=", count);
