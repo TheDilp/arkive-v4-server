@@ -41,7 +41,12 @@ import {
 } from "./routers";
 
 export const app = new Elysia()
-  .use(cors({ origin: process.env.NODE_ENV === "development" ? true : "https://thearkive.app" }))
+  .use(
+    cors({
+      origin: process.env.NODE_ENV === "development" ? true : "https://thearkive.app",
+      methods: ["GET", "POST", "DELETE"],
+    }),
+  )
   .error({
     UNAUTHORIZED: UnauthorizedError,
     NO_PUBLIC_ACCESS: NoPublicAccess,
