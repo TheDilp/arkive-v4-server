@@ -118,8 +118,6 @@ export function blueprintInstanceRelationFilter(
 
   const orRequestFilters = (filters || []).filter((filt) => filt.type === "OR");
 
-  console.log(orRequestFilters);
-
   const relatedEntity = relatedEntityFromBPIRelationTable(blueprintInstanceRelationTable);
   if (relatedEntity)
     return queryBuilder
