@@ -213,7 +213,12 @@ function getValue(value: string | number | boolean) {
         ELSE NULL 
     END 
   `;
-  // if (typeof value === "boolean") return sql<number>`blueprint_instance_value.value::INT4`;
+  if (typeof value === "boolean")
+    return sql<number>`CASE
+  WHEN jsonb_typeof(blueprint_instance_value.value) = 'boolean' THEN blueprint_instance_value.value::BOOLEAN
+  WHEN blueprint_instance_value.value IS NULL THEN false
+  ELSE false 
+END `;
   return sql`1`;
 }
 
@@ -229,7 +234,6 @@ export function blueprintInstanceValueFilter(queryBuilder: SelectQueryBuilder<DB
       const finalFilters = [];
 
       if (andRequestFilters.length) {
-        console.log(andRequestFilters);
         andRequestFilters.forEach((val) => {
           andFilters.push(
             eb(
@@ -244,9 +248,9 @@ export function blueprintInstanceValueFilter(queryBuilder: SelectQueryBuilder<DB
         orRequestFilters.forEach((val) => {
           andFilters.push(
             eb(
-              sql`LOWER(REPLACE(blueprint_instance_value.value::TEXT, '"', ''))`,
+              getValue(val.value as string | number | boolean),
               FilterEnum[val.operator],
-              FilterEnum[val.operator] === "ilike" ? `%${val.value}%` : `${val.value}`,
+              FilterEnum[val.operator] === "ilike" ? `%${val.value}%` : val.value,
             ),
           );
         });
