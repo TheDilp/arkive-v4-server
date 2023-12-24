@@ -12,9 +12,10 @@ import {
 } from "../database/validation/blueprint_instances";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
+import { blueprintInstanceRelationFilter, constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { CreateTagRelations, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
+import { groupFiltersByField } from "../utils/transform";
 
 export function blueprint_instance_router(app: Elysia) {
   return app.group("/blueprint_instances", (server) =>
@@ -173,10 +174,14 @@ export function blueprint_instance_router(app: Elysia) {
       .post(
         "/",
         async ({ body }) => {
-          const data = await db
+          const query = db
             .selectFrom("blueprint_instances")
             .select(body.fields.map((field) => `blueprint_instances.${field}`) as SelectExpression<DB, "blueprint_instances">[])
-
+            .distinctOn(
+              body.orderBy
+                ? ([...body.orderBy.map((o) => o.field), "blueprint_instances.id"] as any)
+                : ["blueprint_instances.id"],
+            )
             .$if(!!body.data?.parent_id, (qb) => {
               if (body.data?.parent_id) return qb.where("blueprint_instances.parent_id", "=", body.data.parent_id);
               return qb;
@@ -323,9 +328,18 @@ export function blueprint_instance_router(app: Elysia) {
               qb = constructFilter("blueprint_instances", qb, body.filters);
               return qb;
             })
-            .$if(!!body?.relationFilters?.and?.length || !!body?.relationFilters?.or?.length, (qb) =>
-              tagsRelationFilter("blueprint_instances", "_blueprint_instancesTotags", qb, body?.relationFilters),
-            )
+            .$if(!!body?.relationFilters?.and?.length || !!body?.relationFilters?.or?.length, (qb) => {
+              const { characters, documents, map_pins, tags } = groupFiltersByField(body.relationFilters || {});
+              if (tags?.filters?.length)
+                qb = tagsRelationFilter("blueprint_instances", "_blueprint_instancesTotags", qb, tags?.filters || []);
+              if (characters?.filters?.length)
+                qb = blueprintInstanceRelationFilter("blueprint_instance_characters", qb, characters?.filters || []);
+              if (documents?.filters?.length)
+                qb = blueprintInstanceRelationFilter("blueprint_instance_documents", qb, documents?.filters || []);
+              if (map_pins?.filters?.length)
+                qb = blueprintInstanceRelationFilter("blueprint_instance_map_pins", qb, map_pins?.filters || []);
+              return qb;
+            })
             .$if(!!body.orderBy?.length, (qb) => {
               qb = constructOrdering(body.orderBy, qb);
               return qb;
@@ -335,8 +349,9 @@ export function blueprint_instance_router(app: Elysia) {
                 return qb.select((eb) => TagQuery(eb, "_blueprint_instancesTotags", "blueprint_instances"));
               }
               return qb;
-            })
-            .execute();
+            });
+
+          const data = await query.execute();
           return { data, message: MessageEnum.success, ok: true };
         },
         {

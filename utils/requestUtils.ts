@@ -2,6 +2,7 @@ import { decodeJwt } from "jose";
 import { TableExpression } from "kysely";
 import { DB } from "kysely-codegen";
 
+import { BlueprintInstanceRelationEntities, BlueprintInstanceRelationTables } from "../database/types";
 import { AvailableEntityType, AvailableSubEntityType } from "../types/entityTypes";
 import { AfterHandlerActionType, JWTPayloadType, SearchableEntities } from "../types/requestTypes";
 
@@ -41,5 +42,14 @@ export function getParentEntity(sub_entity: string): TableExpression<DB, Availab
   if (sub_entity === "events") return "calendars";
   if (sub_entity === "words") return "dictionaries";
   if (sub_entity === "map_pins") return "maps";
+  return null;
+}
+
+export function relatedEntityFromBPIRelationTable(
+  table: BlueprintInstanceRelationTables,
+): BlueprintInstanceRelationEntities | null {
+  if (table === "blueprint_instance_characters") return "characters";
+  if (table === "blueprint_instance_documents") return "documents";
+  if (table === "blueprint_instance_map_pins") return "map_pins";
   return null;
 }

@@ -1,5 +1,6 @@
 import { baseURLS } from "../enums/baseEnums";
 import { AssetType, AvailableEntityType, AvailableSubEntityType, MentionType } from "../types/entityTypes";
+import { RequestBodyFiltersType, RequestFilterType } from "../types/requestTypes";
 
 export function capitalizeFirstLetter(word: string): string {
   return word.charAt(0).toUpperCase() + word.slice(1);
@@ -14,6 +15,13 @@ export function getXCoordinate(index: number, generation: number, previousOffset
 }
 
 type MainType = { id: string; title: string; suboptions?: { id: string; title: string }[] };
+
+export type GroupedQueryFilter = RequestFilterType & { type: "AND" | "OR" };
+export interface GroupedQueries {
+  [key: string]: {
+    filters: GroupedQueryFilter[];
+  };
+}
 
 export function chooseRandomItems(arr: MainType[], M: number): { id: string; subitem_id?: string; title: string }[] {
   if (M > arr.length) {
@@ -158,4 +166,28 @@ export function getDefaultEntityIcon(type: AvailableEntityType | AvailableSubEnt
   if (type === "blueprints" || type === "blueprint_instances") return "ph:compass-tool";
 
   return "";
+}
+
+export function groupFiltersByField(queryStructure: RequestBodyFiltersType): GroupedQueries {
+  const groupedQueries: GroupedQueries = {};
+
+  for (const groupKey of ["and", "or"]) {
+    // @ts-ignore
+    const group = queryStructure[groupKey];
+    if (group) {
+      for (const query of group) {
+        const { field, ...rest } = query;
+        if (!groupedQueries[field]) {
+          groupedQueries[field] = {
+            filters: [],
+          };
+        }
+        const newFilter = rest;
+        newFilter.type = groupKey.toUpperCase() as "AND" | "OR";
+        groupedQueries[field].filters.push(newFilter);
+      }
+    }
+  }
+
+  return groupedQueries;
 }

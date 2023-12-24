@@ -31,3 +31,10 @@ export type EntitiesWithTags =
 export type EntitiesWithBreadcrumbs = "documents" | "maps" | "graphs" | "dictionaries" | "random_tables";
 
 export type EntitiesWithChildren = "documents" | "maps" | "graphs" | "dictionaries" | "random_tables";
+
+export type BlueprintInstanceRelationEntities = "characters" | "documents" | "map_pins";
+
+export type BlueprintInstanceRelationTables =
+  | "blueprint_instance_characters"
+  | "blueprint_instance_documents"
+  | "blueprint_instance_map_pins";
