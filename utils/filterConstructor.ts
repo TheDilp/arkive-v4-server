@@ -65,14 +65,15 @@ export function tagsRelationFilter(
   filters: GroupedQueryFilter[] | undefined,
 ) {
   let count = 0;
-  const andInIds = (filters || [])
-    .filter((filt) => filt.type === "AND")
-    .map((filt) => {
-      count += 1;
-      return filt.value;
-    });
+  const andInIds =
+    (filters || [])
+      ?.filter((filt) => filt.type === "AND")
+      ?.map((filt) => {
+        count += 1;
+        return filt.value;
+      }) || [];
 
-  const orInIds = (filters || []).filter((filt) => filt.type === "OR").map((filt) => filt.value);
+  const orInIds = (filters || [])?.filter((filt) => filt.type === "OR")?.map((filt) => filt.value) || [];
 
   if (andInIds.length > 0 || orInIds.length > 0)
     return queryBuilder
@@ -84,7 +85,7 @@ export function tagsRelationFilter(
         if (andInIds.length) andFilters.push(eb("tags.id", "in", andInIds as string[]));
 
         if (orInIds.length) {
-          count += 1;
+          // count += 1;
           andFilters.push(
             eb.exists((ebb) =>
               ebb

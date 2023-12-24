@@ -19,7 +19,7 @@ import {
   UpdateCharacterRelationships,
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
-import { getCharacterFullName } from "../utils/transform";
+import { getCharacterFullName, groupFiltersByField } from "../utils/transform";
 
 export function character_router(app: Elysia) {
   return app.group("/characters", (server) =>
@@ -155,9 +155,9 @@ export function character_router(app: Elysia) {
           const result = await db
             .selectFrom("characters")
             .select(body.fields.map((field) => `characters.${field}`) as SelectExpression<DB, "characters">[])
-            // .distinctOn(
-            //   body.orderBy?.length ? (["characters.id", ...body.orderBy.map((order) => order.field)] as any) : "characters.id",
-            // )
+            .distinctOn(
+              body.orderBy?.length ? (["characters.id", ...body.orderBy.map((order) => order.field)] as any) : "characters.id",
+            )
             .where("characters.project_id", "=", body?.data?.project_id)
             .limit(body?.pagination?.limit || 10)
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
@@ -166,8 +166,10 @@ export function character_router(app: Elysia) {
               return qb;
             })
             .$if(!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length, (qb) => {
-              // @ts-ignore
-              qb = tagsRelationFilter("characters", "_charactersTotags", qb, body.relationFilters);
+              const { tags } = groupFiltersByField(body.relationFilters || {});
+
+              if (tags?.filters?.length) qb = tagsRelationFilter("characters", "_charactersTotags", qb, tags?.filters || []);
+
               return qb;
             })
             .$if(!!body.orderBy?.length, (qb) => constructOrdering(body.orderBy, qb))

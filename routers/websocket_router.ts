@@ -67,7 +67,6 @@ export function websocket_router(app: Elysia) {
         if (project_id) {
           ws.subscribe(`notifications/${project_id}`);
         }
-        console.log("OPEN NOTIFICATIONS");
       },
     });
 }
