@@ -193,6 +193,7 @@ export function blueprint_instance_router(app: Elysia) {
                     eb
                       .selectFrom("blueprint_fields")
                       .whereRef("blueprint_fields.parent_id", "=", "blueprint_instances.parent_id")
+                      .orderBy("sort")
                       .select([
                         "id",
                         (ebb) =>
