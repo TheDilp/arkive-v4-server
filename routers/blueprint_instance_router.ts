@@ -137,7 +137,7 @@ export function blueprint_instance_router(app: Elysia) {
                       })
                       .execute();
                   }
-                  if (field?.value) {
+                  if (field?.value || typeof field?.value === "boolean") {
                     await tx
                       .insertInto("blueprint_instance_value")
                       .values({
@@ -556,7 +556,7 @@ export function blueprint_instance_router(app: Elysia) {
             if (body.relations?.blueprint_fields) {
               await Promise.all(
                 body.relations.blueprint_fields.flatMap(async (field) => {
-                  if (field.value) {
+                  if (field.value || typeof field.value === "boolean") {
                     return tx
                       .insertInto("blueprint_instance_value")
                       .values({
