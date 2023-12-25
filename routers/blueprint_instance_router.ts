@@ -345,7 +345,6 @@ export function blueprint_instance_router(app: Elysia) {
                 qb = blueprintInstanceRelationFilter("blueprint_instance_documents", qb, documents?.filters || []);
               if (map_pins?.filters?.length)
                 qb = blueprintInstanceRelationFilter("blueprint_instance_map_pins", qb, map_pins?.filters || []);
-
               if (value?.filters?.length) qb = blueprintInstanceValueFilter(qb, value.filters);
               return qb;
             })
@@ -361,6 +360,8 @@ export function blueprint_instance_router(app: Elysia) {
             });
 
           const data = await query.execute();
+          const c = query.compile();
+          console.log(c);
           return { data, message: MessageEnum.success, ok: true };
         },
         {

@@ -32,26 +32,6 @@ export function constructFilter(
       });
     });
 
-    // if (filters?.and?.length) {
-    //   const { and } = filters;
-    //   for (let index = 0; index < and.length; index++) {
-    //     const { field, operator, value } = and[index];
-    //     const dbOperator = FilterEnum[operator];
-    //     // @ts-ignore
-    //     andFilters.push(eb(`${table}.${field}`, dbOperator, dbOperator === "ilike" ? `%${value}%` : value));
-    //   }
-    // }
-    // if (filters?.or?.length) {
-    //   const { or } = filters;
-
-    //   for (let index = 0; index < or.length; index++) {
-    //     const { field, operator, value } = or[index];
-    //     const dbOperator = FilterEnum[operator];
-    //     // @ts-ignore
-    //     orFilters.push(eb(`${table}.${field}`, dbOperator, dbOperator === "ilike" ? `%${value}%` : value));
-    //   }
-    // }
-
     if (andFilters?.length) finalFilters.push(and(andFilters));
     if (orFilters?.length) finalFilters.push(or(orFilters));
     return and(finalFilters);
@@ -205,60 +185,124 @@ export function blueprintInstanceRelationFilter(
   return queryBuilder;
 }
 
-function getValue(value: string | number | boolean) {
+function getValue(value: string | number | boolean | null) {
   if (typeof value === "string") return sql<string>`LOWER(REPLACE(blueprint_instance_value.value::TEXT, '"', ''))`;
   if (typeof value === "number")
     return sql<number>`
-  CASE
-        WHEN jsonb_typeof(blueprint_instance_value.value) = 'number' THEN blueprint_instance_value.value::INT
-        ELSE NULL 
-    END 
-  `;
+      CASE
+      WHEN jsonb_typeof(blueprint_instance_value.value) = 'number' THEN blueprint_instance_value.value::INT
+      ELSE NULL 
+      END `;
   if (typeof value === "boolean")
     return sql<number>`CASE
-  WHEN jsonb_typeof(blueprint_instance_value.value) = 'boolean' THEN blueprint_instance_value.value::BOOLEAN
-  WHEN blueprint_instance_value.value IS NULL THEN false
-  ELSE false 
-END `;
-  return sql`1`;
+      WHEN jsonb_typeof(blueprint_instance_value.value) = 'boolean' THEN blueprint_instance_value.value::BOOLEAN
+      ELSE NULL
+      END`;
+  if (value === null) return sql`NULL`;
+
+  return sql`NULL`;
 }
 
 export function blueprintInstanceValueFilter(queryBuilder: SelectQueryBuilder<DB, any, any>, filters: GroupedQueryFilter[]) {
+  // let count = 0;
   const andRequestFilters = (filters || []).filter((filt) => filt.type === "AND");
+  // count += andRequestFilters.length;
+
   const orRequestFilters = (filters || []).filter((filt) => filt.type === "OR");
+  console.log(andRequestFilters);
+  if (!andRequestFilters?.length && !orRequestFilters?.length) return queryBuilder;
 
-  return queryBuilder
-    .innerJoin("blueprint_instance_value", "blueprint_instances.id", "blueprint_instance_value.blueprint_instance_id")
-    .where(({ eb, and, or }) => {
-      const andFilters: any[] = [];
-      const orFilters: any[] = [];
-      const finalFilters = [];
+  return queryBuilder.where(({ and, exists, selectFrom }) => {
+    const andFilters = [];
+    const orFilters = [];
+    const finalFilters: any = [];
 
-      if (andRequestFilters.length) {
-        andRequestFilters.forEach((val) => {
-          andFilters.push(
-            eb(
-              getValue(val.value as string | number | boolean),
-              FilterEnum[val.operator],
-              FilterEnum[val.operator] === "ilike" ? `%${val.value}%` : val.value,
-            ),
+    let whereAndQuery: any;
+    let whereOrQuery: any;
+    if (andRequestFilters.length) {
+      andRequestFilters.forEach((filt, index) => {
+        if (index === 0) {
+          whereAndQuery = selectFrom("blueprint_instance_value")
+            // @ts-ignore
+            .select(sql<number>`1`)
+            .whereRef("blueprint_instance_value.blueprint_instance_id", "=", "blueprint_instances.id")
+            .where("blueprint_instance_value.blueprint_field_id", "=", filt.relationalData?.blueprint_field_id as string)
+            .where(
+              getValue(filt.value as string | number | boolean | null),
+              FilterEnum[filt.operator],
+              filt.operator === "ilike" ? `%${filt.value}%` : filt.value,
+            );
+        } else {
+          whereAndQuery = whereAndQuery.intersect(
+            selectFrom("blueprint_instance_value")
+              // @ts-ignore
+              .select(sql<number>`1`)
+              .whereRef("blueprint_instance_value.blueprint_instance_id", "=", "blueprint_instances.id")
+              .where("blueprint_instance_value.blueprint_field_id", "=", filt.relationalData?.blueprint_field_id as string)
+              .where(
+                getValue(filt.value as string | number | boolean | null),
+                FilterEnum[filt.operator],
+                filt.operator === "ilike" ? `%${filt.value}%` : filt.value,
+              ),
           );
-        });
-      }
-      if (orRequestFilters.length) {
-        orRequestFilters.forEach((val) => {
-          andFilters.push(
-            eb(
-              getValue(val.value as string | number | boolean),
-              FilterEnum[val.operator],
-              FilterEnum[val.operator] === "ilike" ? `%${val.value}%` : val.value,
-            ),
-          );
-        });
-      }
+        }
+      });
+      andFilters.push(exists(whereAndQuery));
+    }
 
-      if (andFilters?.length) finalFilters.push(and(andFilters));
-      if (orFilters?.length) finalFilters.push(or(orFilters));
-      return and(finalFilters);
-    });
+    if (orRequestFilters.length) {
+      // count += 1;
+
+      orRequestFilters.forEach((filt, index) => {
+        if (index === 0) {
+          whereOrQuery = selectFrom("blueprint_instance_value")
+            // @ts-ignore
+            .select(sql<number>`1`)
+            .whereRef("blueprint_instance_value.blueprint_instance_id", "=", "blueprint_instances.id")
+            .where("blueprint_instance_value.blueprint_field_id", "=", filt.relationalData?.blueprint_field_id as string)
+            .where(
+              getValue(filt.value as string | number | boolean | null),
+              FilterEnum[filt.operator],
+              filt.operator === "ilike" ? `%${filt.value}%` : filt.value,
+            );
+        } else {
+          whereOrQuery = whereOrQuery.union(
+            selectFrom("blueprint_instance_value")
+              // @ts-ignore
+              .select(sql<number>`1`)
+              .whereRef("blueprint_instance_value.blueprint_instance_id", "=", "blueprint_instances.id")
+              .where("blueprint_instance_value.blueprint_field_id", "=", filt.relationalData?.blueprint_field_id as string)
+              .where(
+                getValue(filt.value as string | number | boolean | null),
+                FilterEnum[filt.operator],
+                filt.operator === "ilike" ? `%${filt.value}%` : filt.value,
+              ),
+          );
+        }
+      });
+      orFilters.push(exists(whereOrQuery));
+    }
+    if (andFilters?.length) finalFilters.push(and(andFilters));
+    if (orFilters?.length) finalFilters.push(and(orFilters));
+    return and(finalFilters);
+  });
 }
+
+// export function blueprintInstanceBoolFilter(queryBuilder: SelectQueryBuilder<DB, any, any>, filters: GroupedQueryFilter[]) {
+//   return queryBuilder.where(({ selectFrom, or, eb }) => {
+//     const orRequestFilters = (filters || []).filter((filt) => filt.type === "OR");
+//     const groupedOrByBPField = groupByBlueprintFieldId(orRequestFilters);
+//     let whereAndQuery: any;
+//     let whereOrQuery: any;
+
+//     Object.entries(groupedOrByBPField).forEach(([blueprint_field_id, filters], index) => {
+//       if (index === 0) {
+//         whereOrQuery = selectFrom("blueprint_instance_value")
+//           // @ts-ignore
+//           .select(sql<number>`1`)
+//           .where("blueprint_instance_value.blueprint_field_id", "=", blueprint_field_id)
+//           .where(or([eb("blueprint_instance_value.value", "=", false), eb("blueprint_instance_value.value", "is", null)]));
+//       }
+//     });
+//   });
+// }
