@@ -4,7 +4,7 @@ import { RequestBodySchema } from "../../types/requestTypes";
 
 export const ReadRandomTableSchema = t.Intersect([
   RequestBodySchema,
-  t.Object({ data: t.Object({}) }),
+
   t.Optional(
     t.Object({
       relations: t.Optional(

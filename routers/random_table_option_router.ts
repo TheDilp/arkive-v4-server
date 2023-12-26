@@ -77,7 +77,7 @@ export function random_table_option_router(app: Elysia) {
         },
         {
           body: ListRandomTableOptionsSchema,
-          response: ResponseSchema,
+          response: ResponseWithDataSchema,
         },
       )
       .post(
