@@ -77,7 +77,6 @@ export function tagsRelationFilter(
             ),
           );
         }
-
         if (andFilters?.length) finalFilters.push(and(andFilters));
         return and(finalFilters);
       })
@@ -209,7 +208,6 @@ export function blueprintInstanceValueFilter(queryBuilder: SelectQueryBuilder<DB
   // count += andRequestFilters.length;
 
   const orRequestFilters = (filters || []).filter((filt) => filt.type === "OR");
-  console.log(andRequestFilters);
   if (!andRequestFilters?.length && !orRequestFilters?.length) return queryBuilder;
 
   return queryBuilder.where(({ and, exists, selectFrom }) => {
