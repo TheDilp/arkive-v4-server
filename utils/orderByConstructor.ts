@@ -7,12 +7,8 @@ export function constructOrdering(orderBy: RequestOrderByType[] | undefined, qb:
   if (orderBy) {
     for (let index = 0; index < orderBy.length; index++) {
       const order = orderBy[index];
-      qb = constructOrderBy(qb, order?.field as string, order?.sort);
+      qb = qb.orderBy(order?.field as string, order?.sort || "asc");
     }
   }
   return qb;
-}
-
-export function constructOrderBy(queryBuilder: SelectQueryBuilder<DB, any, any>, field: string, sort?: "asc" | "desc") {
-  return queryBuilder.orderBy(field, sort || "asc");
 }
