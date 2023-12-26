@@ -80,7 +80,7 @@ export function character_fields_templates_router(app: Elysia) {
               qb = constructFilter("character_fields_templates", qb, body.filters);
               return qb;
             })
-            .$if(!!body.relationFilters, (qb) => {
+            .$if(!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length, (qb) => {
               const { tags } = groupFiltersByField(body.relationFilters || {});
               if (tags?.filters?.length)
                 qb = tagsRelationFilter(
