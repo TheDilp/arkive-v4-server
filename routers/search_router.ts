@@ -485,6 +485,7 @@ export function search_router(app: Elysia) {
 
               if (entity_name === "characters") fields.push("characters.full_name", "characters.portrait_id");
               else if (entity_name === "nodes" || entity_name === "edges") fields.push("label");
+              else fields.push(`${entity_name}.title`);
               if (SubEntityEnum.includes(entity_name)) fields.push("parent_id");
 
               return {
