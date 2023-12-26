@@ -16,6 +16,7 @@ import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { CreateTagRelations, GetRelationsForUpdating, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
+import { groupFiltersByField } from "../utils/transform";
 
 export function character_fields_templates_router(app: Elysia) {
   return app.group("/character_fields_templates", (server) =>
@@ -63,8 +64,12 @@ export function character_fields_templates_router(app: Elysia) {
         async ({ body }) => {
           const data = await db
             .selectFrom("character_fields_templates")
+            .distinctOn(
+              body.orderBy?.length
+                ? (["character_fields_templates.id", ...body.orderBy.map((order) => order.field)] as any)
+                : "character_fields_templates.id",
+            )
             .where("character_fields_templates.project_id", "=", body.data.project_id)
-
             .select(
               (body.fields || [])?.map((field) => `character_fields_templates.${field}`) as SelectExpression<
                 DB,
@@ -75,9 +80,18 @@ export function character_fields_templates_router(app: Elysia) {
               qb = constructFilter("character_fields_templates", qb, body.filters);
               return qb;
             })
-            .$if(!!body?.relationFilters?.and?.length || !!body?.relationFilters?.or?.length, (qb) =>
-              tagsRelationFilter("character_fields_templates", "_character_fields_templatesTotags", qb, body?.relationFilters),
-            )
+            .$if(!!body.relationFilters, (qb) => {
+              const { tags } = groupFiltersByField(body.relationFilters || {});
+              if (tags?.filters?.length)
+                qb = tagsRelationFilter(
+                  "character_fields_templates",
+                  "_character_fields_templatesTotags",
+                  qb,
+                  tags?.filters || [],
+                );
+
+              return qb;
+            })
             .$if(!!body.orderBy?.length, (qb) => {
               qb = constructOrdering(body.orderBy, qb);
               return qb;
