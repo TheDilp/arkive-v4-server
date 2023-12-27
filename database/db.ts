@@ -6,6 +6,7 @@ const dialect = new PostgresDialect({
   pool: new Pool({
     connectionString: process.env.DATABASE_URL,
     max: 80,
+    idleTimeoutMillis: 5000,
   }),
 });
 
