@@ -152,7 +152,8 @@ CREATE TYPE public."MentionTypeEnum" AS ENUM (
     'graphs',
     'blueprint_instances',
     'words',
-    'events'
+    'events',
+    'map_pins'
 );
 
 
@@ -3231,4 +3232,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20231216102520'),
     ('20231216124629'),
     ('20231218101511'),
-    ('20231218103101');
+    ('20231218103101'),
+    ('20231227080417');
