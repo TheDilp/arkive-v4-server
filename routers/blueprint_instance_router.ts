@@ -360,8 +360,6 @@ export function blueprint_instance_router(app: Elysia) {
             });
 
           const data = await query.execute();
-          const c = query.compile();
-          console.log(c);
           return { data, message: MessageEnum.success, ok: true };
         },
         {

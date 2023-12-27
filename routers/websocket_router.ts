@@ -53,12 +53,9 @@ export function websocket_router(app: Elysia) {
               }),
             );
           } catch (error) {
-            console.log("error");
+            console.error("WEBSOCKET PUBLISH ERROR:", error);
           }
         }
-      },
-      close() {
-        console.log("CLOSED");
       },
     })
     .ws("/ws/notifications/:project_id", {

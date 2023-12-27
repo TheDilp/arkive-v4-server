@@ -49,7 +49,6 @@ export function user_router(app: Elysia) {
       .post(
         "/update/:id",
         async ({ params, body }) => {
-          console.log(body.data);
           await db.updateTable("users").where("id", "=", params.id).set(body.data).execute();
           return { message: `User ${MessageEnum.successfully_updated}`, ok: true };
         },
