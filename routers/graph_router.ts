@@ -112,6 +112,11 @@ export function graph_router(app: Elysia) {
                 ).as("nodes"),
               ),
             )
+            .$if(!!body?.relations?.edges, (qb) =>
+              qb.select((eb) =>
+                jsonArrayFrom(eb.selectFrom("edges").where("edges.parent_id", "=", params.id).selectAll()).as("edges"),
+              ),
+            )
 
             .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_graphsTotags", "graphs")))
             .select([
@@ -126,18 +131,12 @@ export function graph_router(app: Elysia) {
               "graphs.default_edge_color",
             ])
             .executeTakeFirstOrThrow();
-          const edges = body?.relations?.edges
-            ? await db.selectFrom("edges").selectAll().where("edges.parent_id", "=", params.id).execute()
-            : [];
 
           const parents = body?.relations?.parents ? await GetBreadcrumbs({ db, id: params.id, table_name: "graphs" }) : [];
           const finalData: typeof data & { parents?: any[]; edges?: any[] } = { ...data };
 
           if (parents.length) {
             finalData.parents = parents;
-          }
-          if (edges.length) {
-            finalData.edges = edges;
           }
 
           return {

@@ -8,10 +8,13 @@ import {
   BasicSearchSchema,
   EntityListSchema,
   ReadCalendarSchema,
+  ReadCharacterSchema,
   ReadDictionarySchema,
   ReadDocumentSchema,
+  ReadEventSchema,
   ReadGraphSchema,
   ReadMapSchema,
+  ReadWordSchema,
 } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
@@ -38,15 +41,57 @@ export function public_router(app: Elysia) {
         },
       )
       .post(
+        "/blueprint_instances/:id",
+        async ({ params, body }) => {
+          const data = await db
+            .selectFrom("blueprint_instances")
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) =>
+              qb.clearSelect().select(body.fields as SelectExpression<DB, "blueprint_instances">[]),
+            )
+            .where("blueprint_instances.id", "=", params.id)
+            .where("blueprint_instances.is_public", "=", true)
+            .executeTakeFirst();
+
+          if (data?.is_public) return { data, message: MessageEnum.success, ok: true };
+          return { data: { is_public: false }, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: ReadCharacterSchema,
+          response: ResponseWithDataSchema,
+        },
+      )
+      .post(
+        "/characters/:id",
+        async ({ params, body }) => {
+          const data = await db
+            .selectFrom("characters")
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "characters">[]))
+            .where("characters.id", "=", params.id)
+            .where("characters.is_public", "=", true)
+            .executeTakeFirst();
+          // If fetching direct relationships return only unique relationships
+
+          if (data?.is_public) return { data, message: MessageEnum.success, ok: true };
+          return { data: { is_public: false }, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: ReadCharacterSchema,
+          response: ResponseWithDataSchema,
+        },
+      )
+      .post(
         "/documents/:id",
         async ({ params, body }) => {
           const data = await db
             .selectFrom("documents")
             .where("id", "=", params.id)
+            .where("is_public", "=", true)
             .$if(!body?.fields?.length, (qb) => qb.selectAll())
             .$if(!!body?.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "documents">[]))
-            .executeTakeFirstOrThrow();
-          if (data.is_public) return { data, message: MessageEnum.success, ok: true };
+            .executeTakeFirst();
+          if (data?.is_public) return { data, message: MessageEnum.success, ok: true };
 
           return { data: { is_public: false }, message: MessageEnum.success, ok: true };
         },
@@ -63,6 +108,7 @@ export function public_router(app: Elysia) {
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "maps">[]))
             .where("maps.id", "=", params.id)
+            .where("maps.is_public", "=", true)
             .$if(!!body?.relations?.map_pins, (qb) =>
               qb.select((eb) =>
                 jsonArrayFrom(
@@ -122,9 +168,8 @@ export function public_router(app: Elysia) {
                 ).as("map_layers"),
               ),
             )
-            .executeTakeFirstOrThrow();
-
-          if (data.is_public) return { data, message: MessageEnum.success, ok: true };
+            .executeTakeFirst();
+          if (data?.is_public) return { data, message: MessageEnum.success, ok: true };
           return { data: { is_public: false }, message: MessageEnum.success, ok: true };
         },
         {
@@ -139,6 +184,9 @@ export function public_router(app: Elysia) {
 
             .selectFrom("graphs")
             .where("graphs.id", "=", params.id)
+            .where("graphs.is_public", "=", true)
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "graphs">[]))
             .$if(!!body?.relations?.nodes, (qb) =>
               qb.select((eb) =>
                 jsonArrayFrom(
@@ -174,29 +222,17 @@ export function public_router(app: Elysia) {
                 ).as("nodes"),
               ),
             )
+            .$if(!!body?.relations?.edges, (qb) =>
+              qb.select((eb) =>
+                jsonArrayFrom(eb.selectFrom("edges").where("edges.parent_id", "=", params.id).selectAll()).as("edges"),
+              ),
+            )
 
-            .select([
-              "graphs.id",
-              "graphs.title",
-              "graphs.icon",
-              "graphs.is_public",
-              "graphs.default_node_shape",
-              "graphs.default_node_color",
-              "graphs.default_edge_color",
-            ])
-            .executeTakeFirstOrThrow();
-          const edges = body?.relations?.edges
-            ? await db.selectFrom("edges").selectAll().where("edges.parent_id", "=", params.id).execute()
-            : [];
+            .executeTakeFirst();
 
-          const finalData: typeof data & { parents?: any[]; edges?: any[] } = { ...data };
-
-          if (edges.length) {
-            finalData.edges = edges;
-          }
-          if (data.is_public)
+          if (data?.is_public)
             return {
-              data: finalData,
+              data,
               message: MessageEnum.success,
               ok: true,
             };
@@ -214,6 +250,7 @@ export function public_router(app: Elysia) {
           const data = await db
             .selectFrom("calendars")
             .where("calendars.id", "=", params.id)
+            .where("calendars.is_public", "=", true)
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "calendars">[]))
             .$if(!!body?.relations, (qb) => {
@@ -240,9 +277,9 @@ export function public_router(app: Elysia) {
 
               return qb;
             })
-            .executeTakeFirstOrThrow();
-
-          return { data, message: MessageEnum.success, ok: true };
+            .executeTakeFirst();
+          if (data?.is_public) return { data, message: MessageEnum.success, ok: true };
+          return { data: { is_public: false }, message: MessageEnum.success, ok: true };
         },
         {
           body: ReadCalendarSchema,
@@ -294,12 +331,55 @@ export function public_router(app: Elysia) {
               ),
             )
 
-            .executeTakeFirstOrThrow();
+            .executeTakeFirst();
           if (data?.is_public) return { data, message: MessageEnum.success, ok: true };
           return { data: { is_public: false }, message: MessageEnum.success, ok: true };
         },
         {
           body: ReadDictionarySchema,
+          response: ResponseWithDataSchema,
+        },
+      )
+      .post(
+        "/words/:id",
+        async ({ params, body }) => {
+          const data = await db
+            .selectFrom("words")
+            .leftJoin("dictionaries", "dictionaries.id", "words.parent_id")
+            .where("words.id", "=", params.id)
+            .where("dictionaries.is_public", "=", true)
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) =>
+              qb.clearSelect().select(
+                // @ts-ignore
+                body.fields.map((f) => `words.${f}`).concat("dictionaries.is_public") as SelectExpression<DB, "words">[],
+              ),
+            )
+            .executeTakeFirst();
+          if (data?.is_public) return { data, message: MessageEnum.success, ok: true };
+          return { data: { is_public: false }, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: ReadWordSchema,
+          response: ResponseWithDataSchema,
+        },
+      )
+      .post(
+        "/events/:id",
+        async ({ params, body }) => {
+          const data = await db
+            .selectFrom("events")
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "events">[]))
+            .where("events.id", "=", params.id)
+            .where("events.is_public", "=", true)
+            .executeTakeFirst();
+
+          if (data?.is_public) return { data, message: MessageEnum.success, ok: true };
+          return { data: { is_public: false }, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: ReadEventSchema,
           response: ResponseWithDataSchema,
         },
       )
