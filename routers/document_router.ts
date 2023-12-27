@@ -32,7 +32,9 @@ import {
 } from "../utils/relationalQueryHelpers";
 import { findObjectsByType, getCharacterFullName, insertSenderToMessage } from "../utils/transform";
 
-function getAutoLinkerFields(type: "characters" | "documents" | "blueprint_instances" | "maps" | "graphs" | "words") {
+function getAutoLinkerFields(
+  type: "characters" | "documents" | "blueprint_instances" | "maps" | "map_pins" | "graphs" | "words",
+) {
   if (type === "characters") return ["id", "full_name as title", "portrait_id as image_id"] as const;
   if (type === "blueprint_instances") return ["id", "title", "parent_id"] as const;
   if (type === "maps" || type === "graphs") return ["id", "title"] as const;
@@ -198,7 +200,7 @@ export function document_router(app: Elysia) {
                 );
               }
             }
-            if (body.data.content) {
+            if (body?.data?.content) {
               const mentions = findObjectsByType(body.data.content, "mentionAtom");
               const uniqueMentionIds = uniq(mentions.map((mention: MentionType) => mention?.attrs?.id).filter((id) => !!id));
               if (uniqueMentionIds.length) {

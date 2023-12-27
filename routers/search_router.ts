@@ -211,6 +211,22 @@ export function search_router(app: Elysia) {
               ok: true,
             };
           }
+          if (type === "map_pins") {
+            const data = await db
+              .selectFrom("map_pins")
+              .leftJoin("maps", "maps.id", "map_pins.parent_id")
+              .select(["map_pins.id", "map_pins.title", "map_pins.parent_id", "map_pins.image_id"])
+              .where("map_pins.title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
+              .where("maps.project_id", "=", params.project_id)
+              .limit(body.limit || 10)
+              .execute();
+
+            return {
+              data,
+              message: MessageEnum.success,
+              ok: true,
+            };
+          }
           if (type === "graphs") {
             const data = await db
               .selectFrom("graphs")
