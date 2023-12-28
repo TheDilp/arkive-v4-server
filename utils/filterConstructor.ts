@@ -1,11 +1,29 @@
 import { ExpressionWrapper, SelectQueryBuilder, sql, SqlBool } from "kysely";
 import { DB } from "kysely-codegen";
 
-import { BlueprintInstanceRelationTables, DBKeys, TagsRelationTables } from "../database/types";
+import { BlueprintInstanceRelationTables, CharacterRelationTables, DBKeys, TagsRelationTables } from "../database/types";
 import { FilterEnum } from "../enums/requestEnums";
 import { RequestBodyFiltersType } from "../types/requestTypes";
-import { relatedEntityFromBPIRelationTable } from "./requestUtils";
-import { groupByBlueprintFieldId, GroupedQueryFilter, groupFiltersByField } from "./transform";
+import { relatedEntityFromBPIRelationTable, relatedEntityFromCharacterRelationTable } from "./requestUtils";
+import { groupByBlueprintFieldId, groupByCharacterFieldId, GroupedQueryFilter, groupFiltersByField } from "./transform";
+
+function getValue(value: string | number | boolean | null) {
+  if (typeof value === "string") return sql<string>`LOWER(REPLACE(blueprint_instance_value.value::TEXT, '"', ''))`;
+  if (typeof value === "number")
+    return sql<number>`
+      CASE
+      WHEN jsonb_typeof(blueprint_instance_value.value) = 'number' THEN blueprint_instance_value.value::INT
+      ELSE NULL 
+      END `;
+  if (typeof value === "boolean")
+    return sql<number>`CASE
+      WHEN jsonb_typeof(blueprint_instance_value.value) = 'boolean' THEN blueprint_instance_value.value::BOOLEAN
+      ELSE NULL
+      END`;
+  if (value === null) return sql`NULL`;
+
+  return sql`NULL`;
+}
 
 export function constructFilter(
   table: DBKeys,
@@ -37,7 +55,6 @@ export function constructFilter(
     return and(finalFilters);
   });
 }
-
 export function tagsRelationFilter(
   table: DBKeys,
   tagTable: TagsRelationTables,
@@ -183,25 +200,6 @@ export function blueprintInstanceRelationFilter(
       });
   return queryBuilder;
 }
-
-function getValue(value: string | number | boolean | null) {
-  if (typeof value === "string") return sql<string>`LOWER(REPLACE(blueprint_instance_value.value::TEXT, '"', ''))`;
-  if (typeof value === "number")
-    return sql<number>`
-      CASE
-      WHEN jsonb_typeof(blueprint_instance_value.value) = 'number' THEN blueprint_instance_value.value::INT
-      ELSE NULL 
-      END `;
-  if (typeof value === "boolean")
-    return sql<number>`CASE
-      WHEN jsonb_typeof(blueprint_instance_value.value) = 'boolean' THEN blueprint_instance_value.value::BOOLEAN
-      ELSE NULL
-      END`;
-  if (value === null) return sql`NULL`;
-
-  return sql`NULL`;
-}
-
 export function blueprintInstanceValueFilter(queryBuilder: SelectQueryBuilder<DB, any, any>, filters: GroupedQueryFilter[]) {
   // let count = 0;
   const andRequestFilters = (filters || []).filter((filt) => filt.type === "AND");
@@ -284,22 +282,93 @@ export function blueprintInstanceValueFilter(queryBuilder: SelectQueryBuilder<DB
     return and(finalFilters);
   });
 }
+export function characterRelationFilter(
+  characterRelationTable: CharacterRelationTables,
+  queryBuilder: SelectQueryBuilder<DB, any, any>,
+  filters: GroupedQueryFilter[],
+) {
+  let count = 0;
+  const andRequestFilters = (filters || []).filter((filt) => filt.type === "AND");
+  count += andRequestFilters.length;
 
-// export function blueprintInstanceBoolFilter(queryBuilder: SelectQueryBuilder<DB, any, any>, filters: GroupedQueryFilter[]) {
-//   return queryBuilder.where(({ selectFrom, or, eb }) => {
-//     const orRequestFilters = (filters || []).filter((filt) => filt.type === "OR");
-//     const groupedOrByBPField = groupByBlueprintFieldId(orRequestFilters);
-//     let whereAndQuery: any;
-//     let whereOrQuery: any;
+  const orRequestFilters = (filters || []).filter((filt) => filt.type === "OR");
 
-//     Object.entries(groupedOrByBPField).forEach(([blueprint_field_id, filters], index) => {
-//       if (index === 0) {
-//         whereOrQuery = selectFrom("blueprint_instance_value")
-//           // @ts-ignore
-//           .select(sql<number>`1`)
-//           .where("blueprint_instance_value.blueprint_field_id", "=", blueprint_field_id)
-//           .where(or([eb("blueprint_instance_value.value", "=", false), eb("blueprint_instance_value.value", "is", null)]));
-//       }
-//     });
-//   });
-// }
+  const relatedEntity = relatedEntityFromCharacterRelationTable(characterRelationTable);
+  if (relatedEntity)
+    return queryBuilder
+      .innerJoin(characterRelationTable, "characters.id", `${characterRelationTable}.character_id`)
+      .innerJoin(relatedEntity, `${characterRelationTable}.related_id`, `${relatedEntity}.id`)
+      .where(({ and, exists, selectFrom }) => {
+        const andFilters = [];
+        const orFilters = [];
+        const finalFilters = [];
+        const groupedAndByBPField = groupByCharacterFieldId(andRequestFilters);
+        const groupedOrByBPField = groupByCharacterFieldId(orRequestFilters);
+
+        let whereAndQuery: any;
+        let whereOrQuery: any;
+        if (andRequestFilters.length) {
+          Object.entries(groupedAndByBPField).forEach(([character_field_id, filters], index) => {
+            const entityIds = filters.map((filt) => filt?.value as string);
+            if (index === 0) {
+              whereAndQuery = selectFrom(characterRelationTable)
+                // @ts-ignore
+                .select(sql<number>`1`)
+                .innerJoin(relatedEntity, `${relatedEntity}.id`, `${characterRelationTable}.related_id`)
+                .where(`${characterRelationTable}.character_field_id`, "=", character_field_id)
+                .where(`${relatedEntity}.id`, "in", entityIds)
+                .whereRef(`${characterRelationTable}.character_id`, "=", "characters.id");
+            } else {
+              whereAndQuery = whereAndQuery.intersect(
+                selectFrom(characterRelationTable)
+                  // @ts-ignore
+                  .select(sql<number>`1`)
+                  .innerJoin(relatedEntity, `${relatedEntity}.id`, `${characterRelationTable}.related_id`)
+                  .where(`${characterRelationTable}.character_field_id`, "=", character_field_id)
+                  .where(`${relatedEntity}.id`, "in", entityIds)
+                  .whereRef(`${characterRelationTable}.character_id`, "=", "characters.id"),
+              );
+            }
+          });
+
+          andFilters.push(exists(whereAndQuery));
+        }
+        if (orRequestFilters.length) {
+          count += 1;
+
+          Object.entries(groupedOrByBPField).forEach(([character_field_id, filters], index) => {
+            const entityIds = filters.map((filt) => filt?.value as string);
+            if (index === 0) {
+              whereOrQuery = selectFrom(characterRelationTable)
+                // @ts-ignore
+                .select(sql<number>`1`)
+                .innerJoin(relatedEntity, `${relatedEntity}.id`, `${characterRelationTable}.related_id`)
+                .where(`${characterRelationTable}.character_field_id`, "=", character_field_id)
+                .where(`${relatedEntity}.id`, "in", entityIds)
+                .whereRef(`${characterRelationTable}.character`, "=", "characters.id");
+            } else {
+              whereOrQuery = whereOrQuery.union(
+                selectFrom(characterRelationTable)
+                  // @ts-ignore
+                  .select(sql<number>`1`)
+                  .innerJoin(relatedEntity, `${relatedEntity}.id`, `${characterRelationTable}.related_id`)
+                  .where(`${characterRelationTable}.character_field_id`, "=", character_field_id)
+                  .where(`${relatedEntity}.id`, "in", entityIds)
+                  .whereRef(`${characterRelationTable}.character_id`, "=", "characters.id"),
+              );
+            }
+          });
+
+          orFilters.push(exists(whereOrQuery));
+        }
+        if (andFilters?.length) finalFilters.push(and(andFilters));
+        if (orFilters?.length) finalFilters.push(and(orFilters));
+        return and(finalFilters);
+      })
+      .$if(!!andRequestFilters.length || !!orRequestFilters.length, (qb) => {
+        qb = qb.groupBy(["characters.id"]).having(({ fn }) => fn.count<number>(`${relatedEntity}.id`).distinct(), ">=", count);
+
+        return qb;
+      });
+  return queryBuilder;
+}

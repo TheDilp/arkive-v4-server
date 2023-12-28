@@ -2,7 +2,12 @@ import { decodeJwt } from "jose";
 import { TableExpression } from "kysely";
 import { DB } from "kysely-codegen";
 
-import { BlueprintInstanceRelationEntities, BlueprintInstanceRelationTables } from "../database/types";
+import {
+  BlueprintInstanceRelationEntities,
+  BlueprintInstanceRelationTables,
+  CharacterRelationEntities,
+  CharacterRelationTables,
+} from "../database/types";
 import { AvailableEntityType, AvailableSubEntityType } from "../types/entityTypes";
 import { AfterHandlerActionType, JWTPayloadType, SearchableEntities } from "../types/requestTypes";
 
@@ -51,5 +56,12 @@ export function relatedEntityFromBPIRelationTable(
   if (table === "blueprint_instance_characters") return "characters";
   if (table === "blueprint_instance_documents") return "documents";
   if (table === "blueprint_instance_map_pins") return "map_pins";
+  return null;
+}
+
+export function relatedEntityFromCharacterRelationTable(table: CharacterRelationTables): CharacterRelationEntities | null {
+  if (table === "character_blueprint_instance_fields") return "blueprint_instances";
+  if (table === "character_documents_fields") return "documents";
+  if (table === "character_locations_fields") return "map_pins";
   return null;
 }

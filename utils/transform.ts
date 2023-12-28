@@ -198,11 +198,28 @@ export function groupByBlueprintFieldId(data: GroupedQueryFilter[]): Record<stri
   data.forEach((obj) => {
     if (obj.relationalData) {
       const { blueprint_field_id } = obj.relationalData;
-
+      if (!blueprint_field_id) return;
       if (grouped[blueprint_field_id]) {
         grouped[blueprint_field_id].push(obj);
       } else {
         grouped[blueprint_field_id] = [obj];
+      }
+    }
+  });
+
+  return grouped;
+}
+export function groupByCharacterFieldId(data: GroupedQueryFilter[]): Record<string, GroupedQueryFilter[]> {
+  const grouped: Record<string, GroupedQueryFilter[]> = {};
+
+  data.forEach((obj) => {
+    if (obj.relationalData) {
+      const { character_field_id } = obj.relationalData;
+      if (!character_field_id) return;
+      if (grouped[character_field_id]) {
+        grouped[character_field_id].push(obj);
+      } else {
+        grouped[character_field_id] = [obj];
       }
     }
   });

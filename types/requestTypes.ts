@@ -38,7 +38,8 @@ export interface RequestFilterType {
   value: string | number | string[] | number[] | boolean | boolean[] | null;
   operator: RequestFilterOperatorType;
   relationalData?: {
-    blueprint_field_id: string;
+    blueprint_field_id?: string;
+    character_field_id?: string;
   };
 }
 
