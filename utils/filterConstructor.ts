@@ -209,7 +209,6 @@ export function blueprintInstanceValueFilter(queryBuilder: SelectQueryBuilder<DB
 
   const orRequestFilters = (filters || []).filter((filt) => filt.type === "OR");
   if (!andRequestFilters?.length && !orRequestFilters?.length) return queryBuilder;
-
   return queryBuilder.where(({ and, exists, selectFrom }) => {
     const andFilters = [];
     const orFilters = [];
