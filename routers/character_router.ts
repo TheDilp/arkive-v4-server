@@ -947,23 +947,39 @@ export function character_router(app: Elysia) {
 
               if (deletedTags !== null) {
                 if (deletedTags?.length) {
+                  const newTagIds = (body.relations?.tags || []).map((t) => t.id);
                   const templates = await tx
-                    .selectFrom("character_fields_templates")
+                    .selectFrom("_character_fields_templatesTotags")
+                    .where("_character_fields_templatesTotags.B", "in", deletedTags)
                     .select([
-                      "id",
                       (eb) =>
                         jsonArrayFrom(
                           eb
-                            .selectFrom("character_fields")
-                            .select(["id", "field_type"])
-                            .whereRef("character_fields.parent_id", "=", "character_fields_templates.id"),
-                        ).as("character_fields"),
+                            .selectFrom("character_fields_templates")
+                            .select([
+                              (ebb) =>
+                                jsonArrayFrom(
+                                  ebb
+                                    .selectFrom("character_fields")
+                                    .select(["id", "field_type"])
+                                    .whereRef("character_fields.parent_id", "=", "character_fields_templates.id"),
+                                ).as("character_fields"),
+                              (ebb) =>
+                                jsonArrayFrom(
+                                  ebb
+                                    .selectFrom("tags")
+                                    .leftJoin(
+                                      "_character_fields_templatesTotags",
+                                      "_character_fields_templatesTotags.A",
+                                      "character_fields_templates.id",
+                                    )
+                                    .whereRef("_character_fields_templatesTotags.A", "=", "character_fields_templates.id")
+                                    .select("_character_fields_templatesTotags.B as id"),
+                                ).as("tags"),
+                            ]),
+                        ).as("templates"),
                     ])
-                    .leftJoin(
-                      "_character_fields_templatesTotags",
-                      "_character_fields_templatesTotags.A",
-                      "character_fields_templates.id",
-                    )
+
                     .where("_character_fields_templatesTotags.B", "in", deletedTags)
                     .execute();
                   const documentFields: { id: string; field_type: string }[] = [];
@@ -974,6 +990,8 @@ export function character_router(app: Elysia) {
                   // const calendarFields = [];
                   const valueFields: { id: string; field_type: string }[] = [];
                   templates
+                    .flatMap((t) => t.templates)
+                    .filter((temp) => !temp.tags.some((t) => t.id && newTagIds.includes(t.id)))
                     .flatMap((t) => t.character_fields)
                     .forEach((field) => {
                       if (field.field_type.includes("documents")) documentFields.push(field);
@@ -1026,6 +1044,7 @@ export function character_router(app: Elysia) {
                       .where("character_images_fields.character_id", "=", params.id)
                       .execute();
                   }
+
                   if (valueFields.length) {
                     await tx
                       .deleteFrom("character_value_fields")
