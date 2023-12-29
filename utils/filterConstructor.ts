@@ -442,7 +442,7 @@ export function characterValueFilter(queryBuilder: SelectQueryBuilder<DB, any, a
           whereOrQuery = selectFrom("character_value_fields")
             // @ts-ignore
             .select(sql<number>`1`)
-            .whereRef("character_value_fields.character_id", "=", "characters.id.id")
+            .whereRef("character_value_fields.character_id", "=", "characters.id")
             .where("character_value_fields.character_field_id", "=", filt.relationalData?.character_field_id as string)
             .where(
               getCharacterValue(filt.value as string | number | boolean | null),
