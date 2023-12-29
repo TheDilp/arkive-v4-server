@@ -10,7 +10,7 @@ import { db } from "../database/db";
 import { InsertCharacterSchema, ListCharacterSchema, ReadCharacterSchema, UpdateCharacterSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
+import { characterValueFilter, constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import {
   CreateTagRelations,
@@ -166,9 +166,10 @@ export function character_router(app: Elysia) {
               return qb;
             })
             .$if(!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length, (qb) => {
-              const { tags } = groupFiltersByField(body.relationFilters || {});
+              const { tags, value } = groupFiltersByField(body.relationFilters || {});
 
               if (tags?.filters?.length) qb = tagsRelationFilter("characters", "_charactersTotags", qb, tags?.filters || []);
+              if (value?.filters?.length) qb = characterValueFilter(qb, value.filters);
 
               return qb;
             })

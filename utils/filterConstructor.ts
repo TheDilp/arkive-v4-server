@@ -7,8 +7,8 @@ import { RequestBodyFiltersType } from "../types/requestTypes";
 import { relatedEntityFromBPIRelationTable, relatedEntityFromCharacterRelationTable } from "./requestUtils";
 import { groupByBlueprintFieldId, groupByCharacterFieldId, GroupedQueryFilter, groupFiltersByField } from "./transform";
 
-function getValue(value: string | number | boolean | null) {
-  if (typeof value === "string") return sql<string>`LOWER(REPLACE(blueprint_instance_value.value::TEXT, '"', ''))`;
+function getBPValue(value: string | number | boolean | null) {
+  if (typeof value === "string") return sql<string>`REPLACE(blueprint_instance_value.value::TEXT, '"', '')`;
   if (typeof value === "number")
     return sql<number>`
       CASE
@@ -18,6 +18,23 @@ function getValue(value: string | number | boolean | null) {
   if (typeof value === "boolean")
     return sql<number>`CASE
       WHEN jsonb_typeof(blueprint_instance_value.value) = 'boolean' THEN blueprint_instance_value.value::BOOLEAN
+      ELSE NULL
+      END`;
+  if (value === null) return sql`NULL`;
+
+  return sql`NULL`;
+}
+function getCharacterValue(value: string | number | boolean | null) {
+  if (typeof value === "string") return sql<string>`REPLACE(character_value_fields.value::TEXT, '"', '')`;
+  if (typeof value === "number")
+    return sql<number>`
+      CASE
+      WHEN jsonb_typeof(character_value_fields.value) = 'number' THEN character_value_fields.value::INT
+      ELSE NULL 
+      END `;
+  if (typeof value === "boolean")
+    return sql<number>`CASE
+      WHEN jsonb_typeof(character_value_fields.value) = 'boolean' THEN character_value_fields.value::BOOLEAN
       ELSE NULL
       END`;
   if (value === null) return sql`NULL`;
@@ -223,7 +240,7 @@ export function blueprintInstanceValueFilter(queryBuilder: SelectQueryBuilder<DB
             .whereRef("blueprint_instance_value.blueprint_instance_id", "=", "blueprint_instances.id")
             .where("blueprint_instance_value.blueprint_field_id", "=", filt.relationalData?.blueprint_field_id as string)
             .where(
-              getValue(filt.value as string | number | boolean | null),
+              getBPValue(filt.value as string | number | boolean | null),
               FilterEnum[filt.operator],
               filt.operator === "ilike" ? `%${filt.value}%` : filt.value,
             );
@@ -235,7 +252,7 @@ export function blueprintInstanceValueFilter(queryBuilder: SelectQueryBuilder<DB
               .whereRef("blueprint_instance_value.blueprint_instance_id", "=", "blueprint_instances.id")
               .where("blueprint_instance_value.blueprint_field_id", "=", filt.relationalData?.blueprint_field_id as string)
               .where(
-                getValue(filt.value as string | number | boolean | null),
+                getBPValue(filt.value as string | number | boolean | null),
                 FilterEnum[filt.operator],
                 filt.operator === "ilike" ? `%${filt.value}%` : filt.value,
               ),
@@ -256,7 +273,7 @@ export function blueprintInstanceValueFilter(queryBuilder: SelectQueryBuilder<DB
             .whereRef("blueprint_instance_value.blueprint_instance_id", "=", "blueprint_instances.id")
             .where("blueprint_instance_value.blueprint_field_id", "=", filt.relationalData?.blueprint_field_id as string)
             .where(
-              getValue(filt.value as string | number | boolean | null),
+              getBPValue(filt.value as string | number | boolean | null),
               FilterEnum[filt.operator],
               filt.operator === "ilike" ? `%${filt.value}%` : filt.value,
             );
@@ -268,7 +285,7 @@ export function blueprintInstanceValueFilter(queryBuilder: SelectQueryBuilder<DB
               .whereRef("blueprint_instance_value.blueprint_instance_id", "=", "blueprint_instances.id")
               .where("blueprint_instance_value.blueprint_field_id", "=", filt.relationalData?.blueprint_field_id as string)
               .where(
-                getValue(filt.value as string | number | boolean | null),
+                getBPValue(filt.value as string | number | boolean | null),
                 FilterEnum[filt.operator],
                 filt.operator === "ilike" ? `%${filt.value}%` : filt.value,
               ),
@@ -371,4 +388,87 @@ export function characterRelationFilter(
         return qb;
       });
   return queryBuilder;
+}
+export function characterValueFilter(queryBuilder: SelectQueryBuilder<DB, any, any>, filters: GroupedQueryFilter[]) {
+  // let count = 0;
+  const andRequestFilters = (filters || []).filter((filt) => filt.type === "AND");
+  // count += andRequestFilters.length;
+
+  const orRequestFilters = (filters || []).filter((filt) => filt.type === "OR");
+  if (!andRequestFilters?.length && !orRequestFilters?.length) return queryBuilder;
+  return queryBuilder.where(({ and, exists, selectFrom }) => {
+    const andFilters = [];
+    const orFilters = [];
+    const finalFilters: any = [];
+
+    let whereAndQuery: any;
+    let whereOrQuery: any;
+    if (andRequestFilters.length) {
+      console.log(andRequestFilters);
+      andRequestFilters.forEach((filt, index) => {
+        if (index === 0) {
+          whereAndQuery = selectFrom("character_value_fields")
+            // @ts-ignore
+            .select(sql<number>`1`)
+            .whereRef("character_value_fields.character_id", "=", "characters.id")
+            .where("character_value_fields.character_field_id", "=", filt.relationalData?.character_field_id as string)
+            .where(
+              getCharacterValue(filt.value as string | number | boolean | null),
+              FilterEnum[filt.operator],
+              filt.operator === "ilike" ? `%${filt.value}%` : filt.value,
+            );
+        } else {
+          whereAndQuery = whereAndQuery.intersect(
+            selectFrom("character_value_fields")
+              // @ts-ignore
+              .select(sql<number>`1`)
+              .whereRef("character_value_fields.character_id", "=", "characters.id")
+              .where("character_value_fields.character_field_id", "=", filt.relationalData?.character_field_id as string)
+              .where(
+                getCharacterValue(filt.value as string | number | boolean | null),
+                FilterEnum[filt.operator],
+                filt.operator === "ilike" ? `%${filt.value}%` : filt.value,
+              ),
+          );
+        }
+      });
+      andFilters.push(exists(whereAndQuery));
+    }
+
+    if (orRequestFilters.length) {
+      // count += 1;
+
+      orRequestFilters.forEach((filt, index) => {
+        if (index === 0) {
+          whereOrQuery = selectFrom("character_value_fields")
+            // @ts-ignore
+            .select(sql<number>`1`)
+            .whereRef("character_value_fields.character_id", "=", "characters.id.id")
+            .where("character_value_fields.character_field_id", "=", filt.relationalData?.character_field_id as string)
+            .where(
+              getCharacterValue(filt.value as string | number | boolean | null),
+              FilterEnum[filt.operator],
+              filt.operator === "ilike" ? `%${filt.value}%` : filt.value,
+            );
+        } else {
+          whereOrQuery = whereOrQuery.union(
+            selectFrom("character_value_fields")
+              // @ts-ignore
+              .select(sql<number>`1`)
+              .whereRef("character_value_fields.character_id", "=", "characters.id")
+              .where("character_value_fields.character_field_id", "=", filt.relationalData?.character_field_id as string)
+              .where(
+                getCharacterValue(filt.value as string | number | boolean | null),
+                FilterEnum[filt.operator],
+                filt.operator === "ilike" ? `%${filt.value}%` : filt.value,
+              ),
+          );
+        }
+      });
+      orFilters.push(exists(whereOrQuery));
+    }
+    if (andFilters?.length) finalFilters.push(and(andFilters));
+    if (orFilters?.length) finalFilters.push(and(orFilters));
+    return and(finalFilters);
+  });
 }
