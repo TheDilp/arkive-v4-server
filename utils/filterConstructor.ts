@@ -404,7 +404,6 @@ export function characterValueFilter(queryBuilder: SelectQueryBuilder<DB, any, a
     let whereAndQuery: any;
     let whereOrQuery: any;
     if (andRequestFilters.length) {
-      console.log(andRequestFilters);
       andRequestFilters.forEach((filt, index) => {
         if (index === 0) {
           whereAndQuery = selectFrom("character_value_fields")
