@@ -29,15 +29,23 @@ function getSearchFields(type: SearchableEntities): string[] {
   return fields;
 }
 
-function getSearchWhere(eb: ExpressionBuilder<DB, keyof DB>, type: SearchableEntities, search_term: string) {
+function getSearchWhere(
+  eb: ExpressionBuilder<DB, keyof DB>,
+  type: SearchableEntities,
+  search_term: string,
+  project_id: string,
+) {
   if (type === "characters") {
     return eb.or([eb("full_name", "ilike", `%${search_term}%`), eb("nickname", "ilike", `%${search_term}%`)]);
   }
   if (type === "edges") {
-    return eb("label", "ilike", `%${search_term}%`);
+    return eb.and([eb("label", "ilike", `%${search_term}%`), eb("graphs.project_id", "=", project_id)]);
   }
   if (type === "nodes") {
-    return eb.or([eb("nodes.label", "ilike", `%${search_term}%`), eb("characters.first_name", "ilike", `%${search_term}%`)]);
+    return eb.and([
+      eb.or([eb("nodes.label", "ilike", `%${search_term}%`), eb("characters.first_name", "ilike", `%${search_term}%`)]),
+      eb("graphs.project_id", "=", project_id),
+    ]);
   }
   if (type === "map_images") {
     return eb.and([eb("images.title", "ilike", `%${search_term}%`), eb("images.type", "=", "map_images")]);
@@ -117,8 +125,12 @@ export function search_router(app: Elysia) {
               eb.leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id").select(["blueprints.icon as icon"]),
             )
             .$if(type === "images", (eb) => eb.where("type", "=", "images"))
-            .where((eb) => getSearchWhere(eb, type as SearchableEntities, body.data.search_term))
-            .where("project_id", "=", body.data.project_id)
+            .where((eb) => getSearchWhere(eb, type as SearchableEntities, body.data.search_term, params.project_id))
+            .$if(!SubEntityEnum.includes(type) || type === "alter_names", (qb) => {
+              qb = qb.where("project_id", "=", params.project_id);
+              return qb;
+            })
+            // .where("project_id", "=", body.data.project_id)
             .limit(body.limit || 10)
             .$if(!body.limit, (qb) => qb.clearLimit())
             .execute();
@@ -184,8 +196,8 @@ export function search_router(app: Elysia) {
             const alter_names = await db
               .selectFrom("alter_names")
               .select(["id as alterId", "title", "parent_id"])
-              .where("title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
-              .where("project_id", "=", params.project_id)
+              .where("alter_names.title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
+              .where("alter_names.project_id", "=", params.project_id)
               .limit(body.limit || 10)
               .execute();
 
@@ -199,9 +211,9 @@ export function search_router(app: Elysia) {
           if (type === "maps") {
             const data = await db
               .selectFrom("maps")
-              .select(["id", "title", "image_id"])
-              .where("title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
-              .where("project_id", "=", params.project_id)
+              .select(["maps.id", "maps.title", "maps.image_id"])
+              .where("maps.title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
+              .where("maps.project_id", "=", params.project_id)
               .limit(body.limit || 10)
               .execute();
 
@@ -437,6 +449,26 @@ export function search_router(app: Elysia) {
               .limit(5),
           };
 
+          const dictionariesSearch = {
+            name: "dictionaries",
+            request: db
+              .selectFrom("dictionaries")
+              .where("dictionaries.title", "ilike", `%${search_term}%`)
+              .where("project_id", "=", project_id)
+              .select(["dictionaries.id", "dictionaries.title"])
+              .limit(5),
+          };
+          const wordsSearch = {
+            name: "words",
+            request: db
+              .selectFrom("words")
+              .leftJoin("dictionaries", "dictionaries.id", "words.parent_id")
+              .where("words.title", "ilike", `%${search_term}%`)
+              .where("dictionaries.project_id", "=", project_id)
+              .select(["words.id", "words.title", "words.parent_id"])
+              .limit(5),
+          };
+
           const blueprintsSearch = {
             name: "blueprints",
             request: db
@@ -472,6 +504,8 @@ export function search_router(app: Elysia) {
             mapPinSearch,
             graphSearch,
             nodeSearch,
+            dictionariesSearch,
+            wordsSearch,
             edgeSearch,
             calendarSearch,
             eventsSearch,
