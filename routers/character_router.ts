@@ -152,7 +152,7 @@ export function character_router(app: Elysia) {
       .post(
         "/",
         async ({ body }) => {
-          const result = await db
+          const result = db
             .selectFrom("characters")
             .select(body.fields.map((field) => `characters.${field}`) as SelectExpression<DB, "characters">[])
             .distinctOn(
@@ -196,11 +196,11 @@ export function character_router(app: Elysia) {
                 qb = qb.select((eb) => TagQuery(eb, "_charactersTotags", "characters"));
               }
               return qb;
-            })
-            .execute();
+            });
+          const data = await result.execute();
 
           return {
-            data: result,
+            data,
             message: MessageEnum.success,
             ok: true,
           };

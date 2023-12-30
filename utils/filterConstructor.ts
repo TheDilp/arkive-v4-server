@@ -362,7 +362,7 @@ export function characterRelationFilter(
                 .innerJoin(relatedEntity, `${relatedEntity}.id`, `${characterRelationTable}.related_id`)
                 .where(`${characterRelationTable}.character_field_id`, "=", character_field_id)
                 .where(`${relatedEntity}.id`, "in", entityIds)
-                .whereRef(`${characterRelationTable}.character`, "=", "characters.id");
+                .whereRef(`${characterRelationTable}.character_id`, "=", "characters.id");
             } else {
               whereOrQuery = whereOrQuery.union(
                 selectFrom(characterRelationTable)
