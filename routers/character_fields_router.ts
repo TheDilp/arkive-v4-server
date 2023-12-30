@@ -5,6 +5,7 @@ import { db } from "../database/db";
 import { ListCharacterFieldsSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseWithDataSchema } from "../types/requestTypes";
+import { constructOrdering } from "../utils/orderByConstructor";
 
 export function character_fields_router(app: Elysia) {
   return app.group("/character_fields", (server) =>
@@ -32,6 +33,7 @@ export function character_fields_router(app: Elysia) {
           ])
 
           .where("character_fields.parent_id", "=", body.data.parent_id)
+          .$if(!!body.orderBy?.length, (qb) => constructOrdering(body.orderBy, qb))
           .execute();
 
         return { data: character_fields, message: MessageEnum.success, ok: true };

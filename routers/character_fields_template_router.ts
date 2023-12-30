@@ -157,7 +157,8 @@ export function character_fields_templates_router(app: Elysia) {
                               ])
                               .whereRef("random_tables.id", "=", "character_fields.random_table_id"),
                           ).as("random_table"),
-                      ]),
+                      ])
+                      .orderBy(["character_fields.sort"]),
                   ).as("character_fields"),
                 );
               }
