@@ -32,8 +32,11 @@ export const UpdateProjectSchema = t.Object({
   }),
 });
 
-export const ProjectListSchema = t.Object({
-  data: t.Object({
-    auth_id: t.String(),
+export const ProjectListSchema = t.Intersect([
+  RequestBodySchema,
+  t.Object({
+    data: t.Object({
+      auth_id: t.String(),
+    }),
   }),
-});
+]);
