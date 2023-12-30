@@ -10,7 +10,7 @@ import { db } from "../database/db";
 import { InsertCharacterSchema, ListCharacterSchema, ReadCharacterSchema, UpdateCharacterSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { characterValueFilter, constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
+import { characterRelationFilter, characterValueFilter, constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import {
   CreateTagRelations,
@@ -166,9 +166,16 @@ export function character_router(app: Elysia) {
               return qb;
             })
             .$if(!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length, (qb) => {
-              const { tags, value } = groupFiltersByField(body.relationFilters || {});
+              const { blueprint_instances, documents, map_pins, tags, value } = groupFiltersByField(body.relationFilters || {});
 
               if (tags?.filters?.length) qb = tagsRelationFilter("characters", "_charactersTotags", qb, tags?.filters || []);
+
+              if (documents?.filters?.length)
+                qb = characterRelationFilter("character_documents_fields", qb, documents?.filters || []);
+              if (map_pins?.filters?.length)
+                qb = characterRelationFilter("character_locations_fields", qb, map_pins?.filters || []);
+              if (blueprint_instances?.filters?.length)
+                qb = characterRelationFilter("character_blueprint_instance_fields", qb, map_pins?.filters || []);
               if (value?.filters?.length) qb = characterValueFilter(qb, value.filters);
 
               return qb;
