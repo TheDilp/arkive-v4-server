@@ -3,6 +3,7 @@ import Elysia from "elysia";
 import { SelectExpression, SelectQueryBuilder } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
+import uniqBy from "lodash.uniqby";
 
 import { db } from "../database/db";
 import { EntitiesWithChildren } from "../database/types";
@@ -196,11 +197,14 @@ export function graph_router(app: Elysia) {
                 .execute();
             }
             if (edges && edges.length) {
-              const formattedEdges = edges.map((e) => {
-                e.data.source_id = nodeIdDict[e.data.source_id];
-                e.data.target_id = nodeIdDict[e.data.target_id];
-                return e;
-              });
+              const formattedEdges = uniqBy(
+                edges.map((e) => {
+                  e.data.source_id = nodeIdDict[e.data.source_id];
+                  e.data.target_id = nodeIdDict[e.data.target_id];
+                  return e;
+                }),
+                (edge) => `${edge.data.source_id}${edge.data.target_id}`,
+              );
               await tx
                 .insertInto("edges")
                 .values(formattedEdges.map((e) => ({ ...e.data, parent_id: id })))

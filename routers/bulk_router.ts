@@ -13,6 +13,7 @@ export function bulk_router(app: Elysia) {
       async ({ params, body }) => {
         if (params.type) {
           if (!BulkDeleteEntities.includes(params.type)) {
+            console.error("ATTEMPTED BULK DELETE WITH UNALLOWED TYPE");
             throw new Error("INTERNAL_SERVER_ERROR");
           }
           await db

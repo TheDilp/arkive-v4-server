@@ -765,7 +765,7 @@ export function character_router(app: Elysia) {
             is_locked: false,
           }));
 
-          const edges = uniqueChars.flatMap((c) => {
+          const initialEdges = uniqueChars.flatMap((c) => {
             const base = [];
             if ("parents" in c && c?.parents.length) {
               for (let index = 0; index < c.parents.length; index++) {
@@ -795,6 +795,7 @@ export function character_router(app: Elysia) {
             return base;
           });
 
+          const edges = uniqBy(initialEdges, (edge) => [edge.source_id, edge.target_id]);
           // Get ids of main branch/parent characters and their generations
 
           return { data: { nodes, edges }, ok: true, message: MessageEnum.success };
