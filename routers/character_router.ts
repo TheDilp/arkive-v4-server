@@ -93,6 +93,20 @@ export function character_router(app: Elysia) {
                         .execute();
                       return;
                     }
+                    if (field?.events?.length) {
+                      const { events } = field;
+                      await tx
+                        .insertInto("character_events_fields")
+                        .values(
+                          events.map((image) => ({
+                            character_field_id: field.id,
+                            character_id: character.id,
+                            related_id: image.related_id,
+                          })),
+                        )
+                        .execute();
+                      return;
+                    }
                     if (field?.blueprint_instances?.length) {
                       const { blueprint_instances } = field;
                       await tx
@@ -255,6 +269,23 @@ export function character_router(app: Elysia) {
                             ).as("images"),
                         ]),
                     ).as("field_images"),
+                  (eb) =>
+                    jsonArrayFrom(
+                      eb
+                        .selectFrom("character_events_fields")
+                        .where("character_events_fields.character_id", "=", params.id)
+                        .select([
+                          "character_field_id as id",
+                          "related_id",
+                          (ebb) =>
+                            jsonArrayFrom(
+                              ebb
+                                .selectFrom("events")
+                                .whereRef("events.id", "=", "character_events_fields.related_id")
+                                .select(["id", "title", "parent_id"]),
+                            ).as("events"),
+                        ]),
+                    ).as("field_events"),
                   (eb) =>
                     jsonArrayFrom(
                       eb
@@ -506,6 +537,7 @@ export function character_router(app: Elysia) {
             field_locations,
             field_blueprint_instances,
             field_calendars,
+            field_events,
             field_random_tables,
             field_values,
             ...rest
@@ -544,6 +576,19 @@ export function character_router(app: Elysia) {
                 map_pins: d.map_pins.map((map_pin) => ({
                   related_id: d.related_id,
                   map_pin,
+                })),
+              }),
+            ),
+            ...(field_events || []).map(
+              (d: {
+                id: string;
+                related_id: string;
+                events: { event: { id: string; title: string; parent_id: string } }[];
+              }) => ({
+                id: d.id,
+                events: d.events.map((event) => ({
+                  related_id: d.related_id,
+                  event,
                 })),
               }),
             ),
@@ -887,6 +932,23 @@ export function character_router(app: Elysia) {
                     return field.images.map((char) =>
                       tx
                         .insertInto("character_images_fields")
+                        .values({
+                          character_field_id: field.id,
+                          character_id: params.id,
+                          related_id: char.related_id,
+                        })
+                        .execute(),
+                    );
+                  }
+                  if (field.events) {
+                    await tx
+                      .deleteFrom("character_events_fields")
+                      .where("character_id", "=", params.id)
+                      .where("character_field_id", "=", field.id)
+                      .execute();
+                    return field.events.map((char) =>
+                      tx
+                        .insertInto("character_events_fields")
                         .values({
                           character_field_id: field.id,
                           character_id: params.id,

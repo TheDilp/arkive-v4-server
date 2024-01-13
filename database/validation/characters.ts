@@ -83,6 +83,13 @@ export const InsertCharacterSchema = t.Object({
               }),
             ),
           ),
+          events: t.Optional(
+            t.Array(
+              t.Object({
+                related_id: t.String(),
+              }),
+            ),
+          ),
           random_table: t.Optional(
             t.Union([
               t.Object({
@@ -170,6 +177,13 @@ export const UpdateCharacterSchema = t.Object({
               ),
             ),
             images: t.Optional(
+              t.Array(
+                t.Object({
+                  related_id: t.String(),
+                }),
+              ),
+            ),
+            events: t.Optional(
               t.Array(
                 t.Object({
                   related_id: t.String(),
