@@ -20,6 +20,8 @@ const FieldTypeSchema = t.Union([
   t.Literal("locations_multiple"),
   t.Literal("blueprints_single"),
   t.Literal("blueprints_multiple"),
+  t.Literal("events_single"),
+  t.Literal("events_multiple"),
 ]);
 
 export const ListCharacterFieldsTemplateSchema = t.Intersect([

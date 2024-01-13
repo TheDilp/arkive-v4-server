@@ -557,6 +557,17 @@ CREATE TABLE public.character_documents_fields (
 
 
 --
+-- Name: character_events_fields; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.character_events_fields (
+    character_id uuid NOT NULL,
+    character_field_id uuid NOT NULL,
+    related_id uuid NOT NULL
+);
+
+
+--
 -- Name: character_fields; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1251,6 +1262,14 @@ ALTER TABLE ONLY public.character_calendar_fields
 
 ALTER TABLE ONLY public.character_documents_fields
     ADD CONSTRAINT character_documents_fields_pkey PRIMARY KEY (character_id, character_field_id, related_id);
+
+
+--
+-- Name: character_events_fields character_events_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_events_fields
+    ADD CONSTRAINT character_events_fields_pkey PRIMARY KEY (character_id, character_field_id, related_id);
 
 
 --
@@ -2673,6 +2692,30 @@ ALTER TABLE ONLY public.character_documents_fields
 
 
 --
+-- Name: character_events_fields character_events_events_character_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_events_fields
+    ADD CONSTRAINT character_events_events_character_field_id_fkey FOREIGN KEY (character_field_id) REFERENCES public.character_fields(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: character_events_fields character_events_fields_character_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_events_fields
+    ADD CONSTRAINT character_events_fields_character_id_fkey FOREIGN KEY (character_id) REFERENCES public.characters(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: character_events_fields character_events_fields_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_events_fields
+    ADD CONSTRAINT character_events_fields_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.events(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: character_fields character_fields_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3233,4 +3276,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20231216124629'),
     ('20231218101511'),
     ('20231218103101'),
-    ('20231227080417');
+    ('20231227080417'),
+    ('20240113181603');
