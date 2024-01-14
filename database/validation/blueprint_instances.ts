@@ -72,6 +72,13 @@ export const InsertBlueprintInstanceSchema = t.Object({
               }),
             ),
           ),
+          events: t.Optional(
+            t.Array(
+              t.Object({
+                related_id: t.String(),
+              }),
+            ),
+          ),
           images: t.Optional(
             t.Array(
               t.Object({
@@ -153,6 +160,13 @@ export const UpdateBlueprintInstanceSchema = t.Object({
               ),
             ),
             map_pins: t.Optional(
+              t.Array(
+                t.Object({
+                  related_id: t.String(),
+                }),
+              ),
+            ),
+            events: t.Optional(
               t.Array(
                 t.Object({
                   related_id: t.String(),

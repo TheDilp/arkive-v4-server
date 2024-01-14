@@ -180,7 +180,9 @@ export function character_router(app: Elysia) {
               return qb;
             })
             .$if(!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length, (qb) => {
-              const { blueprint_instances, documents, map_pins, tags, value } = groupFiltersByField(body.relationFilters || {});
+              const { blueprint_instances, documents, map_pins, events, tags, value } = groupFiltersByField(
+                body.relationFilters || {},
+              );
 
               if (tags?.filters?.length) qb = tagsRelationFilter("characters", "_charactersTotags", qb, tags?.filters || []);
 
@@ -189,7 +191,8 @@ export function character_router(app: Elysia) {
               if (map_pins?.filters?.length)
                 qb = characterRelationFilter("character_locations_fields", qb, map_pins?.filters || []);
               if (blueprint_instances?.filters?.length)
-                qb = characterRelationFilter("character_blueprint_instance_fields", qb, map_pins?.filters || []);
+                qb = characterRelationFilter("character_blueprint_instance_fields", qb, blueprint_instances?.filters || []);
+              if (events?.filters?.length) qb = characterRelationFilter("character_events_fields", qb, events?.filters || []);
               if (value?.filters?.length) qb = characterValueFilter(qb, value.filters);
 
               return qb;

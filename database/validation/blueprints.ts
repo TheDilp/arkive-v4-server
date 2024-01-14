@@ -23,6 +23,8 @@ const BlueprintFieldTypeSchema = t.Union([
   t.Literal("characters_multiple"),
   t.Literal("blueprints_single"),
   t.Literal("blueprints_multiple"),
+  t.Literal("events_single"),
+  t.Literal("events_multiple"),
 ]);
 
 export const ListBlueprintSchema = t.Intersect([

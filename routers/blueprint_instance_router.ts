@@ -282,6 +282,23 @@ export function blueprint_instance_router(app: Elysia) {
                               ]),
                           ).as("map_pins"),
                         (ebb) =>
+                          jsonArrayFrom(
+                            ebb
+                              .selectFrom("blueprint_instance_events")
+                              .whereRef("blueprint_instance_events.blueprint_field_id", "=", "blueprint_fields.id")
+                              .whereRef("blueprint_instance_events.blueprint_instance_id", "=", "blueprint_instances.id")
+                              .select([
+                                "related_id",
+                                (ebbb) =>
+                                  jsonObjectFrom(
+                                    ebbb
+                                      .selectFrom("events")
+                                      .whereRef("related_id", "=", "events.id")
+                                      .select(["id", "title", "parent_id"]),
+                                  ).as("event"),
+                              ]),
+                          ).as("events"),
+                        (ebb) =>
                           jsonObjectFrom(
                             ebb
                               .selectFrom("blueprint_instance_random_tables")
@@ -335,7 +352,7 @@ export function blueprint_instance_router(app: Elysia) {
               return qb;
             })
             .$if(!!body?.relationFilters?.and?.length || !!body?.relationFilters?.or?.length, (qb) => {
-              const { characters, documents, map_pins, tags, value } = groupFiltersByField(body.relationFilters || {});
+              const { characters, documents, map_pins, tags, events, value } = groupFiltersByField(body.relationFilters || {});
 
               if (tags?.filters?.length)
                 qb = tagsRelationFilter("blueprint_instances", "_blueprint_instancesTotags", qb, tags?.filters || []);
@@ -345,6 +362,8 @@ export function blueprint_instance_router(app: Elysia) {
                 qb = blueprintInstanceRelationFilter("blueprint_instance_documents", qb, documents?.filters || []);
               if (map_pins?.filters?.length)
                 qb = blueprintInstanceRelationFilter("blueprint_instance_map_pins", qb, map_pins?.filters || []);
+              if (events?.filters?.length)
+                qb = blueprintInstanceRelationFilter("blueprint_instance_events", qb, map_pins?.filters || []);
               if (value?.filters?.length) qb = blueprintInstanceValueFilter(qb, value.filters);
               return qb;
             })
@@ -477,6 +496,23 @@ export function blueprint_instance_router(app: Elysia) {
                                 ).as("map_pin"),
                             ]),
                         ).as("map_pins"),
+                      (ebb) =>
+                        jsonArrayFrom(
+                          ebb
+                            .selectFrom("blueprint_instance_events")
+                            .whereRef("blueprint_instance_events.blueprint_field_id", "=", "blueprint_fields.id")
+                            .where("blueprint_instance_events.blueprint_instance_id", "=", params.id)
+                            .select([
+                              "related_id",
+                              (ebbb) =>
+                                jsonObjectFrom(
+                                  ebbb
+                                    .selectFrom("events")
+                                    .whereRef("related_id", "=", "events.id")
+                                    .select(["id", "title", "parent_id"]),
+                                ).as("event"),
+                            ]),
+                        ).as("events"),
                       (ebb) =>
                         jsonObjectFrom(
                           ebb
@@ -637,6 +673,25 @@ export function blueprint_instance_router(app: Elysia) {
                       return field.map_pins.map((char) =>
                         tx
                           .insertInto("blueprint_instance_map_pins")
+                          .values({
+                            blueprint_field_id: field.id,
+                            blueprint_instance_id: params.id,
+                            related_id: char.related_id,
+                          })
+                          .execute(),
+                      );
+                    }
+                  }
+                  if (field.events) {
+                    await tx
+                      .deleteFrom("blueprint_instance_events")
+                      .where("blueprint_instance_id", "=", params.id)
+                      .where("blueprint_field_id", "=", field.id)
+                      .execute();
+                    if (field.events.length) {
+                      return field.events.map((char) =>
+                        tx
+                          .insertInto("blueprint_instance_events")
                           .values({
                             blueprint_field_id: field.id,
                             blueprint_instance_id: params.id,

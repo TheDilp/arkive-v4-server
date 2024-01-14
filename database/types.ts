@@ -32,15 +32,17 @@ export type EntitiesWithBreadcrumbs = "documents" | "maps" | "graphs" | "diction
 
 export type EntitiesWithChildren = "documents" | "maps" | "graphs" | "dictionaries" | "random_tables";
 
-export type BlueprintInstanceRelationEntities = "characters" | "documents" | "map_pins";
-export type CharacterRelationEntities = "blueprint_instances" | "documents" | "map_pins";
+export type BlueprintInstanceRelationEntities = "characters" | "documents" | "map_pins" | "events";
+export type CharacterRelationEntities = "blueprint_instances" | "documents" | "map_pins" | "events";
 
 export type BlueprintInstanceRelationTables =
   | "blueprint_instance_characters"
   | "blueprint_instance_documents"
-  | "blueprint_instance_map_pins";
+  | "blueprint_instance_map_pins"
+  | "blueprint_instance_events";
 
 export type CharacterRelationTables =
   | "character_blueprint_instance_fields"
   | "character_documents_fields"
-  | "character_locations_fields";
+  | "character_locations_fields"
+  | "character_events_fields";

@@ -81,7 +81,9 @@ CREATE TYPE public."BlueprintFieldType" AS ENUM (
     'textarea',
     'blueprints_single',
     'blueprints_multiple',
-    'boolean'
+    'boolean',
+    'events_single',
+    'events_multiple'
 );
 
 
@@ -414,6 +416,17 @@ CREATE TABLE public.blueprint_instance_characters (
 --
 
 CREATE TABLE public.blueprint_instance_documents (
+    blueprint_instance_id uuid NOT NULL,
+    blueprint_field_id uuid NOT NULL,
+    related_id uuid NOT NULL
+);
+
+
+--
+-- Name: blueprint_instance_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.blueprint_instance_events (
     blueprint_instance_id uuid NOT NULL,
     blueprint_field_id uuid NOT NULL,
     related_id uuid NOT NULL
@@ -1182,6 +1195,14 @@ ALTER TABLE ONLY public.blueprint_instance_characters
 
 ALTER TABLE ONLY public.blueprint_instance_documents
     ADD CONSTRAINT blueprint_instance_documents_pkey PRIMARY KEY (blueprint_instance_id, blueprint_field_id, related_id);
+
+
+--
+-- Name: blueprint_instance_events blueprint_instance_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.blueprint_instance_events
+    ADD CONSTRAINT blueprint_instance_events_pkey PRIMARY KEY (blueprint_instance_id, blueprint_field_id, related_id);
 
 
 --
@@ -2468,6 +2489,30 @@ ALTER TABLE ONLY public.blueprint_instance_documents
 
 
 --
+-- Name: blueprint_instance_events blueprint_instance_events_blueprint_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.blueprint_instance_events
+    ADD CONSTRAINT blueprint_instance_events_blueprint_field_id_fkey FOREIGN KEY (blueprint_field_id) REFERENCES public.blueprint_fields(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: blueprint_instance_events blueprint_instance_events_blueprint_instance_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.blueprint_instance_events
+    ADD CONSTRAINT blueprint_instance_events_blueprint_instance_id_fkey FOREIGN KEY (blueprint_instance_id) REFERENCES public.blueprint_instances(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: blueprint_instance_events blueprint_instance_events_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.blueprint_instance_events
+    ADD CONSTRAINT blueprint_instance_events_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.events(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: blueprint_instance_images blueprint_instance_images_blueprint_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3277,4 +3322,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20231218101511'),
     ('20231218103101'),
     ('20231227080417'),
-    ('20240113181603');
+    ('20240113181603'),
+    ('20240114105525'),
+    ('20240114120905');
