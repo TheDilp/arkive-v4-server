@@ -10,7 +10,7 @@ export function month_router(app: Elysia) {
     server.post(
       "/",
       async ({ body }) => {
-        const data = await db.selectFrom("months").where("months.parent_id", "=", body.data?.parent_id).selectAll().execute();
+        const data = await db.selectFrom("months").where("months.parent_id", "=", body.data.parent_id).selectAll().execute();
 
         return { data, message: MessageEnum.success, ok: true };
       },
