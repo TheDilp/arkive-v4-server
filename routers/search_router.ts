@@ -393,7 +393,7 @@ export function search_router(app: Elysia) {
             request: db
               .selectFrom("map_pins")
               .leftJoin("maps", "maps.id", "map_pins.parent_id")
-              .select(["map_pins.id", "map_pins.icon", "map_pins.parent_id", "maps.title as parent_title"])
+              .select(["map_pins.id", "map_pins.title", "map_pins.icon", "map_pins.parent_id", "maps.title as parent_title"])
               .where("map_pins.title", "is not", null)
               .where("map_pins.title", "ilike", `%${search_term}%`)
               .limit(5),
@@ -411,7 +411,7 @@ export function search_router(app: Elysia) {
                 "map_pins.icon",
                 "map_pins.parent_id",
                 "maps.title as parent_title",
-                "characters.full_name",
+                "characters.full_name as title",
                 "characters.portrait_id",
               ])
               .limit(5),
