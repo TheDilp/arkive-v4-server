@@ -11,7 +11,7 @@ import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { GetBreadcrumbs, GetEntityChildren, GetRelationsForUpdating } from "../utils/relationalQueryHelpers";
+import { GetParents, GetEntityChildren, GetRelationsForUpdating } from "../utils/relationalQueryHelpers";
 
 export function random_table_router(app: Elysia) {
   return app.group("/random_tables", (server) =>
@@ -106,7 +106,7 @@ export function random_table_router(app: Elysia) {
             .executeTakeFirstOrThrow();
 
           if (body?.relations?.parents) {
-            const parents = await GetBreadcrumbs({ db, id: params.id, table_name: "random_tables" });
+            const parents = await GetParents({ db, id: params.id, table_name: "random_tables" });
             return { data: { ...data, parents }, message: "Success.", ok: true };
           }
 

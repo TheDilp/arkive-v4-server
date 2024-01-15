@@ -7,6 +7,7 @@ import { EntitiesWithTags } from "../database/types";
 import { BasicSearchSchema, CategorySearchSchema, TagSearchSchema } from "../database/validation/search";
 import { EntitiesWithTagsTables, SubEntityEnum } from "../enums/entityEnums";
 import { MessageEnum } from "../enums/requestEnums";
+import { EntitiesWithFolders } from "../types/entityTypes";
 import { ResponseWithDataSchema, SearchableEntities } from "../types/requestTypes";
 import { getSearchTableFromType } from "../utils/requestUtils";
 
@@ -56,6 +57,32 @@ function getSearchWhere(
 export function search_router(app: Elysia) {
   return app.group("/search", (server) =>
     server
+      .post(
+        "/:project_id/:type/folder",
+        async ({ params, body }) => {
+          const { project_id, type } = params;
+
+          const result = await db
+            .selectFrom(`${type as EntitiesWithFolders}`)
+            .select(["id", "title", "parent_id", "is_folder"])
+            .where("project_id", "=", project_id)
+            .where("is_folder", "=", true)
+            .where("title", "ilike", `%${body.data.search_term}%`)
+            .limit(body.limit || 10)
+            .execute();
+
+          return {
+            data: result.map((item) => ({
+              value: item.id,
+              label: item?.title,
+              parent_id: item?.parent_id || null,
+            })),
+            message: MessageEnum.success,
+            ok: true,
+          };
+        },
+        { body: BasicSearchSchema },
+      )
       .post(
         "/:project_id/:type",
         async ({ params, body }) => {

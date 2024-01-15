@@ -10,7 +10,7 @@ import { InsertDictionarySchema, ReadDictionarySchema, UpdateDictionarySchema } 
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { GetBreadcrumbs, GetEntityChildren } from "../utils/relationalQueryHelpers";
+import { GetParents, GetEntityChildren } from "../utils/relationalQueryHelpers";
 
 export function dictionary_router(app: Elysia) {
   return app.group("/dictionaries", (server) =>
@@ -70,7 +70,7 @@ export function dictionary_router(app: Elysia) {
 
             .executeTakeFirstOrThrow();
           if (body?.relations?.parents) {
-            const parents = await GetBreadcrumbs({ db, id: params.id, table_name: "dictionaries" });
+            const parents = await GetParents({ db, id: params.id, table_name: "dictionaries" });
             return { data: { ...data, parents }, message: MessageEnum.success, ok: true };
           }
           return { data, message: MessageEnum.success, ok: true };

@@ -24,8 +24,8 @@ import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import {
   CreateTagRelations,
-  GetBreadcrumbs,
   GetEntityChildren,
+  GetParents,
   GetRelationsForUpdating,
   TagQuery,
   UpdateTagRelations,
@@ -136,7 +136,7 @@ export function document_router(app: Elysia) {
             .executeTakeFirstOrThrow();
 
           if (body?.relations?.parents) {
-            const parents = await GetBreadcrumbs({ db, id: params.id, table_name: "documents" });
+            const parents = await GetParents({ db, id: params.id, table_name: "documents" });
             return { data: { ...data, parents }, message: MessageEnum.success, ok: true };
           }
           return { data, message: MessageEnum.success, ok: true };
@@ -332,7 +332,7 @@ export function document_router(app: Elysia) {
             .$if(!["blueprint_instances", "words"].includes(body.data.type), (qb) => {
               return qb.where("project_id", "=", body.data.project_id);
             })
-            .where("ts", "@@", sql`to_tsquery(${sql.lit("english")}, ${formattedString})`)
+            .where("ts", "@@", sql<string>`to_tsquery(${sql.lit("english")}, ${formattedString})`)
             .execute();
 
           return { data: res, message: MessageEnum.success, ok: true };

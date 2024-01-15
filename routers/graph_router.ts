@@ -15,7 +15,7 @@ import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import {
   CreateTagRelations,
-  GetBreadcrumbs,
+  GetParents,
   GetEntityChildren,
   TagQuery,
   UpdateTagRelations,
@@ -133,7 +133,7 @@ export function graph_router(app: Elysia) {
             ])
             .executeTakeFirstOrThrow();
 
-          const parents = body?.relations?.parents ? await GetBreadcrumbs({ db, id: params.id, table_name: "graphs" }) : [];
+          const parents = body?.relations?.parents ? await GetParents({ db, id: params.id, table_name: "graphs" }) : [];
           const finalData: typeof data & { parents?: any[]; edges?: any[] } = { ...data };
 
           if (parents.length) {

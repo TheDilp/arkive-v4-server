@@ -84,15 +84,7 @@ export function GetRelationsForUpdating(
   return [idsToRemove, itemsToAdd, itemsToUpdate];
 }
 
-export async function GetBreadcrumbs({
-  db,
-  id,
-  table_name,
-}: {
-  db: Kysely<DB>;
-  id: string;
-  table_name: EntitiesWithBreadcrumbs;
-}) {
+export async function GetParents({ db, id, table_name }: { db: Kysely<DB>; id: string; table_name: EntitiesWithBreadcrumbs }) {
   // with recursive tree as (
   //   select id,
   //          parent_id,
