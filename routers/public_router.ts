@@ -420,6 +420,42 @@ export function public_router(app: Elysia) {
               .limit(5),
           };
 
+          const mapPinSearch = {
+            name: "map_pins",
+            request: db
+              .selectFrom("map_pins")
+              .leftJoin("maps", "maps.id", "map_pins.parent_id")
+              .where("map_pins.title", "is not", null)
+              .where("map_pins.title", "ilike", `%${search_term}%`)
+              .select([
+                "map_pins.id",
+                "map_pins.title as label",
+                "map_pins.icon",
+                "map_pins.parent_id",
+                "maps.title as parent_title",
+              ])
+              .limit(5),
+          };
+          const characterMapPinSearch = {
+            name: "character_map_pins",
+            request: db
+              .selectFrom("map_pins")
+              .leftJoin("maps", "maps.id", "map_pins.parent_id")
+              .where("map_pins.character_id", "is not", null)
+              .leftJoin("characters", "characters.id", "map_pins.character_id")
+              .where("characters.full_name", "ilike", `%${search_term}%`)
+              .where("characters.is_public", "=", true)
+              .select([
+                "map_pins.id",
+                "map_pins.icon",
+                "map_pins.parent_id",
+                "maps.title as parent_title",
+                "characters.full_name as label",
+                "characters.portrait_id",
+              ])
+              .limit(5),
+          };
+
           const graphSearch = {
             name: "graphs",
             request: db
@@ -448,7 +484,15 @@ export function public_router(app: Elysia) {
               .limit(5),
           };
 
-          const requests = [charactersSearch, documentSearch, mapSearch, graphSearch, blueprintInstancesSearch];
+          const requests = [
+            charactersSearch,
+            documentSearch,
+            mapSearch,
+            mapPinSearch,
+            characterMapPinSearch,
+            graphSearch,
+            blueprintInstancesSearch,
+          ];
           const result = await Promise.all(
             requests.map(async (item) => ({
               name: item.name,

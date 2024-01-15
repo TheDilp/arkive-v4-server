@@ -394,6 +394,7 @@ export function search_router(app: Elysia) {
               .selectFrom("map_pins")
               .leftJoin("maps", "maps.id", "map_pins.parent_id")
               .select(["map_pins.id", "map_pins.icon", "map_pins.parent_id", "maps.title as parent_title"])
+              .where("map_pins.title", "is not", null)
               .where("map_pins.title", "ilike", `%${search_term}%`)
               .limit(5),
           };
