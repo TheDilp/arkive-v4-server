@@ -15,8 +15,8 @@ import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import {
   CreateTagRelations,
-  GetParents,
   GetEntityChildren,
+  GetParents,
   TagQuery,
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
@@ -30,7 +30,7 @@ export function graph_router(app: Elysia) {
           await db.transaction().execute(async (tx) => {
             const graph = await tx.insertInto("graphs").values(body.data).returning("id").executeTakeFirstOrThrow();
 
-            if (body?.relations?.tags)
+            if (body?.relations?.tags?.length)
               await CreateTagRelations({ tx, relationalTable: "_graphsTotags", id: graph.id, tags: body.relations.tags });
           });
           return { message: `Graph ${MessageEnum.successfully_created}`, ok: true };
