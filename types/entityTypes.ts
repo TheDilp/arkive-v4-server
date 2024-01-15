@@ -32,7 +32,7 @@ export type AvailableEntityType =
   | "character_relationship_types"
   | "tags"
   | "conversations";
-export type EntitiesWithFolders = "documents" | "maps" | "graphs" | "dictionaries" | "calendars";
+export type EntitiesWithFolders = "documents" | "maps" | "graphs" | "dictionaries" | "calendars" | "random_tables";
 
 export type AvailableSubEntityType =
   | "alter_names"

@@ -32,7 +32,7 @@ export const InsertRandomTableSchema = t.Object({
     t.Object({
       random_table_options: t.Array(
         t.Object({
-          data: t.Object({ title: t.String(), description: t.Optional(t.String()) }),
+          data: t.Object({ title: t.String(), description: t.Optional(t.Union([t.String(), t.Null()])) }),
         }),
       ),
     }),
@@ -51,7 +51,7 @@ export const UpdateRandomTableSchema = t.Object({
     t.Object({
       random_table_options: t.Array(
         t.Object({
-          data: t.Object({ id: t.String(), title: t.String(), description: t.Optional(t.String()) }),
+          data: t.Object({ id: t.String(), title: t.String(), description: t.Optional(t.Union([t.String(), t.Null()])) }),
         }),
       ),
     }),
