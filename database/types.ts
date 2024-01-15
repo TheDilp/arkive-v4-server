@@ -28,9 +28,7 @@ export type EntitiesWithTags =
   | "character_fields_templates"
   | "blueprint_instances";
 
-export type EntitiesWithBreadcrumbs = "documents" | "maps" | "graphs" | "dictionaries" | "random_tables";
-
-export type EntitiesWithChildren = "documents" | "maps" | "graphs" | "dictionaries" | "random_tables";
+export type EntitiesWithChildren = "documents" | "maps" | "graphs" | "calendars" | "dictionaries" | "random_tables";
 
 export type BlueprintInstanceRelationEntities = "characters" | "documents" | "map_pins" | "events";
 export type CharacterRelationEntities = "blueprint_instances" | "documents" | "map_pins" | "events";

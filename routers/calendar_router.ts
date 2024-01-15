@@ -1,9 +1,10 @@
 import Elysia from "elysia";
-import { SelectExpression } from "kysely";
+import { SelectExpression, SelectQueryBuilder } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
+import { EntitiesWithChildren } from "../database/types";
 import {
   InsertCalendarSchema,
   ListCalendarSchema,
@@ -12,7 +13,15 @@ import {
 } from "../database/validation/calendars";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { CreateTagRelations, GetRelationsForUpdating, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
+import { constructFilter } from "../utils/filterConstructor";
+import {
+  CreateTagRelations,
+  GetEntityChildren,
+  GetParents,
+  GetRelationsForUpdating,
+  TagQuery,
+  UpdateTagRelations,
+} from "../utils/relationalQueryHelpers";
 
 export function calendar_router(app: Elysia) {
   return app.group("/calendars", (server) =>
@@ -50,6 +59,10 @@ export function calendar_router(app: Elysia) {
             .where("calendars.project_id", "=", body?.data?.project_id)
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "calendars">[]))
+            .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
+              qb = constructFilter("calendars", qb, body.filters);
+              return qb;
+            })
             .$if(!!body.relations?.tags, (qb) => {
               if (body?.relations?.tags) {
                 return qb.select((eb) => TagQuery(eb, "_calendarsTotags", "calendars"));
@@ -99,7 +112,16 @@ export function calendar_router(app: Elysia) {
               }
               return qb;
             })
+            .$if(!!body?.relations?.children, (qb) =>
+              GetEntityChildren(qb as SelectQueryBuilder<DB, EntitiesWithChildren, {}>, "calendars"),
+            )
             .executeTakeFirstOrThrow();
+
+          if (body?.relations?.parents) {
+            const parents = await GetParents({ db, id: params.id, table_name: "calendars" });
+            data.parents = parents;
+            return { data, message: MessageEnum.success, ok: true };
+          }
 
           return { data, message: MessageEnum.success, ok: true };
         },
@@ -113,7 +135,6 @@ export function calendar_router(app: Elysia) {
         async ({ params, body }) => {
           await db.transaction().execute(async (tx) => {
             await tx.updateTable("calendars").where("calendars.id", "=", params.id).set(body.data).execute();
-
             if (body.relations.leap_days) {
               const existingLeapDays = await tx
                 .selectFrom("leap_days")

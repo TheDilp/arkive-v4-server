@@ -2,7 +2,8 @@ import { ExpressionBuilder, Kysely, SelectQueryBuilder, Transaction } from "kyse
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
-import { EntitiesWithBreadcrumbs, EntitiesWithChildren, EntitiesWithTags, TagsRelationTables } from "../database/types";
+import { EntitiesWithChildren, EntitiesWithTags, TagsRelationTables } from "../database/types";
+import { EntitiesWithFolders } from "../types/entityTypes";
 
 export function TagQuery(eb: ExpressionBuilder<DB, any>, relationalTable: TagsRelationTables, table: EntitiesWithTags) {
   return jsonArrayFrom(
@@ -84,7 +85,7 @@ export function GetRelationsForUpdating(
   return [idsToRemove, itemsToAdd, itemsToUpdate];
 }
 
-export async function GetParents({ db, id, table_name }: { db: Kysely<DB>; id: string; table_name: EntitiesWithBreadcrumbs }) {
+export async function GetParents({ db, id, table_name }: { db: Kysely<DB>; id: string; table_name: EntitiesWithFolders }) {
   // with recursive tree as (
   //   select id,
   //          parent_id,
@@ -155,6 +156,17 @@ export function GetEntityChildren(qb: SelectQueryBuilder<DB, EntitiesWithChildre
                   .select(["tags.id", "tags.title", "tags.color"]),
               ).as("tags"),
           ])
+          .whereRef("children.parent_id", "=", `${table_name}.id`)
+          .orderBy("is_folder", "asc")
+          .orderBy("title", "asc"),
+      ).as("children"),
+    );
+  } else if (table_name === "calendars") {
+    return qb.select((eb) =>
+      jsonArrayFrom(
+        eb
+          .selectFrom(`${table_name} as children`)
+          .select(["children.id", "children.title", "children.icon", "children.is_folder"])
           .whereRef("children.parent_id", "=", `${table_name}.id`)
           .orderBy("is_folder", "asc")
           .orderBy("title", "asc"),
