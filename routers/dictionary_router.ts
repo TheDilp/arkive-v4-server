@@ -9,8 +9,9 @@ import { EntityListSchema } from "../database/validation";
 import { InsertDictionarySchema, ReadDictionarySchema, UpdateDictionarySchema } from "../database/validation/dictionaries";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { GetParents, GetEntityChildren } from "../utils/relationalQueryHelpers";
+import { GetEntityChildren, GetParents } from "../utils/relationalQueryHelpers";
 
 export function dictionary_router(app: Elysia) {
   return app.group("/dictionaries", (server) =>
@@ -34,6 +35,10 @@ export function dictionary_router(app: Elysia) {
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "dictionaries">[]))
             .$if(!!body.orderBy?.length, (qb) => {
               qb = constructOrdering(body.orderBy, qb);
+              return qb;
+            })
+            .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
+              qb = constructFilter("dictionaries", qb, body.filters);
               return qb;
             })
             .where("project_id", "=", body.data.project_id)
