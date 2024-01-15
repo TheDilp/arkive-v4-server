@@ -12,6 +12,8 @@ export const ReadMapSchema = t.Intersect([
         map_layers: t.Optional(t.Boolean()),
         images: t.Optional(t.Boolean()),
         tags: t.Optional(t.Boolean()),
+        children: t.Optional(t.Boolean()),
+        parents: t.Optional(t.Boolean()),
       }),
     ),
   }),
@@ -26,7 +28,7 @@ export const InsertMapSchema = t.Object({
     icon: t.Optional(t.Union([t.Null(), t.String()])),
     project_id: t.String(),
     parent_id: t.Optional(t.Union([t.Null(), t.String()])),
-    image_id: t.String(),
+    image_id: t.Optional(t.String()),
   }),
   relations: t.Optional(
     t.Object({

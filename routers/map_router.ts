@@ -9,7 +9,13 @@ import { InsertMapSchema, ReadMapSchema, UpdateMapSchema } from "../database/val
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
-import { CreateTagRelations, GetRelationsForUpdating, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
+import {
+  CreateTagRelations,
+  GetParents,
+  GetRelationsForUpdating,
+  TagQuery,
+  UpdateTagRelations,
+} from "../utils/relationalQueryHelpers";
 
 export function map_router(app: Elysia) {
   return app.group("/maps", (server) =>
@@ -18,9 +24,10 @@ export function map_router(app: Elysia) {
         "/create",
         async ({ body }) => {
           await db.transaction().execute(async (tx) => {
+            console.log(body.data);
             const map = await tx.insertInto("maps").values(body.data).returning("id").executeTakeFirstOrThrow();
 
-            if (body?.relations?.tags)
+            if (body?.relations?.tags?.length)
               await CreateTagRelations({ tx, relationalTable: "_mapsTotags", id: map.id, tags: body.relations.tags });
           });
 
@@ -127,6 +134,13 @@ export function map_router(app: Elysia) {
 
             .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_mapsTotags", "maps")))
             .executeTakeFirstOrThrow();
+
+          if (body?.relations?.parents) {
+            const parents = await GetParents({ db, id: params.id, table_name: "maps" });
+            data.parents = parents;
+            return { data, message: MessageEnum.success, ok: true };
+          }
+
           return { data, message: MessageEnum.success, ok: true };
         },
         { body: ReadMapSchema, response: ResponseWithDataSchema },

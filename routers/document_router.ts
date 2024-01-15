@@ -137,7 +137,8 @@ export function document_router(app: Elysia) {
 
           if (body?.relations?.parents) {
             const parents = await GetParents({ db, id: params.id, table_name: "documents" });
-            return { data: { ...data, parents }, message: MessageEnum.success, ok: true };
+            data.parents = parents;
+            return { data, message: MessageEnum.success, ok: true };
           }
           return { data, message: MessageEnum.success, ok: true };
         },
