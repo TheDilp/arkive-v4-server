@@ -384,6 +384,32 @@ export function public_router(app: Elysia) {
         },
       )
       .post(
+        "/events",
+        async ({ body }) => {
+          const data = await db
+            .selectFrom("events")
+
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "events">[]))
+            .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
+              qb = constructFilter("events", qb, body.filters);
+              return qb;
+            })
+            .$if(!!body.orderBy?.length, (qb) => {
+              qb = constructOrdering(body.orderBy, qb);
+              return qb;
+            })
+            .where("is_public", "=", true)
+            .execute();
+
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: EntityListSchema,
+          response: ResponseWithDataSchema,
+        },
+      )
+      .post(
         "/search/:project_id",
         async ({ params, body }) => {
           const { project_id } = params;
