@@ -10,6 +10,7 @@ import { db } from "../database/db";
 import { EntitiesWithChildren } from "../database/types";
 import {
   AutolinkerSchema,
+  FromTemplateSchema,
   GenerateDocumentSchema,
   InsertDocumentSchema,
   ListDocumentSchema,
@@ -74,6 +75,89 @@ export function document_router(app: Elysia) {
         },
         {
           body: InsertDocumentSchema,
+          response: ResponseSchema,
+        },
+      )
+      .post(
+        "/create/template",
+        async ({ body }) => {
+          await db.transaction().execute(async (tx) => {
+            const formatted = body.data;
+            formatted.is_template = true;
+            const document = await tx.insertInto("documents").values(formatted).returning("id").executeTakeFirstOrThrow();
+
+            if (body.relations?.alter_names?.length) {
+              const { alter_names } = body.relations;
+              await tx
+                .insertInto("alter_names")
+                .values(
+                  alter_names.map((alter_name) => ({
+                    title: alter_name.title,
+                    project_id: body.data.project_id,
+                    parent_id: document.id,
+                  })),
+                )
+                .execute();
+            }
+            if (body.relations?.tags?.length) {
+              const { tags } = body.relations;
+              await CreateTagRelations({ tx, relationalTable: "_documentsTotags", id: document.id, tags });
+            }
+          });
+
+          return { message: `Document ${MessageEnum.successfully_created}`, ok: true };
+        },
+        {
+          body: InsertDocumentSchema,
+          response: ResponseSchema,
+        },
+      )
+      .post(
+        "/create/from_template/:id",
+        async ({ params, body }) => {
+          await db.transaction().execute(async (tx) => {
+            const document = await tx
+              .selectFrom("documents")
+              .select([
+                "title",
+                "content",
+                "icon",
+                "image_id",
+                "dice_color",
+                "project_id",
+                (eb) =>
+                  jsonArrayFrom(eb.selectFrom("_documentsTotags").where("A", "=", params.id).select(["_documentsTotags.B"])).as(
+                    "tags",
+                  ),
+              ])
+              .where("id", "=", params.id)
+              .executeTakeFirstOrThrow();
+
+            const newDocuments = [];
+
+            for (let index = 0; index < body.data.count; index++) {
+              newDocuments.push({
+                title: body.data?.titles?.[index] || document.title,
+                content: document.content as any,
+                icon: document.icon,
+                image_id: document.image_id,
+                dice_color: document.dice_color,
+                project_id: document.project_id,
+              });
+            }
+
+            const createdDocuments = await tx.insertInto("documents").values(newDocuments).returning("id").execute();
+
+            if (document.tags.length) {
+              const newDocToTags = document.tags.flatMap((t) => createdDocuments.map((cd) => ({ A: cd.id, B: t.B })));
+              await tx.insertInto("_documentsTotags").values(newDocToTags).execute();
+            }
+          });
+
+          return { message: `Document ${MessageEnum.successfully_created}`, ok: true };
+        },
+        {
+          body: FromTemplateSchema,
           response: ResponseSchema,
         },
       )

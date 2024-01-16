@@ -139,3 +139,7 @@ export const MentionsInDocumentSchema = t.Object({
     ),
   }),
 });
+
+export const FromTemplateSchema = t.Object({
+  data: t.Object({ titles: t.Optional(t.Array(t.String())), count: t.Number() }),
+});

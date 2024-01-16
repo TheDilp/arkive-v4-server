@@ -66,9 +66,9 @@ export async function tempAfterHandle(context: any, response: any) {
 
           afterHandler({ project_id, title: "" }, entity, token, action);
         } else {
-          const project_id = context.body.data.project_id || context.response.data.project_id;
-          const title = context.body.data.title || context.response.data.title;
-          afterHandler({ project_id, title }, entity, token, action);
+          const project_id = context?.body?.data?.project_id || context?.response?.data?.project_id;
+          const title = context?.body?.data?.title || context?.response?.data?.title;
+          if (project_id && title) afterHandler({ project_id, title }, entity, token, action);
         }
       } else if (action === "update") {
         // @ts-ignore
