@@ -425,6 +425,7 @@ export function public_router(app: Elysia) {
             request: db
               .selectFrom("map_pins")
               .leftJoin("maps", "maps.id", "map_pins.parent_id")
+              .where("maps.is_public", "=", true)
               .where("map_pins.title", "is not", null)
               .where("map_pins.title", "ilike", `%${search_term}%`)
               .select([
@@ -441,8 +442,9 @@ export function public_router(app: Elysia) {
             request: db
               .selectFrom("map_pins")
               .leftJoin("maps", "maps.id", "map_pins.parent_id")
-              .where("map_pins.character_id", "is not", null)
               .leftJoin("characters", "characters.id", "map_pins.character_id")
+              .where("map_pins.character_id", "is not", null)
+              .where("maps.is_public", "=", true)
               .where("characters.full_name", "ilike", `%${search_term}%`)
               .where("characters.is_public", "=", true)
               .select([
