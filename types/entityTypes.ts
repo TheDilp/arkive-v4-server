@@ -33,7 +33,14 @@ export type AvailableEntityType =
   | "tags"
   | "conversations";
 export type EntitiesWithFolders = "documents" | "maps" | "graphs" | "dictionaries" | "calendars" | "random_tables";
-
+export type PublicEntities =
+  | "characters"
+  | "blueprint_instances"
+  | "documents"
+  | "maps"
+  | "graphs"
+  | "calendars"
+  | "dictionaries";
 export type AvailableSubEntityType =
   | "alter_names"
   | "map_pins"
