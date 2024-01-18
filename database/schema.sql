@@ -228,7 +228,8 @@ CREATE TABLE public."_charactersToconversations" (
 
 CREATE TABLE public."_charactersTodocuments" (
     "A" uuid NOT NULL,
-    "B" uuid NOT NULL
+    "B" uuid NOT NULL,
+    is_main_page boolean
 );
 
 
@@ -3318,4 +3319,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240113181603'),
     ('20240114105525'),
     ('20240114120905'),
-    ('20240115150007');
+    ('20240115150007'),
+    ('20240118101925');
