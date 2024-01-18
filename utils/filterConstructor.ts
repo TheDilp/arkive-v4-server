@@ -53,18 +53,28 @@ export function constructFilter(
     const finalFilters = [];
 
     const groupedFilters = groupFiltersByField(filters || {});
-    Object.entries(groupedFilters).forEach(([field, { filters }]) => {
-      filters.forEach((filter) => {
-        const dbOperator = FilterEnum[filter.operator];
-        if (filter.type === "AND")
-          andFilters.push(
+    const allFilters = Object.entries(groupedFilters);
+    allFilters.forEach(([field, { filters }]) => {
+      if (field === "is_public" || field === "is_favorite") {
+        const specialFilters: any[] = [];
+        filters.forEach((filter) => {
+          const dbOperator = FilterEnum[filter.operator];
+          specialFilters.push(
             eb(`${table}.${field}`, dbOperator, dbOperator === "ilike" ? `%${filter.value}%` : (filter.value as any)),
           );
-        if (filter.type === "OR")
-          orFilters.push(
+        });
+
+        if (specialFilters.length) {
+          andFilters.push(eb.or(specialFilters));
+        }
+      } else {
+        filters.forEach((filter) => {
+          const dbOperator = FilterEnum[filter.operator];
+          (filter.type === "AND" ? andFilters : orFilters).push(
             eb(`${table}.${field}`, dbOperator, dbOperator === "ilike" ? `%${filter.value}%` : (filter.value as any)),
           );
-      });
+        });
+      }
     });
 
     if (andFilters?.length) finalFilters.push(and(andFilters));

@@ -268,3 +268,16 @@ export const DeleteCharacterItemSchema = t.Object({
     tag: t.Optional(t.Object({ data: t.Object({ id: t.String() }) })),
   }),
 });
+
+export const UpdateCharacterResourceSchema = t.Object({
+  relations: t.Object({
+    documents: t.Optional(
+      t.Array(
+        t.Object({
+          id: t.String(),
+          is_main_page: t.Boolean(),
+        }),
+      ),
+    ),
+  }),
+});

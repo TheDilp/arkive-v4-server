@@ -17,34 +17,6 @@ COMMENT ON SCHEMA public IS '';
 
 
 --
--- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
-
-
---
--- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
-
-
---
--- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
-
-
---
--- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
-
-
---
 -- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -228,8 +200,7 @@ CREATE TABLE public."_charactersToconversations" (
 
 CREATE TABLE public."_charactersTodocuments" (
     "A" uuid NOT NULL,
-    "B" uuid NOT NULL,
-    is_main_page boolean
+    "B" uuid NOT NULL
 );
 
 
@@ -3319,5 +3290,4 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240113181603'),
     ('20240114105525'),
     ('20240114120905'),
-    ('20240115150007'),
-    ('20240118101925');
+    ('20240115150007');
