@@ -17,6 +17,34 @@ COMMENT ON SCHEMA public IS '';
 
 
 --
+-- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
+
+
+--
+-- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
+
+
+--
 -- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -200,7 +228,8 @@ CREATE TABLE public."_charactersToconversations" (
 
 CREATE TABLE public."_charactersTodocuments" (
     "A" uuid NOT NULL,
-    "B" uuid NOT NULL
+    "B" uuid NOT NULL,
+    is_main_page boolean
 );
 
 
@@ -801,7 +830,9 @@ CREATE TABLE public.events (
     start_day integer NOT NULL,
     start_month integer NOT NULL,
     start_year integer NOT NULL,
-    updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    start_month_id uuid NOT NULL,
+    end_month_id uuid
 );
 
 
@@ -2966,6 +2997,14 @@ ALTER TABLE ONLY public.edges
 
 
 --
+-- Name: events end_month_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.events
+    ADD CONSTRAINT end_month_id_fkey FOREIGN KEY (end_month_id) REFERENCES public.months(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: events events_document_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3230,6 +3269,14 @@ ALTER TABLE ONLY public.random_tables
 
 
 --
+-- Name: events start_month_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.events
+    ADD CONSTRAINT start_month_id_fkey FOREIGN KEY (start_month_id) REFERENCES public.months(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: tags tags_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3290,4 +3337,7 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240113181603'),
     ('20240114105525'),
     ('20240114120905'),
-    ('20240115150007');
+    ('20240115150007'),
+    ('20240118101925'),
+    ('20240120105425'),
+    ('20240120110543');

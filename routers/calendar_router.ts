@@ -93,7 +93,8 @@ export function calendar_router(app: Elysia) {
                     eb
                       .selectFrom("months")
                       .select(["months.id", "months.days", "months.sort", "months.title", "months.parent_id"])
-                      .where("months.parent_id", "=", params.id),
+                      .where("months.parent_id", "=", params.id)
+                      .orderBy("months.sort"),
                   ).as("months"),
                 );
               }
