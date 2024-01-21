@@ -2,6 +2,20 @@ import { t } from "elysia";
 
 import { RequestBodySchema } from "../../types/requestTypes";
 
+export const InsertEraSchema = t.Object({
+  title: t.String(),
+  days: t.Number(),
+  sort: t.Number(),
+  // Optional because it's being attached to a calendar which will provide the parent_id
+  parent_id: t.Optional(t.String()),
+});
+export const UpdateEraSchema = t.Object({
+  id: t.String(),
+  title: t.Optional(t.String()),
+  days: t.Optional(t.Number()),
+  sort: t.Optional(t.Number()),
+});
+
 export const InsertMonthSchema = t.Object({
   title: t.String(),
   days: t.Number(),
@@ -21,7 +35,6 @@ export const InsertLeapDaySchema = t.Object({
   parent_id: t.String(),
   conditions: t.Any(),
 });
-
 export const UpdateLeapDaySchema = t.Object({
   month_id: t.Optional(t.String()),
   conditions: t.Optional(t.Any()),

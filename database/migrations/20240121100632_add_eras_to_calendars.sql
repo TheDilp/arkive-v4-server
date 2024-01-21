@@ -1,6 +1,7 @@
 -- migrate:up
 CREATE TABLE public.eras (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
+    title text NOT NULL,
     parent_id uuid NOT NULL,
     end_day integer NOT NULL,
     end_month integer NOT NULL,
