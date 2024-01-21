@@ -149,7 +149,7 @@ export function event_router(app: Elysia) {
             .select(["project_id"])
             .executeTakeFirstOrThrow();
 
-          return { data, message: `Event ${MessageEnum.successfully_deleted}.`, ok: true };
+          return { data, message: `Event ${MessageEnum.successfully_deleted}`, ok: true };
         },
         {
           response: ResponseWithDataSchema,
