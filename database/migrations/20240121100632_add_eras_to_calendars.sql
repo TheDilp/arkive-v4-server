@@ -11,7 +11,7 @@ CREATE TABLE public.eras (
     start_year integer NOT NULL,
     start_month_id uuid NOT NULL,
     end_month_id uuid NOT NULL,
-    background_gradient jsonb
+    color text NOT NULL
 );
 
 ALTER TABLE

@@ -35,7 +35,12 @@ export function calendar_router(app: Elysia) {
             if (body?.relations?.months?.length)
               await tx
                 .insertInto("months")
-                .values(body.relations.months.map((month) => ({ ...month, parent_id: id })))
+                .values(body.relations.months.map((month) => ({ ...month.data, parent_id: id })))
+                .execute();
+            if (body?.relations?.eras?.length)
+              await tx
+                .insertInto("eras")
+                .values(body.relations.eras.map((era) => ({ ...era.data, parent_id: id })))
                 .execute();
 
             if (body.relations?.tags?.length) {
@@ -108,6 +113,29 @@ export function calendar_router(app: Elysia) {
                   ).as("leap_days"),
                 );
               }
+              if (body.relations?.eras) {
+                qb = qb.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("eras")
+                      .select([
+                        "eras.id",
+                        "eras.title",
+                        "eras.start_day",
+                        "eras.start_month",
+                        "eras.start_year",
+                        "eras.start_month_id",
+                        "eras.end_day",
+                        "eras.end_month",
+                        "eras.end_year",
+                        "eras.end_month_id",
+                        "eras.parent_id",
+                        "eras.color",
+                      ])
+                      .where("eras.parent_id", "=", params.id),
+                  ).as("eras"),
+                );
+              }
               if (body?.relations?.tags) {
                 qb = qb.select((eb) => TagQuery(eb, "_calendarsTotags", "calendars"));
               }
@@ -146,7 +174,7 @@ export function calendar_router(app: Elysia) {
 
               const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
                 existingLeapDayIds,
-                body.relations.leap_days,
+                body.relations.leap_days.map((ld) => ld.data),
               );
               if (idsToRemove.length) {
                 await tx.deleteFrom("leap_days").where("leap_days.id", "in", idsToRemove).execute();
@@ -182,7 +210,10 @@ export function calendar_router(app: Elysia) {
 
               const existingMonthIds = existingMonths.map((month) => month.id);
 
-              const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(existingMonthIds, body.relations.months);
+              const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+                existingMonthIds,
+                body.relations.months.map((m) => m.data),
+              );
               if (idsToRemove.length) {
                 await tx.deleteFrom("months").where("months.id", "in", idsToRemove).execute();
               }
@@ -199,6 +230,38 @@ export function calendar_router(app: Elysia) {
                       .updateTable("months")
                       .where("parent_id", "=", params.id)
                       .where("months.id", "=", item.id)
+                      .set(item)
+                      .execute();
+                  }),
+                );
+              }
+            }
+
+            if (body.relations.eras) {
+              const existingEras = await tx.selectFrom("eras").where("eras.parent_id", "=", params.id).select(["id"]).execute();
+
+              const existingEraIds = existingEras.map((era) => era.id);
+
+              const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+                existingEraIds,
+                body.relations.eras.map((m) => m.data),
+              );
+              if (idsToRemove.length) {
+                await tx.deleteFrom("eras").where("eras.id", "in", idsToRemove).execute();
+              }
+              if (itemsToAdd.length) {
+                await tx
+                  .insertInto("eras")
+                  .values(itemsToAdd.map((m) => ({ ...(m as any), parent_id: params.id })))
+                  .execute();
+              }
+              if (itemsToUpdate.length) {
+                await Promise.all(
+                  itemsToUpdate.map(async (item) => {
+                    await tx
+                      .updateTable("eras")
+                      .where("parent_id", "=", params.id)
+                      .where("eras.id", "=", item.id)
                       .set(item)
                       .execute();
                   }),
