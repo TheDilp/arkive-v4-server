@@ -809,6 +809,25 @@ CREATE TABLE public.edges (
 
 
 --
+-- Name: eras; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.eras (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    parent_id uuid NOT NULL,
+    end_day integer NOT NULL,
+    end_month integer NOT NULL,
+    end_year integer NOT NULL,
+    start_day integer NOT NULL,
+    start_month integer NOT NULL,
+    start_year integer NOT NULL,
+    start_month_id uuid NOT NULL,
+    end_month_id uuid NOT NULL,
+    background_gradient jsonb
+);
+
+
+--
 -- Name: events; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1406,6 +1425,14 @@ ALTER TABLE ONLY public.documents
 
 ALTER TABLE ONLY public.edges
     ADD CONSTRAINT edges_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: eras eras_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.eras
+    ADD CONSTRAINT eras_pkey PRIMARY KEY (id);
 
 
 --
@@ -3005,6 +3032,14 @@ ALTER TABLE ONLY public.events
 
 
 --
+-- Name: eras eras_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.eras
+    ADD CONSTRAINT eras_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.calendars(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: events events_document_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3340,4 +3375,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240115150007'),
     ('20240118101925'),
     ('20240120105425'),
-    ('20240120110543');
+    ('20240120110543'),
+    ('20240121100632');
