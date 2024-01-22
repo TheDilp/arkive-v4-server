@@ -839,8 +839,6 @@ CREATE TABLE public.events (
     is_public boolean,
     background_color text,
     text_color text,
-    hours integer,
-    minutes integer,
     document_id uuid,
     image_id uuid,
     parent_id uuid NOT NULL,
@@ -852,7 +850,11 @@ CREATE TABLE public.events (
     start_year integer NOT NULL,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     start_month_id uuid NOT NULL,
-    end_month_id uuid
+    end_month_id uuid,
+    start_hours integer,
+    start_minutes integer,
+    end_hours integer,
+    end_minutes integer
 );
 
 
@@ -3377,4 +3379,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240118101925'),
     ('20240120105425'),
     ('20240120110543'),
-    ('20240121100632');
+    ('20240121100632'),
+    ('20240122091229');
