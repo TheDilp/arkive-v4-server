@@ -420,8 +420,8 @@ export async function readCharacter(
     ...(field_values || []),
   ];
   if (isPublic) {
-    if (data?.is_public) return { data, message: MessageEnum.success, ok: true };
+    if (data?.is_public) return { data: { ...data, ...rest }, message: MessageEnum.success, ok: true };
     return { data: { is_public: false }, message: MessageEnum.success, ok: true };
   }
-  return { data, message: MessageEnum.success, ok: true };
+  return { data: { ...data, ...rest }, message: MessageEnum.success, ok: true };
 }
