@@ -9,7 +9,6 @@ export const ReadProjectSchema = t.Intersect([
       relations: t.Optional(
         t.Object({
           map_pin_types: t.Optional(t.Boolean()),
-          event_groups: t.Optional(t.Boolean()),
           character_relationship_types: t.Optional(t.Boolean()),
           members: t.Optional(t.Boolean()),
         }),

@@ -800,17 +800,6 @@ CREATE TABLE public.eras (
 
 
 --
--- Name: event_groups; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.event_groups (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    title text NOT NULL,
-    project_id uuid NOT NULL
-);
-
-
---
 -- Name: events; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -836,8 +825,7 @@ CREATE TABLE public.events (
     start_hours integer,
     start_minutes integer,
     end_hours integer,
-    end_minutes integer,
-    event_group_id uuid
+    end_minutes integer
 );
 
 
@@ -1419,14 +1407,6 @@ ALTER TABLE ONLY public.edges
 
 ALTER TABLE ONLY public.eras
     ADD CONSTRAINT eras_pkey PRIMARY KEY (id);
-
-
---
--- Name: event_groups event_groups_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.event_groups
-    ADD CONSTRAINT event_groups_pkey PRIMARY KEY (id);
 
 
 --
@@ -3042,14 +3022,6 @@ ALTER TABLE ONLY public.events
 
 
 --
--- Name: events events_event_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.events
-    ADD CONSTRAINT events_event_group_id_fkey FOREIGN KEY (event_group_id) REFERENCES public.event_groups(id) ON UPDATE CASCADE;
-
-
---
 -- Name: events events_image_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3378,5 +3350,4 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240120105425'),
     ('20240120110543'),
     ('20240121100632'),
-    ('20240122091229'),
-    ('20240123114128');
+    ('20240122091229');

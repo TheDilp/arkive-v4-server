@@ -19,7 +19,6 @@ import {
   dictionary_router,
   document_router,
   edge_router,
-  event_group_router,
   event_router,
   graph_router,
   health_check_router,
@@ -150,7 +149,6 @@ export const app = new Elysia()
       .use(blueprint_instance_router)
       .use(calendar_router)
       .use(month_router)
-      .use(event_group_router)
       .use(event_router)
       .use(dictionary_router)
       .use(word_router)
