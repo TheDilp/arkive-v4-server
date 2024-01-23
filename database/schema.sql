@@ -923,7 +923,8 @@ CREATE TABLE public.map_pins (
     doc_id uuid,
     image_id uuid,
     character_id uuid,
-    map_pin_type_id uuid
+    map_pin_type_id uuid,
+    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED
 );
 
 
@@ -3350,4 +3351,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240120105425'),
     ('20240120110543'),
     ('20240121100632'),
-    ('20240122091229');
+    ('20240122091229'),
+    ('20240123143420');

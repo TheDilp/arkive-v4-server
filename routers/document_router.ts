@@ -398,6 +398,14 @@ export function document_router(app: Elysia) {
           const res = await db
             .selectFrom(body.data.type)
             .select(fields)
+            .$if(body.data.type === "map_pins", (qb) => {
+              if (body.data.type === "map_pins") {
+                qb.leftJoin("maps", "maps.id", "map_pins.parent_id")
+                  .clearWhere()
+                  .where("maps.project_id", "=", body.data.project_id);
+              }
+              return qb;
+            })
             .$if(body.data.type === "blueprint_instances", (qb) => {
               if (body.data.type === "blueprint_instances") {
                 qb.leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
@@ -414,7 +422,7 @@ export function document_router(app: Elysia) {
               }
               return qb;
             })
-            .$if(!["blueprint_instances", "words"].includes(body.data.type), (qb) => {
+            .$if(!["blueprint_instances", "words", "map_pins"].includes(body.data.type), (qb) => {
               return qb.where("project_id", "=", body.data.project_id);
             })
             .where("ts", "@@", sql<string>`to_tsquery(${sql.lit("english")}, ${formattedString})`)
