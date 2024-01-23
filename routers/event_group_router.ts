@@ -1,4 +1,6 @@
 import Elysia from "elysia";
+import { SelectExpression } from "kysely";
+import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
 import {
@@ -6,12 +8,12 @@ import {
   ListEventGroupSchema,
   ReadEventGroupSchema,
   UpdateEventGroupSchema,
-} from "../database/validation/event_groups";
+} from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 
 export function event_group_router(app: Elysia) {
-  app.group("/event_groups", (server) =>
+  return app.group("/event_groups", (server) =>
     server
       .post(
         "/create",
@@ -28,7 +30,11 @@ export function event_group_router(app: Elysia) {
       .post(
         "/",
         async ({ body }) => {
-          const data = await db.selectFrom("event_groups").where("project_id", "=", body.data.project_id).execute();
+          const data = await db
+            .selectFrom("event_groups")
+            .select(body.fields as SelectExpression<DB, "event_groups">[])
+            .where("project_id", "=", body.data.project_id)
+            .execute();
 
           return { data, message: MessageEnum.success, ok: true };
         },
@@ -40,7 +46,11 @@ export function event_group_router(app: Elysia) {
       .post(
         "/:id",
         async ({ body }) => {
-          const data = await db.selectFrom("event_groups").where("id", "=", body.data.id).executeTakeFirstOrThrow();
+          const data = await db
+            .selectFrom("event_groups")
+            .select(body.fields as SelectExpression<DB, "event_groups">[])
+            .where("id", "=", body.data.id)
+            .executeTakeFirstOrThrow();
 
           return { data, message: MessageEnum.success, ok: true };
         },

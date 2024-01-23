@@ -59,6 +59,16 @@ export function project_router(app: Elysia) {
             .selectFrom("projects")
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "projects">[]))
+            .$if(!!body?.relations?.event_groups, (qb) =>
+              qb.select((eb) =>
+                jsonArrayFrom(
+                  eb
+                    .selectFrom("event_groups")
+                    .select(["event_groups.id", "event_groups.title"])
+                    .where("project_id", "=", params.id),
+                ).as("event_groups"),
+              ),
+            )
             .$if(!!body?.relations?.character_relationship_types, (qb) =>
               qb.select((eb) =>
                 jsonArrayFrom(
