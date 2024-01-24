@@ -316,6 +316,18 @@ export async function readCharacter(
           ).as("documents"),
         );
       }
+      if (body?.relations?.events) {
+        qb = qb.select((eb) =>
+          jsonArrayFrom(
+            eb
+              .selectFrom("event_characters")
+              .where("event_characters.character_id", "=", params.id)
+              .leftJoin("events", "events.id", "event_characters.event_id")
+              .$if(isPublic, (eb) => eb.where("events.is_public", "=", true))
+              .select(["events.id", "events.is_public", "events.title", "events.image_id", "events.parent_id"]),
+          ).as("events"),
+        );
+      }
 
       return qb;
     })
