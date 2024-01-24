@@ -10,6 +10,14 @@ export const ListMapPinSchema = t.Intersect([
     }),
   ),
 ]);
+export const ReadMapPinSchema = t.Intersect([
+  RequestBodySchema,
+  t.Optional(
+    t.Object({
+      relations: t.Optional(t.Object({ events: t.Optional(t.Boolean()) })),
+    }),
+  ),
+]);
 
 export const InsertMapPinSchema = t.Object({
   data: t.Object({

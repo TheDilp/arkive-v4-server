@@ -1,10 +1,10 @@
 import { Elysia } from "elysia";
 import { SelectExpression } from "kysely";
-import { jsonObjectFrom } from "kysely/helpers/postgres";
+import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertMapPinSchema, ListMapPinSchema, UpdateMapPinSchema } from "../database/validation/map_pins";
+import { InsertMapPinSchema, ListMapPinSchema, ReadMapPinSchema, UpdateMapPinSchema } from "../database/validation/map_pins";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
@@ -72,46 +72,66 @@ export function map_pin_router(app: Elysia) {
           response: ResponseWithDataSchema,
         },
       )
-      .post("/:id", async ({ params }) => {
-        const data = await db
-          .selectFrom("map_pins")
-          .select([
-            "map_pins.id",
-            "map_pins.background_color",
-            "map_pins.border_color",
-            "map_pins.color",
-            "map_pins.character_id",
-            "map_pins.doc_id",
-            "map_pins.icon",
-            "map_pins.title",
-            "map_pins.parent_id",
-            "map_pins.is_public",
-            "map_pins.lat",
-            "map_pins.lng",
-            "map_pins.map_link",
-            "map_pins.show_background",
-            "map_pins.show_border",
-            "map_pins.map_pin_type_id",
-            (eb) =>
-              jsonObjectFrom(
-                eb
-                  .selectFrom("characters")
-                  .whereRef("characters.id", "=", "map_pins.character_id")
-                  .select(["id", "full_name", "portrait_id"]),
-              ).as("character"),
-            (eb) =>
-              jsonObjectFrom(
-                eb.selectFrom("documents").whereRef("documents.id", "=", "map_pins.doc_id").select(["id", "title"]),
-              ).as("document"),
-            (eb) =>
-              jsonObjectFrom(
-                eb.selectFrom("maps").whereRef("maps.id", "=", "map_pins.map_link").select(["id", "title", "image_id"]),
-              ).as("linked_map"),
-          ])
-          .where("map_pins.id", "=", params.id)
-          .executeTakeFirstOrThrow();
-        return { data, message: MessageEnum.success, ok: true };
-      })
+      .post(
+        "/:id",
+        async ({ params, body }) => {
+          const data = await db
+            .selectFrom("map_pins")
+            .select([
+              "map_pins.id",
+              "map_pins.background_color",
+              "map_pins.border_color",
+              "map_pins.color",
+              "map_pins.character_id",
+              "map_pins.doc_id",
+              "map_pins.icon",
+              "map_pins.title",
+              "map_pins.parent_id",
+              "map_pins.is_public",
+              "map_pins.lat",
+              "map_pins.lng",
+              "map_pins.map_link",
+              "map_pins.show_background",
+              "map_pins.show_border",
+              "map_pins.map_pin_type_id",
+              (eb) =>
+                jsonObjectFrom(
+                  eb
+                    .selectFrom("characters")
+                    .whereRef("characters.id", "=", "map_pins.character_id")
+                    .select(["id", "full_name", "portrait_id"]),
+                ).as("character"),
+              (eb) =>
+                jsonObjectFrom(
+                  eb.selectFrom("documents").whereRef("documents.id", "=", "map_pins.doc_id").select(["id", "title"]),
+                ).as("document"),
+              (eb) =>
+                jsonObjectFrom(
+                  eb.selectFrom("maps").whereRef("maps.id", "=", "map_pins.map_link").select(["id", "title", "image_id"]),
+                ).as("linked_map"),
+            ])
+            .$if(!!body.relations?.events, (qb) => {
+              qb = qb
+                .leftJoin("event_map_pins", "event_map_pins.map_pin_id", "map_pins.id")
+                .select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("events")
+                      .whereRef("event_map_pins.event_id", "=", "events.id")
+                      .select(["events.id", "events.title", "events.image_id", "events.parent_id"]),
+                  ).as("events"),
+                );
+              return qb;
+            })
+            .where("map_pins.id", "=", params.id)
+            .executeTakeFirstOrThrow();
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: ReadMapPinSchema,
+          response: ResponseWithDataSchema,
+        },
+      )
       .post(
         "/update/:id",
         async ({ params, body }) => {
