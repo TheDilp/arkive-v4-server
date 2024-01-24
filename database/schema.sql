@@ -17,6 +17,34 @@ COMMENT ON SCHEMA public IS '';
 
 
 --
+-- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
+
+
+--
+-- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
+
+
+--
 -- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -200,7 +228,8 @@ CREATE TABLE public."_charactersToconversations" (
 
 CREATE TABLE public."_charactersTodocuments" (
     "A" uuid NOT NULL,
-    "B" uuid NOT NULL
+    "B" uuid NOT NULL,
+    is_main_page boolean
 );
 
 
@@ -796,6 +825,16 @@ CREATE TABLE public.eras (
     start_month_id uuid NOT NULL,
     end_month_id uuid NOT NULL,
     color text NOT NULL
+);
+
+
+--
+-- Name: event_characters; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.event_characters (
+    event_id uuid NOT NULL,
+    character_id uuid NOT NULL
 );
 
 
@@ -1877,6 +1916,13 @@ CREATE INDEX character_ts_index ON public.characters USING gin (ts);
 --
 
 CREATE UNIQUE INDEX characters_relationships_character_a_id_character_b_id_rela_key ON public.characters_relationships USING btree (character_a_id, character_b_id, relation_type_id);
+
+
+--
+-- Name: event_characters_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX event_characters_unique ON public.event_characters USING btree (event_id, character_id);
 
 
 --
@@ -3015,6 +3061,22 @@ ALTER TABLE ONLY public.eras
 
 
 --
+-- Name: event_characters event_characters_character_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_characters
+    ADD CONSTRAINT event_characters_character_id_fkey FOREIGN KEY (character_id) REFERENCES public.characters(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: event_characters event_characters_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_characters
+    ADD CONSTRAINT event_characters_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: events events_document_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3348,8 +3410,10 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240114105525'),
     ('20240114120905'),
     ('20240115150007'),
+    ('20240118101925'),
     ('20240120105425'),
     ('20240120110543'),
     ('20240121100632'),
     ('20240122091229'),
-    ('20240123143420');
+    ('20240123143420'),
+    ('20240124071626');

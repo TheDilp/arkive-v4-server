@@ -1,6 +1,6 @@
 import Elysia from "elysia";
 import { SelectExpression } from "kysely";
-import { jsonObjectFrom } from "kysely/helpers/postgres";
+import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
@@ -9,7 +9,7 @@ import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
+import { GetRelationsForUpdating, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 
 export function event_router(app: Elysia) {
   return app.group("/events", (server) =>
@@ -26,6 +26,13 @@ export function event_router(app: Elysia) {
                 await tx
                   .insertInto("_eventsTotags")
                   .values(tags.map((tag) => ({ A: id, B: tag.id })))
+                  .execute();
+              }
+              if (body?.relations?.characters?.length) {
+                const { characters } = body.relations;
+                await tx
+                  .insertInto("event_characters")
+                  .values(characters.map((char) => ({ event_id: id, character_id: char.id })))
                   .execute();
               }
             });
@@ -100,6 +107,18 @@ export function event_router(app: Elysia) {
                   ).as("image"),
                 );
               }
+              if (body?.relations?.characters) {
+                qb = qb.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("event_characters")
+                      .leftJoin("characters", "characters.id", "event_characters.character_id")
+                      .where("event_characters.event_id", "=", params.id)
+                      .select(["id", "full_name", "portrait_id"]),
+                  ).as("characters"),
+                );
+              }
+
               return qb;
             })
             .executeTakeFirstOrThrow();
@@ -125,6 +144,34 @@ export function event_router(app: Elysia) {
                   tx,
                 });
               } else await tx.deleteFrom("_eventsTotags").where("A", "=", params.id).execute();
+
+              if (body?.relations?.characters) {
+                const { characters } = body.relations;
+                const existingCharacters = await tx
+                  .selectFrom("event_characters")
+                  .select(["character_id"])
+                  .where("event_characters.event_id", "=", params.id)
+                  .execute();
+
+                const existingIds = existingCharacters.map((char) => char.character_id);
+
+                const [idsToRemove, itemsToAdd] = GetRelationsForUpdating(existingIds, characters);
+
+                if (idsToRemove.length) {
+                  await tx.deleteFrom("event_characters").where("character_id", "in", idsToRemove).execute();
+                }
+                if (itemsToAdd.length) {
+                  await tx
+                    .insertInto("event_characters")
+                    .values(
+                      itemsToAdd.map((char) => ({
+                        event_id: params.id,
+                        character_id: char.id,
+                      })),
+                    )
+                    .execute();
+                }
+              }
             });
           }
           return { message: `Event ${MessageEnum.successfully_updated}`, ok: true };

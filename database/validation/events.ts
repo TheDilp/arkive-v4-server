@@ -12,6 +12,7 @@ export const ReadEventSchema = t.Intersect([
           tags: t.Optional(t.Boolean()),
           image: t.Optional(t.Boolean()),
           document: t.Optional(t.Boolean()),
+          characters: t.Optional(t.Boolean()),
         }),
       ),
     }),
@@ -45,6 +46,7 @@ export const InsertEventSchema = t.Object({
   relations: t.Optional(
     t.Object({
       tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
+      characters: t.Optional(t.Array(t.Object({ id: t.String() }))),
     }),
   ),
 });
@@ -73,6 +75,7 @@ export const UpdateEventSchema = t.Object({
   relations: t.Optional(
     t.Object({
       tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
+      characters: t.Optional(t.Array(t.Object({ id: t.String() }))),
     }),
   ),
 });
