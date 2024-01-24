@@ -4,7 +4,7 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { EntityListSchema, InsertEventSchema, ReadEventSchema, UpdateEventSchema } from "../database/validation";
+import { InsertEventSchema, ListEventSchema, ReadEventSchema, UpdateEventSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
@@ -73,6 +73,44 @@ export function event_router(app: Elysia) {
               qb = constructOrdering(body.orderBy, qb);
               return qb;
             })
+            .$if(!!body.relations, (qb) => {
+              if (body?.relations?.tags) {
+                qb = qb.select((eb) => TagQuery(eb, "_eventsTotags", "events"));
+              }
+              if (body?.relations?.document) {
+                qb = qb.select((eb) =>
+                  jsonObjectFrom(
+                    eb
+                      .selectFrom("documents")
+                      .whereRef("documents.id", "=", "events.document_id")
+                      .select(["id", "title", "icon"]),
+                  ).as("document"),
+                );
+              }
+              if (body?.relations?.characters) {
+                qb = qb.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("event_characters")
+                      .leftJoin("characters", "characters.id", "event_characters.character_id")
+                      .whereRef("event_characters.event_id", "=", "events.id")
+                      .select(["id", "full_name", "portrait_id"]),
+                  ).as("characters"),
+                );
+              }
+              if (body?.relations?.map_pins) {
+                qb = qb.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("event_map_pins")
+                      .leftJoin("map_pins", "map_pins.id", "event_map_pins.map_pin_id")
+                      .whereRef("event_map_pins.event_id", "=", "events.id")
+                      .select(["map_pins.id", "map_pins.title", "map_pins.image_id", "icon", "border_color", "map_pins.color"]),
+                  ).as("map_pins"),
+                );
+              }
+              return qb;
+            })
             .leftJoin("months as sm", "events.start_month_id", "sm.id")
             .leftJoin("months as em", "events.end_month_id", "em.id")
             .select(["sm.sort as start_month", "em.sort as end_month"])
@@ -81,7 +119,7 @@ export function event_router(app: Elysia) {
           return { data, message: MessageEnum.success, ok: true };
         },
         {
-          body: EntityListSchema,
+          body: ListEventSchema,
           response: ResponseWithDataSchema,
         },
       )

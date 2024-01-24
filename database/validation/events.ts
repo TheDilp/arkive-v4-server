@@ -20,6 +20,23 @@ export const ReadEventSchema = t.Intersect([
   ),
 ]);
 
+export const ListEventSchema = t.Intersect([
+  RequestBodySchema,
+
+  t.Optional(
+    t.Object({
+      relations: t.Optional(
+        t.Object({
+          tags: t.Optional(t.Boolean()),
+          document: t.Optional(t.Boolean()),
+          characters: t.Optional(t.Boolean()),
+          map_pins: t.Optional(t.Boolean()),
+        }),
+      ),
+    }),
+  ),
+]);
+
 export const InsertEventSchema = t.Object({
   data: t.Object({
     title: t.String(),
