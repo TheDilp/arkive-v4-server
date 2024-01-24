@@ -35,6 +35,13 @@ export function event_router(app: Elysia) {
                   .values(characters.map((char) => ({ event_id: id, character_id: char.id })))
                   .execute();
               }
+              if (body?.relations?.map_pins?.length) {
+                const { map_pins } = body.relations;
+                await tx
+                  .insertInto("event_map_pins")
+                  .values(map_pins.map((map_pin) => ({ event_id: id, map_pin_id: map_pin.id })))
+                  .execute();
+              }
             });
           }
           const data = await db
@@ -118,6 +125,24 @@ export function event_router(app: Elysia) {
                   ).as("characters"),
                 );
               }
+              if (body?.relations?.map_pins) {
+                qb = qb.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("event_map_pins")
+                      .leftJoin("map_pins", "map_pins.id", "event_map_pins.map_pin_id")
+                      .where("event_map_pins.event_id", "=", params.id)
+                      .select([
+                        "map_pins.id",
+                        "map_pins.title",
+                        "map_pins.image_id",
+                        "icon",
+                        "border_color",
+                        "map_pins.background_color",
+                      ]),
+                  ).as("map_pins"),
+                );
+              }
 
               return qb;
             })
@@ -167,6 +192,33 @@ export function event_router(app: Elysia) {
                       itemsToAdd.map((char) => ({
                         event_id: params.id,
                         character_id: char.id,
+                      })),
+                    )
+                    .execute();
+                }
+              }
+              if (body?.relations?.map_pins) {
+                const { map_pins } = body.relations;
+                const existingMapPins = await tx
+                  .selectFrom("event_map_pins")
+                  .select(["map_pin_id as id"])
+                  .where("event_map_pins.event_id", "=", params.id)
+                  .execute();
+
+                const existingIds = existingMapPins.map((map_pin) => map_pin.id);
+
+                const [idsToRemove, itemsToAdd] = GetRelationsForUpdating(existingIds, map_pins);
+
+                if (idsToRemove.length) {
+                  await tx.deleteFrom("event_map_pins").where("map_pin_id", "in", idsToRemove).execute();
+                }
+                if (itemsToAdd.length) {
+                  await tx
+                    .insertInto("event_map_pins")
+                    .values(
+                      itemsToAdd.map((char) => ({
+                        event_id: params.id,
+                        map_pin_id: char.id,
                       })),
                     )
                     .execute();

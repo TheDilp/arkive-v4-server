@@ -29,7 +29,12 @@ export const InsertMapPinSchema = t.Object({
     image_id: t.Optional(t.Union([t.String(), t.Null()])),
     character_id: t.Optional(t.Union([t.String(), t.Null()])),
   }),
-  relations: t.Optional(t.Object({ tags: t.Optional(t.Array(t.Object({ id: t.String() }))) })),
+  relations: t.Optional(
+    t.Object({
+      tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
+      events: t.Optional(t.Array(t.Object({ id: t.String() }))),
+    }),
+  ),
 });
 export const UpdateMapPinSchema = t.Object({
   data: t.Object({
@@ -48,5 +53,10 @@ export const UpdateMapPinSchema = t.Object({
     image_id: t.Optional(t.Union([t.String(), t.Null()])),
     character_id: t.Optional(t.Union([t.String(), t.Null()])),
   }),
-  relations: t.Optional(t.Object({ tags: t.Optional(t.Array(t.Object({ id: t.String() }))) })),
+  relations: t.Optional(
+    t.Object({
+      tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
+      events: t.Optional(t.Array(t.Object({ id: t.String() }))),
+    }),
+  ),
 });

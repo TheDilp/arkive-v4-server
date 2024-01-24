@@ -17,34 +17,6 @@ COMMENT ON SCHEMA public IS '';
 
 
 --
--- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
-
-
---
--- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
-
-
---
--- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
-
-
---
--- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
-
-
---
 -- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -228,8 +200,7 @@ CREATE TABLE public."_charactersToconversations" (
 
 CREATE TABLE public."_charactersTodocuments" (
     "A" uuid NOT NULL,
-    "B" uuid NOT NULL,
-    is_main_page boolean
+    "B" uuid NOT NULL
 );
 
 
@@ -835,6 +806,16 @@ CREATE TABLE public.eras (
 CREATE TABLE public.event_characters (
     event_id uuid NOT NULL,
     character_id uuid NOT NULL
+);
+
+
+--
+-- Name: event_map_pins; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.event_map_pins (
+    event_id uuid NOT NULL,
+    map_pin_id uuid NOT NULL
 );
 
 
@@ -1923,6 +1904,13 @@ CREATE UNIQUE INDEX characters_relationships_character_a_id_character_b_id_rela_
 --
 
 CREATE UNIQUE INDEX event_characters_unique ON public.event_characters USING btree (event_id, character_id);
+
+
+--
+-- Name: event_map_pin_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX event_map_pin_unique ON public.event_map_pins USING btree (event_id, map_pin_id);
 
 
 --
@@ -3077,6 +3065,22 @@ ALTER TABLE ONLY public.event_characters
 
 
 --
+-- Name: event_map_pins event_map_pins_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_map_pins
+    ADD CONSTRAINT event_map_pins_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: event_map_pins event_map_pins_map_pin_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_map_pins
+    ADD CONSTRAINT event_map_pins_map_pin_id_fkey FOREIGN KEY (map_pin_id) REFERENCES public.map_pins(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: events events_document_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3410,10 +3414,10 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240114105525'),
     ('20240114120905'),
     ('20240115150007'),
-    ('20240118101925'),
     ('20240120105425'),
     ('20240120110543'),
     ('20240121100632'),
     ('20240122091229'),
     ('20240123143420'),
-    ('20240124071626');
+    ('20240124071626'),
+    ('20240124104752');
