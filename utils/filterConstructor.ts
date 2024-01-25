@@ -518,18 +518,13 @@ export function eventRelationFilters(
         const andFilters = [];
         const orFilters = [];
         const finalFilters = [];
-        const groupedAndByBPField = groupByBlueprintFieldId(andRequestFilters);
-        const groupedOrByBPField = groupByBlueprintFieldId(orRequestFilters);
-
-        console.log(andRequestFilters);
 
         let whereAndQuery: any;
         let whereOrQuery: any;
         if (andRequestFilters.length) {
-          andRequestFilters.forEach((filt, index) => {
+          andRequestFilters.forEach((_, index) => {
             const entityIds = filters.map((filt) => filt?.value as string);
             if (index === 0) {
-              console.log(relatedEntity, eventRelationTable, filters, entityIds);
               whereAndQuery = selectFrom(eventRelationTable)
                 // @ts-ignore
                 .select(sql<number>`1`)
@@ -550,36 +545,34 @@ export function eventRelationFilters(
 
           andFilters.push(exists(whereAndQuery));
         }
-        // if (orRequestFilters.length) {
-        //   count += 1;
+        if (orRequestFilters.length) {
+          count += 1;
 
-        //   Object.entries(groupedOrByBPField).forEach(([blueprint_field_id, filters], index) => {
-        //     const entityIds = filters.map((filt) => filt?.value as string);
-        //     if (index === 0) {
-        //       whereOrQuery = selectFrom(eventRelationTable)
-        //         // @ts-ignore
-        //         .select(sql<number>`1`)
-        //         .innerJoin(relatedEntity, `${relatedEntity}.id`, `${eventRelationTable}.related_id`)
-        //         .where(`${eventRelationTable}.blueprint_field_id`, "=", blueprint_field_id)
-        //         .where(`${relatedEntity}.id`, "in", entityIds)
-        //         .whereRef(`${eventRelationTable}.blueprint_instance_id`, "=", "blueprint_instances.id");
-        //     } else {
-        //       whereOrQuery = whereOrQuery.union(
-        //         selectFrom(eventRelationTable)
-        //           // @ts-ignore
-        //           .select(sql<number>`1`)
-        //           .innerJoin(relatedEntity, `${relatedEntity}.id`, `${eventRelationTable}.related_id`)
-        //           .where(`${eventRelationTable}.blueprint_field_id`, "=", blueprint_field_id)
-        //           .where(`${relatedEntity}.id`, "in", entityIds)
-        //           .whereRef(`${eventRelationTable}.blueprint_instance_id`, "=", "blueprint_instances.id"),
-        //       );
-        //     }
-        //   });
+          orRequestFilters.forEach((_, index) => {
+            const entityIds = filters.map((filt) => filt?.value as string);
+            if (index === 0) {
+              whereOrQuery = selectFrom(eventRelationTable)
+                // @ts-ignore
+                .select(sql<number>`1`)
+                .innerJoin(relatedEntity, `${relatedEntity}.id`, `${eventRelationTable}.related_id`)
+                .where(`${relatedEntity}.id`, "in", entityIds)
+                .whereRef(`${eventRelationTable}.event_id`, "=", "events.id");
+            } else {
+              whereOrQuery = whereOrQuery.union(
+                selectFrom(eventRelationTable)
+                  // @ts-ignore
+                  .select(sql<number>`1`)
+                  .innerJoin(relatedEntity, `${relatedEntity}.id`, `${eventRelationTable}.related_id`)
+                  .where(`${relatedEntity}.id`, "in", entityIds)
+                  .whereRef(`${eventRelationTable}.event_id`, "=", "events.id"),
+              );
+            }
+          });
 
-        //   orFilters.push(exists(whereOrQuery));
-        // }
+          orFilters.push(exists(whereOrQuery));
+        }
         if (andFilters?.length) finalFilters.push(and(andFilters));
-        // if (orFilters?.length) finalFilters.push(and(orFilters));
+        if (orFilters?.length) finalFilters.push(and(orFilters));
         return and(finalFilters);
       })
       .$if(!!andRequestFilters.length || !!orRequestFilters.length, (qb) => {
