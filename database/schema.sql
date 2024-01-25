@@ -805,7 +805,7 @@ CREATE TABLE public.eras (
 
 CREATE TABLE public.event_characters (
     event_id uuid NOT NULL,
-    character_id uuid NOT NULL
+    related_id uuid NOT NULL
 );
 
 
@@ -815,7 +815,7 @@ CREATE TABLE public.event_characters (
 
 CREATE TABLE public.event_map_pins (
     event_id uuid NOT NULL,
-    map_pin_id uuid NOT NULL
+    related_id uuid NOT NULL
 );
 
 
@@ -1903,14 +1903,14 @@ CREATE UNIQUE INDEX characters_relationships_character_a_id_character_b_id_rela_
 -- Name: event_characters_unique; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX event_characters_unique ON public.event_characters USING btree (event_id, character_id);
+CREATE UNIQUE INDEX event_characters_unique ON public.event_characters USING btree (event_id, related_id);
 
 
 --
 -- Name: event_map_pin_unique; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX event_map_pin_unique ON public.event_map_pins USING btree (event_id, map_pin_id);
+CREATE UNIQUE INDEX event_map_pin_unique ON public.event_map_pins USING btree (event_id, related_id);
 
 
 --
@@ -3053,7 +3053,7 @@ ALTER TABLE ONLY public.eras
 --
 
 ALTER TABLE ONLY public.event_characters
-    ADD CONSTRAINT event_characters_character_id_fkey FOREIGN KEY (character_id) REFERENCES public.characters(id) ON UPDATE CASCADE ON DELETE CASCADE;
+    ADD CONSTRAINT event_characters_character_id_fkey FOREIGN KEY (related_id) REFERENCES public.characters(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -3077,7 +3077,7 @@ ALTER TABLE ONLY public.event_map_pins
 --
 
 ALTER TABLE ONLY public.event_map_pins
-    ADD CONSTRAINT event_map_pins_map_pin_id_fkey FOREIGN KEY (map_pin_id) REFERENCES public.map_pins(id) ON UPDATE CASCADE ON DELETE CASCADE;
+    ADD CONSTRAINT event_map_pins_map_pin_id_fkey FOREIGN KEY (related_id) REFERENCES public.map_pins(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -3420,4 +3420,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240122091229'),
     ('20240123143420'),
     ('20240124071626'),
-    ('20240124104752');
+    ('20240124104752'),
+    ('20240125123531');

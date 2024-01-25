@@ -7,6 +7,8 @@ import {
   BlueprintInstanceRelationTables,
   CharacterRelationEntities,
   CharacterRelationTables,
+  EventRelationEntities,
+  EventRelationTables,
 } from "../database/types";
 import { AvailableEntityType, AvailableSubEntityType } from "../types/entityTypes";
 import { AfterHandlerActionType, JWTPayloadType, SearchableEntities } from "../types/requestTypes";
@@ -65,5 +67,11 @@ export function relatedEntityFromCharacterRelationTable(table: CharacterRelation
   if (table === "character_documents_fields") return "documents";
   if (table === "character_locations_fields") return "map_pins";
   if (table === "character_events_fields") return "events";
+  return null;
+}
+
+export function relatedEntityFromEventRelationTable(table: EventRelationTables): EventRelationEntities | null {
+  if (table === "event_characters") return "characters";
+  if (table === "event_map_pins") return "map_pins";
   return null;
 }

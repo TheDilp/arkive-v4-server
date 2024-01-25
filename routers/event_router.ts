@@ -7,9 +7,10 @@ import { db } from "../database/db";
 import { InsertEventSchema, ListEventSchema, ReadEventSchema, UpdateEventSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { constructFilter } from "../utils/filterConstructor";
+import { constructFilter, eventRelationFilters } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { GetRelationsForUpdating, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
+import { groupFiltersByField } from "../utils/transform";
 
 export function event_router(app: Elysia) {
   return app.group("/events", (server) =>
@@ -32,14 +33,14 @@ export function event_router(app: Elysia) {
                 const { characters } = body.relations;
                 await tx
                   .insertInto("event_characters")
-                  .values(characters.map((char) => ({ event_id: id, character_id: char.id })))
+                  .values(characters.map((char) => ({ event_id: id, related_id: char.id })))
                   .execute();
               }
               if (body?.relations?.map_pins?.length) {
                 const { map_pins } = body.relations;
                 await tx
                   .insertInto("event_map_pins")
-                  .values(map_pins.map((map_pin) => ({ event_id: id, map_pin_id: map_pin.id })))
+                  .values(map_pins.map((map_pin) => ({ event_id: id, related_id: map_pin.id })))
                   .execute();
               }
             });
@@ -61,12 +62,20 @@ export function event_router(app: Elysia) {
         async ({ body }) => {
           const data = await db
             .selectFrom("events")
+            .distinctOn(body.orderBy ? ([...body.orderBy.map((o) => o.field), "events.id"] as any) : ["events.id"])
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) =>
               qb.clearSelect().select(body.fields.map((f) => `events.${f}`) as SelectExpression<DB, "events">[]),
             )
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
               qb = constructFilter("events", qb, body.filters);
+              return qb;
+            })
+            .$if(!!body?.relationFilters?.and?.length || !!body?.relationFilters?.or?.length, (qb) => {
+              const { characters, map_pins } = groupFiltersByField(body.relationFilters || {});
+
+              if (characters?.filters?.length) qb = eventRelationFilters("event_characters", qb, characters?.filters || []);
+              if (map_pins?.filters?.length) qb = eventRelationFilters("event_map_pins", qb, map_pins?.filters || []);
               return qb;
             })
             .$if(!!body.orderBy?.length, (qb) => {
@@ -92,7 +101,7 @@ export function event_router(app: Elysia) {
                   jsonArrayFrom(
                     eb
                       .selectFrom("event_characters")
-                      .leftJoin("characters", "characters.id", "event_characters.character_id")
+                      .leftJoin("characters", "characters.id", "event_characters.related_id")
                       .whereRef("event_characters.event_id", "=", "events.id")
                       .select(["id", "full_name", "portrait_id"]),
                   ).as("characters"),
@@ -103,7 +112,7 @@ export function event_router(app: Elysia) {
                   jsonArrayFrom(
                     eb
                       .selectFrom("event_map_pins")
-                      .leftJoin("map_pins", "map_pins.id", "event_map_pins.map_pin_id")
+                      .leftJoin("map_pins", "map_pins.id", "event_map_pins.related_id")
                       .whereRef("event_map_pins.event_id", "=", "events.id")
                       .select(["map_pins.id", "map_pins.title", "map_pins.image_id", "icon", "border_color", "map_pins.color"]),
                   ).as("map_pins"),
@@ -157,7 +166,7 @@ export function event_router(app: Elysia) {
                   jsonArrayFrom(
                     eb
                       .selectFrom("event_characters")
-                      .leftJoin("characters", "characters.id", "event_characters.character_id")
+                      .leftJoin("characters", "characters.id", "event_characters.related_id")
                       .where("event_characters.event_id", "=", params.id)
                       .select(["id", "full_name", "portrait_id"]),
                   ).as("characters"),
@@ -168,7 +177,7 @@ export function event_router(app: Elysia) {
                   jsonArrayFrom(
                     eb
                       .selectFrom("event_map_pins")
-                      .leftJoin("map_pins", "map_pins.id", "event_map_pins.map_pin_id")
+                      .leftJoin("map_pins", "map_pins.id", "event_map_pins.related_id")
                       .where("event_map_pins.event_id", "=", params.id)
                       .select([
                         "map_pins.id",
@@ -212,16 +221,16 @@ export function event_router(app: Elysia) {
                 const { characters } = body.relations;
                 const existingCharacters = await tx
                   .selectFrom("event_characters")
-                  .select(["character_id"])
+                  .select(["related_id"])
                   .where("event_characters.event_id", "=", params.id)
                   .execute();
 
-                const existingIds = existingCharacters.map((char) => char.character_id);
+                const existingIds = existingCharacters.map((char) => char.related_id);
 
                 const [idsToRemove, itemsToAdd] = GetRelationsForUpdating(existingIds, characters);
 
                 if (idsToRemove.length) {
-                  await tx.deleteFrom("event_characters").where("character_id", "in", idsToRemove).execute();
+                  await tx.deleteFrom("event_characters").where("related_id", "in", idsToRemove).execute();
                 }
                 if (itemsToAdd.length) {
                   await tx
@@ -229,7 +238,7 @@ export function event_router(app: Elysia) {
                     .values(
                       itemsToAdd.map((char) => ({
                         event_id: params.id,
-                        character_id: char.id,
+                        related_id: char.id,
                       })),
                     )
                     .execute();
@@ -239,7 +248,7 @@ export function event_router(app: Elysia) {
                 const { map_pins } = body.relations;
                 const existingMapPins = await tx
                   .selectFrom("event_map_pins")
-                  .select(["map_pin_id as id"])
+                  .select(["related_id as id"])
                   .where("event_map_pins.event_id", "=", params.id)
                   .execute();
 
@@ -248,7 +257,7 @@ export function event_router(app: Elysia) {
                 const [idsToRemove, itemsToAdd] = GetRelationsForUpdating(existingIds, map_pins);
 
                 if (idsToRemove.length) {
-                  await tx.deleteFrom("event_map_pins").where("map_pin_id", "in", idsToRemove).execute();
+                  await tx.deleteFrom("event_map_pins").where("related_id", "in", idsToRemove).execute();
                 }
                 if (itemsToAdd.length) {
                   await tx
@@ -256,7 +265,7 @@ export function event_router(app: Elysia) {
                     .values(
                       itemsToAdd.map((char) => ({
                         event_id: params.id,
-                        map_pin_id: char.id,
+                        related_id: char.id,
                       })),
                     )
                     .execute();

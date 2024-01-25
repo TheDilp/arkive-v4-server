@@ -32,6 +32,7 @@ export type EntitiesWithChildren = "documents" | "maps" | "graphs" | "calendars"
 
 export type BlueprintInstanceRelationEntities = "characters" | "documents" | "map_pins" | "events";
 export type CharacterRelationEntities = "blueprint_instances" | "documents" | "map_pins" | "events";
+export type EventRelationEntities = "characters" | "map_pins";
 
 export type BlueprintInstanceRelationTables =
   | "blueprint_instance_characters"
@@ -44,3 +45,4 @@ export type CharacterRelationTables =
   | "character_documents_fields"
   | "character_locations_fields"
   | "character_events_fields";
+export type EventRelationTables = "event_characters" | "event_map_pins";

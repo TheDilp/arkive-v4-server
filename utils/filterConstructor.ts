@@ -1,10 +1,20 @@
 import { ExpressionWrapper, SelectQueryBuilder, sql, SqlBool } from "kysely";
 import { DB } from "kysely-codegen";
 
-import { BlueprintInstanceRelationTables, CharacterRelationTables, DBKeys, TagsRelationTables } from "../database/types";
+import {
+  BlueprintInstanceRelationTables,
+  CharacterRelationTables,
+  DBKeys,
+  EventRelationTables,
+  TagsRelationTables,
+} from "../database/types";
 import { FilterEnum } from "../enums/requestEnums";
 import { RequestBodyFiltersType } from "../types/requestTypes";
-import { relatedEntityFromBPIRelationTable, relatedEntityFromCharacterRelationTable } from "./requestUtils";
+import {
+  relatedEntityFromBPIRelationTable,
+  relatedEntityFromCharacterRelationTable,
+  relatedEntityFromEventRelationTable,
+} from "./requestUtils";
 import { groupByBlueprintFieldId, groupByCharacterFieldId, GroupedQueryFilter, groupFiltersByField } from "./transform";
 
 function getBPValue(value: string | number | boolean | null) {
@@ -131,6 +141,7 @@ export function tagsRelationFilter(
       });
   return queryBuilder;
 }
+// #region blueprintFilters
 export function blueprintInstanceRelationFilter(
   blueprintInstanceRelationTable: BlueprintInstanceRelationTables,
   queryBuilder: SelectQueryBuilder<DB, any, any>,
@@ -309,6 +320,8 @@ export function blueprintInstanceValueFilter(queryBuilder: SelectQueryBuilder<DB
     return and(finalFilters);
   });
 }
+// #endregion blueprintFilters
+// #region characterFilters
 export function characterRelationFilter(
   characterRelationTable: CharacterRelationTables,
   queryBuilder: SelectQueryBuilder<DB, any, any>,
@@ -481,3 +494,101 @@ export function characterValueFilter(queryBuilder: SelectQueryBuilder<DB, any, a
     return and(finalFilters);
   });
 }
+// #endregion characterFilters
+
+// #region eventFilters
+export function eventRelationFilters(
+  eventRelationTable: EventRelationTables,
+  queryBuilder: SelectQueryBuilder<DB, any, any>,
+  filters: GroupedQueryFilter[],
+) {
+  let count = 0;
+  const andRequestFilters = (filters || []).filter((filt) => filt.type === "AND");
+  count += andRequestFilters.length;
+
+  const orRequestFilters = (filters || []).filter((filt) => filt.type === "OR");
+
+  const relatedEntity = relatedEntityFromEventRelationTable(eventRelationTable);
+
+  if (relatedEntity)
+    return queryBuilder
+      .innerJoin(eventRelationTable, "events.id", `${eventRelationTable}.event_id`)
+      .innerJoin(relatedEntity, `${eventRelationTable}.related_id`, `${relatedEntity}.id`)
+      .where(({ and, exists, selectFrom }) => {
+        const andFilters = [];
+        const orFilters = [];
+        const finalFilters = [];
+        const groupedAndByBPField = groupByBlueprintFieldId(andRequestFilters);
+        const groupedOrByBPField = groupByBlueprintFieldId(orRequestFilters);
+
+        console.log(andRequestFilters);
+
+        let whereAndQuery: any;
+        let whereOrQuery: any;
+        if (andRequestFilters.length) {
+          andRequestFilters.forEach((filt, index) => {
+            const entityIds = filters.map((filt) => filt?.value as string);
+            if (index === 0) {
+              console.log(relatedEntity, eventRelationTable, filters, entityIds);
+              whereAndQuery = selectFrom(eventRelationTable)
+                // @ts-ignore
+                .select(sql<number>`1`)
+                .innerJoin(relatedEntity, `${relatedEntity}.id`, `${eventRelationTable}.related_id`)
+                .where(`${relatedEntity}.id`, "in", entityIds)
+                .whereRef(`${eventRelationTable}.event_id`, "=", "events.id");
+            } else {
+              whereAndQuery = whereAndQuery.intersect(
+                selectFrom(eventRelationTable)
+                  // @ts-ignore
+                  .select(sql<number>`1`)
+                  .innerJoin(relatedEntity, `${relatedEntity}.id`, `${eventRelationTable}.related_id`)
+                  .where(`${relatedEntity}.id`, "in", entityIds)
+                  .whereRef(`${eventRelationTable}.event_id`, "=", "events.id"),
+              );
+            }
+          });
+
+          andFilters.push(exists(whereAndQuery));
+        }
+        // if (orRequestFilters.length) {
+        //   count += 1;
+
+        //   Object.entries(groupedOrByBPField).forEach(([blueprint_field_id, filters], index) => {
+        //     const entityIds = filters.map((filt) => filt?.value as string);
+        //     if (index === 0) {
+        //       whereOrQuery = selectFrom(eventRelationTable)
+        //         // @ts-ignore
+        //         .select(sql<number>`1`)
+        //         .innerJoin(relatedEntity, `${relatedEntity}.id`, `${eventRelationTable}.related_id`)
+        //         .where(`${eventRelationTable}.blueprint_field_id`, "=", blueprint_field_id)
+        //         .where(`${relatedEntity}.id`, "in", entityIds)
+        //         .whereRef(`${eventRelationTable}.blueprint_instance_id`, "=", "blueprint_instances.id");
+        //     } else {
+        //       whereOrQuery = whereOrQuery.union(
+        //         selectFrom(eventRelationTable)
+        //           // @ts-ignore
+        //           .select(sql<number>`1`)
+        //           .innerJoin(relatedEntity, `${relatedEntity}.id`, `${eventRelationTable}.related_id`)
+        //           .where(`${eventRelationTable}.blueprint_field_id`, "=", blueprint_field_id)
+        //           .where(`${relatedEntity}.id`, "in", entityIds)
+        //           .whereRef(`${eventRelationTable}.blueprint_instance_id`, "=", "blueprint_instances.id"),
+        //       );
+        //     }
+        //   });
+
+        //   orFilters.push(exists(whereOrQuery));
+        // }
+        if (andFilters?.length) finalFilters.push(and(andFilters));
+        // if (orFilters?.length) finalFilters.push(and(orFilters));
+        return and(finalFilters);
+      })
+      .$if(!!andRequestFilters.length || !!orRequestFilters.length, (qb) => {
+        qb = qb
+          .groupBy(["events.id", "sm.sort", "em.sort"])
+          .having(({ fn }) => fn.count<number>(`${relatedEntity}.id`).distinct(), ">=", count);
+
+        return qb;
+      });
+  return queryBuilder;
+}
+// #endregion eventFilters
