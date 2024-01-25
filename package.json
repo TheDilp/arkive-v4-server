@@ -8,7 +8,7 @@
     "start": "bun index.ts",
     "build": "bun run generate-schema",
     "email": "email dev",
-    "generate-schema": "bun run kysely-codegen",
+    "generate-schema": "bunx dbmate migrate && bun run kysely-codegen",
     "lint": "eslint '*.{ts,tsx}' --fix --report-unused-disable-directives --max-warnings 0",
     "prepare": "husky install  || echo Skipping schema build",
     "precommit": "bun run lint --fix"
