@@ -6,6 +6,7 @@ ENV HUSKY=0
 ENV NODE_ENV=production
 COPY package.json bun.lockb /usr/src/app/
 RUN bun install --production --force
+RUN bun run generate-schema
 COPY . .
 # run the app
 USER bun
