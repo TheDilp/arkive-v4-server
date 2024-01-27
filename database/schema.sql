@@ -764,8 +764,8 @@ CREATE TABLE public.edges (
     source_arrow_fill text,
     source_arrow_color text,
     mid_target_arrow_shape text,
-    mid_target_arrlow_fill text,
-    mid_target_arrlow_color text,
+    mid_target_arrow_fill text,
+    mid_target_arrow_color text,
     mid_source_arrow_shape text,
     mid_source_arrow_fill text,
     mid_source_arrow_color text,
@@ -3421,4 +3421,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240123143420'),
     ('20240124071626'),
     ('20240124104752'),
-    ('20240125123531');
+    ('20240125123531'),
+    ('20240127084345');
