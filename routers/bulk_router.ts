@@ -1,16 +1,18 @@
 import Elysia, { t } from "elysia";
 
 import { db } from "../database/db";
+import { UpdateEdgeSchema, UpdateEventSchema, UpdateNodeSchema } from "../database/validation";
 import { BulkDeleteEntities } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
-import { BulkDeleteEntitiesType, PublicEntities } from "../types/entityTypes";
+import { AvailableEntityType, AvailableSubEntityType, BulkDeleteEntitiesType, PublicEntities } from "../types/entityTypes";
 import { ResponseSchema } from "../types/requestTypes";
+import { UpdateTagRelations } from "../utils/relationalQueryHelpers";
 
 export function bulk_router(app: Elysia) {
   return app.group("/bulk", (server) =>
     server
       .post(
-        "/update/:type",
+        "/update/public/:type",
         async ({ params, body }) => {
           await db
             .updateTable(params.type as PublicEntities)
@@ -25,12 +27,62 @@ export function bulk_router(app: Elysia) {
           response: ResponseSchema,
         },
       )
+      .post(
+        "/update/:type",
+        async ({ params, body }) => {
+          db.transaction().execute(async (tx) => {
+            await Promise.all(
+              body.data.map((item) =>
+                tx
+                  .updateTable(params.type as AvailableEntityType | AvailableSubEntityType)
+                  .set(item.data)
+                  .where("id", "=", item.data.id)
+                  .execute(),
+              ),
+            );
+
+            if (params.type === "nodes") {
+              const nodesWithTagsToUpdate = body.data.filter((n) => !!n?.relations?.tags);
+              if (nodesWithTagsToUpdate.length)
+                await Promise.all(
+                  nodesWithTagsToUpdate.map((n) =>
+                    UpdateTagRelations({
+                      relationalTable: "_nodesTotags",
+                      id: n.data.id,
+                      newTags: n.relations?.tags as { id: string }[],
+                      tx,
+                    }),
+                  ),
+                );
+            } else if (params.type === "edges") {
+              const edgesWithTagsToUpdate = body.data.filter((n) => !!n?.relations?.tags);
+              if (edgesWithTagsToUpdate.length)
+                await Promise.all(
+                  edgesWithTagsToUpdate.map((e) =>
+                    UpdateTagRelations({
+                      relationalTable: "_edgesTotags",
+                      id: e.data.id,
+                      newTags: e.relations?.tags as { id: string }[],
+                      tx,
+                    }),
+                  ),
+                );
+            }
+          });
+          return { message: MessageEnum.success, ok: true };
+        },
+        {
+          body: t.Object({ data: t.Array(t.Union([UpdateEventSchema, UpdateNodeSchema, UpdateEdgeSchema])) }),
+          response: ResponseSchema,
+        },
+      )
+
       .delete(
         "/delete/:type",
         async ({ params, body }) => {
           if (params.type) {
             if (!BulkDeleteEntities.includes(params.type)) {
-              console.error("ATTEMPTED BULK DELETE WITH UNALLOWED TYPE");
+              console.error("ATTEMPTED BULK DELETE WITH UNALLOWED TYPE", params.type);
               throw new Error("INTERNAL_SERVER_ERROR");
             }
             await db

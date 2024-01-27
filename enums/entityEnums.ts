@@ -70,6 +70,7 @@ export const BulkDeleteEntities = [
   "nodes",
   "edges",
   "calendars",
+  "events",
   "dictionaries",
   "words",
   "random_tables",

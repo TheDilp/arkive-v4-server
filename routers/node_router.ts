@@ -9,7 +9,6 @@ import {
   InsertNodeSchema,
   ListNodesSchema,
   ReadNodeSchema,
-  UpdateManyNodesSchema,
   UpdateNodeSchema,
 } from "../database/validation/nodes";
 import { MessageEnum } from "../enums/requestEnums";
@@ -136,40 +135,7 @@ export function node_router(app: Elysia) {
         },
         { body: UpdateNodeSchema, response: ResponseSchema },
       )
-      .post(
-        "/update",
-        async ({ body }) => {
-          await db.transaction().execute(async (tx) => {
-            if (body.data) {
-              await Promise.all(
-                body.data.map((n) => {
-                  return tx
-                    .updateTable("nodes")
-                    .where("id", "=", n.data.id as string)
-                    .set(n.data)
-                    .execute();
-                }),
-              );
-              const nodesWithTagsToUpdate = body.data.filter((n) => !!n?.relations?.tags);
-              if (nodesWithTagsToUpdate.length)
-                await Promise.all(
-                  nodesWithTagsToUpdate.map((n) =>
-                    UpdateTagRelations({
-                      relationalTable: "_nodesTotags",
-                      id: n.data.id,
-                      newTags: n.relations?.tags as { id: string }[],
-                      tx,
-                    }),
-                  ),
-                );
-            }
-          });
-          return { message: MessageEnum.success, ok: true };
-        },
-        {
-          body: UpdateManyNodesSchema,
-        },
-      )
+
       .delete(
         "/:id",
         async ({ params }) => {

@@ -9,7 +9,6 @@ import {
   ListEdgesSchema,
   ReadEdgeSchema,
   UpdateEdgeSchema,
-  UpdateManyEdgesSchema,
 } from "../database/validation/edges";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
@@ -102,41 +101,6 @@ export function edge_router(app: Elysia) {
         },
         {
           body: UpdateEdgeSchema,
-          response: ResponseSchema,
-        },
-      )
-      .post(
-        "/update",
-        async ({ body }) => {
-          await db.transaction().execute(async (tx) => {
-            if (body.data) {
-              await Promise.all(
-                body.data.map((n) => {
-                  return tx
-                    .updateTable("edges")
-                    .where("id", "=", n.data.id as string)
-                    .set(n.data)
-                    .execute();
-                }),
-              );
-            }
-            const edgesWithTagsToUpdate = body.data.filter((n) => !!n?.relations?.tags);
-            if (edgesWithTagsToUpdate.length)
-              await Promise.all(
-                edgesWithTagsToUpdate.map((e) =>
-                  UpdateTagRelations({
-                    relationalTable: "_edgesTotags",
-                    id: e.data.id,
-                    newTags: e.relations?.tags as { id: string }[],
-                    tx,
-                  }),
-                ),
-              );
-          });
-          return { message: MessageEnum.success, ok: true };
-        },
-        {
-          body: UpdateManyEdgesSchema,
           response: ResponseSchema,
         },
       )
