@@ -182,9 +182,61 @@ export function groupFiltersByField(queryStructure: RequestBodyFiltersType): Gro
             filters: [],
           };
         }
+
         const newFilter = rest;
         newFilter.type = groupKey.toUpperCase() as "AND" | "OR";
         groupedQueries[field].filters.push(newFilter);
+      }
+    }
+  }
+
+  return groupedQueries;
+}
+export function groupRelationFiltersByField(queryStructure: RequestBodyFiltersType): GroupedQueries {
+  const groupedQueries: GroupedQueries = {};
+
+  for (const groupKey of ["and", "or"]) {
+    // @ts-ignore
+    const group = queryStructure[groupKey];
+    if (group) {
+      for (const query of group) {
+        const { field, ...rest } = query;
+        if (!groupedQueries[field]) {
+          groupedQueries[field] = {
+            filters: [],
+          };
+        }
+        if (rest?.relationalData?.character_field_id || rest?.relationalData?.blueprint_field_id) {
+          const newFilter = rest;
+          newFilter.type = groupKey.toUpperCase() as "AND" | "OR";
+          groupedQueries[field].filters.push(newFilter);
+        }
+      }
+    }
+  }
+
+  return groupedQueries;
+}
+
+export function groupCharacterResourceFiltersByField(queryStructure: RequestBodyFiltersType): GroupedQueries {
+  const groupedQueries: GroupedQueries = {};
+
+  for (const groupKey of ["and", "or"]) {
+    // @ts-ignore
+    const group = queryStructure[groupKey];
+    if (group) {
+      for (const query of group) {
+        const { field, ...rest } = query;
+        if (!groupedQueries[field]) {
+          groupedQueries[field] = {
+            filters: [],
+          };
+        }
+        if (!rest?.relationalData?.character_field_id) {
+          const newFilter = rest;
+          newFilter.type = groupKey.toUpperCase() as "AND" | "OR";
+          groupedQueries[field].filters.push(newFilter);
+        }
       }
     }
   }
@@ -220,6 +272,24 @@ export function groupByCharacterFieldId(data: GroupedQueryFilter[]): Record<stri
         grouped[character_field_id].push(obj);
       } else {
         grouped[character_field_id] = [obj];
+      }
+    }
+  });
+
+  return grouped;
+}
+
+export function groupByCharacterResourceId(data: GroupedQueryFilter[]): Record<string, GroupedQueryFilter[]> {
+  const grouped: Record<string, GroupedQueryFilter[]> = {};
+
+  data.forEach((obj) => {
+    if (obj?.id) {
+      const { id } = obj;
+      if (!id) return;
+      if (grouped[id]) {
+        grouped[id].push(obj);
+      } else {
+        grouped[id] = [obj];
       }
     }
   });

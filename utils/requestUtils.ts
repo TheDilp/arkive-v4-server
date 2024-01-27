@@ -7,6 +7,8 @@ import {
   BlueprintInstanceRelationTables,
   CharacterRelationEntities,
   CharacterRelationTables,
+  CharacterResourceEntities,
+  CharacterResourceTables,
   EventRelationEntities,
   EventRelationTables,
 } from "../database/types";
@@ -67,6 +69,13 @@ export function relatedEntityFromCharacterRelationTable(table: CharacterRelation
   if (table === "character_documents_fields") return "documents";
   if (table === "character_locations_fields") return "map_pins";
   if (table === "character_events_fields") return "events";
+  return null;
+}
+export function relatedEntityFromCharacterResourceTable(table: CharacterResourceTables): CharacterResourceEntities | null {
+  if (table === "_charactersTodocuments") return "documents";
+  if (table === "_charactersToimages") return "images";
+  if (table === "maps") return "maps";
+  if (table === "event_characters") return "events";
   return null;
 }
 

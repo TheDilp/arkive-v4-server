@@ -16,7 +16,7 @@ import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { CreateTagRelations, GetRelationsForUpdating, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
-import { groupFiltersByField } from "../utils/transform";
+import { groupRelationFiltersByField } from "../utils/transform";
 
 export function character_fields_templates_router(app: Elysia) {
   return app.group("/character_fields_templates", (server) =>
@@ -81,7 +81,7 @@ export function character_fields_templates_router(app: Elysia) {
               return qb;
             })
             .$if(!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length, (qb) => {
-              const { tags } = groupFiltersByField(body.relationFilters || {});
+              const { tags } = groupRelationFiltersByField(body.relationFilters || {});
               if (tags?.filters?.length)
                 qb = tagsRelationFilter(
                   "character_fields_templates",

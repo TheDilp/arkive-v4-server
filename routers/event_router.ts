@@ -10,7 +10,7 @@ import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, eventRelationFilters } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { GetRelationsForUpdating, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
-import { groupFiltersByField } from "../utils/transform";
+import { groupRelationFiltersByField } from "../utils/transform";
 
 export function event_router(app: Elysia) {
   return app.group("/events", (server) =>
@@ -72,7 +72,7 @@ export function event_router(app: Elysia) {
               return qb;
             })
             .$if(!!body?.relationFilters?.and?.length || !!body?.relationFilters?.or?.length, (qb) => {
-              const { characters, map_pins } = groupFiltersByField(body.relationFilters || {});
+              const { characters, map_pins } = groupRelationFiltersByField(body.relationFilters || {});
 
               if (characters?.filters?.length) qb = eventRelationFilters("event_characters", qb, characters?.filters || []);
               if (map_pins?.filters?.length) qb = eventRelationFilters("event_map_pins", qb, map_pins?.filters || []);

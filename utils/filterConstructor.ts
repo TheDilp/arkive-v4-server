@@ -4,6 +4,7 @@ import { DB } from "kysely-codegen";
 import {
   BlueprintInstanceRelationTables,
   CharacterRelationTables,
+  CharacterResourceTables,
   DBKeys,
   EventRelationTables,
   TagsRelationTables,
@@ -13,9 +14,16 @@ import { RequestBodyFiltersType } from "../types/requestTypes";
 import {
   relatedEntityFromBPIRelationTable,
   relatedEntityFromCharacterRelationTable,
+  relatedEntityFromCharacterResourceTable,
   relatedEntityFromEventRelationTable,
 } from "./requestUtils";
-import { groupByBlueprintFieldId, groupByCharacterFieldId, GroupedQueryFilter, groupFiltersByField } from "./transform";
+import {
+  groupByBlueprintFieldId,
+  groupByCharacterFieldId,
+  groupByCharacterResourceId,
+  GroupedQueryFilter,
+  groupFiltersByField,
+} from "./transform";
 
 function getBPValue(value: string | number | boolean | null) {
   if (typeof value === "string") return sql<string>`REPLACE(blueprint_instance_value.value::TEXT, '"', '')`;
@@ -493,6 +501,235 @@ export function characterValueFilter(queryBuilder: SelectQueryBuilder<DB, any, a
     if (orFilters?.length) finalFilters.push(and(orFilters));
     return and(finalFilters);
   });
+}
+export function characterResourceFilter(
+  characterResourceTable: CharacterResourceTables,
+  queryBuilder: SelectQueryBuilder<DB, any, any>,
+  filters: GroupedQueryFilter[],
+) {
+  let count = 0;
+  const andRequestFilters = (filters || []).filter((filt) => filt.type === "AND");
+  count += andRequestFilters.length;
+  const orRequestFilters = (filters || []).filter((filt) => filt.type === "OR");
+  const relatedEntity = relatedEntityFromCharacterResourceTable(characterResourceTable);
+  console.log(characterResourceTable, relatedEntity);
+
+  if (
+    (characterResourceTable === "_charactersTodocuments" || characterResourceTable === "_charactersToimages") &&
+    relatedEntity
+  ) {
+    return queryBuilder
+      .innerJoin(characterResourceTable, "characters.id", `${characterResourceTable}.A`)
+      .innerJoin(relatedEntity, `${characterResourceTable}.B`, `${relatedEntity}.id`)
+      .where(({ and, exists, selectFrom }) => {
+        const andFilters = [];
+        const orFilters = [];
+        const finalFilters = [];
+        const groupedAndByResource = groupByCharacterResourceId(andRequestFilters);
+        const groupedOrByResource = groupByCharacterResourceId(orRequestFilters);
+        let whereAndQuery: any;
+        let whereOrQuery: any;
+        if (andRequestFilters.length) {
+          Object.entries(groupedAndByResource).forEach(([, filters], index) => {
+            const entityIds = filters.map((filt) => filt?.value as string);
+            if (index === 0) {
+              whereAndQuery = selectFrom(characterResourceTable)
+                // @ts-ignore
+                .select(sql<number>`1`)
+                .innerJoin(relatedEntity, `${relatedEntity}.id`, `${characterResourceTable}.B`)
+                .where(`${relatedEntity}.id`, "in", entityIds)
+                .whereRef(`${characterResourceTable}.A`, "=", "characters.id");
+            } else {
+              whereAndQuery = whereAndQuery.intersect(
+                selectFrom(characterResourceTable)
+                  // @ts-ignore
+                  .select(sql<number>`1`)
+                  .innerJoin(relatedEntity, `${relatedEntity}.id`, `${characterResourceTable}.B`)
+                  .where(`${relatedEntity}.id`, "in", entityIds)
+                  .whereRef(`${characterResourceTable}.A`, "=", "characters.id"),
+              );
+            }
+          });
+          andFilters.push(exists(whereAndQuery));
+        }
+        if (orRequestFilters.length) {
+          count += 1;
+
+          Object.entries(groupedOrByResource).forEach(([, filters], index) => {
+            const entityIds = filters.map((filt) => filt?.value as string);
+            if (index === 0) {
+              whereOrQuery = selectFrom(characterResourceTable)
+                // @ts-ignore
+                .select(sql<number>`1`)
+                .innerJoin(relatedEntity, `${relatedEntity}.id`, `${characterResourceTable}.B`)
+                .where(`${relatedEntity}.id`, "in", entityIds)
+                .whereRef(`${characterResourceTable}.A`, "=", "characters.id");
+            } else {
+              whereOrQuery = whereOrQuery.union(
+                selectFrom(characterResourceTable)
+                  // @ts-ignore
+                  .select(sql<number>`1`)
+                  .innerJoin(relatedEntity, `${relatedEntity}.id`, `${characterResourceTable}.B`)
+                  .where(`${relatedEntity}.id`, "in", entityIds)
+                  .whereRef(`${characterResourceTable}.A`, "=", "characters.id"),
+              );
+            }
+          });
+
+          orFilters.push(exists(whereOrQuery));
+        }
+        if (andFilters?.length) finalFilters.push(and(andFilters));
+        if (orFilters?.length) finalFilters.push(and(orFilters));
+        return and(finalFilters);
+      })
+      .$if(!!andRequestFilters.length || !!orRequestFilters.length, (qb) => {
+        qb = qb.groupBy(["characters.id"]).having(({ fn }) => fn.count<number>(`${relatedEntity}.id`).distinct(), ">=", count);
+
+        return qb;
+      });
+  } else if (characterResourceTable === "event_characters" && relatedEntity) {
+    return queryBuilder
+      .innerJoin(characterResourceTable, "characters.id", `${characterResourceTable}.related_id`)
+      .innerJoin(relatedEntity, `${characterResourceTable}.event_id`, `${relatedEntity}.id`)
+      .where(({ and, exists, selectFrom }) => {
+        const andFilters = [];
+        const orFilters = [];
+        const finalFilters = [];
+        const groupedAndByResource = groupByCharacterResourceId(andRequestFilters);
+        const groupedOrByResource = groupByCharacterResourceId(orRequestFilters);
+        let whereAndQuery: any;
+        let whereOrQuery: any;
+        if (andRequestFilters.length) {
+          Object.entries(groupedAndByResource).forEach(([, filters], index) => {
+            const entityIds = filters.map((filt) => filt?.value as string);
+            if (index === 0) {
+              whereAndQuery = selectFrom(characterResourceTable)
+                // @ts-ignore
+                .select(sql<number>`1`)
+                .innerJoin(relatedEntity, `${relatedEntity}.id`, `${characterResourceTable}.event_id`)
+                .where(`${relatedEntity}.id`, "in", entityIds)
+                .whereRef(`${characterResourceTable}.related_id`, "=", "characters.id");
+            } else {
+              whereAndQuery = whereAndQuery.intersect(
+                selectFrom(characterResourceTable)
+                  // @ts-ignore
+                  .select(sql<number>`1`)
+                  .innerJoin(relatedEntity, `${relatedEntity}.id`, `${characterResourceTable}.event_id`)
+                  .where(`${relatedEntity}.id`, "in", entityIds)
+                  .whereRef(`${characterResourceTable}.related_id`, "=", "characters.id"),
+              );
+            }
+          });
+          andFilters.push(exists(whereAndQuery));
+        }
+        if (orRequestFilters.length) {
+          count += 1;
+
+          Object.entries(groupedOrByResource).forEach(([, filters], index) => {
+            const entityIds = filters.map((filt) => filt?.value as string);
+            if (index === 0) {
+              whereOrQuery = selectFrom(characterResourceTable)
+                // @ts-ignore
+                .select(sql<number>`1`)
+                .innerJoin(relatedEntity, `${relatedEntity}.id`, `${characterResourceTable}.event_id`)
+                .where(`${relatedEntity}.id`, "in", entityIds)
+                .whereRef(`${characterResourceTable}.related_id`, "=", "characters.id");
+            } else {
+              whereOrQuery = whereOrQuery.union(
+                selectFrom(characterResourceTable)
+                  // @ts-ignore
+                  .select(sql<number>`1`)
+                  .innerJoin(relatedEntity, `${relatedEntity}.id`, `${characterResourceTable}.event_id`)
+                  .where(`${relatedEntity}.id`, "in", entityIds)
+                  .whereRef(`${characterResourceTable}.related_id`, "=", "characters.id"),
+              );
+            }
+          });
+
+          orFilters.push(exists(whereOrQuery));
+        }
+        if (andFilters?.length) finalFilters.push(and(andFilters));
+        if (orFilters?.length) finalFilters.push(and(orFilters));
+        return and(finalFilters);
+      })
+      .$if(!!andRequestFilters.length || !!orRequestFilters.length, (qb) => {
+        qb = qb.groupBy(["characters.id"]).having(({ fn }) => fn.count<number>(`${relatedEntity}.id`).distinct(), ">=", count);
+
+        return qb;
+      });
+  } else if (characterResourceTable === "maps" && relatedEntity) {
+    return queryBuilder
+      .innerJoin("map_pins", "map_pins.character_id", "characters.id")
+      .leftJoin("maps", "maps.id", "map_pins.parent_id")
+      .where(({ and, exists, selectFrom }) => {
+        const andFilters = [];
+        const orFilters = [];
+        const finalFilters = [];
+        const groupedAndByResource = groupByCharacterResourceId(andRequestFilters);
+        const groupedOrByResource = groupByCharacterResourceId(orRequestFilters);
+        let whereAndQuery: any;
+        let whereOrQuery: any;
+        if (andRequestFilters.length) {
+          Object.entries(groupedAndByResource).forEach(([, filters], index) => {
+            const entityIds = filters.map((filt) => filt?.value as string);
+            if (index === 0) {
+              whereAndQuery = selectFrom(characterResourceTable)
+                // @ts-ignore
+                .select(sql<number>`1`)
+                .where(`${relatedEntity}.id`, "in", entityIds)
+                .leftJoin("map_pins as m", "m.parent_id", "maps.id")
+                .whereRef("m.character_id", "=", "characters.id");
+            } else {
+              whereAndQuery = whereAndQuery.intersect(
+                selectFrom(characterResourceTable)
+                  // @ts-ignore
+                  .select(sql<number>`1`)
+                  .where(`${relatedEntity}.id`, "in", entityIds)
+                  .leftJoin("map_pins as m", "m.parent_id", "maps.id")
+                  .whereRef("m.character_id", "=", "characters.id"),
+              );
+            }
+          });
+          andFilters.push(exists(whereAndQuery));
+        }
+        if (orRequestFilters.length) {
+          count += 1;
+
+          Object.entries(groupedOrByResource).forEach(([, filters], index) => {
+            const entityIds = filters.map((filt) => filt?.value as string);
+            if (index === 0) {
+              whereOrQuery = selectFrom(characterResourceTable)
+                // @ts-ignore
+                .select(sql<number>`1`)
+                .where(`${relatedEntity}.id`, "in", entityIds)
+                .leftJoin("map_pins as m", "m.parent_id", "maps.id")
+                .whereRef("m.character_id", "=", "characters.id");
+            } else {
+              whereOrQuery = whereOrQuery.union(
+                selectFrom(characterResourceTable)
+                  // @ts-ignore
+                  .select(sql<number>`1`)
+                  .where(`${relatedEntity}.id`, "in", entityIds)
+                  .leftJoin("map_pins as m", "m.parent_id", "maps.id")
+                  .whereRef("m.character_id", "=", "characters.id"),
+              );
+            }
+          });
+
+          orFilters.push(exists(whereOrQuery));
+        }
+        if (andFilters?.length) finalFilters.push(and(andFilters));
+        if (orFilters?.length) finalFilters.push(and(orFilters));
+        return and(finalFilters);
+      })
+      .$if(!!andRequestFilters.length || !!orRequestFilters.length, (qb) => {
+        qb = qb.groupBy(["characters.id"]).having(({ fn }) => fn.count<number>(`${relatedEntity}.id`).distinct(), ">=", count);
+
+        return qb;
+      });
+  }
+
+  return queryBuilder;
 }
 // #endregion characterFilters
 

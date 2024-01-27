@@ -112,7 +112,7 @@ export function map_pin_router(app: Elysia) {
             ])
             .$if(!!body.relations?.events, (qb) => {
               qb = qb
-                .leftJoin("event_map_pins", "event_map_pins.map_pin_id", "map_pins.id")
+                .leftJoin("event_map_pins", "event_map_pins.related_id", "map_pins.id")
                 .select((eb) =>
                   jsonArrayFrom(
                     eb

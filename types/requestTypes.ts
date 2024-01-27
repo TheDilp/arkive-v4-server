@@ -34,6 +34,7 @@ export type SearchableMentionEntities =
 export type RequestFilterOperatorType = keyof typeof FilterEnum;
 
 export interface RequestFilterType {
+  id: string;
   field: string;
   value: string | number | string[] | number[] | boolean | boolean[] | null;
   operator: RequestFilterOperatorType;
@@ -85,6 +86,7 @@ export const FilterEnumSchema = t.Union([
 const RequestFilterSchema = t.Optional(
   t.Array(
     t.Object({
+      id: t.String(),
       field: t.String(),
       value: t.Union([
         t.String(),

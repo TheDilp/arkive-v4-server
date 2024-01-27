@@ -20,7 +20,7 @@ import {
 } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { CreateTagRelations, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
-import { groupFiltersByField } from "../utils/transform";
+import { groupRelationFiltersByField } from "../utils/transform";
 
 export function blueprint_instance_router(app: Elysia) {
   return app.group("/blueprint_instances", (server) =>
@@ -352,7 +352,9 @@ export function blueprint_instance_router(app: Elysia) {
               return qb;
             })
             .$if(!!body?.relationFilters?.and?.length || !!body?.relationFilters?.or?.length, (qb) => {
-              const { characters, documents, map_pins, tags, events, value } = groupFiltersByField(body.relationFilters || {});
+              const { characters, documents, map_pins, tags, events, value } = groupRelationFiltersByField(
+                body.relationFilters || {},
+              );
 
               if (tags?.filters?.length)
                 qb = tagsRelationFilter("blueprint_instances", "_blueprint_instancesTotags", qb, tags?.filters || []);

@@ -11,7 +11,13 @@ import { readCharacter } from "../database/queries";
 import { InsertCharacterSchema, ListCharacterSchema, ReadCharacterSchema, UpdateCharacterSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { characterRelationFilter, characterValueFilter, constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
+import {
+  characterRelationFilter,
+  characterResourceFilter,
+  characterValueFilter,
+  constructFilter,
+  tagsRelationFilter,
+} from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import {
   CreateTagRelations,
@@ -20,7 +26,7 @@ import {
   UpdateCharacterRelationships,
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
-import { getCharacterFullName, groupFiltersByField } from "../utils/transform";
+import { getCharacterFullName, groupCharacterResourceFiltersByField, groupRelationFiltersByField } from "../utils/transform";
 
 export function character_router(app: Elysia) {
   return app.group("/characters", (server) =>
@@ -176,17 +182,27 @@ export function character_router(app: Elysia) {
             .where("characters.project_id", "=", body?.data?.project_id)
             .limit(body?.pagination?.limit || 10)
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
-            .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
-              qb = constructFilter("characters", qb, body.filters);
-              return qb;
-            })
             .$if(!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length, (qb) => {
-              const { blueprint_instances, documents, map_pins, events, tags, value } = groupFiltersByField(
+              const { blueprint_instances, documents, map_pins, events, tags, value } = groupRelationFiltersByField(
                 body.relationFilters || {},
               );
 
-              if (tags?.filters?.length) qb = tagsRelationFilter("characters", "_charactersTotags", qb, tags?.filters || []);
+              const {
+                documents: resourceDocuments,
+                maps: resourceMaps,
+                events: resourceEvents,
+                tags: resourceTags,
+                images,
+              } = groupCharacterResourceFiltersByField(body.relationFilters || {});
 
+              if (tags?.filters?.length || resourceTags?.filters?.length)
+                qb = tagsRelationFilter("characters", "_charactersTotags", qb, tags?.filters || resourceTags?.filters || []);
+              if (resourceDocuments?.filters?.length)
+                qb = characterResourceFilter("_charactersTodocuments", qb, resourceDocuments?.filters || []);
+              if (images?.filters?.length) qb = characterResourceFilter("_charactersToimages", qb, images?.filters || []);
+              if (resourceEvents?.filters?.length)
+                qb = characterResourceFilter("event_characters", qb, resourceEvents?.filters || []);
+              if (resourceMaps?.filters?.length) qb = characterResourceFilter("maps", qb, resourceMaps?.filters || []);
               if (documents?.filters?.length)
                 qb = characterRelationFilter("character_documents_fields", qb, documents?.filters || []);
               if (map_pins?.filters?.length)
@@ -196,6 +212,10 @@ export function character_router(app: Elysia) {
               if (events?.filters?.length) qb = characterRelationFilter("character_events_fields", qb, events?.filters || []);
               if (value?.filters?.length) qb = characterValueFilter(qb, value.filters);
 
+              return qb;
+            })
+            .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
+              qb = constructFilter("characters", qb, body.filters);
               return qb;
             })
             .$if(!!body.orderBy?.length, (qb) => constructOrdering(body.orderBy, qb))
