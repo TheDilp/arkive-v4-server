@@ -1,7 +1,13 @@
 import Elysia, { t } from "elysia";
 
 import { db } from "../database/db";
-import { UpdateEdgeSchema, UpdateEventSchema, UpdateNodeSchema } from "../database/validation";
+import {
+  InsertNodeSchema,
+  InsertRandomTableOptionSchema,
+  UpdateEdgeSchema,
+  UpdateEventSchema,
+  UpdateNodeSchema,
+} from "../database/validation";
 import { BulkDeleteEntities } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { AvailableEntityType, AvailableSubEntityType, BulkDeleteEntitiesType, PublicEntities } from "../types/entityTypes";
@@ -11,6 +17,20 @@ import { UpdateTagRelations } from "../utils/relationalQueryHelpers";
 export function bulk_router(app: Elysia) {
   return app.group("/bulk", (server) =>
     server
+      .post(
+        "/create/:type",
+        async ({ params, body }) => {
+          db.insertInto(params.type as AvailableEntityType | AvailableSubEntityType)
+            .values(body.data.map((item) => item.data))
+            .execute();
+
+          return { ok: true, message: `Nodes ${MessageEnum.successfully_created}` };
+        },
+        {
+          body: t.Object({ data: t.Array(t.Union([InsertNodeSchema, InsertRandomTableOptionSchema])) }),
+          response: ResponseSchema,
+        },
+      )
       .post(
         "/update/public/:type",
         async ({ params, body }) => {
@@ -76,7 +96,6 @@ export function bulk_router(app: Elysia) {
           response: ResponseSchema,
         },
       )
-
       .delete(
         "/delete/:type",
         async ({ params, body }) => {
