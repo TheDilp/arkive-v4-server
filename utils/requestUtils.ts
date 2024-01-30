@@ -86,7 +86,13 @@ export function relatedEntityFromEventRelationTable(table: EventRelationTables):
   return null;
 }
 
-export function getEntityTagTable(type: AvailableEntityType): TagsRelationTables | null {
+export function getEntityTagTable(type: AvailableEntityType | AvailableSubEntityType): TagsRelationTables | null {
   if (type === "characters") return "_charactersTotags";
+  if (type === "blueprint_instances") return "_blueprint_instancesTotags";
+  if (type === "documents") return "_documentsTotags";
+  if (type === "maps") return "_mapsTotags";
+  if (type === "graphs") return "_graphsTotags";
+  if (type === "calendars") return "_calendarsTotags";
+  if (type === "character_fields_templates") return "_character_fields_templatesTotags";
   return null;
 }

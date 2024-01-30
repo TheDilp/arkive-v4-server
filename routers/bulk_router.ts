@@ -100,7 +100,7 @@ export function bulk_router(app: Elysia) {
       .post(
         "/tags/:type",
         async ({ params, body }) => {
-          const entityTagTable = getEntityTagTable(params.type as AvailableEntityType);
+          const entityTagTable = getEntityTagTable(params.type as AvailableEntityType | AvailableSubEntityType);
           if (entityTagTable) {
             await db.transaction().execute(async (tx) => {
               if (body.data.add.length) await tx.insertInto(entityTagTable).values(body.data.add).execute();
