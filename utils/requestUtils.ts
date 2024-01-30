@@ -11,6 +11,7 @@ import {
   CharacterResourceTables,
   EventRelationEntities,
   EventRelationTables,
+  TagsRelationTables,
 } from "../database/types";
 import { AvailableEntityType, AvailableSubEntityType } from "../types/entityTypes";
 import { AfterHandlerActionType, JWTPayloadType, SearchableEntities } from "../types/requestTypes";
@@ -82,5 +83,10 @@ export function relatedEntityFromCharacterResourceTable(table: CharacterResource
 export function relatedEntityFromEventRelationTable(table: EventRelationTables): EventRelationEntities | null {
   if (table === "event_characters") return "characters";
   if (table === "event_map_pins") return "map_pins";
+  return null;
+}
+
+export function getEntityTagTable(type: AvailableEntityType): TagsRelationTables | null {
+  if (type === "characters") return "_charactersTotags";
   return null;
 }

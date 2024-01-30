@@ -13,6 +13,7 @@ import { MessageEnum } from "../enums/requestEnums";
 import { AvailableEntityType, AvailableSubEntityType, BulkDeleteEntitiesType, PublicEntities } from "../types/entityTypes";
 import { ResponseSchema } from "../types/requestTypes";
 import { UpdateTagRelations } from "../utils/relationalQueryHelpers";
+import { getEntityTagTable } from "../utils/requestUtils";
 
 export function bulk_router(app: Elysia) {
   return app.group("/bulk", (server) =>
@@ -93,6 +94,32 @@ export function bulk_router(app: Elysia) {
         },
         {
           body: t.Object({ data: t.Array(t.Union([UpdateEventSchema, UpdateNodeSchema, UpdateEdgeSchema])) }),
+          response: ResponseSchema,
+        },
+      )
+      .post(
+        "/tags/:type",
+        async ({ params, body }) => {
+          const entityTagTable = getEntityTagTable(params.type as AvailableEntityType);
+          if (entityTagTable) {
+            await db.transaction().execute(async (tx) => {
+              if (body.data.add.length) await tx.insertInto(entityTagTable).values(body.data.add).execute();
+              if (body.data.remove.length)
+                await tx
+                  .deleteFrom(entityTagTable)
+                  .where((eb) => eb.or(body.data.remove.map((r) => eb.and([eb("A", "=", r.A), eb("B", "=", r.B)]))))
+                  .execute();
+            });
+          }
+          return { ok: true, message: MessageEnum.success };
+        },
+        {
+          body: t.Object({
+            data: t.Object({
+              add: t.Array(t.Object({ A: t.String(), B: t.String() })),
+              remove: t.Array(t.Object({ A: t.String(), B: t.String() })),
+            }),
+          }),
           response: ResponseSchema,
         },
       )
