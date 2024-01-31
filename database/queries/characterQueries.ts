@@ -285,7 +285,9 @@ export async function readCharacter(
               .selectFrom("_charactersToimages")
               .where("_charactersToimages.A", "=", params.id)
               .leftJoin("images", "images.id", "_charactersToimages.B")
-              .select(["images.id", "images.title"]),
+              .select(["images.id", "images.title", "images.is_public"])
+              .orderBy("title")
+              .$if(isPublic, (eb) => eb.where("images.is_public", "=", true)),
           ).as("images"),
         );
       }
@@ -312,7 +314,8 @@ export async function readCharacter(
               .where("documents.is_folder", "is not", true)
               .where("documents.is_template", "is not", true)
               .$if(isPublic, (eb) => eb.where("documents.is_public", "=", true))
-              .select(["documents.id", "documents.icon", "documents.is_public", "documents.title", "documents.image_id"]),
+              .select(["documents.id", "documents.icon", "documents.is_public", "documents.title", "documents.image_id"])
+              .orderBy("title"),
           ).as("documents"),
         );
       }
@@ -324,7 +327,8 @@ export async function readCharacter(
               .where("event_characters.related_id", "=", params.id)
               .leftJoin("events", "events.id", "event_characters.event_id")
               .$if(isPublic, (eb) => eb.where("events.is_public", "=", true))
-              .select(["events.id", "events.is_public", "events.title", "events.image_id", "events.parent_id"]),
+              .select(["events.id", "events.is_public", "events.title", "events.image_id", "events.parent_id"])
+              .orderBy("start_year"),
           ).as("events"),
         );
       }

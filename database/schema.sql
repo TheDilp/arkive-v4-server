@@ -880,7 +880,8 @@ CREATE TABLE public.images (
     project_id uuid,
     project_image_id uuid,
     character_id uuid,
-    type public."ImageType" DEFAULT 'images'::public."ImageType" NOT NULL
+    type public."ImageType" DEFAULT 'images'::public."ImageType" NOT NULL,
+    is_public boolean
 );
 
 
@@ -3422,4 +3423,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240124071626'),
     ('20240124104752'),
     ('20240125123531'),
-    ('20240127084345');
+    ('20240127084345'),
+    ('20240131211018');
