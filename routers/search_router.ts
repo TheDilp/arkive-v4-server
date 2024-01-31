@@ -87,6 +87,30 @@ export function search_router(app: Elysia) {
         "/:project_id/:type",
         async ({ params, body }) => {
           const { project_id, type } = params;
+
+          if (type === "documents_content") {
+            const data = await db
+              .selectFrom("documents")
+              .select(["id", "title", "icon", "image_id"])
+              .where(
+                sql`to_tsvector(${sql.ref("content")})`,
+                "@@",
+                sql<string>`to_tsquery(${sql.lit("english")}, ${body.data.search_term})`,
+              )
+              .limit(25)
+              .execute();
+            return {
+              data: data.map((item) => ({
+                value: item.id,
+                label: item?.title,
+                image: item?.image_id,
+                icon: item?.icon,
+              })),
+              message: MessageEnum.success,
+              ok: true,
+            };
+          }
+
           const fields = getSearchFields(type as SearchableEntities);
 
           if (type === "places") {

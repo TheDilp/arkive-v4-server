@@ -245,7 +245,8 @@ export function public_router(app: Elysia) {
                     eb
                       .selectFrom("months")
                       .select(["months.id", "months.days", "months.sort", "months.title", "months.parent_id"])
-                      .where("months.parent_id", "=", params.id),
+                      .where("months.parent_id", "=", params.id)
+                      .orderBy("months.sort"),
                   ).as("months"),
                 );
               }
@@ -375,7 +376,9 @@ export function public_router(app: Elysia) {
             .selectFrom("events")
 
             .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "events">[]))
+            .$if(!!body.fields?.length, (qb) =>
+              qb.clearSelect().select(body.fields.map((f) => `events.${f}`) as SelectExpression<DB, "events">[]),
+            )
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
               qb = constructFilter("events", qb, body.filters);
               return qb;
@@ -384,7 +387,10 @@ export function public_router(app: Elysia) {
               qb = constructOrdering(body.orderBy, qb);
               return qb;
             })
-            .where("is_public", "=", true)
+            .leftJoin("months as sm", "events.start_month_id", "sm.id")
+            .leftJoin("months as em", "events.end_month_id", "em.id")
+            .select(["sm.sort as start_month", "em.sort as end_month"])
+            .where("events.is_public", "=", true)
             .execute();
 
           return { data, message: MessageEnum.success, ok: true };

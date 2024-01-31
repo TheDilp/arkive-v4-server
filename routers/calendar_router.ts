@@ -113,7 +113,6 @@ export function calendar_router(app: Elysia) {
                   ).as("leap_days"),
                 );
               }
-
               if (body.relations?.eras) {
                 qb = qb.select((eb) =>
                   jsonArrayFrom(
