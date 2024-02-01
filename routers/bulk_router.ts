@@ -1,3 +1,4 @@
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import Elysia, { t } from "elysia";
 
 import { db } from "../database/db";
@@ -14,6 +15,7 @@ import { AvailableEntityType, AvailableSubEntityType, BulkDeleteEntitiesType, Pu
 import { ResponseSchema } from "../types/requestTypes";
 import { UpdateTagRelations } from "../utils/relationalQueryHelpers";
 import { getEntityTagTable } from "../utils/requestUtils";
+import { s3Client } from "../utils/s3Client";
 
 export function bulk_router(app: Elysia) {
   return app.group("/bulk", (server) =>
@@ -131,6 +133,21 @@ export function bulk_router(app: Elysia) {
               console.error("ATTEMPTED BULK DELETE WITH UNALLOWED TYPE", params.type);
               throw new Error("INTERNAL_SERVER_ERROR");
             }
+            if (params.type === "images" && !body.data.project_id) {
+              console.error("ATTEMPTED BULK DELETE FOR IMAGES WITH NO PROJECT ID", params.type);
+              throw new Error("INTERNAL_SERVER_ERROR");
+            }
+            if (params.type === "images" && body.data.project_id) {
+              const filePath = `assets/${body.data.project_id}/${params.type}`;
+              for (let index = 0; index < body.data.ids.length; index += 1) {
+                await s3Client.send(
+                  new DeleteObjectCommand({
+                    Bucket: process.env.DO_SPACES_NAME as string,
+                    Key: `${filePath}/${body.data.ids[index]}.webp`,
+                  }),
+                );
+              }
+            }
             await db
               .deleteFrom(params.type as BulkDeleteEntitiesType)
               .where("id", "in", body.data.ids)
@@ -142,6 +159,7 @@ export function bulk_router(app: Elysia) {
           body: t.Object({
             data: t.Object({
               ids: t.Array(t.String(), { minItems: 1, maxItems: 100 }),
+              project_id: t.Optional(t.String()),
             }),
           }),
           response: ResponseSchema,
