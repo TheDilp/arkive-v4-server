@@ -148,11 +148,35 @@ export function character_router(app: Elysia) {
                   )
                   .execute();
               }
+              if (body.relations?.related_from?.length) {
+                await tx
+                  .insertInto("characters_relationships")
+                  .values(
+                    body.relations.related_from.map((item) => ({
+                      character_a_id: item.id,
+                      character_b_id: character.id,
+                      relation_type_id: item.relation_type_id,
+                    })),
+                  )
+                  .execute();
+              }
               if (body.relations?.related_to?.length) {
                 await tx
                   .insertInto("characters_relationships")
                   .values(
                     body.relations.related_to.map((item) => ({
+                      character_a_id: character.id,
+                      character_b_id: item.id,
+                      relation_type_id: item.relation_type_id,
+                    })),
+                  )
+                  .execute();
+              }
+              if (body.relations?.related_other?.length) {
+                await tx
+                  .insertInto("characters_relationships")
+                  .values(
+                    body.relations.related_other.map((item) => ({
                       character_a_id: character.id,
                       character_b_id: item.id,
                       relation_type_id: item.relation_type_id,
