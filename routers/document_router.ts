@@ -37,7 +37,8 @@ function getAutoLinkerFields(
   type: "characters" | "documents" | "blueprint_instances" | "maps" | "map_pins" | "graphs" | "words",
 ) {
   if (type === "characters") return ["id", "full_name as title", "portrait_id as image_id"] as const;
-  if (type === "blueprint_instances") return ["id", "title", "parent_id"] as const;
+  if (type === "blueprint_instances")
+    return ["blueprint_instances.id", "blueprint_instances.title", "blueprint_instances.parent_id", "blueprints.icon"] as const;
   if (type === "maps" || type === "graphs") return ["id", "title"] as const;
   if (type === "words") return ["id", "title", "parent_id"] as const;
   return ["id", "title", "image_id"] as const;
@@ -397,7 +398,7 @@ export function document_router(app: Elysia) {
           const fields = getAutoLinkerFields(body.data.type);
           const res = await db
             .selectFrom(body.data.type)
-            .select(fields)
+
             .$if(body.data.type === "map_pins", (qb) => {
               if (body.data.type === "map_pins") {
                 qb.leftJoin("maps", "maps.id", "map_pins.parent_id")
@@ -408,7 +409,9 @@ export function document_router(app: Elysia) {
             })
             .$if(body.data.type === "blueprint_instances", (qb) => {
               if (body.data.type === "blueprint_instances") {
-                qb.leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+                // @ts-ignore
+                qb = qb
+                  .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
                   .clearWhere()
                   .where("blueprints.project_id", "=", body.data.project_id);
               }
@@ -426,6 +429,8 @@ export function document_router(app: Elysia) {
               return qb.where("project_id", "=", body.data.project_id);
             })
             .where("ts", "@@", sql<string>`to_tsquery(${sql.lit("english")}, ${formattedString})`)
+            // @ts-ignore
+            .select(fields)
             .execute();
 
           return { data: res, message: MessageEnum.success, ok: true };
