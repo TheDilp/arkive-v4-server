@@ -59,6 +59,22 @@ export function asset_router(app: Elysia) {
         },
       )
       .post(
+        "/:project_id/:type/:id",
+        async ({ params, body }) => {
+          const data = await db
+            .selectFrom("images")
+            .where("images.id", "=", params.id)
+            .$if(!body.fields?.length, (qb) => qb.selectAll())
+            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "images">[]))
+            .executeTakeFirstOrThrow();
+          return { data, message: MessageEnum.success, ok: true };
+        },
+        {
+          body: RequestBodySchema,
+          response: ResponseWithDataSchema,
+        },
+      )
+      .post(
         "/upload/:project_id/:type",
         async ({ params, body }) => {
           const { type, project_id } = params;
