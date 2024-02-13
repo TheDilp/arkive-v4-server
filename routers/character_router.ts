@@ -390,7 +390,7 @@ export function character_router(app: Elysia) {
 
           const mainCharacters = await db
             .selectFrom("characters")
-            .select(["id", "portrait_id", "nickname", "first_name", "last_name"])
+            .select(["id", "portrait_id", "full_name"])
             .where("id", "in", ids)
             .execute();
 
@@ -403,7 +403,7 @@ export function character_router(app: Elysia) {
                   .where("character_a_id", "in", ids)
                   .where("characters.id", "not in", ids)
                   .where("relation_type_id", "=", relation_type_id)
-                  .select(["characters.id", "portrait_id", "nickname", "first_name", "last_name", "character_a_id"])
+                  .select(["characters.id", "portrait_id", "full_name", "character_a_id"])
 
                   .execute();
           const additionalCharsChildren = await db
@@ -412,7 +412,7 @@ export function character_router(app: Elysia) {
             .where("character_b_id", "in", ids)
             .where("characters.id", "not in", ids)
             .where("relation_type_id", "=", relation_type_id)
-            .select(["characters.id", "portrait_id", "nickname", "first_name", "last_name", "character_b_id"])
+            .select(["characters.id", "portrait_id", "full_name", "character_b_id"])
 
             .execute();
 
@@ -432,7 +432,7 @@ export function character_router(app: Elysia) {
           const nodes = uniqueChars.map((c) => ({
             id: c.id,
             character_id: c.id,
-            label: getCharacterFullName(c.first_name as string, c?.nickname, c?.last_name),
+            label: c.full_name,
             width: 50,
             height: 50,
             image_id: c.portrait_id ?? [],
@@ -902,48 +902,6 @@ export function character_router(app: Elysia) {
           response: ResponseSchema,
         },
       )
-      // .post(
-      //   "/resource/update/:id",
-      //   async ({ params, body }) => {
-      //     await db.transaction().execute(async (tx) => {
-      //       if (body?.relations?.documents) {
-
-      //       }
-      //       // if (body?.relations?.images) {
-      //       //   const existingImageIds = (
-      //       //     await tx.selectFrom("_charactersToimages").select(["B"]).where("A", "=", params.id).execute()
-      //       //   ).map((item) => item.B);
-      //       //   const filteredRequestIds = body.relations.images
-      //       //     .map((image) => image.id)
-      //       //     .filter((id) => !existingImageIds.includes(id));
-
-      //       //   if (filteredRequestIds.length) {
-      //       //     await tx
-      //       //       .insertInto("_charactersToimages")
-      //       //       .values(filteredRequestIds.map((id) => ({ A: params.id, B: id })))
-      //       //       .execute();
-      //       //   }
-      //       // }
-      //       // if (body?.relations?.tags) {
-      //       //   const existingTagIds = (
-      //       //     await tx.selectFrom("_charactersTotags").select(["B"]).where("A", "=", params.id).execute()
-      //       //   ).map((item) => item.B);
-      //       //   const filteredRequestIds = body.relations.tags.map((tag) => tag.id).filter((id) => !existingTagIds.includes(id));
-      //       //   if (filteredRequestIds.length) {
-      //       //     await tx
-      //       //       .insertInto("_charactersTotags")
-      //       //       .values(filteredRequestIds.map((id) => ({ A: params.id, B: id })))
-      //       //       .execute();
-      //       //   }
-      //       // }
-      //     });
-      //     return { message: `Resource ${MessageEnum.successfully_updated}`, ok: true };
-      //   },
-      //   {
-      //     body: UpdateCharacterResourceSchema,
-      //     response: ResponseSchema,
-      //   },
-      // )
       .post(
         "/remove/:id",
         async ({ params, body }) => {
