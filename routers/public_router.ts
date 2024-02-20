@@ -9,6 +9,8 @@ import {
   BasicSearchSchema,
   EntityListSchema,
   ListCharacterSchema,
+  ListDocumentSchema,
+  ListWordSchema,
   ReadCalendarSchema,
   ReadCharacterSchema,
   ReadDictionarySchema,
@@ -452,6 +454,142 @@ export function public_router(app: Elysia) {
           },
           {
             body: ListCharacterSchema,
+            response: ResponseWithDataSchema,
+          },
+        )
+        .post(
+          "/documents",
+          async ({ body }) => {
+            const data = await db
+              .selectFrom("documents")
+              .where("documents.project_id", "=", body?.data?.project_id)
+              .where("documents.is_public", "=", true)
+              .$if(!body?.fields?.length, (qb) => qb.selectAll())
+              .$if(!!body?.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "documents">[]))
+              .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
+                qb = constructFilter("documents", qb, body.filters);
+                return qb;
+              })
+              .$if(!!body.relations?.tags, (qb) => {
+                if (body?.relations?.tags) {
+                  return qb.select((eb) => TagQuery(eb, "_documentsTotags", "documents"));
+                }
+                return qb;
+              })
+              .$if(!!body.orderBy, (qb) => constructOrdering(body.orderBy, qb))
+
+              .execute();
+            return { data, message: MessageEnum.success, ok: true };
+          },
+          {
+            body: ListDocumentSchema,
+            response: ResponseWithDataSchema,
+          },
+        )
+        .post(
+          "/maps",
+          async ({ body }) => {
+            const data = await db
+              .selectFrom("maps")
+              .where("project_id", "=", body.data.project_id)
+              .where("is_public", "=", true)
+              .$if(!body.fields?.length, (qb) => qb.selectAll())
+              .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "maps">[]))
+              .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_mapsTotags", "maps")))
+              .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
+                qb = constructFilter("maps", qb, body.filters);
+                return qb;
+              })
+              .execute();
+            return { data, message: MessageEnum.success, ok: true };
+          },
+          {
+            body: EntityListSchema,
+            response: ResponseWithDataSchema,
+          },
+        )
+        .post(
+          "/graphs",
+          async ({ body }) => {
+            const data = await db
+              .selectFrom("graphs")
+              .where("project_id", "=", body.data.project_id)
+              .where("is_public", "=", true)
+              .$if(!body.fields?.length, (qb) => qb.selectAll())
+              .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "graphs">[]))
+              .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
+                qb = constructFilter("graphs", qb, body.filters);
+                return qb;
+              })
+              .limit(body?.pagination?.limit || 10)
+              .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
+              .$if(!!body.orderBy?.length, (qb) => {
+                qb = constructOrdering(body.orderBy, qb);
+                return qb;
+              })
+              .execute();
+            return { data, message: MessageEnum.success, ok: true };
+          },
+          {
+            body: EntityListSchema,
+            response: ResponseWithDataSchema,
+          },
+        )
+        .post(
+          "/dictionaries",
+          async ({ body }) => {
+            const data = await db
+              .selectFrom("dictionaries")
+              .limit(body?.pagination?.limit || 10)
+              .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
+              .$if(!body.fields?.length, (qb) => qb.selectAll())
+              .$if(!!body.fields?.length, (qb) =>
+                qb.clearSelect().select(body.fields as SelectExpression<DB, "dictionaries">[]),
+              )
+              .$if(!!body.orderBy?.length, (qb) => {
+                qb = constructOrdering(body.orderBy, qb);
+                return qb;
+              })
+              .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
+                qb = constructFilter("dictionaries", qb, body.filters);
+                return qb;
+              })
+              .where("project_id", "=", body.data.project_id)
+              .where("is_public", "=", true)
+              .execute();
+
+            return { data, message: MessageEnum.success, ok: true };
+          },
+          {
+            body: EntityListSchema,
+            response: ResponseWithDataSchema,
+          },
+        )
+        .post(
+          "/words",
+          async ({ body }) => {
+            const data = await db
+              .selectFrom("words")
+              .limit(body?.pagination?.limit || 10)
+              .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
+              .$if(!body.fields?.length, (qb) => qb.selectAll())
+              .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "words">[]))
+              .$if(!!body.orderBy?.length, (qb) => {
+                qb = constructOrdering(body.orderBy, qb);
+                return qb;
+              })
+              .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
+                qb = constructFilter("words", qb, body.filters);
+                return qb;
+              })
+              .where("parent_id", "=", body.data.parent_id)
+              .leftJoin("dictionaries", "dictionaries.id", "words.parent_id")
+              .where("dictionaries.is_public", "=", true)
+              .execute();
+            return { data, ok: true, message: MessageEnum.success };
+          },
+          {
+            body: ListWordSchema,
             response: ResponseWithDataSchema,
           },
         )
