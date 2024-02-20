@@ -18,6 +18,12 @@ export const ListBlueprintInstanceSchema = t.Intersect([
     }),
   ),
 ]);
+export const PublicListBlueprintInstanceSchema = t.Intersect([
+  RequestBodySchema,
+  t.Object({
+    data: t.Object({ project_id: t.String() }),
+  }),
+]);
 
 export const ReadBlueprintInstanceSchema = t.Intersect([
   RequestBodySchema,

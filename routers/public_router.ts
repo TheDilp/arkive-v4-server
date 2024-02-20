@@ -11,6 +11,7 @@ import {
   ListCharacterSchema,
   ListDocumentSchema,
   ListWordSchema,
+  PublicListBlueprintInstanceSchema,
   ReadCalendarSchema,
   ReadCharacterSchema,
   ReadDictionarySchema,
@@ -454,6 +455,30 @@ export function public_router(app: Elysia) {
           },
           {
             body: ListCharacterSchema,
+            response: ResponseWithDataSchema,
+          },
+        )
+        .post(
+          "/blueprints",
+          async ({ body }) => {
+            const query = db
+              .selectFrom("blueprint_instances")
+              .select(
+                body.fields.map((field) => `blueprint_instances.${field}`) as SelectExpression<DB, "blueprint_instances">[],
+              )
+              .$if(!!body.orderBy?.length, (qb) => {
+                qb = constructOrdering(body.orderBy, qb);
+                return qb;
+              })
+              .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+              .where("blueprints.project_id", "=", body.data.project_id)
+              .where("blueprint_instances.is_public", "=", true);
+
+            const data = await query.execute();
+            return { data, message: MessageEnum.success, ok: true };
+          },
+          {
+            body: PublicListBlueprintInstanceSchema,
             response: ResponseWithDataSchema,
           },
         )
