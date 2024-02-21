@@ -132,6 +132,7 @@ export function calendar_router(app: Elysia) {
                         "eras.parent_id",
                         "eras.color",
                       ])
+                      .orderBy("eras.start_year")
                       .where("eras.parent_id", "=", params.id),
                   ).as("eras"),
                 );
