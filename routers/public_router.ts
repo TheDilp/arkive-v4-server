@@ -9,6 +9,7 @@ import {
   BasicSearchSchema,
   EntityListSchema,
   ListCalendarSchema,
+  ListCharacterFieldsTemplateSchema,
   ListCharacterSchema,
   ListDocumentSchema,
   ListWordSchema,
@@ -24,9 +25,10 @@ import {
 } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { constructFilter } from "../utils/filterConstructor";
+import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { TagQuery } from "../utils/relationalQueryHelpers";
+import { groupRelationFiltersByField } from "../utils/transform";
 
 export function public_router(app: Elysia) {
   return app.group("/public", (server) => {
@@ -276,6 +278,122 @@ export function public_router(app: Elysia) {
           },
           {
             body: ReadCalendarSchema,
+            response: ResponseWithDataSchema,
+          },
+        )
+        .post(
+          "/character_fields_templates",
+          async ({ body }) => {
+            const data = await db
+              .selectFrom("character_fields_templates")
+              .distinctOn(
+                body.orderBy?.length
+                  ? (["character_fields_templates.id", ...body.orderBy.map((order) => order.field)] as any)
+                  : "character_fields_templates.id",
+              )
+              .where("character_fields_templates.project_id", "=", body.data.project_id)
+              .select(
+                (body.fields || [])?.map((field) => `character_fields_templates.${field}`) as SelectExpression<
+                  DB,
+                  "character_fields_templates"
+                >[],
+              )
+              .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
+                qb = constructFilter("character_fields_templates", qb, body.filters);
+                return qb;
+              })
+              .$if(!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length, (qb) => {
+                const { tags } = groupRelationFiltersByField(body.relationFilters || {});
+                if (tags?.filters?.length)
+                  qb = tagsRelationFilter(
+                    "character_fields_templates",
+                    "_character_fields_templatesTotags",
+                    qb,
+                    tags?.filters || [],
+                  );
+
+                return qb;
+              })
+              .$if(!!body.orderBy?.length, (qb) => {
+                qb = constructOrdering(body.orderBy, qb);
+                return qb;
+              })
+              .$if(!!body?.relations, (qb) => {
+                if (body?.relations?.character_fields) {
+                  qb = qb.select((eb) =>
+                    jsonArrayFrom(
+                      eb
+                        .selectFrom("character_fields")
+                        .whereRef("character_fields_templates.id", "=", "character_fields.parent_id")
+                        .select([
+                          "character_fields.id",
+                          "character_fields.title",
+                          "character_fields.field_type",
+                          "character_fields.options",
+                          "character_fields.sort",
+                          "character_fields.formula",
+                          "character_fields.random_table_id",
+                          (eb) =>
+                            jsonObjectFrom(
+                              eb
+                                .selectFrom("calendars")
+                                .select([
+                                  "calendars.id",
+                                  "calendars.title",
+                                  "calendars.days",
+                                  (sb) =>
+                                    jsonArrayFrom(
+                                      sb
+                                        .selectFrom("months")
+                                        .select(["months.id", "months.title", "months.days"])
+                                        .orderBy("months.sort")
+                                        .whereRef("months.parent_id", "=", "calendars.id"),
+                                    ).as("months"),
+                                ])
+                                .whereRef("calendars.id", "=", "character_fields.calendar_id"),
+                            ).as("calendar"),
+                          (eb) =>
+                            jsonObjectFrom(
+                              eb
+                                .selectFrom("random_tables")
+                                .select([
+                                  "random_tables.id",
+                                  "random_tables.title",
+                                  (ebb) =>
+                                    jsonArrayFrom(
+                                      ebb
+                                        .selectFrom("random_table_options")
+                                        .whereRef("random_tables.id", "=", "random_table_options.parent_id")
+                                        .select([
+                                          "id",
+                                          "title",
+                                          (ebbb) =>
+                                            jsonArrayFrom(
+                                              ebbb
+                                                .selectFrom("random_table_suboptions")
+                                                .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id")
+                                                .select(["id", "title"]),
+                                            ).as("random_table_suboptions"),
+                                        ]),
+                                    ).as("random_table_options"),
+                                ])
+                                .whereRef("random_tables.id", "=", "character_fields.random_table_id"),
+                            ).as("random_table"),
+                        ])
+                        .orderBy(["character_fields.sort"]),
+                    ).as("character_fields"),
+                  );
+                }
+                if (body?.relations?.tags) {
+                  qb = qb.select((eb) => TagQuery(eb, "_character_fields_templatesTotags", "character_fields_templates"));
+                }
+                return qb;
+              })
+              .execute();
+            return { data, message: MessageEnum.success, ok: true };
+          },
+          {
+            body: ListCharacterFieldsTemplateSchema,
             response: ResponseWithDataSchema,
           },
         )
