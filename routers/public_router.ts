@@ -8,6 +8,7 @@ import { readCharacter } from "../database/queries";
 import {
   BasicSearchSchema,
   EntityListSchema,
+  ListCalendarSchema,
   ListCharacterSchema,
   ListDocumentSchema,
   ListWordSchema,
@@ -557,6 +558,28 @@ export function public_router(app: Elysia) {
           },
           {
             body: EntityListSchema,
+            response: ResponseWithDataSchema,
+          },
+        )
+        .post(
+          "/calendars",
+          async ({ body }) => {
+            const data = await db
+              .selectFrom("calendars")
+              .where("calendars.project_id", "=", body?.data?.project_id)
+              .where("calendars.is_public", "=", true)
+              .$if(!body.fields?.length, (qb) => qb.selectAll())
+              .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "calendars">[]))
+              .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
+                qb = constructFilter("calendars", qb, body.filters);
+                return qb;
+              })
+              .execute();
+
+            return { data, message: MessageEnum.success, ok: true };
+          },
+          {
+            body: ListCalendarSchema,
             response: ResponseWithDataSchema,
           },
         )
