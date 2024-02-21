@@ -42,6 +42,7 @@ export const InsertCharacterSchema = t.Object({
   data: t.Object({
     first_name: t.String(),
     project_id: t.String(),
+    content: t.Optional(t.Union([t.Any(), t.Null()])),
     last_name: t.Optional(t.Union([t.String(), t.Null()])),
     nickname: t.Optional(t.Union([t.String(), t.Null()])),
     age: t.Optional(t.Union([t.Number(), t.Null()])),
@@ -142,6 +143,7 @@ export const UpdateCharacterSchema = t.Object({
       first_name: t.Optional(t.String()),
       last_name: t.Optional(t.Union([t.String(), t.Null()])),
       nickname: t.Optional(t.Union([t.String(), t.Null()])),
+      content: t.Optional(t.Union([t.Any(), t.Null()])),
       age: t.Optional(t.Union([t.Number(), t.Null()])),
       portrait_id: t.Optional(t.Union([t.String(), t.Null()])),
       map_pin_id: t.Optional(t.Union([t.String(), t.Null()])),

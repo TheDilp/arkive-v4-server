@@ -658,7 +658,8 @@ CREATE TABLE public.characters (
     portrait_id uuid,
     ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, ((COALESCE(first_name, ''::text) || ' '::text) || COALESCE(last_name, ''::text)))) STORED,
     full_name text GENERATED ALWAYS AS (((COALESCE(first_name, ''::text) || ' '::text) || COALESCE(last_name, ''::text))) STORED,
-    is_public boolean
+    is_public boolean,
+    biography jsonb
 );
 
 
@@ -3424,4 +3425,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240124104752'),
     ('20240125123531'),
     ('20240127084345'),
-    ('20240131211018');
+    ('20240131211018'),
+    ('20240221121726');
