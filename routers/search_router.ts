@@ -175,6 +175,11 @@ export function search_router(app: Elysia) {
             .$if(type === "blueprint_instances", (eb) =>
               eb.leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id").select(["blueprints.icon as icon"]),
             )
+            .$if(!!body.data.parent_id, (qb) => {
+              qb = qb.where("blueprint_instances.parent_id", "=", body.data.parent_id || "");
+
+              return qb;
+            })
             .$if(type === "images", (eb) => eb.where("type", "=", "images"))
             .where((eb) => getSearchWhere(eb, type as SearchableEntities, body.data.search_term, params.project_id))
             .$if(!SubEntityEnum.includes(type) || type === "alter_names", (qb) => {
