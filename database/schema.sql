@@ -498,7 +498,8 @@ CREATE TABLE public.calendars (
     hours integer,
     minutes integer,
     days text[],
-    starts_on_day integer DEFAULT 0
+    starts_on_day integer DEFAULT 0,
+    CONSTRAINT id_cannot_equal_parent_id_calendars CHECK ((id <> parent_id))
 );
 
 
@@ -701,7 +702,8 @@ CREATE TABLE public.dictionaries (
     icon text,
     is_folder boolean,
     is_public boolean,
-    parent_id uuid
+    parent_id uuid,
+    CONSTRAINT id_cannot_equal_parent_id_dictionaries CHECK ((id <> parent_id))
 );
 
 
@@ -736,7 +738,8 @@ CREATE TABLE public.documents (
     project_id uuid NOT NULL,
     parent_id uuid,
     image_id uuid,
-    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED
+    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
+    CONSTRAINT id_cannot_equal_parent_id_docs CHECK ((id <> parent_id))
 );
 
 
@@ -867,7 +870,8 @@ CREATE TABLE public.graphs (
     default_edge_color text DEFAULT '#595959'::text NOT NULL,
     project_id uuid NOT NULL,
     parent_id uuid,
-    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED
+    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
+    CONSTRAINT id_cannot_equal_parent_id_graphs CHECK ((id <> parent_id))
 );
 
 
@@ -966,7 +970,8 @@ CREATE TABLE public.maps (
     project_id uuid NOT NULL,
     parent_id uuid,
     image_id uuid,
-    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED
+    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
+    CONSTRAINT id_cannot_equal_parent_id_maps CHECK ((id <> parent_id))
 );
 
 
@@ -1085,7 +1090,8 @@ CREATE TABLE public.random_tables (
     parent_id uuid,
     icon text,
     is_folder boolean,
-    is_public boolean
+    is_public boolean,
+    CONSTRAINT id_cannot_equal_parent_id_random_tables CHECK ((id <> parent_id))
 );
 
 
@@ -3426,4 +3432,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240125123531'),
     ('20240127084345'),
     ('20240131211018'),
-    ('20240221121726');
+    ('20240221121726'),
+    ('20240224101433');
