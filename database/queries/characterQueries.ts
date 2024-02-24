@@ -1,6 +1,8 @@
-import { SelectExpression } from "kysely";
+import { randomUUID } from "crypto";
+import { SelectExpression, sql } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
+import uniq from "lodash.uniq";
 import uniqBy from "lodash.uniqby";
 
 import { MessageEnum } from "../../enums";
@@ -440,4 +442,241 @@ export async function readCharacter(
     return { data: { is_public: false }, message: MessageEnum.success, ok: true };
   }
   return { data: rest, message: MessageEnum.success, ok: true };
+}
+
+export async function getCharacterFamily(params: { id: string; relation_type_id: string; count: string }, isPublic: boolean) {
+  const { id, relation_type_id, count } = params;
+
+  const relationType = await db
+    .selectFrom("character_relationship_types")
+    .where("character_relationship_types.id", "=", relation_type_id)
+    .select([
+      "character_relationship_types.id",
+      "character_relationship_types.title",
+      "character_relationship_types.ascendant_title",
+      "character_relationship_types.descendant_title",
+    ])
+    .executeTakeFirstOrThrow();
+
+  const isDirect = !relationType.ascendant_title && !relationType.descendant_title;
+  const targetArrow = isDirect ? "none" : "triangle";
+  const curveStyle = isDirect ? "straight" : "taxi";
+
+  // If it is not a hierarchical relationship
+  if (isDirect) {
+    const targets = await db
+      .selectFrom("characters_relationships")
+
+      .where((eb) => eb.and([eb("character_a_id", "=", id), eb("relation_type_id", "=", relation_type_id)]))
+      .leftJoin("characters", "characters.id", "characters_relationships.character_b_id")
+      .$if(isPublic, (qb) => {
+        if (isPublic) qb.where("characters.is_public", "=", isPublic);
+
+        return qb;
+      })
+      .select([
+        "characters.id",
+        "characters.full_name",
+        "characters.portrait_id",
+        "characters.project_id",
+        "characters.is_public",
+      ])
+      .union(
+        db
+          .selectFrom("characters_relationships")
+          .where((eb) => eb.and([eb("character_b_id", "=", id), eb("relation_type_id", "=", relation_type_id)]))
+          .leftJoin("characters", "characters.id", "characters_relationships.character_a_id")
+          .$if(isPublic, (qb) => {
+            if (isPublic) qb.where("characters.is_public", "=", isPublic);
+
+            return qb;
+          })
+          .select(["characters.id", "characters.full_name", "portrait_id", "project_id", "characters.is_public"]),
+      )
+      .union(
+        db
+          .selectFrom("characters")
+          .where("characters.id", "=", id)
+          .$if(isPublic, (qb) => {
+            if (isPublic) qb.where("characters.is_public", "=", isPublic);
+
+            return qb;
+          })
+          .select(["characters.id", "characters.full_name", "portrait_id", "project_id", "characters.is_public"]),
+      )
+      .execute();
+
+    const nodes = targets.map((target) => ({
+      id: target.id,
+      character_id: target.id,
+      label: target.full_name,
+      width: 50,
+      height: 50,
+      image_id: target.portrait_id ?? [],
+      is_locked: false,
+    }));
+
+    const edges = targets
+      .filter((t) => t.id !== params.id && (isPublic ? t.is_public : true))
+      .map((target) => {
+        return {
+          id: randomUUID(),
+          source_id: params.id,
+          target_id: target.id,
+          target_arrow_shape: targetArrow,
+          curve_style: curveStyle,
+          taxi_direction: "downward",
+        };
+      });
+
+    return { data: { edges, nodes }, ok: true, message: MessageEnum.success };
+  }
+
+  const baseCharacterRelationships = await sql<{
+    character_a_id: string;
+    character_b_id: string;
+  }>`
+  WITH RECURSIVE
+  related_characters (character_a_id, character_b_id, depth) AS (
+    SELECT
+      character_a_id,
+      character_b_id,
+      1
+    FROM
+      characters_relationships
+    WHERE
+     ( character_a_id = ${id}
+      OR character_b_id = ${id})
+      AND relation_type_id = ${relation_type_id}
+    UNION
+    SELECT
+      cr.character_a_id,
+      cr.character_b_id,
+      depth + 1
+    FROM
+      characters_relationships cr
+      INNER JOIN related_characters rc ON cr.character_a_id = rc.character_b_id
+      OR cr.character_b_id = rc.character_a_id
+    WHERE
+      cr.relation_type_id = ${relation_type_id} AND
+      depth < ${Number(count || 1) - (Number(count) <= 2 ? 0 : 1)}
+  )
+SELECT
+  *
+FROM
+  related_characters;
+  `.execute(db);
+
+  const ids = uniq(baseCharacterRelationships.rows.flatMap((r) => [r.character_a_id, r.character_b_id]));
+
+  const mainCharacters = await db
+    .selectFrom("characters")
+    .select(["id", "portrait_id", "full_name", "is_public"])
+    .where("id", "in", ids)
+    .$if(isPublic, (qb) => {
+      if (isPublic) qb.where("characters.is_public", "=", isPublic);
+
+      return qb;
+    })
+    .execute();
+
+  const additionalChars =
+    Number(count) <= 2
+      ? []
+      : await db
+          .selectFrom("characters")
+          .leftJoin("characters_relationships", "character_b_id", "characters.id")
+          .where("character_a_id", "in", ids)
+          .where("characters.id", "not in", ids)
+          .where("relation_type_id", "=", relation_type_id)
+          .$if(isPublic, (qb) => {
+            if (isPublic) qb.where("characters.is_public", "=", isPublic);
+
+            return qb;
+          })
+          .select(["characters.id", "portrait_id", "full_name", "character_a_id", "characters.is_public"])
+          .execute();
+  const additionalCharsChildren = await db
+    .selectFrom("characters")
+    .leftJoin("characters_relationships", "character_a_id", "characters.id")
+    .where("character_b_id", "in", ids)
+    .where("characters.id", "not in", ids)
+    .where("relation_type_id", "=", relation_type_id)
+    .$if(isPublic, (qb) => {
+      if (isPublic) qb.where("characters.is_public", "=", isPublic);
+
+      return qb;
+    })
+    .select(["characters.id", "portrait_id", "full_name", "character_b_id", "characters.is_public"])
+
+    .execute();
+
+  const withParents = [...mainCharacters, ...additionalChars, ...additionalCharsChildren]
+    .filter((char) => (isPublic ? char.is_public : true))
+    .map((char) => {
+      const parents = baseCharacterRelationships.rows
+        .filter((r) => r.character_a_id === char.id)
+        .map((p) => p.character_b_id)
+        .concat(additionalChars.filter((c) => c.character_a_id === char.id).map((c) => c.id as string));
+      const children = baseCharacterRelationships.rows
+        .filter((r) => r.character_b_id === char.id)
+        .map((p) => p.character_a_id)
+        .concat(additionalCharsChildren.filter((c) => c.character_b_id === char.id).map((c) => c.id as string));
+      return { ...char, parents, children };
+    });
+  const uniqueChars = uniqBy(withParents, "id");
+
+  const nodes = uniqueChars.map((c) => ({
+    id: c.id,
+    character_id: c.id,
+    label: c.full_name,
+    width: 50,
+    height: 50,
+    image_id: c.portrait_id ?? [],
+    is_locked: false,
+  }));
+
+  const initialEdges = uniqueChars.flatMap((c) => {
+    const base = [];
+    if ("parents" in c && c?.parents.length) {
+      const filteredParents = isPublic
+        ? c.parents.filter((parent_id) => uniqueChars.some((char) => char.id === parent_id))
+        : c.parents;
+      if (filteredParents.length) {
+        for (let index = 0; index < filteredParents.length; index++) {
+          base.push({
+            id: randomUUID(),
+            source_id: c.parents[index],
+            target_id: c.id,
+            target_arrow_shape: targetArrow,
+            curve_style: curveStyle,
+            taxi_direction: "downward",
+          });
+        }
+      }
+    }
+
+    if ("children" in c && c?.children.length) {
+      const filteredChildren = isPublic
+        ? c.children.filter((child_id) => uniqueChars.some((char) => char.id === child_id))
+        : c.children;
+
+      for (let index = 0; index < filteredChildren.length; index++) {
+        base.push({
+          id: randomUUID(),
+          source_id: c.id,
+          target_id: c.children[index],
+          target_arrow_shape: targetArrow,
+          curve_style: curveStyle,
+          taxi_direction: "downward",
+        });
+      }
+    }
+    return base;
+  });
+
+  const edges = uniqBy(initialEdges, (edge) => [edge.source_id, edge.target_id]);
+  // Get ids of main branch/parent characters and their generations
+
+  return { data: { nodes, edges }, ok: true, message: MessageEnum.success };
 }

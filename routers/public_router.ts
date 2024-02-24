@@ -4,7 +4,7 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { readCharacter } from "../database/queries";
+import { getCharacterFamily, readCharacter } from "../database/queries";
 import {
   BasicSearchSchema,
   EntityListSchema,
@@ -676,6 +676,9 @@ export function public_router(app: Elysia) {
             response: ResponseWithDataSchema,
           },
         )
+        .get("/characters/family/:relation_type_id/:id/:count", async ({ params }) => getCharacterFamily(params, true), {
+          response: ResponseWithDataSchema,
+        })
         // .post(
         //   "/",
         //   async ({ body }) => {
