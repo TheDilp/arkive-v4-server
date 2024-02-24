@@ -470,7 +470,7 @@ export async function getCharacterFamily(params: { id: string; relation_type_id:
       .where((eb) => eb.and([eb("character_a_id", "=", id), eb("relation_type_id", "=", relation_type_id)]))
       .leftJoin("characters", "characters.id", "characters_relationships.character_b_id")
       .$if(isPublic, (qb) => {
-        if (isPublic) qb.where("characters.is_public", "=", isPublic);
+        if (isPublic) qb = qb.where("characters.is_public", "=", isPublic);
 
         return qb;
       })
@@ -487,7 +487,7 @@ export async function getCharacterFamily(params: { id: string; relation_type_id:
           .where((eb) => eb.and([eb("character_b_id", "=", id), eb("relation_type_id", "=", relation_type_id)]))
           .leftJoin("characters", "characters.id", "characters_relationships.character_a_id")
           .$if(isPublic, (qb) => {
-            if (isPublic) qb.where("characters.is_public", "=", isPublic);
+            if (isPublic) qb = qb.where("characters.is_public", "=", isPublic);
 
             return qb;
           })
@@ -498,7 +498,7 @@ export async function getCharacterFamily(params: { id: string; relation_type_id:
           .selectFrom("characters")
           .where("characters.id", "=", id)
           .$if(isPublic, (qb) => {
-            if (isPublic) qb.where("characters.is_public", "=", isPublic);
+            if (isPublic) qb = qb.where("characters.is_public", "=", isPublic);
 
             return qb;
           })
