@@ -14,6 +14,7 @@ import {
   ListDocumentSchema,
   ListWordSchema,
   PublicListBlueprintInstanceSchema,
+  ReadBlueprintSchema,
   ReadCalendarSchema,
   ReadCharacterSchema,
   ReadDictionarySchema,
@@ -51,6 +52,106 @@ export function public_router(app: Elysia) {
           },
         )
         .post(
+          "/blueprints/:id",
+          async ({ params, body }) => {
+            const data = await db
+              .selectFrom("blueprints")
+              .$if(!body.fields?.length, (qb) => qb.selectAll())
+              .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "blueprints">[]))
+              .where("blueprints.id", "=", params.id)
+              .$if(!!body?.relations?.blueprint_fields, (qb) =>
+                qb.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("blueprint_fields")
+                      .whereRef("blueprint_fields.parent_id", "=", "blueprints.id")
+                      .select([
+                        "blueprint_fields.id",
+                        "blueprint_fields.title",
+                        "blueprint_fields.options",
+                        "blueprint_fields.field_type",
+                        "blueprint_fields.sort",
+                        "blueprint_fields.formula",
+                        "blueprint_fields.random_table_id",
+                        "blueprint_fields.blueprint_id",
+                        (eb) =>
+                          jsonObjectFrom(
+                            eb
+                              .selectFrom("blueprints")
+                              .whereRef("blueprints.id", "=", "blueprint_fields.blueprint_id")
+                              .select(["id", "title", "icon"]),
+                          ).as("blueprint"),
+                        (eb) =>
+                          jsonObjectFrom(
+                            eb
+                              .selectFrom("random_tables")
+                              .whereRef("blueprint_fields.random_table_id", "=", "random_tables.id")
+                              .select([
+                                "id",
+                                "title",
+                                (ebb) =>
+                                  jsonArrayFrom(
+                                    ebb
+                                      .selectFrom("random_table_options")
+                                      .whereRef("random_tables.id", "=", "random_table_options.parent_id")
+                                      .select([
+                                        "id",
+                                        "title",
+                                        (ebbb) =>
+                                          jsonArrayFrom(
+                                            ebbb
+                                              .selectFrom("random_table_suboptions")
+                                              .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id")
+                                              .select(["id", "title"]),
+                                          ).as("random_table_suboptions"),
+                                      ]),
+                                  ).as("random_table_options"),
+                              ]),
+                          ).as("random_table"),
+                        (eb) =>
+                          jsonObjectFrom(
+                            eb
+                              .selectFrom("calendars")
+                              .whereRef("blueprint_fields.calendar_id", "=", "calendars.id")
+                              .select([
+                                "id",
+                                "title",
+                                "days",
+                                (ebb) =>
+                                  jsonArrayFrom(
+                                    ebb
+                                      .selectFrom("months")
+                                      .whereRef("calendars.id", "=", "months.parent_id")
+                                      .select(["months.id", "months.title", "months.days"])
+                                      .orderBy("months.sort"),
+                                  ).as("months"),
+                              ]),
+                          ).as("calendar"),
+                      ])
+                      .orderBy("sort"),
+                  ).as("blueprint_fields"),
+                ),
+              )
+              .$if(!!body?.relations?.blueprint_instances, (qb) =>
+                qb.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("blueprint_instances")
+                      .whereRef("blueprint_instances.parent_id", "=", "blueprints.id")
+                      .select(["blueprint_instances.id", "blueprint_instances.parent_id"]),
+                  ).as("blueprint_instances"),
+                ),
+              )
+
+              .executeTakeFirstOrThrow();
+            return { data, message: MessageEnum.success, ok: true };
+          },
+          {
+            body: ReadBlueprintSchema,
+            response: ResponseWithDataSchema,
+          },
+        )
+        .post(
           "/blueprint_instances/:id",
           async ({ params, body }) => {
             const data = await db
@@ -59,6 +160,184 @@ export function public_router(app: Elysia) {
               .$if(!!body.fields?.length, (qb) =>
                 qb.clearSelect().select(body.fields as SelectExpression<DB, "blueprint_instances">[]),
               )
+              .select([
+                (eb) =>
+                  jsonObjectFrom(
+                    eb
+                      .selectFrom("blueprints")
+                      .whereRef("blueprints.id", "=", "blueprint_instances.parent_id")
+                      .select(["title", "title_name"]),
+                  ).as("blueprint"),
+
+                (eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("blueprint_fields")
+                      .whereRef("blueprint_fields.parent_id", "=", "blueprint_instances.parent_id")
+                      .select([
+                        "id",
+                        "field_type",
+                        "sort",
+                        (ebb) =>
+                          jsonObjectFrom(
+                            ebb
+                              .selectFrom("random_tables")
+                              .whereRef("random_tables.id", "=", "blueprint_fields.random_table_id")
+                              .select(["id", "title"]),
+                          ).as("random_table_data"),
+                        (ebb) =>
+                          jsonArrayFrom(
+                            ebb
+                              .selectFrom("blueprint_instance_characters")
+                              .whereRef("blueprint_instance_characters.blueprint_field_id", "=", "blueprint_fields.id")
+                              .where("blueprint_instance_characters.blueprint_instance_id", "=", params.id)
+                              .select([
+                                "related_id",
+                                (ebbb) =>
+                                  jsonObjectFrom(
+                                    ebbb
+                                      .selectFrom("characters")
+                                      .whereRef("related_id", "=", "characters.id")
+                                      .where("characters.is_public", "=", true)
+                                      .select(["id", "full_name", "portrait_id"]),
+                                  ).as("character"),
+                              ]),
+                          ).as("characters"),
+                        (ebb) =>
+                          jsonArrayFrom(
+                            ebb
+                              .selectFrom("blueprint_instance_blueprint_instances")
+                              .whereRef("blueprint_instance_blueprint_instances.blueprint_field_id", "=", "blueprint_fields.id")
+                              .where("blueprint_instance_blueprint_instances.blueprint_instance_id", "=", params.id)
+                              .select([
+                                "related_id",
+                                (ebbb) =>
+                                  jsonObjectFrom(
+                                    ebbb
+                                      .selectFrom("blueprint_instances")
+                                      .whereRef("related_id", "=", "blueprint_instances.id")
+                                      .where("blueprint_instances.is_public", "=", true)
+                                      .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+                                      .select([
+                                        "blueprint_instances.id",
+                                        "blueprint_instances.title",
+                                        "blueprints.icon as icon",
+                                        "blueprint_instances.parent_id",
+                                      ]),
+                                  ).as("blueprint_instance"),
+                              ]),
+                          ).as("blueprint_instances"),
+                        (ebb) =>
+                          jsonArrayFrom(
+                            ebb
+                              .selectFrom("blueprint_instance_documents")
+                              .whereRef("blueprint_instance_documents.blueprint_field_id", "=", "blueprint_fields.id")
+                              .where("blueprint_instance_documents.blueprint_instance_id", "=", params.id)
+                              .select([
+                                "related_id",
+                                (ebbb) =>
+                                  jsonObjectFrom(
+                                    ebbb
+                                      .selectFrom("documents")
+                                      .whereRef("related_id", "=", "documents.id")
+                                      .where("documents.is_public", "=", true)
+                                      .select(["id", "title", "icon"]),
+                                  ).as("document"),
+                              ]),
+                          ).as("documents"),
+                        (ebb) =>
+                          jsonArrayFrom(
+                            ebb
+                              .selectFrom("blueprint_instance_map_pins")
+                              .whereRef("blueprint_instance_map_pins.blueprint_field_id", "=", "blueprint_fields.id")
+                              .where("blueprint_instance_map_pins.blueprint_instance_id", "=", params.id)
+                              .select([
+                                "related_id",
+                                (ebbb) =>
+                                  jsonObjectFrom(
+                                    ebbb
+                                      .selectFrom("map_pins")
+                                      .whereRef("related_id", "=", "map_pins.id")
+                                      .where("map_pins.is_public", "=", true)
+                                      .select(["id", "title", "icon", "parent_id"]),
+                                  ).as("map_pin"),
+                              ]),
+                          ).as("map_pins"),
+                        (ebb) =>
+                          jsonArrayFrom(
+                            ebb
+                              .selectFrom("blueprint_instance_events")
+                              .whereRef("blueprint_instance_events.blueprint_field_id", "=", "blueprint_fields.id")
+                              .where("blueprint_instance_events.blueprint_instance_id", "=", params.id)
+                              .select([
+                                "related_id",
+                                (ebbb) =>
+                                  jsonObjectFrom(
+                                    ebbb
+                                      .selectFrom("events")
+                                      .whereRef("related_id", "=", "events.id")
+                                      .where("events.is_public", "=", true)
+                                      .select(["id", "title", "parent_id"]),
+                                  ).as("event"),
+                              ]),
+                          ).as("events"),
+                        (ebb) =>
+                          jsonObjectFrom(
+                            ebb
+                              .selectFrom("blueprint_instance_random_tables")
+                              .whereRef("blueprint_instance_random_tables.blueprint_field_id", "=", "blueprint_fields.id")
+                              .where("blueprint_instance_random_tables.blueprint_instance_id", "=", params.id)
+                              .select(["related_id", "option_id", "suboption_id"]),
+                          ).as("random_table"),
+                        (ebb) =>
+                          jsonObjectFrom(
+                            ebb
+                              .selectFrom("blueprint_instance_calendars")
+                              .whereRef("blueprint_instance_calendars.blueprint_field_id", "=", "blueprint_fields.id")
+                              .where("blueprint_instance_calendars.blueprint_instance_id", "=", params.id)
+                              .select([
+                                "related_id",
+                                "start_day",
+                                "start_month_id",
+                                "start_year",
+                                "end_day",
+                                "end_month_id",
+                                "end_year",
+                              ]),
+                          ).as("calendar"),
+                        (ebb) =>
+                          jsonArrayFrom(
+                            ebb
+                              .selectFrom("blueprint_instance_images")
+                              .whereRef("blueprint_instance_images.blueprint_field_id", "=", "blueprint_fields.id")
+                              .where("blueprint_instance_images.blueprint_instance_id", "=", params.id)
+                              .select([
+                                "related_id",
+                                (ebbb) =>
+                                  jsonObjectFrom(
+                                    ebbb.selectFrom("images").whereRef("related_id", "=", "images.id").select(["id", "title"]),
+                                  ).as("image"),
+                              ]),
+                          ).as("images"),
+                        (ebb) =>
+                          ebb
+                            .selectFrom("blueprint_instance_value")
+                            .whereRef("blueprint_instance_value.blueprint_field_id", "=", "blueprint_fields.id")
+                            .where("blueprint_instance_value.blueprint_instance_id", "=", params.id)
+                            .select(["value"])
+                            .as("value"),
+                      ]),
+                  ).as("blueprint_fields"),
+
+                (eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("tags")
+                      .leftJoin("_blueprint_instancesTotags", "_blueprint_instancesTotags.B", "tags.id")
+                      .select(["tags.id", "tags.title", "tags.color"])
+                      .where("_blueprint_instancesTotags.A", "=", params.id),
+                  ).as("tags"),
+              ])
               .where("blueprint_instances.id", "=", params.id)
               .where("blueprint_instances.is_public", "=", true)
               .executeTakeFirst();
