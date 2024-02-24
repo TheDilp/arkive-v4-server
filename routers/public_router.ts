@@ -25,7 +25,7 @@ import {
   ReadWordSchema,
 } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
-import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { TagQuery } from "../utils/relationalQueryHelpers";
@@ -679,6 +679,23 @@ export function public_router(app: Elysia) {
         .get("/characters/family/:relation_type_id/:id/:count", async ({ params }) => getCharacterFamily(params, true), {
           response: ResponseWithDataSchema,
         })
+        .post(
+          "/assets/:project_id/:type/:id",
+          async ({ params, body }) => {
+            const data = await db
+              .selectFrom("images")
+              .where("images.id", "=", params.id)
+              .where("images.is_public", "=", true)
+              .$if(!body.fields?.length, (qb) => qb.selectAll())
+              .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "images">[]))
+              .executeTakeFirst();
+            return { data, message: MessageEnum.success, ok: true };
+          },
+          {
+            body: RequestBodySchema,
+            response: ResponseWithDataSchema,
+          },
+        )
         // .post(
         //   "/",
         //   async ({ body }) => {
