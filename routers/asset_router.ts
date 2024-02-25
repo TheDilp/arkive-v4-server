@@ -197,26 +197,4 @@ export function asset_router(app: Elysia) {
         },
       ),
   );
-
-  // server.get(
-  //   "/:project_id/:type/:id",
-  //   async (req: FastifyRequest<{ Params: { project_id: string; type: string; id: string } }>, rep: FastifyReply) => {
-  //     const { project_id, type, id } = req.params;
-
-  //     const image = await db.selectFrom("images").selectAll().where("images.id", "=", id).executeTakeFirstOrThrow();
-
-  //     const filePath = `./assets/${project_id}/${type}/${image.title}`;
-  //     if (!existsSync(filePath)) {
-  //       rep.code(404).send({ message: "There are no assets of the requested type for this project.", ok: false });
-  //     }
-
-  //     const imageData = readFileSync(filePath);
-
-  //     rep.type("image/webp");
-  //     rep.headers({
-  //       "Cache-Control": "max-age=3600",
-  //     });
-  //     rep.send(imageData);
-  //   },
-  // );
 }

@@ -3133,7 +3133,7 @@ ALTER TABLE ONLY public.graphs
 --
 
 ALTER TABLE ONLY public.images
-    ADD CONSTRAINT images_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON UPDATE CASCADE ON DELETE SET NULL;
+    ADD CONSTRAINT images_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -3433,4 +3433,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240127084345'),
     ('20240131211018'),
     ('20240221121726'),
-    ('20240224101433');
+    ('20240224101433'),
+    ('20240225102446');

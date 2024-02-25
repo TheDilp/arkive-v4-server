@@ -1,3 +1,4 @@
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import Elysia from "elysia";
 import { SelectExpression } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
@@ -12,6 +13,7 @@ import {
 } from "../database/validation/projects";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { s3Client } from "../utils/s3Client";
 
 export function project_router(app: Elysia) {
   return app.group("/projects", (server) =>
@@ -220,7 +222,20 @@ export function project_router(app: Elysia) {
         return { data, message: MessageEnum.success, ok: true };
       })
       .delete("/:id", async ({ params }) => {
-        await db.deleteFrom("projects").where("projects.id", "=", params.id).execute();
+        const filePath = `assets/${params.id}/`;
+
+        try {
+          await s3Client.send(
+            new DeleteObjectCommand({
+              Bucket: process.env.DO_SPACES_NAME as string,
+              Key: filePath,
+            }),
+          );
+        } catch (error) {
+          return { message: "Could not delete images.", ok: false };
+        }
+
+        // await db.deleteFrom("projects").where("projects.id", "=", params.id).execute();
         return { message: `Project ${MessageEnum.successfully_deleted}`, ok: true };
       }),
   );
