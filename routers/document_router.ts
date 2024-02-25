@@ -168,6 +168,8 @@ export function document_router(app: Elysia) {
           const data = await db
             .selectFrom("documents")
             .where("documents.project_id", "=", body?.data?.project_id)
+            .limit(body?.pagination?.limit || 10)
+            .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
             .$if(!body?.fields?.length, (qb) => qb.selectAll())
             .$if(!!body?.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "documents">[]))
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
