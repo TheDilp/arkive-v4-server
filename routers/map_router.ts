@@ -24,11 +24,15 @@ export function map_router(app: Elysia) {
         "/create",
         async ({ body }) => {
           await db.transaction().execute(async (tx) => {
-            console.log(body.data);
             const map = await tx.insertInto("maps").values(body.data).returning("id").executeTakeFirstOrThrow();
 
             if (body?.relations?.tags?.length)
               await CreateTagRelations({ tx, relationalTable: "_mapsTotags", id: map.id, tags: body.relations.tags });
+
+            if (body?.relations?.map_layers?.length) {
+              const formattedLayers = body.relations.map_layers.map((layer) => ({ ...layer.data, parent_id: map.id }));
+              await tx.insertInto("map_layers").values(formattedLayers).execute();
+            }
           });
 
           return { message: `Map ${MessageEnum.successfully_created}`, ok: true };

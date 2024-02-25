@@ -39,6 +39,12 @@ export const InsertMapSchema = t.Object({
           }),
         ),
       ),
+      map_layers: t.Union([
+        t.Array(t.Object({ data: t.Object({ title: t.String(), is_public: t.Optional(t.Boolean()), image_id: t.String() }) }), {
+          minItems: 0,
+        }),
+        t.Array(UpdateMapLayerSchema, { minItems: 0 }),
+      ]),
     }),
   ),
 });
