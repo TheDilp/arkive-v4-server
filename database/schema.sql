@@ -1140,9 +1140,8 @@ CREATE TABLE public.timelines (
 CREATE TABLE public.users (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     auth_id text,
-    nickname text NOT NULL,
+    username text,
     email text NOT NULL,
-    image text,
     feature_flags jsonb,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
@@ -1580,6 +1579,22 @@ ALTER TABLE ONLY public.tags
 
 ALTER TABLE ONLY public.timelines
     ADD CONSTRAINT timelines_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: users unique_user_email; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT unique_user_email UNIQUE (email);
+
+
+--
+-- Name: users unique_user_username; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT unique_user_username UNIQUE (username);
 
 
 --
@@ -3434,4 +3449,7 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240131211018'),
     ('20240221121726'),
     ('20240224101433'),
-    ('20240225102446');
+    ('20240225102446'),
+    ('20240227104339'),
+    ('20240227112959'),
+    ('20240227113312');
