@@ -11,6 +11,7 @@ export * from "./conversations";
 export * from "./dictionaries";
 export * from "./documents";
 export * from "./edges";
+export * from "./event_groups";
 export * from "./events";
 export * from "./generic";
 export * from "./graphs";
