@@ -7,6 +7,7 @@ import { NoPublicAccess, UnauthorizedError } from "./enums";
 import { tempAfterHandle } from "./handlers";
 import {
   asset_router,
+  auth_router,
   blueprint_instance_router,
   blueprint_router,
   bulk_router,
@@ -160,6 +161,7 @@ export const app = new Elysia()
       .use(bulk_router),
   )
   .use(public_router)
+  .use(auth_router)
   .use(websocket_router)
   .listen((process.env.PORT as string) || 3000);
 

@@ -11,6 +11,7 @@ import { createEntityURL, getDefaultEntityIcon, getIconUrlFromIconEnum, getImage
 export function webhook_router(app: Elysia) {
   return app.group("/webhooks", (server) =>
     server
+
       .post(
         "/create",
         async ({ body }) => {
