@@ -3,15 +3,15 @@ import Elysia from "elysia";
 import { Webhook } from "svix";
 
 import { db } from "../database/db";
-import { UserCreateSchema } from "../database/validation/auth";
+import { AuthSchema } from "../database/validation/auth";
 import { MessageEnum } from "../enums";
 
 export function auth_router(app: Elysia) {
   return app.group("/auth", (server) =>
     server.post(
-      "/create",
+      "/user",
       async ({ body, headers, set }) => {
-        const WEBHOOK_SECRET = process.env.WH_CREATE_USER_SECRET;
+        const WEBHOOK_SECRET = process.env.WH_USER_SECRET;
 
         if (!WEBHOOK_SECRET) {
           throw new Error("MISSING WH SECRET");
@@ -40,13 +40,16 @@ export function auth_router(app: Elysia) {
         }
 
         const eventType = evt.type;
-
-        if (eventType === "user.created") {
-          const email = body.data.email_addresses[0].email_address;
-          const { username } = body.data;
-          const image = body.data.profile_image_url || body.data.image_url;
-
-          await db.insertInto("users").values({ username, email, image }).execute();
+        const email = body.data.email_addresses?.[0]?.email_address;
+        const { username, id: auth_id } = body.data;
+        if (eventType === "user.created" && email) {
+          await db.insertInto("users").values({ auth_id, username, email }).execute();
+          return { message: MessageEnum.success, ok: true };
+        } else if (eventType === "user.updated") {
+          await db.updateTable("users").where("auth_id", "=", auth_id).set({ username, email }).execute();
+          return { message: MessageEnum.success, ok: true };
+        } else if (eventType === "user.deleted") {
+          await db.deleteFrom("users").where("auth_id", "=", auth_id).execute();
           return { message: MessageEnum.success, ok: true };
         } else {
           set.status = "Internal Server Error";
@@ -54,7 +57,7 @@ export function auth_router(app: Elysia) {
         }
       },
       {
-        body: UserCreateSchema,
+        body: AuthSchema,
       },
     ),
   );
