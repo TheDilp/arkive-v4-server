@@ -99,6 +99,7 @@ export function project_router(app: Elysia) {
                     .selectFrom("users")
                     .leftJoin("_project_members", "_project_members.B", "users.id")
                     .where("_project_members.A", "=", params.id)
+                    .whereRef("_project_members.B", "!=", "projects.owner_id")
                     .select(["users.id", "users.email"])
                     .orderBy("email", "asc"),
                 ).as("members"),
