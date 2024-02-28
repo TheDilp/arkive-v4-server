@@ -111,6 +111,7 @@ export function character_fields_templates_router(app: Elysia) {
                         "character_fields.sort",
                         "character_fields.formula",
                         "character_fields.random_table_id",
+                        "character_fields.blueprint_id",
                         (eb) =>
                           jsonObjectFrom(
                             eb
@@ -200,6 +201,7 @@ export function character_fields_templates_router(app: Elysia) {
                       "character_fields.formula",
                       "character_fields.random_table_id",
                       "character_fields.calendar_id",
+                      "character_fields.blueprint_id",
                       (eb) =>
                         jsonObjectFrom(
                           eb
@@ -214,7 +216,15 @@ export function character_fields_templates_router(app: Elysia) {
                             .select(["id", "title"])
                             .whereRef("calendars.id", "=", "character_fields.calendar_id"),
                         ).as("calendar"),
+                      (eb) =>
+                        jsonObjectFrom(
+                          eb
+                            .selectFrom("blueprints")
+                            .whereRef("blueprints.id", "=", "character_fields.blueprint_id")
+                            .select(["id", "title", "icon"]),
+                        ).as("blueprint"),
                     ])
+
                     .orderBy("sort"),
                 ).as("character_fields"),
               ),
