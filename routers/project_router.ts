@@ -99,8 +99,8 @@ export function project_router(app: Elysia) {
                     .selectFrom("users")
                     .leftJoin("_project_members", "_project_members.B", "users.id")
                     .where("_project_members.A", "=", params.id)
-                    .select(["users.id", "users.email", "users.nickname", "users.image"])
-                    .orderBy("nickname", "asc"),
+                    .select(["users.id", "users.email"])
+                    .orderBy("email", "asc"),
                 ).as("members"),
               ),
             )
@@ -235,7 +235,7 @@ export function project_router(app: Elysia) {
           return { message: "Could not delete images.", ok: false };
         }
 
-        // await db.deleteFrom("projects").where("projects.id", "=", params.id).execute();
+        await db.deleteFrom("projects").where("projects.id", "=", params.id).execute();
         return { message: `Project ${MessageEnum.successfully_deleted}`, ok: true };
       }),
   );
