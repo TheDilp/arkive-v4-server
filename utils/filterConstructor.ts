@@ -512,7 +512,6 @@ export function characterResourceFilter(
   count += andRequestFilters.length;
   const orRequestFilters = (filters || []).filter((filt) => filt.type === "OR");
   const relatedEntity = relatedEntityFromCharacterResourceTable(characterResourceTable);
-  console.log(characterResourceTable, relatedEntity);
 
   if (
     (characterResourceTable === "_charactersTodocuments" || characterResourceTable === "_charactersToimages") &&

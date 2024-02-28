@@ -121,8 +121,6 @@ export const app = new Elysia()
 
             throw new UnauthorizedError("UNAUTHORIZED");
           }
-        } else {
-          console.log(request);
         }
       })
       // @ts-ignore
