@@ -4,7 +4,7 @@ import { Webhook } from "svix";
 
 import { db } from "../database/db";
 import { AuthSchema } from "../database/validation/auth";
-import { MessageEnum } from "../enums";
+import { DefaultFeatureFlags, MessageEnum } from "../enums";
 
 export function auth_router(app: Elysia) {
   return app.group("/auth", (server) =>
@@ -43,7 +43,10 @@ export function auth_router(app: Elysia) {
         const email = body.data.email_addresses?.[0]?.email_address;
         const { username, id: auth_id } = body.data;
         if (eventType === "user.created" && email) {
-          await db.insertInto("users").values({ auth_id, username, email }).execute();
+          await db
+            .insertInto("users")
+            .values({ auth_id, username, email, feature_flags: JSON.stringify(DefaultFeatureFlags) })
+            .execute();
           return { message: MessageEnum.success, ok: true };
         } else if (eventType === "user.updated") {
           await db.updateTable("users").where("auth_id", "=", auth_id).set({ username, email }).execute();
