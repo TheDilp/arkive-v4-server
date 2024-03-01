@@ -81,7 +81,7 @@ export function user_router(app: Elysia) {
             from: "The Arkive <emails@thearkive.app>",
             to: [body.data.email],
             subject: "Arkive project invitation",
-            react: EmailInvite({ project_name: title, image }),
+            react: EmailInvite({ project_name: title, image, isRemoved: false }),
           });
 
           return { message: MessageEnum.success, ok: true };
@@ -99,6 +99,24 @@ export function user_router(app: Elysia) {
             .where("A", "=", body.data.project_id)
             .where("B", "=", body.data.user_id)
             .execute();
+          const user = await db.selectFrom("users").select(["email"]).where("id", "=", body.data.user_id).executeTakeFirst();
+          if (user) {
+            const project = await db
+              .selectFrom("projects")
+              .select(["title", "image_id"])
+              .where("id", "=", body.data.project_id)
+              .executeTakeFirst();
+
+            const image = project?.image_id
+              ? `https://${process.env.DO_SPACES_NAME}.${process.env.DO_SPACES_CDN_ENDPOINT}/assets/${body.data.project_id}/images/${project.image_id}.webp`
+              : "";
+            await resend.emails.send({
+              from: "The Arkive <emails@thearkive.app>",
+              to: [user.email],
+              subject: "Arkive project invitation",
+              react: EmailInvite({ project_name: project?.title || "", image, isRemoved: true }),
+            });
+          }
 
           return { message: MessageEnum.success, ok: true };
         },
