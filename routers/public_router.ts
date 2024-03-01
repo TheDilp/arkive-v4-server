@@ -312,7 +312,11 @@ export function public_router(app: Elysia) {
                                 "related_id",
                                 (ebbb) =>
                                   jsonObjectFrom(
-                                    ebbb.selectFrom("images").whereRef("related_id", "=", "images.id").select(["id", "title"]),
+                                    ebbb
+                                      .selectFrom("images")
+                                      .whereRef("related_id", "=", "images.id")
+                                      .select(["id", "title"])
+                                      .where("images.is_public", "=", true),
                                   ).as("image"),
                               ]),
                           ).as("images"),
