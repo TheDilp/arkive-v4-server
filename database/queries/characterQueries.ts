@@ -389,56 +389,72 @@ export async function readCharacter(
     ...rest
   } = data;
   rest.character_fields = [
-    ...(field_documents || []).map(
-      (d: {
-        id: string;
-        related_id: string;
-        documents: { document: { id: string; title: string; icon: string | null } }[];
-      }) => ({
-        id: d.id,
-        documents: (d?.documents || []).map((document) => ({ related_id: d.related_id, document })),
-      }),
-    ),
-    ...(field_images || []).map(
-      (d: { id: string; related_id: string; images: { image: { id: string; title: string; icon: string | null } }[] }) => ({
-        id: d.id,
-        images: d.images.map((image) => ({
-          related_id: d.related_id,
-          image,
-        })),
-      }),
-    ),
-    ...(field_locations || []).map(
-      (d: { id: string; related_id: string; map_pins: { map_pin: { id: string; title: string; icon: string | null } }[] }) => ({
-        id: d.id,
-        map_pins: d.map_pins.map((map_pin) => ({
-          related_id: d.related_id,
-          map_pin,
-        })),
-      }),
-    ),
-    ...(field_events || []).map(
-      (d: { id: string; related_id: string; events: { event: { id: string; title: string; parent_id: string } }[] }) => ({
+    ...(field_documents || [])
+      .map(
+        (d: {
+          id: string;
+          related_id: string;
+          documents: { document: { id: string; title: string; icon: string | null } }[];
+        }) => ({
+          id: d.id,
+          documents: (d?.documents || []).map((document) => ({ related_id: d.related_id, document })),
+        }),
+      )
+      .filter((item: { documents: any[] }) => !!item.documents),
+    ...(field_images || [])
+      .map(
+        (d: { id: string; related_id: string; images: { image: { id: string; title: string; icon: string | null } }[] }) => ({
+          id: d.id,
+          images: d.images.map((image) => ({
+            related_id: d.related_id,
+            image,
+          })),
+        }),
+      )
+      .filter((item: { images: any[] }) => !!item.images),
+
+    ...(field_locations || [])
+      .map(
+        (d: {
+          id: string;
+          related_id: string;
+          map_pins: { map_pin: { id: string; title: string; icon: string | null } }[];
+        }) => ({
+          id: d.id,
+          map_pins: d.map_pins.map((map_pin) => ({
+            related_id: d.related_id,
+            map_pin,
+          })),
+        }),
+      )
+
+      .filter((item: { map_pins: any[] }) => !!item.map_pins),
+
+    ...(field_events || [])
+      .map((d: { id: string; related_id: string; events: { event: { id: string; title: string; parent_id: string } }[] }) => ({
         id: d.id,
         events: d.events.map((event) => ({
           related_id: d.related_id,
           event,
         })),
-      }),
-    ),
-    ...(field_blueprint_instances || []).map(
-      (d: {
-        id: string;
-        related_id: string;
-        blueprint_instances: { blueprint_instance: { id: string; title: string; icon: string | null } }[];
-      }) => ({
-        id: d.id,
-        blueprint_instances: d.blueprint_instances.map((blueprint_instance) => ({
-          related_id: d.related_id,
-          blueprint_instance,
-        })),
-      }),
-    ),
+      }))
+      .filter((item: { events: any[] }) => !!item.events),
+
+    ...(field_blueprint_instances || [])
+      .map(
+        (d: {
+          id: string;
+          related_id: string;
+          blueprint_instances: { blueprint_instance: { id: string; title: string; icon: string | null } }[];
+        }) => ({
+          id: d.id,
+          blueprint_instances: d.blueprint_instances.map((blueprint_instance) => ({
+            related_id: d.related_id,
+            blueprint_instance,
+          })),
+        }),
+      )
+      .filter((item: { blueprint_instances: any[] }) => !!item.blueprint_instances),
     ...(field_calendars || []).map(
       (d: {
         id: string;
