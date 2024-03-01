@@ -46,6 +46,7 @@ export function auth_router(app: Elysia) {
           await db
             .insertInto("users")
             .values({ auth_id, username, email, feature_flags: JSON.stringify(DefaultFeatureFlags) })
+            .onConflict((oc) => oc.doNothing())
             .execute();
           return { message: MessageEnum.success, ok: true };
         } else if (eventType === "user.updated") {

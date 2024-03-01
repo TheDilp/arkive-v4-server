@@ -4,8 +4,9 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertUserSchema, InviteUserSchema, ReadUserSchema, UpdateUserSchema } from "../database/validation";
+import { InsertUserSchema, InviteUserSchema, KickUserSchema, ReadUserSchema, UpdateUserSchema } from "../database/validation";
 import { EmailInvite } from "../emails/EmailInvite";
+import { DefaultFeatureFlags } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { resend } from "../utils/emailClient";
@@ -64,7 +65,7 @@ export function user_router(app: Elysia) {
           } else {
             const newUser = await db
               .insertInto("users")
-              .values({ email: body.data.email, nickname: "New user" })
+              .values({ email: body.data.email, feature_flags: JSON.stringify(DefaultFeatureFlags) })
               .returning("id")
               .executeTakeFirst();
             if (newUser) await db.insertInto("_project_members").values({ A: body.data.project_id, B: newUser.id }).execute();
@@ -91,6 +92,19 @@ export function user_router(app: Elysia) {
           body: InviteUserSchema,
           response: ResponseSchema,
         },
+      )
+      .post(
+        "/kick",
+        async ({ body }) => {
+          await db
+            .deleteFrom("_project_members")
+            .where("A", "=", body.data.project_id)
+            .where("B", "=", body.data.user_id)
+            .execute();
+
+          return { message: MessageEnum.success, ok: true };
+        },
+        { body: KickUserSchema, response: ResponseSchema },
       ),
   );
 }
