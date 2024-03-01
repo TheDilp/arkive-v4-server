@@ -61,7 +61,6 @@ export function user_router(app: Elysia) {
           const user = await db.selectFrom("users").select(["id"]).where("email", "=", body.data.email).executeTakeFirst();
           if (user) {
             await db.insertInto("_project_members").values({ A: body.data.project_id, B: user.id }).execute();
-            return { message: MessageEnum.success, ok: true };
           } else {
             const newUser = await db
               .insertInto("users")
@@ -69,24 +68,23 @@ export function user_router(app: Elysia) {
               .returning("id")
               .executeTakeFirst();
             if (newUser) await db.insertInto("_project_members").values({ A: body.data.project_id, B: newUser.id }).execute();
-
-            const { title, image_id } = await db
-              .selectFrom("projects")
-              .where("id", "=", body.data.project_id)
-              .select(["title", "image_id"])
-              .executeTakeFirstOrThrow();
-
-            // Send invite via email
-            const image = `https://${process.env.DO_SPACES_NAME}.${process.env.DO_SPACES_CDN_ENDPOINT}/assets/${body.data.project_id}/images/${image_id}.webp`;
-            await resend.emails.send({
-              from: "The Arkive <emails@thearkive.app>",
-              to: [body.data.email],
-              subject: "Arkive project invitation",
-              react: EmailInvite({ project_name: title, image }),
-            });
-
-            return { message: MessageEnum.success, ok: true };
           }
+          const { title, image_id } = await db
+            .selectFrom("projects")
+            .where("id", "=", body.data.project_id)
+            .select(["title", "image_id"])
+            .executeTakeFirstOrThrow();
+
+          // Send invite via email
+          const image = `https://${process.env.DO_SPACES_NAME}.${process.env.DO_SPACES_CDN_ENDPOINT}/assets/${body.data.project_id}/images/${image_id}.webp`;
+          await resend.emails.send({
+            from: "The Arkive <emails@thearkive.app>",
+            to: [body.data.email],
+            subject: "Arkive project invitation",
+            react: EmailInvite({ project_name: title, image }),
+          });
+
+          return { message: MessageEnum.success, ok: true };
         },
         {
           body: InviteUserSchema,
