@@ -156,11 +156,8 @@ export function public_router(app: Elysia) {
           async ({ params, body }) => {
             const data = await db
               .selectFrom("blueprint_instances")
-              .$if(!body.fields?.length, (qb) => qb.selectAll())
-              .$if(!!body.fields?.length, (qb) =>
-                qb.clearSelect().select(body.fields as SelectExpression<DB, "blueprint_instances">[]),
-              )
               .select([
+                ...(body.fields as SelectExpression<DB, "blueprint_instances">[]),
                 (eb) =>
                   jsonObjectFrom(
                     eb
