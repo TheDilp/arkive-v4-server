@@ -31,10 +31,7 @@ export async function readCharacter(
               eb
                 .selectFrom("character_documents_fields")
                 .where("character_documents_fields.character_id", "=", params.id)
-                .$if(isPublic, (eb) => {
-                  eb = eb.where("is_public", "=", true);
-                  return eb;
-                })
+
                 .select([
                   "character_field_id as id",
                   "related_id",
@@ -43,7 +40,11 @@ export async function readCharacter(
                       ebb
                         .selectFrom("documents")
                         .whereRef("documents.id", "=", "character_documents_fields.related_id")
-                        .select(["id", "title", "icon"]),
+                        .select(["id", "title", "icon"])
+                        .$if(isPublic, (eb) => {
+                          eb = eb.where("is_public", "=", true);
+                          return eb;
+                        }),
                     ).as("documents"),
                 ]),
             ).as("field_documents"),
@@ -52,10 +53,7 @@ export async function readCharacter(
               eb
                 .selectFrom("character_images_fields")
                 .where("character_images_fields.character_id", "=", params.id)
-                .$if(isPublic, (eb) => {
-                  eb = eb.where("is_public", "=", true);
-                  return eb;
-                })
+
                 .select([
                   "character_field_id as id",
                   "related_id",
@@ -64,7 +62,11 @@ export async function readCharacter(
                       ebb
                         .selectFrom("images")
                         .whereRef("images.id", "=", "character_images_fields.related_id")
-                        .select(["id", "title"]),
+                        .select(["id", "title"])
+                        .$if(isPublic, (eb) => {
+                          eb = eb.where("is_public", "=", true);
+                          return eb;
+                        }),
                     ).as("images"),
                 ]),
             ).as("field_images"),
@@ -81,13 +83,13 @@ export async function readCharacter(
                       ebb
                         .selectFrom("events")
                         .whereRef("events.id", "=", "character_events_fields.related_id")
-                        .select(["id", "title", "parent_id"]),
+                        .select(["id", "title", "parent_id"])
+                        .$if(isPublic, (eb) => {
+                          eb = eb.where("is_public", "=", true);
+                          return eb;
+                        }),
                     ).as("events"),
-                ])
-                .$if(isPublic, (eb) => {
-                  eb = eb.where("is_public", "=", true);
-                  return eb;
-                }),
+                ]),
             ).as("field_events"),
           (eb) =>
             jsonArrayFrom(
@@ -102,13 +104,13 @@ export async function readCharacter(
                       ebb
                         .selectFrom("map_pins")
                         .whereRef("map_pins.id", "=", "character_locations_fields.related_id")
-                        .select(["id", "title", "icon", "parent_id"]),
+                        .select(["id", "title", "icon", "parent_id"])
+                        .$if(isPublic, (eb) => {
+                          eb = eb.where("is_public", "=", true);
+                          return eb;
+                        }),
                     ).as("map_pins"),
-                ])
-                .$if(isPublic, (eb) => {
-                  eb = eb.where("is_public", "=", true);
-                  return eb;
-                }),
+                ]),
             ).as("field_locations"),
           (eb) =>
             jsonArrayFrom(
@@ -123,13 +125,13 @@ export async function readCharacter(
                       ebb
                         .selectFrom("blueprint_instances")
                         .whereRef("blueprint_instances.id", "=", "character_blueprint_instance_fields.related_id")
-                        .select(["id", "title", "parent_id"]),
+                        .select(["id", "title", "parent_id"])
+                        .$if(isPublic, (eb) => {
+                          eb = eb.where("is_public", "=", true);
+                          return eb;
+                        }),
                     ).as("blueprint_instances"),
-                ])
-                .$if(isPublic, (eb) => {
-                  eb = eb.where("is_public", "=", true);
-                  return eb;
-                }),
+                ]),
             ).as("field_blueprint_instances"),
           (ebb) =>
             jsonArrayFrom(
