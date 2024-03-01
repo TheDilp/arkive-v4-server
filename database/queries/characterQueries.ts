@@ -400,7 +400,7 @@ export async function readCharacter(
           documents: (d?.documents || []).map((document) => ({ related_id: d.related_id, document })),
         }),
       )
-      .filter((item: { documents: any[] }) => !!item.documents),
+      .filter((item: { documents: any[] }) => item.documents.length),
     ...(field_images || [])
       .map(
         (d: { id: string; related_id: string; images: { image: { id: string; title: string; icon: string | null } }[] }) => ({
@@ -411,7 +411,7 @@ export async function readCharacter(
           })),
         }),
       )
-      .filter((item: { images: any[] }) => !!item.images),
+      .filter((item: { images: any[] }) => item.images.length),
 
     ...(field_locations || [])
       .map(
@@ -427,8 +427,7 @@ export async function readCharacter(
           })),
         }),
       )
-
-      .filter((item: { map_pins: any[] }) => !!item.map_pins),
+      .filter((item: { map_pins: any[] }) => item.map_pins.length),
 
     ...(field_events || [])
       .map((d: { id: string; related_id: string; events: { event: { id: string; title: string; parent_id: string } }[] }) => ({
@@ -438,7 +437,7 @@ export async function readCharacter(
           event,
         })),
       }))
-      .filter((item: { events: any[] }) => !!item.events),
+      .filter((item: { events: any[] }) => item.events.length),
 
     ...(field_blueprint_instances || [])
       .map(
@@ -454,7 +453,7 @@ export async function readCharacter(
           })),
         }),
       )
-      .filter((item: { blueprint_instances: any[] }) => !!item.blueprint_instances),
+      .filter((item: { blueprint_instances: any[] }) => item.blueprint_instances.length),
     ...(field_calendars || []).map(
       (d: {
         id: string;
