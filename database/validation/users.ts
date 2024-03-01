@@ -28,3 +28,9 @@ export const InviteUserSchema = t.Object({
     project_id: t.String(),
   }),
 });
+export const KickUserSchema = t.Object({
+  data: t.Object({
+    user_id: t.String(),
+    project_id: t.String(),
+  }),
+});
