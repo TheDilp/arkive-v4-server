@@ -1,4 +1,4 @@
-import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import Elysia, { t } from "elysia";
 
 import { db } from "../database/db";
@@ -138,20 +138,25 @@ export function bulk_router(app: Elysia) {
               throw new Error("INTERNAL_SERVER_ERROR");
             }
             if (params.type === "images" && body.data.project_id) {
-              const filePath = `assets/${body.data.project_id}/${params.type}`;
-              for (let index = 0; index < body.data.ids.length; index += 1) {
-                await s3Client.send(
-                  new DeleteObjectCommand({
-                    Bucket: process.env.DO_SPACES_NAME as string,
-                    Key: `${filePath}/${body.data.ids[index]}.webp`,
-                  }),
-                );
+              try {
+                const filePath = `assets/${body.data.project_id}/${params.type}`;
+                const deleteCommand = new DeleteObjectsCommand({
+                  Bucket: process.env.DO_SPACES_NAME as string,
+                  Delete: {
+                    Objects: (body.data.ids || []).map((id) => ({ Key: `${filePath}/${id}.webp` })),
+                    Quiet: false,
+                  },
+                });
+                await s3Client.send(deleteCommand);
+                await db
+                  .deleteFrom(params.type as BulkDeleteEntitiesType)
+                  .where("id", "in", body.data.ids)
+                  .execute();
+              } catch (error) {
+                console.error("ERROR BULK DELETING S3 IMAGES ");
+                throw new Error("INTERNAL_SERVER_ERROR");
               }
             }
-            await db
-              .deleteFrom(params.type as BulkDeleteEntitiesType)
-              .where("id", "in", body.data.ids)
-              .execute();
           }
           return { message: `Many ${params.type.replaceAll("_", " ")} ${MessageEnum.successfully_deleted}`, ok: true };
         },
