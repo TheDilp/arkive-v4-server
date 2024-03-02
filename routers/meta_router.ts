@@ -6,6 +6,7 @@ export function meta_router(app: Elysia) {
       "/version",
       ({ body, headers }) => {
         if (headers.origin === "https://railway.app") {
+          console.log(headers.origin, body.timestamp);
           app.server.publish("version", JSON.stringify({ timestamp: body.timestamp }));
         }
       },
