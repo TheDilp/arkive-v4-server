@@ -15,7 +15,7 @@ import { AvailableEntityType, AvailableSubEntityType, BulkDeleteEntitiesType, Pu
 import { ResponseSchema } from "../types/requestTypes";
 import { UpdateTagRelations } from "../utils/relationalQueryHelpers";
 import { getEntityTagTable } from "../utils/requestUtils";
-import { s3Client } from "../utils/s3Client";
+import { s3Client } from "../utils/s3Utils";
 
 export function bulk_router(app: Elysia) {
   return app.group("/bulk", (server) =>

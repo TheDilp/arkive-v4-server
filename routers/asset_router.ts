@@ -13,7 +13,7 @@ import { AssetType } from "../types/entityTypes";
 import { RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { s3Client } from "../utils/s3Client";
+import { s3Client } from "../utils/s3Utils";
 
 async function createFile(data: Blob) {
   const buff = await data.arrayBuffer();
