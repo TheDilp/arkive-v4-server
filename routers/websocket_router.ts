@@ -65,5 +65,10 @@ export function websocket_router(app: Elysia) {
           ws.subscribe(`notifications/${project_id}`);
         }
       },
+    })
+    .ws("/ws/version", {
+      open(ws) {
+        ws.subscribe("version");
+      },
     });
 }

@@ -21,6 +21,7 @@ export * from "./map_pin_router";
 export * from "./map_pin_types_router";
 export * from "./map_router";
 export * from "./message_router";
+export * from "./meta_router";
 export * from "./month_router";
 export * from "./node_router";
 export * from "./project_router";

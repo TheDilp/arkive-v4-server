@@ -27,6 +27,7 @@ import {
   map_pin_types_router,
   map_router,
   message_router,
+  meta_router,
   month_router,
   node_router,
   project_router,
@@ -159,6 +160,7 @@ export const app = new Elysia()
       .use(bulk_router),
   )
   .use(public_router)
+  .use(meta_router)
   .use(auth_router)
   .use(websocket_router)
   .listen((process.env.PORT as string) || 3000);
