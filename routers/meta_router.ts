@@ -4,10 +4,10 @@ export function meta_router(app: Elysia) {
   return app.group("/meta", (server) =>
     server.post(
       "/version",
-      ({ headers, body }) => {
-        console.log(headers);
+      ({ body }) => {
         if (body.type === "DEPLOY" && body?.status === "SUCCESS") {
           const timestamp = new Date().getTime();
+          console.log(timestamp);
           app.server.publish("version", JSON.stringify({ timestamp }));
         }
         return true;
