@@ -1,4 +1,3 @@
-import { createHmac, timingSafeEqual } from "crypto";
 import { decodeJwt } from "jose";
 import { TableExpression } from "kysely";
 import { DB } from "kysely-codegen";
@@ -24,18 +23,6 @@ export function getSearchTableFromType(type: SearchableEntities | keyof DB): key
 
 export function decodeUserJwt(jwt: string) {
   return decodeJwt<JWTPayloadType>(jwt);
-}
-
-export function verify_signature(body: any, secret_signiture: string, secret: "front" | "back") {
-  const signature = createHmac(
-    "sha256",
-    (secret === "back" ? process.env.GITHUB_BACKEND_SECRET : process.env.GITHUB_FRONTEND_SECRET) as string,
-  )
-    .update(JSON.stringify(body))
-    .digest("hex");
-  let trusted = Buffer.from(`sha256=${signature}`, "ascii");
-  let untrusted = Buffer.from(secret_signiture, "ascii");
-  return timingSafeEqual(trusted, untrusted);
 }
 
 export function getAfterHandlerActionFromType(type: AfterHandlerActionType) {

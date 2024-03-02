@@ -79,13 +79,7 @@ export const app = new Elysia()
     return { message: "There was an error with your request.", ok: false };
   })
   .use(health_check_router)
-  // .use(
-  //   rateLimit({
-  //     duration: 1000,
-  //     max: 150,
-  //   }),
-  // )
-  // Test
+
   .group("/api/v1", (server) =>
     // @ts-ignore
     server
@@ -129,6 +123,7 @@ export const app = new Elysia()
         await tempAfterHandle(context, response);
         return response;
       })
+
       .use(user_router)
       .use(project_router)
       .use(asset_router)
@@ -163,8 +158,9 @@ export const app = new Elysia()
   .use(meta_router)
   .use(auth_router)
   .use(websocket_router)
+  .onStart(async () => {
+    console.log("LISTENING ON", process.env.PORT);
+  })
   .listen((process.env.PORT as string) || 3000);
-
-console.log("LISTENING ON", process.env.PORT);
 
 export type App = typeof app;
