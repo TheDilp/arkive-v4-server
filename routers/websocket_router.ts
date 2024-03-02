@@ -67,6 +67,9 @@ export function websocket_router(app: Elysia) {
       },
     })
     .ws("/ws/version", {
+      message(_, message) {
+        console.log(message);
+      },
       open(ws) {
         ws.subscribe("version");
       },
