@@ -110,10 +110,10 @@ export function asset_router(app: Elysia) {
             });
           }
 
-          return { message: MessageEnum.success, ok: true };
+          return { message: "Image(s) uploaded successfully.", ok: true };
         },
         {
-          body: t.Record(t.String(), t.File()),
+          body: t.Record(t.String(), t.File({ maxSize: "100m" })),
           response: ResponseSchema,
         },
       )
