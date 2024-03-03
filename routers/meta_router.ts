@@ -9,11 +9,15 @@ export function meta_router(app: Elysia) {
           const timestamp = new Date().getTime();
           console.log(timestamp);
           app.server.publish("version", JSON.stringify({ timestamp }));
+        } else {
+          const timestamp = new Date().getTime();
+          console.log(timestamp);
+          app.server.publish("version", JSON.stringify({ timestamp }));
         }
         return true;
       },
       {
-        body: t.Object({ type: t.Literal("DEPLOY"), status: t.String() }, { additionalProperties: true }),
+        body: t.Object({ type: t.Literal("DEPLOY"), status: t.Optional(t.String()) }, { additionalProperties: true }),
       },
     ),
   );
