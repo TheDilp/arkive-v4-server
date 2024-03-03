@@ -11,7 +11,6 @@ export function meta_router(app: Elysia) {
           app.server.publish("version", JSON.stringify({ timestamp }));
         } else {
           const timestamp = new Date().getTime();
-          console.log(timestamp);
           app.server.publish("version", JSON.stringify({ timestamp }));
         }
         return true;
