@@ -157,6 +157,12 @@ export function bulk_router(app: Elysia) {
                 throw new Error("INTERNAL_SERVER_ERROR");
               }
             }
+            if (BulkDeleteEntities.includes(params.type)) {
+              await db
+                .deleteFrom(params.type as BulkDeleteEntitiesType)
+                .where("id", "in", body.data.ids)
+                .execute();
+            }
           }
           return { message: `Many ${params.type.replaceAll("_", " ")} ${MessageEnum.successfully_deleted}`, ok: true };
         },
