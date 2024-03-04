@@ -1,7 +1,7 @@
 import { t } from "elysia";
 
 export const BasicSearchSchema = t.Object({
-  data: t.Object({ search_term: t.String(), project_id: t.String(), parent_id: t.Optional(t.String()) }),
+  data: t.Object({ search_term: t.String(), project_id: t.String(), parent_id: t.Optional(t.Union([t.Null(), t.String()])) }),
   limit: t.Optional(t.Number()),
 });
 
