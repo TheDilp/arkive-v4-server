@@ -126,7 +126,12 @@ export async function readCharacter(
                         .selectFrom("blueprint_instances")
                         .whereRef("blueprint_instances.id", "=", "character_blueprint_instance_fields.related_id")
                         .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
-                        .select(["id", "title", "parent_id", "blueprints.icon"])
+                        .select([
+                          "blueprint_instances.id",
+                          "blueprint_instances.title",
+                          "blueprint_instances.parent_id",
+                          "blueprints.icon",
+                        ])
                         .$if(isPublic, (eb) => {
                           eb = eb.where("is_public", "=", true);
                           return eb;
