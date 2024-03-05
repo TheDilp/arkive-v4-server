@@ -296,3 +296,23 @@ export function groupByCharacterResourceId(data: GroupedQueryFilter[]): Record<s
 
   return grouped;
 }
+
+export function groupCharacterFields(originalItems: any[]): any[] {
+  const groupedItems: Record<string, any> = {};
+
+  originalItems.forEach((item) => {
+    const { id, blueprint_instances, events, images, documents, map_pins } = item;
+
+    if (!groupedItems[id]) {
+      groupedItems[id] = { id, blueprint_instances: [], events: [], images: [], documents: [], map_pins: [] };
+    }
+
+    groupedItems[id].blueprint_instances.push(...(blueprint_instances || []));
+    groupedItems[id].events.push(...(events || []));
+    groupedItems[id].documents.push(...(documents || []));
+    groupedItems[id].images.push(...(images || []));
+    groupedItems[id].map_pins.push(...(map_pins || []));
+  });
+
+  return Object.values(groupedItems);
+}

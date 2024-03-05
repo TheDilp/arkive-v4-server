@@ -8,6 +8,7 @@ import uniqBy from "lodash.uniqby";
 import { MessageEnum } from "../../enums";
 import { ResponseWithDataSchema } from "../../types/requestTypes";
 import { TagQuery } from "../../utils/relationalQueryHelpers";
+import { groupCharacterFields } from "../../utils/transform";
 import { db } from "../db";
 import { ReadCharacterSchema } from "../validation";
 
@@ -394,7 +395,7 @@ export async function readCharacter(
     field_values,
     ...rest
   } = data;
-  rest.character_fields = [
+  rest.character_fields = groupCharacterFields([
     ...(field_documents || [])
       .map(
         (d: {
@@ -492,7 +493,7 @@ export async function readCharacter(
       },
     })),
     ...(field_values || []),
-  ];
+  ]);
   if (isPublic) {
     if (data?.is_public) return { data: rest, message: MessageEnum.success, ok: true };
     return { data: { is_public: false }, message: MessageEnum.success, ok: true };

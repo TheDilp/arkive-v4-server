@@ -302,49 +302,46 @@ export function character_router(app: Elysia) {
                     .execute();
                 }
 
-                if (field.blueprint_instances) {
+                if (field.blueprint_instances?.length) {
+                  await tx
+                    .insertInto("character_blueprint_instance_fields")
+                    .values(
+                      (field.blueprint_instances || [])?.map((char) => ({
+                        character_field_id: field.id,
+                        character_id: params.id,
+                        related_id: char.related_id,
+                      })),
+                    )
+                    .onConflict((oc) => oc.doNothing())
+                    .execute();
+                } else {
                   await tx
                     .deleteFrom("character_blueprint_instance_fields")
                     .where("character_id", "=", params.id)
                     .where("character_field_id", "=", field.id)
                     .execute();
-                  field.blueprint_instances.forEach(
-                    async (char) =>
-                      await tx
-                        .insertInto("character_blueprint_instance_fields")
-                        .values({
-                          character_field_id: field.id,
-                          character_id: params.id,
-                          related_id: char.related_id,
-                        })
-                        .execute(),
-                  );
                 }
-                if (field.documents) {
+                if (field.documents?.length) {
+                  await tx
+                    .insertInto("character_documents_fields")
+                    .values(
+                      field.documents.map((char) => ({
+                        character_field_id: field.id,
+                        character_id: params.id,
+                        related_id: char.related_id,
+                      })),
+                    )
+                    .onConflict((oc) => oc.doNothing())
+                    .execute();
+                } else {
                   await tx
                     .deleteFrom("character_documents_fields")
                     .where("character_id", "=", params.id)
                     .where("character_field_id", "=", field.id)
                     .execute();
-                  field.documents.forEach(
-                    async (char) =>
-                      await tx
-                        .insertInto("character_documents_fields")
-                        .values({
-                          character_field_id: field.id,
-                          character_id: params.id,
-                          related_id: char.related_id,
-                        })
-                        .execute(),
-                  );
                 }
-                if (field.map_pins) {
-                  await tx
-                    .deleteFrom("character_locations_fields")
-                    .where("character_id", "=", params.id)
-                    .where("character_field_id", "=", field.id)
-                    .execute();
 
+                if (field.map_pins?.length) {
                   await tx
                     .insertInto("character_locations_fields")
                     .values(
@@ -354,50 +351,54 @@ export function character_router(app: Elysia) {
                         related_id: mp.related_id,
                       })),
                     )
+                    .onConflict((oc) => oc.doNothing())
+                    .execute();
+                } else {
+                  await tx
+                    .deleteFrom("character_locations_fields")
+                    .where("character_id", "=", params.id)
+                    .where("character_field_id", "=", field.id)
                     .execute();
                 }
-                if (field.images) {
+                if (field.images?.length) {
+                  await tx
+                    .insertInto("character_images_fields")
+                    .values(
+                      field.images.map((img) => ({
+                        character_field_id: field.id,
+                        character_id: params.id,
+                        related_id: img.related_id,
+                      })),
+                    )
+                    .onConflict((oc) => oc.doNothing())
+                    .execute();
+                } else {
                   await tx
                     .deleteFrom("character_images_fields")
                     .where("character_id", "=", params.id)
                     .where("character_field_id", "=", field.id)
                     .execute();
-                  field.images.forEach(
-                    async (char) =>
-                      await tx
-                        .insertInto("character_images_fields")
-                        .values({
-                          character_field_id: field.id,
-                          character_id: params.id,
-                          related_id: char.related_id,
-                        })
-                        .execute(),
-                  );
                 }
-                if (field.events) {
+                if (field.events?.length) {
+                  await tx
+                    .insertInto("character_events_fields")
+                    .values(
+                      field.events.map((event) => ({
+                        character_field_id: field.id,
+                        character_id: params.id,
+                        related_id: event.related_id,
+                      })),
+                    )
+                    .onConflict((oc) => oc.doNothing())
+                    .execute();
+                } else {
                   await tx
                     .deleteFrom("character_events_fields")
                     .where("character_id", "=", params.id)
                     .where("character_field_id", "=", field.id)
                     .execute();
-                  field.events.forEach(
-                    async (char) =>
-                      await tx
-                        .insertInto("character_events_fields")
-                        .values({
-                          character_field_id: field.id,
-                          character_id: params.id,
-                          related_id: char.related_id,
-                        })
-                        .execute(),
-                  );
                 }
                 if (field.random_table) {
-                  await tx
-                    .deleteFrom("character_random_table_fields")
-                    .where("character_id", "=", params.id)
-                    .where("character_field_id", "=", field.id)
-                    .execute();
                   await tx
                     .insertInto("character_random_table_fields")
                     .values({
@@ -407,14 +408,10 @@ export function character_router(app: Elysia) {
                       option_id: field.random_table.option_id,
                       suboption_id: field.random_table.suboption_id,
                     })
+                    .onConflict((oc) => oc.doNothing())
                     .execute();
                 }
                 if (field.calendar) {
-                  await tx
-                    .deleteFrom("character_calendar_fields")
-                    .where("character_id", "=", params.id)
-                    .where("character_field_id", "=", field.id)
-                    .execute();
                   await tx
                     .insertInto("character_calendar_fields")
                     .values({
@@ -428,6 +425,7 @@ export function character_router(app: Elysia) {
                       end_month_id: field.calendar.end_month_id,
                       end_year: field.calendar.end_year,
                     })
+                    .onConflict((oc) => oc.doNothing())
                     .execute();
                 }
               });

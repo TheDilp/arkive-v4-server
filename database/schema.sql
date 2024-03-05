@@ -1190,75 +1190,67 @@ ALTER TABLE ONLY public.blueprint_fields
 
 
 --
--- Name: blueprint_instance_blueprint_instances blueprint_instance_blueprint_instances_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: blueprint_instance_blueprint_instances blueprint_instance_unique_bpi; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.blueprint_instance_blueprint_instances
-    ADD CONSTRAINT blueprint_instance_blueprint_instances_pkey PRIMARY KEY (blueprint_instance_id, blueprint_field_id, related_id);
+    ADD CONSTRAINT blueprint_instance_unique_bpi UNIQUE (blueprint_instance_id, blueprint_field_id, related_id);
 
 
 --
--- Name: blueprint_instance_calendars blueprint_instance_calendars_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: blueprint_instance_calendars blueprint_instance_unique_cal; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.blueprint_instance_calendars
-    ADD CONSTRAINT blueprint_instance_calendars_pkey PRIMARY KEY (blueprint_instance_id, blueprint_field_id, related_id);
+    ADD CONSTRAINT blueprint_instance_unique_cal UNIQUE (blueprint_instance_id, blueprint_field_id, related_id);
 
 
 --
--- Name: blueprint_instance_characters blueprint_instance_characters_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: blueprint_instance_characters blueprint_instance_unique_char; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.blueprint_instance_characters
-    ADD CONSTRAINT blueprint_instance_characters_pkey PRIMARY KEY (blueprint_instance_id, blueprint_field_id, related_id);
+    ADD CONSTRAINT blueprint_instance_unique_char UNIQUE (blueprint_instance_id, blueprint_field_id, related_id);
 
 
 --
--- Name: blueprint_instance_documents blueprint_instance_documents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: blueprint_instance_documents blueprint_instance_unique_doc; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.blueprint_instance_documents
-    ADD CONSTRAINT blueprint_instance_documents_pkey PRIMARY KEY (blueprint_instance_id, blueprint_field_id, related_id);
+    ADD CONSTRAINT blueprint_instance_unique_doc UNIQUE (blueprint_instance_id, blueprint_field_id, related_id);
 
 
 --
--- Name: blueprint_instance_events blueprint_instance_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: blueprint_instance_events blueprint_instance_unique_event; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.blueprint_instance_events
-    ADD CONSTRAINT blueprint_instance_events_pkey PRIMARY KEY (blueprint_instance_id, blueprint_field_id, related_id);
+    ADD CONSTRAINT blueprint_instance_unique_event UNIQUE (blueprint_instance_id, blueprint_field_id, related_id);
 
 
 --
--- Name: blueprint_instance_images blueprint_instance_images_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: blueprint_instance_images blueprint_instance_unique_images; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.blueprint_instance_images
-    ADD CONSTRAINT blueprint_instance_images_pkey PRIMARY KEY (blueprint_instance_id, blueprint_field_id, related_id);
+    ADD CONSTRAINT blueprint_instance_unique_images UNIQUE (blueprint_instance_id, blueprint_field_id, related_id);
 
 
 --
--- Name: blueprint_instance_map_pins blueprint_instance_map_pins_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: blueprint_instance_map_pins blueprint_instance_unique_map_pins; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.blueprint_instance_map_pins
-    ADD CONSTRAINT blueprint_instance_map_pins_pkey PRIMARY KEY (blueprint_instance_id, blueprint_field_id, related_id);
+    ADD CONSTRAINT blueprint_instance_unique_map_pins UNIQUE (blueprint_instance_id, blueprint_field_id, related_id);
 
 
 --
--- Name: blueprint_instance_random_tables blueprint_instance_random_tables_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: blueprint_instance_random_tables blueprint_instance_unique_rand; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.blueprint_instance_random_tables
-    ADD CONSTRAINT blueprint_instance_random_tables_pkey PRIMARY KEY (blueprint_instance_id, blueprint_field_id, related_id);
-
-
---
--- Name: blueprint_instance_value blueprint_instance_value_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.blueprint_instance_value
-    ADD CONSTRAINT blueprint_instance_value_pkey PRIMARY KEY (blueprint_instance_id, blueprint_field_id);
+    ADD CONSTRAINT blueprint_instance_unique_rand UNIQUE (blueprint_instance_id, blueprint_field_id, related_id);
 
 
 --
@@ -1283,38 +1275,6 @@ ALTER TABLE ONLY public.blueprints
 
 ALTER TABLE ONLY public.calendars
     ADD CONSTRAINT calendars_pkey PRIMARY KEY (id);
-
-
---
--- Name: character_blueprint_instance_fields character_blueprint_instance_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.character_blueprint_instance_fields
-    ADD CONSTRAINT character_blueprint_instance_fields_pkey PRIMARY KEY (character_id, character_field_id, related_id);
-
-
---
--- Name: character_calendar_fields character_calendar_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.character_calendar_fields
-    ADD CONSTRAINT character_calendar_fields_pkey PRIMARY KEY (character_id, character_field_id, related_id);
-
-
---
--- Name: character_documents_fields character_documents_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.character_documents_fields
-    ADD CONSTRAINT character_documents_fields_pkey PRIMARY KEY (character_id, character_field_id, related_id);
-
-
---
--- Name: character_events_fields character_events_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.character_events_fields
-    ADD CONSTRAINT character_events_fields_pkey PRIMARY KEY (character_id, character_field_id, related_id);
 
 
 --
@@ -1350,27 +1310,11 @@ ALTER TABLE ONLY public.character_locations_fields
 
 
 --
--- Name: character_random_table_fields character_random_table_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.character_random_table_fields
-    ADD CONSTRAINT character_random_table_fields_pkey PRIMARY KEY (character_id, character_field_id, related_id);
-
-
---
 -- Name: character_relationship_types character_relationship_types_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.character_relationship_types
     ADD CONSTRAINT character_relationship_types_pkey PRIMARY KEY (id);
-
-
---
--- Name: character_value_fields character_value_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.character_value_fields
-    ADD CONSTRAINT character_value_fields_pkey PRIMARY KEY (character_id, character_field_id);
 
 
 --
@@ -1579,6 +1523,46 @@ ALTER TABLE ONLY public.tags
 
 ALTER TABLE ONLY public.timelines
     ADD CONSTRAINT timelines_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: character_calendar_fields unique_combination_constraint; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_calendar_fields
+    ADD CONSTRAINT unique_combination_constraint UNIQUE (character_id, character_field_id, related_id);
+
+
+--
+-- Name: character_calendar_fields unique_combination_constraint_char_cal; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_calendar_fields
+    ADD CONSTRAINT unique_combination_constraint_char_cal UNIQUE (character_id, character_field_id, related_id);
+
+
+--
+-- Name: character_documents_fields unique_combination_constraint_char_docs; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_documents_fields
+    ADD CONSTRAINT unique_combination_constraint_char_docs UNIQUE (character_id, character_field_id, related_id);
+
+
+--
+-- Name: character_events_fields unique_combination_constraint_char_events; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_events_fields
+    ADD CONSTRAINT unique_combination_constraint_char_events UNIQUE (character_id, character_field_id, related_id);
+
+
+--
+-- Name: character_random_table_fields unique_combination_constraint_char_rand; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_random_table_fields
+    ADD CONSTRAINT unique_combination_constraint_char_rand UNIQUE (character_id, character_field_id, related_id);
 
 
 --
