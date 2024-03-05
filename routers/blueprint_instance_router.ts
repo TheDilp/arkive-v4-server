@@ -607,6 +607,12 @@ export function blueprint_instance_router(app: Elysia) {
                           .doUpdateSet({ value: JSON.stringify(field.value) }),
                       )
                       .execute();
+                  } else if (field.id && !field?.value) {
+                    return tx
+                      .deleteFrom("blueprint_instance_value")
+                      .where("blueprint_field_id", "=", field.id)
+                      .where("blueprint_instance_id", "=", params.id)
+                      .execute();
                   }
                   if (field.characters) {
                     await tx
