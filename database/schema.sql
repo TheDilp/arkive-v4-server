@@ -17,6 +17,34 @@ COMMENT ON SCHEMA public IS '';
 
 
 --
+-- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
+
+
+--
+-- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
+
+
+--
 -- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -200,7 +228,8 @@ CREATE TABLE public."_charactersToconversations" (
 
 CREATE TABLE public."_charactersTodocuments" (
     "A" uuid NOT NULL,
-    "B" uuid NOT NULL
+    "B" uuid NOT NULL,
+    is_main_page boolean
 );
 
 
@@ -1140,7 +1169,7 @@ CREATE TABLE public.timelines (
 CREATE TABLE public.users (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     auth_id text,
-    username text,
+    username text NOT NULL,
     email text NOT NULL,
     feature_flags jsonb,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
@@ -1526,10 +1555,26 @@ ALTER TABLE ONLY public.timelines
 
 
 --
--- Name: character_calendar_fields unique_combination_constraint; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: blueprint_instance_value unique_bpi_value_fields_constraint; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.character_calendar_fields
+ALTER TABLE ONLY public.blueprint_instance_value
+    ADD CONSTRAINT unique_bpi_value_fields_constraint UNIQUE (blueprint_field_id, blueprint_instance_id);
+
+
+--
+-- Name: character_value_fields unique_char_value_fields_constraint; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_value_fields
+    ADD CONSTRAINT unique_char_value_fields_constraint UNIQUE (character_field_id, character_id);
+
+
+--
+-- Name: character_blueprint_instance_fields unique_combination_constraint; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_blueprint_instance_fields
     ADD CONSTRAINT unique_combination_constraint UNIQUE (character_id, character_field_id, related_id);
 
 
@@ -3421,6 +3466,7 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240114105525'),
     ('20240114120905'),
     ('20240115150007'),
+    ('20240118101925'),
     ('20240120105425'),
     ('20240120110543'),
     ('20240121100632'),
@@ -3434,6 +3480,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240221121726'),
     ('20240224101433'),
     ('20240225102446'),
-    ('20240227104339'),
-    ('20240227112959'),
-    ('20240227113312');
+    ('20240227113312'),
+    ('20240305085322');
