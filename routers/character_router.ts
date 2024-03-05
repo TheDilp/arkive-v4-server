@@ -300,103 +300,114 @@ export function character_router(app: Elysia) {
                         .where("character_value_fields.character_id", "=", params.id),
                     )
                     .execute();
+                } else if (field.id && !field?.value) {
+                  await tx
+                    .deleteFrom("character_value_fields")
+                    .where("character_field_id", "=", field.id)
+                    .where("character_id", "=", params.id)
+                    .execute();
                 }
 
-                if (field.blueprint_instances?.length) {
-                  await tx
-                    .insertInto("character_blueprint_instance_fields")
-                    .values(
-                      (field.blueprint_instances || [])?.map((char) => ({
-                        character_field_id: field.id,
-                        character_id: params.id,
-                        related_id: char.related_id,
-                      })),
-                    )
-                    .onConflict((oc) => oc.doNothing())
-                    .execute();
-                } else {
+                if (field.blueprint_instances) {
                   await tx
                     .deleteFrom("character_blueprint_instance_fields")
                     .where("character_id", "=", params.id)
                     .where("character_field_id", "=", field.id)
                     .execute();
+                  if (field.blueprint_instances.length) {
+                    await tx
+                      .insertInto("character_blueprint_instance_fields")
+                      .values(
+                        (field.blueprint_instances || [])?.map((char) => ({
+                          character_field_id: field.id,
+                          character_id: params.id,
+                          related_id: char.related_id,
+                        })),
+                      )
+                      .onConflict((oc) => oc.doNothing())
+                      .execute();
+                  }
                 }
-                if (field.documents?.length) {
-                  await tx
-                    .insertInto("character_documents_fields")
-                    .values(
-                      field.documents.map((char) => ({
-                        character_field_id: field.id,
-                        character_id: params.id,
-                        related_id: char.related_id,
-                      })),
-                    )
-                    .onConflict((oc) => oc.doNothing())
-                    .execute();
-                } else {
+                if (field.documents) {
                   await tx
                     .deleteFrom("character_documents_fields")
                     .where("character_id", "=", params.id)
                     .where("character_field_id", "=", field.id)
                     .execute();
+                  if (field.documents.length) {
+                    await tx
+                      .insertInto("character_documents_fields")
+                      .values(
+                        field.documents.map((char) => ({
+                          character_field_id: field.id,
+                          character_id: params.id,
+                          related_id: char.related_id,
+                        })),
+                      )
+                      .onConflict((oc) => oc.doNothing())
+                      .execute();
+                  }
                 }
 
-                if (field.map_pins?.length) {
-                  await tx
-                    .insertInto("character_locations_fields")
-                    .values(
-                      field.map_pins.map((mp) => ({
-                        character_field_id: field.id,
-                        character_id: params.id,
-                        related_id: mp.related_id,
-                      })),
-                    )
-                    .onConflict((oc) => oc.doNothing())
-                    .execute();
-                } else {
+                if (field.map_pins) {
                   await tx
                     .deleteFrom("character_locations_fields")
                     .where("character_id", "=", params.id)
                     .where("character_field_id", "=", field.id)
                     .execute();
+                  if (field.map_pins?.length) {
+                    await tx
+                      .insertInto("character_locations_fields")
+                      .values(
+                        field.map_pins.map((mp) => ({
+                          character_field_id: field.id,
+                          character_id: params.id,
+                          related_id: mp.related_id,
+                        })),
+                      )
+                      .onConflict((oc) => oc.doNothing())
+                      .execute();
+                  }
                 }
-                if (field.images?.length) {
-                  await tx
-                    .insertInto("character_images_fields")
-                    .values(
-                      field.images.map((img) => ({
-                        character_field_id: field.id,
-                        character_id: params.id,
-                        related_id: img.related_id,
-                      })),
-                    )
-                    .onConflict((oc) => oc.doNothing())
-                    .execute();
-                } else {
+                if (field.images) {
                   await tx
                     .deleteFrom("character_images_fields")
                     .where("character_id", "=", params.id)
                     .where("character_field_id", "=", field.id)
                     .execute();
+                  if (field.images?.length) {
+                    await tx
+                      .insertInto("character_images_fields")
+                      .values(
+                        field.images.map((img) => ({
+                          character_field_id: field.id,
+                          character_id: params.id,
+                          related_id: img.related_id,
+                        })),
+                      )
+                      .onConflict((oc) => oc.doNothing())
+                      .execute();
+                  }
                 }
-                if (field.events?.length) {
-                  await tx
-                    .insertInto("character_events_fields")
-                    .values(
-                      field.events.map((event) => ({
-                        character_field_id: field.id,
-                        character_id: params.id,
-                        related_id: event.related_id,
-                      })),
-                    )
-                    .onConflict((oc) => oc.doNothing())
-                    .execute();
-                } else {
+                if (field.events) {
                   await tx
                     .deleteFrom("character_events_fields")
                     .where("character_id", "=", params.id)
                     .where("character_field_id", "=", field.id)
                     .execute();
+                  if (field.events?.length) {
+                    await tx
+                      .insertInto("character_events_fields")
+                      .values(
+                        field.events.map((event) => ({
+                          character_field_id: field.id,
+                          character_id: params.id,
+                          related_id: event.related_id,
+                        })),
+                      )
+                      .onConflict((oc) => oc.doNothing())
+                      .execute();
+                  }
                 }
                 if (field.random_table) {
                   await tx

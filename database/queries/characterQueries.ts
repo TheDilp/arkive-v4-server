@@ -492,8 +492,8 @@ export async function readCharacter(
         suboption_id: d.suboption_id,
       },
     })),
-    ...(field_values || []),
   ]);
+  rest.character_fields.push(...(field_values || []));
   if (isPublic) {
     if (data?.is_public) return { data: rest, message: MessageEnum.success, ok: true };
     return { data: { is_public: false }, message: MessageEnum.success, ok: true };
