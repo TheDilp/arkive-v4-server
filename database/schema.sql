@@ -1169,7 +1169,6 @@ CREATE TABLE public.timelines (
 CREATE TABLE public.users (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     auth_id text,
-    username text NOT NULL,
     email text NOT NULL,
     feature_flags jsonb,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
@@ -1616,14 +1615,6 @@ ALTER TABLE ONLY public.character_random_table_fields
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT unique_user_email UNIQUE (email);
-
-
---
--- Name: users unique_user_username; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.users
-    ADD CONSTRAINT unique_user_username UNIQUE (username);
 
 
 --
@@ -3481,4 +3472,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240224101433'),
     ('20240225102446'),
     ('20240227113312'),
-    ('20240305085322');
+    ('20240305085322'),
+    ('20240306105236');
