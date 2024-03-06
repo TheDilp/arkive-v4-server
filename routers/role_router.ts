@@ -47,7 +47,7 @@ export function role_router(app: Elysia) {
                       .selectFrom("role_permissions")
                       .whereRef("role_id", "=", "roles.id")
                       .leftJoin("permissions", "role_permissions.permission_id", "permissions.id")
-                      .select(["permissions.id", "permissions.title"]),
+                      .select(["permissions.id", "permissions.title", "permissions.code"]),
                   ).as("permissions"),
               ]);
 
