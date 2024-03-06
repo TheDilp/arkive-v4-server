@@ -1037,18 +1037,6 @@ CREATE TABLE public.nodes (
 
 
 --
--- Name: permissions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.permissions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    title text NOT NULL,
-    created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
-
-
---
 -- Name: projects; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1108,32 +1096,6 @@ CREATE TABLE public.random_tables (
 
 
 --
--- Name: role_permissions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.role_permissions (
-    role_id uuid NOT NULL,
-    permission_id uuid NOT NULL,
-    created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
-
-
---
--- Name: roles; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.roles (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    title text NOT NULL,
-    project_id uuid NOT NULL,
-    permissions jsonb
-);
-
-
---
 -- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1168,19 +1130,6 @@ CREATE TABLE public.timelines (
     icon text,
     is_folder boolean,
     is_public boolean
-);
-
-
---
--- Name: user_roles; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.user_roles (
-    user_id uuid NOT NULL,
-    role_id uuid NOT NULL,
-    project_id uuid NOT NULL,
-    created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 
@@ -1520,30 +1469,6 @@ ALTER TABLE ONLY public.nodes
 
 
 --
--- Name: permissions permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.permissions
-    ADD CONSTRAINT permissions_pkey PRIMARY KEY (id);
-
-
---
--- Name: role_permissions pk_role_permissions; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.role_permissions
-    ADD CONSTRAINT pk_role_permissions PRIMARY KEY (role_id, permission_id);
-
-
---
--- Name: user_roles pk_users_roles; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.user_roles
-    ADD CONSTRAINT pk_users_roles PRIMARY KEY (user_id, role_id, project_id);
-
-
---
 -- Name: projects projects_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1573,14 +1498,6 @@ ALTER TABLE ONLY public.random_table_suboptions
 
 ALTER TABLE ONLY public.random_tables
     ADD CONSTRAINT random_tables_pkey PRIMARY KEY (id);
-
-
---
--- Name: roles roles_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.roles
-    ADD CONSTRAINT roles_pkey PRIMARY KEY (id);
 
 
 --
@@ -1661,22 +1578,6 @@ ALTER TABLE ONLY public.character_events_fields
 
 ALTER TABLE ONLY public.character_random_table_fields
     ADD CONSTRAINT unique_combination_constraint_char_rand UNIQUE (character_id, character_field_id, related_id);
-
-
---
--- Name: permissions unique_permissions_constraint; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.permissions
-    ADD CONSTRAINT unique_permissions_constraint UNIQUE (title);
-
-
---
--- Name: roles unique_roles_constraint; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.roles
-    ADD CONSTRAINT unique_roles_constraint UNIQUE (title, project_id);
 
 
 --
@@ -3458,22 +3359,6 @@ ALTER TABLE ONLY public.random_tables
 
 
 --
--- Name: role_permissions role_permissions_permission_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.role_permissions
-    ADD CONSTRAINT role_permissions_permission_fkey_constraint FOREIGN KEY (permission_id) REFERENCES public.permissions(id) ON DELETE CASCADE;
-
-
---
--- Name: role_permissions role_permissions_roles_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.role_permissions
-    ADD CONSTRAINT role_permissions_roles_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
-
-
---
 -- Name: events start_month_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3503,30 +3388,6 @@ ALTER TABLE ONLY public.timelines
 
 ALTER TABLE ONLY public.timelines
     ADD CONSTRAINT timelines_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: user_roles user_roles_project_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.user_roles
-    ADD CONSTRAINT user_roles_project_fkey_constraint FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
-
-
---
--- Name: user_roles user_roles_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.user_roles
-    ADD CONSTRAINT user_roles_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
-
-
---
--- Name: user_roles user_roles_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.user_roles
-    ADD CONSTRAINT user_roles_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -3584,5 +3445,4 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240227112959'),
     ('20240227113312'),
     ('20240305085322'),
-    ('20240306105236'),
-    ('20240306113048');
+    ('20240306105236');

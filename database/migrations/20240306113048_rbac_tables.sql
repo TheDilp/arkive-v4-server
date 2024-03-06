@@ -40,10 +40,10 @@ CREATE TABLE user_roles (
 );
 
 -- migrate:down
-DROP TABLE roles;
-
-DROP TABLE public."permissions";
-
 DROP TABLE role_permissions;
 
 DROP TABLE user_roles;
+
+DROP TABLE roles;
+
+DROP TABLE public."permissions";
