@@ -43,11 +43,17 @@ export function auth_router(app: Elysia) {
         const email = body.data.email_addresses?.[0]?.email_address;
         const { username, id: auth_id } = body.data;
         if (eventType === "user.created" && email) {
-          await db
-            .insertInto("users")
-            .values({ auth_id, username, email, feature_flags: JSON.stringify(DefaultFeatureFlags) })
-            .onConflict((oc) => oc.doNothing())
-            .execute();
+          const existingUser = await db.selectFrom("users").select(["auth_id"]).where("email", "=", email).executeTakeFirst();
+          if (existingUser && !existingUser.auth_id) {
+            await db.updateTable("users").where("email", "=", email).set("auth_id", auth_id).execute();
+          } else if (!existingUser) {
+            await db
+              .insertInto("users")
+              .values({ auth_id, username, email, feature_flags: JSON.stringify(DefaultFeatureFlags) })
+              .execute();
+          } else if (existingUser && !!existingUser.auth_id) {
+            // do nothing at all
+          }
           return { message: MessageEnum.success, ok: true };
         } else if (eventType === "user.updated") {
           await db.updateTable("users").where("auth_id", "=", auth_id).set({ username, email }).execute();
