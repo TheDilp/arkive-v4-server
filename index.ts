@@ -90,7 +90,6 @@ export const app = new Elysia()
           const token = request.headers.get("authorization");
           if (token) {
             const jwtoken = token.replace("Bearer ", "");
-
             const jwtPublicKeyRes = await fetch(process.env.JWT_VERIFY_URL as string);
             const jwtPublicKey = await jwtPublicKeyRes.json();
             const publicKey = jwtToPem.default(jwtPublicKey.keys[0]);
@@ -104,6 +103,7 @@ export const app = new Elysia()
                 };
               return result;
             });
+            console.log(verifiedToken);
             if (verifiedToken.error) {
               console.error("ERROR VERIFYING TOKEN");
               throw new UnauthorizedError("UNAUTHORIZED");
@@ -115,7 +115,6 @@ export const app = new Elysia()
             }
           } else {
             console.error("NO TOKEN");
-
             throw new UnauthorizedError("UNAUTHORIZED");
           }
         }

@@ -1185,6 +1185,21 @@ CREATE TABLE public.user_roles (
 
 
 --
+-- Name: user_project_roles_permissions; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.user_project_roles_permissions AS
+ SELECT a.user_id,
+    a.project_id,
+    p.owner_id,
+    c.code AS permission_slug
+   FROM (((public.user_roles a
+     LEFT JOIN public.role_permissions b ON ((a.role_id = b.role_id)))
+     LEFT JOIN public.permissions c ON ((b.permission_id = c.id)))
+     LEFT JOIN public.projects p ON ((a.project_id = p.id)));
+
+
+--
 -- Name: users; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -3602,4 +3617,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240305085322'),
     ('20240306105236'),
     ('20240306113048'),
-    ('20240306115226');
+    ('20240306115226'),
+    ('20240306150622');
