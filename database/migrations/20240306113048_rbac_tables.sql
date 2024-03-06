@@ -12,9 +12,11 @@ CREATE TABLE roles (
 CREATE TABLE public."permissions" (
     id uuid PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     title TEXT NOT NULL,
+    code TEXT NOT NULL,
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    CONSTRAINT unique_permissions_constraint UNIQUE (title)
+    CONSTRAINT unique_permissions_title_constraint UNIQUE (title),
+    CONSTRAINT unique_permissions_code_constraint UNIQUE (code)
 );
 
 CREATE TABLE role_permissions (
