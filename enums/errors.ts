@@ -8,3 +8,8 @@ export class NoPublicAccess extends Error {
     super(message);
   }
 }
+export class NoRoleAccess extends Error {
+  constructor(public message: string) {
+    super(message);
+  }
+}

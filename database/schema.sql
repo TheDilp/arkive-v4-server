@@ -1189,14 +1189,14 @@ CREATE TABLE public.user_roles (
 --
 
 CREATE VIEW public.user_project_roles_permissions AS
- SELECT a.user_id,
+ SELECT COALESCE(a.user_id, p.owner_id) AS user_id,
     a.project_id,
     p.owner_id,
     c.code AS permission_slug
-   FROM (((public.user_roles a
+   FROM (((public.projects p
+     LEFT JOIN public.user_roles a ON ((p.id = a.project_id)))
      LEFT JOIN public.role_permissions b ON ((a.role_id = b.role_id)))
-     LEFT JOIN public.permissions c ON ((b.permission_id = c.id)))
-     LEFT JOIN public.projects p ON ((a.project_id = p.id)));
+     LEFT JOIN public.permissions c ON ((b.permission_id = c.id)));
 
 
 --

@@ -6,7 +6,9 @@ import { DB } from "kysely-codegen";
 import { db } from "../database/db";
 import { getCharacterFamily, readCharacter } from "../database/queries";
 import { InsertCharacterSchema, ListCharacterSchema, ReadCharacterSchema, UpdateCharacterSchema } from "../database/validation";
+import { UnauthorizedError } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
+import { checkRoleOrOwner, noRoleAccessErrorHandler } from "../handlers/roleHandler";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import {
   characterRelationFilter,
@@ -23,6 +25,7 @@ import {
   UpdateCharacterRelationships,
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
+import { decodeUserJwt } from "../utils/requestUtils";
 import { groupCharacterResourceFiltersByField, groupRelationFiltersByField } from "../utils/transform";
 
 export function character_router(app: Elysia) {
@@ -267,6 +270,25 @@ export function character_router(app: Elysia) {
         {
           body: ListCharacterSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => {
+            const token = context.headers["authorization"];
+            if (token) {
+              const jwt = token.replace("Bearer ", "");
+              const { user_id, project_id } = decodeUserJwt(jwt);
+
+              if (user_id && project_id) {
+                const isRoleValid = await checkRoleOrOwner(project_id as string | null, user_id as string, "read_characters");
+                if (!isRoleValid) {
+                  noRoleAccessErrorHandler();
+                }
+              } else {
+                noRoleAccessErrorHandler();
+              }
+            } else {
+              console.error("MISSING TOKEN", "LIST CHARACTERS");
+              throw new UnauthorizedError("UNAUTHORIZED");
+            }
+          },
         },
       )
       .post("/:id", async ({ params, body }) => readCharacter(body, params, false), {

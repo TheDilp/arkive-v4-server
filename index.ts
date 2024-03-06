@@ -3,7 +3,7 @@ import { Elysia } from "elysia";
 import { verify } from "jsonwebtoken";
 import * as jwtToPem from "jwk-to-pem";
 
-import { NoPublicAccess, UnauthorizedError } from "./enums";
+import { NoPublicAccess, NoRoleAccess, UnauthorizedError } from "./enums";
 import { tempAfterHandle } from "./handlers";
 import {
   asset_router,
@@ -54,6 +54,7 @@ export const app = new Elysia()
   .error({
     UNAUTHORIZED: UnauthorizedError,
     NO_PUBLIC_ACCESS: NoPublicAccess,
+    NO_ROLE_ACCESS: NoRoleAccess,
   })
   .onError(({ code, error, set }) => {
     if (code === "UNAUTHORIZED") {
@@ -77,7 +78,10 @@ export const app = new Elysia()
       console.log(error);
       return { message: "The payload was not formatted correctly.", ok: false };
     }
-    console.error(error);
+    if (code === "NO_ROLE_ACCESS") {
+      set.status = 200;
+      return { message: "NO_ROLE_ACCESS", ok: false };
+    }
     return { message: "There was an error with your request.", ok: false };
   })
   .use(health_check_router)
@@ -103,7 +107,6 @@ export const app = new Elysia()
                 };
               return result;
             });
-            console.log(verifiedToken);
             if (verifiedToken.error) {
               console.error("ERROR VERIFYING TOKEN");
               throw new UnauthorizedError("UNAUTHORIZED");

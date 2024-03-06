@@ -1,4 +1,5 @@
 import { db } from "../database/db";
+import { NoRoleAccess } from "../enums";
 
 const RolePermissions = [
   "create_characters" as const,
@@ -54,17 +55,23 @@ const RolePermissions = [
 export async function checkRoleOrOwner(
   project_id: string | null,
   user_id: string,
-  required_permission: keyof typeof RolePermissions,
+  required_permission: (typeof RolePermissions)[keyof typeof RolePermissions],
 ) {
   if (!project_id) return false;
   const data = await db
     .selectFrom("user_project_roles_permissions")
-    .where("project_id", "=", project_id)
-    .where("user_id", "=", user_id)
-    .where("permission_slug", "=", required_permission as string)
+    .where((wb) =>
+      wb.or([
+        wb.and([
+          wb("permission_slug", "=", required_permission as string),
+          wb("project_id", "=", project_id),
+          wb("user_id", "=", user_id),
+        ]),
+        wb("owner_id", "=", user_id),
+      ]),
+    )
     .select(["permission_slug" as const, "owner_id"])
     .executeTakeFirst();
-
   if (data) {
     if (data.owner_id === user_id) return true;
     if (data.permission_slug === required_permission) return true;
@@ -72,4 +79,8 @@ export async function checkRoleOrOwner(
   } else {
     return false;
   }
+}
+
+export function noRoleAccessErrorHandler() {
+  throw new NoRoleAccess("ROLE NOT ALLOWED ACCESS");
 }
