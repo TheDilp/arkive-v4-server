@@ -64,7 +64,7 @@ export function user_router(app: Elysia) {
           } else {
             const newUser = await db
               .insertInto("users")
-              .values({ email: body.data.email, feature_flags: JSON.stringify(DefaultFeatureFlags) })
+              .values({ username: body.data.email, email: body.data.email, feature_flags: JSON.stringify(DefaultFeatureFlags) })
               .returning("id")
               .executeTakeFirst();
             if (newUser) await db.insertInto("_project_members").values({ A: body.data.project_id, B: newUser.id }).execute();

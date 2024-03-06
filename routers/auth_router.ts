@@ -45,7 +45,7 @@ export function auth_router(app: Elysia) {
         if (eventType === "user.created" && email) {
           const existingUser = await db.selectFrom("users").select(["auth_id"]).where("email", "=", email).executeTakeFirst();
           if (existingUser && !existingUser.auth_id) {
-            await db.updateTable("users").where("email", "=", email).set("auth_id", auth_id).execute();
+            await db.updateTable("users").where("email", "=", email).set({ auth_id, username }).execute();
           } else if (!existingUser) {
             await db
               .insertInto("users")
