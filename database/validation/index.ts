@@ -1,5 +1,6 @@
 export * from "./alter_names";
 export * from "./assets";
+export * from "./auth";
 export * from "./blueprint_fields";
 export * from "./blueprint_instances";
 export * from "./blueprints";
@@ -26,6 +27,7 @@ export * from "./projects";
 export * from "./random_table_options";
 export * from "./random_tables";
 export * from "./relationship_types";
+export * from "./roles";
 export * from "./search";
 export * from "./tags";
 export * from "./users";

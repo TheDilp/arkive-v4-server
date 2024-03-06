@@ -30,10 +30,12 @@ import {
   meta_router,
   month_router,
   node_router,
+  permission_router,
   project_router,
   public_router,
   random_table_option_router,
   random_table_router,
+  role_router,
   search_router,
   tag_router,
   user_router,
@@ -152,7 +154,9 @@ export const app = new Elysia()
       .use(webhook_router)
       .use(search_router)
       .use(message_router)
-      .use(bulk_router),
+      .use(bulk_router)
+      .use(role_router)
+      .use(permission_router),
   )
   .use(public_router)
   .use(meta_router)
@@ -160,7 +164,10 @@ export const app = new Elysia()
   .use(websocket_router)
   .onStart(async () => {
     console.log("LISTENING ON", process.env.PORT);
-  })
-  .listen((process.env.PORT as string) || 3000);
+  });
 
-export type App = typeof app;
+try {
+  app.listen((process.env.PORT as string) || 3000);
+} catch (err) {
+  console.error(err);
+}

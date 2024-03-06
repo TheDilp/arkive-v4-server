@@ -1,4 +1,3 @@
-export * from "./alter_name_router";
 export * from "./asset_router";
 export * from "./auth_router";
 export * from "./authentication_router";
@@ -24,10 +23,12 @@ export * from "./message_router";
 export * from "./meta_router";
 export * from "./month_router";
 export * from "./node_router";
+export * from "./permission_router";
 export * from "./project_router";
 export * from "./public_router";
 export * from "./random_table_option_router";
 export * from "./random_table_router";
+export * from "./role_router";
 export * from "./search_router";
 export * from "./tags_router";
 export * from "./user_router";

@@ -5,8 +5,8 @@ CREATE TABLE roles (
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     title TEXT NOT NULL,
     project_id UUID NOT NULL,
-    permissions jsonb,
-    CONSTRAINT unique_roles_constraint UNIQUE (title, project_id)
+    CONSTRAINT unique_roles_constraint UNIQUE (title, project_id),
+    CONSTRAINT roles_project_fkey_constraint FOREIGN KEY (project_id) REFERENCES projects (id) ON UPDATE NO ACTION ON DELETE CASCADE
 );
 
 CREATE TABLE public."permissions" (

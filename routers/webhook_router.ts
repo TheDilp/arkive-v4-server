@@ -54,10 +54,10 @@ export function webhook_router(app: Elysia) {
       .post(
         "/send/:id",
         async ({ params, body }) => {
-          const { url, image, nickname } = await db
+          const { url } = await db
             .selectFrom("webhooks")
             .leftJoin("users", "users.id", "webhooks.user_id")
-            .select(["url", "users.image", "users.nickname"])
+            .select(["url"])
             .where("webhooks.id", "=", params.id)
             .executeTakeFirstOrThrow();
 
@@ -154,8 +154,6 @@ export function webhook_router(app: Elysia) {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              username: nickname,
-              "avatar-url": image,
               embeds: [content],
             }),
           });
