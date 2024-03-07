@@ -10,6 +10,7 @@ import { EntitiesWithChildren } from "../database/types";
 import { EntityListSchema } from "../database/validation";
 import { GenerateGraphSchema, InsertGraphSchema, ReadGraphSchema, UpdateGraphSchema } from "../database/validation/graphs";
 import { MessageEnum } from "../enums/requestEnums";
+import { beforeRoleHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -33,11 +34,12 @@ export function graph_router(app: Elysia) {
             if (body?.relations?.tags?.length)
               await CreateTagRelations({ tx, relationalTable: "_graphsTotags", id: graph.id, tags: body.relations.tags });
           });
-          return { message: `Graph ${MessageEnum.successfully_created}`, ok: true };
+          return { message: `Graph ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
           body: InsertGraphSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "create_graphs"),
         },
       )
       .post(
@@ -60,11 +62,12 @@ export function graph_router(app: Elysia) {
               return qb;
             })
             .execute();
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: EntityListSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_graphs"),
         },
       )
       .post(
@@ -144,11 +147,13 @@ export function graph_router(app: Elysia) {
             data: finalData,
             message: MessageEnum.success,
             ok: true,
+            role_access: true,
           };
         },
         {
           body: ReadGraphSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_graphs"),
         },
       )
       .post(
@@ -169,11 +174,12 @@ export function graph_router(app: Elysia) {
             }
           });
 
-          return { message: `Graph ${MessageEnum.successfully_updated}`, ok: true };
+          return { message: `Graph ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
         {
           body: UpdateGraphSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "update_graphs"),
         },
       )
       .post(
@@ -211,9 +217,13 @@ export function graph_router(app: Elysia) {
                 .execute();
             }
           });
-          return { message: `Graph ${MessageEnum.successfully_created}`, ok: true, data: { id: graphId } };
+          return { message: `Graph ${MessageEnum.successfully_created}`, ok: true, role_access: true, data: { id: graphId } };
         },
-        { body: GenerateGraphSchema, response: ResponseWithDataSchema },
+        {
+          body: GenerateGraphSchema,
+          response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_graphs"),
+        },
       )
       .delete(
         "/:id",
@@ -224,10 +234,11 @@ export function graph_router(app: Elysia) {
             .returning(["id", "title", "project_id"])
             .executeTakeFirstOrThrow();
 
-          return { data, message: `Graph ${MessageEnum.successfully_deleted}.`, ok: true };
+          return { data, message: `Graph ${MessageEnum.successfully_deleted}.`, ok: true, role_access: true };
         },
         {
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "delete_graphs"),
         },
       ),
   );

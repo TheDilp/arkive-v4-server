@@ -31,7 +31,7 @@ export function edge_router(app: Elysia) {
             }
           });
 
-          return { data: returning, message: `Edge ${MessageEnum.successfully_created}`, ok: true };
+          return { data: returning, message: `Edge ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
           body: InsertEdgeSchema,
@@ -56,7 +56,7 @@ export function edge_router(app: Elysia) {
               return qb;
             })
             .execute();
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ListEdgesSchema,
@@ -72,7 +72,7 @@ export function edge_router(app: Elysia) {
             .where("edges.id", "=", params.id)
             .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_edgesTotags", "edges")))
             .executeTakeFirstOrThrow();
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ReadEdgeSchema,
@@ -97,7 +97,7 @@ export function edge_router(app: Elysia) {
             }
           });
 
-          return { message: `Edge ${MessageEnum.successfully_updated}`, ok: true };
+          return { message: `Edge ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
         {
           body: UpdateEdgeSchema,
@@ -110,7 +110,7 @@ export function edge_router(app: Elysia) {
           const edge_ids = body.data.map((edge) => edge.id);
           if (edge_ids.length) await db.deleteFrom("edges").where("id", "in", edge_ids).execute();
 
-          return { message: `Edges ${MessageEnum.successfully_deleted}`, ok: true };
+          return { message: `Edges ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
         },
         {
           body: DeleteManyEdgeSchema,
@@ -119,7 +119,7 @@ export function edge_router(app: Elysia) {
       )
       .delete("/:id", async ({ params }) => {
         await db.deleteFrom("edges").where("edges.id", "=", params.id).execute();
-        return { message: `Edge ${MessageEnum.successfully_deleted}`, ok: true };
+        return { message: `Edge ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
       }),
   );
 }

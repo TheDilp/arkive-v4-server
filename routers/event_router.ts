@@ -50,7 +50,12 @@ export function event_router(app: Elysia) {
             .select(["project_id"])
             .where("id", "=", body.data.parent_id)
             .executeTakeFirstOrThrow();
-          return { data: { title: body.data.title, project_id: data.project_id }, message: MessageEnum.success, ok: true };
+          return {
+            data: { title: body.data.title, project_id: data.project_id },
+            message: MessageEnum.success,
+            ok: true,
+            role_access: true,
+          };
         },
         {
           body: InsertEventSchema,
@@ -125,7 +130,7 @@ export function event_router(app: Elysia) {
             .select(["sm.sort as start_month", "em.sort as end_month"])
             .execute();
 
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ListEventSchema,
@@ -195,7 +200,7 @@ export function event_router(app: Elysia) {
             })
             .executeTakeFirstOrThrow();
 
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ReadEventSchema,
@@ -273,7 +278,7 @@ export function event_router(app: Elysia) {
               }
             });
           }
-          return { message: `Event ${MessageEnum.successfully_updated}`, ok: true };
+          return { message: `Event ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
         {
           body: UpdateEventSchema,
@@ -295,7 +300,7 @@ export function event_router(app: Elysia) {
             .select(["project_id"])
             .executeTakeFirstOrThrow();
 
-          return { data, message: `Event ${MessageEnum.successfully_deleted}`, ok: true };
+          return { data, message: `Event ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
         },
         {
           response: ResponseWithDataSchema,
