@@ -13,7 +13,7 @@ import {
   EventRelationTables,
   TagsRelationTables,
 } from "../database/types";
-import { AvailableEntityType, AvailableSubEntityType } from "../types/entityTypes";
+import { AvailableEntityType, AvailablePermissions, AvailableSubEntityType } from "../types/entityTypes";
 import { AfterHandlerActionType, JWTPayloadType, SearchableEntities } from "../types/requestTypes";
 
 export function getSearchTableFromType(type: SearchableEntities | keyof DB): keyof DB {
@@ -95,5 +95,39 @@ export function getEntityTagTable(type: AvailableEntityType | AvailableSubEntity
   if (type === "graphs") return "_graphsTotags";
   if (type === "calendars") return "_calendarsTotags";
   if (type === "character_fields_templates") return "_character_fields_templatesTotags";
+  return null;
+}
+
+export function getPermissionFromAction(
+  action: "create" | "update" | "read" | "delete",
+  type: AvailableEntityType | AvailableSubEntityType | "assets",
+): AvailablePermissions | null | false {
+  if (action === "delete") {
+    if (type === "characters") return "delete_characters";
+    if (type === "blueprints") return "delete_blueprints";
+    if (type === "blueprint_instances") return "delete_blueprint_instances";
+    if (type === "documents") return "delete_documents";
+    if (type === "maps") return "delete_maps";
+    if (type === "graphs") return "delete_graphs";
+    if (type === "calendars") return "delete_calendars";
+    if (type === "dictionaries") return "delete_dictionaries";
+    if (type === "random_tables") return "delete_random_tables";
+    if (type === "tags") return "delete_tags";
+    if (type === "character_fields_templates") return "delete_character_fields_templates";
+    if (type === "assets") return "delete_assets";
+  } else if (action === "update") {
+    if (type === "characters") return "update_characters";
+    if (type === "blueprints") return "update_blueprints";
+    if (type === "blueprint_instances") return "update_blueprint_instances";
+    if (type === "documents") return "update_documents";
+    if (type === "maps") return "update_maps";
+    if (type === "graphs") return "update_graphs";
+    if (type === "calendars") return "update_calendars";
+    if (type === "dictionaries") return "update_dictionaries";
+    if (type === "random_tables") return "update_random_tables";
+    if (type === "tags") return "update_tags";
+    if (type === "character_fields_templates") return "update_character_fields_templates";
+    if (type === "assets") return "update_assets";
+  }
   return null;
 }

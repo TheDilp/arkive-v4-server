@@ -11,10 +11,11 @@ import {
 } from "../database/validation";
 import { BulkDeleteEntities } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
+import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
 import { AvailableEntityType, AvailableSubEntityType, BulkDeleteEntitiesType, PublicEntities } from "../types/entityTypes";
 import { ResponseSchema } from "../types/requestTypes";
 import { UpdateTagRelations } from "../utils/relationalQueryHelpers";
-import { getEntityTagTable } from "../utils/requestUtils";
+import { getEntityTagTable, getPermissionFromAction } from "../utils/requestUtils";
 import { s3Client } from "../utils/s3Utils";
 
 export function bulk_router(app: Elysia) {
@@ -48,6 +49,17 @@ export function bulk_router(app: Elysia) {
         {
           body: t.Object({ data: t.Object({ ids: t.Array(t.String()), is_public: t.Boolean() }) }),
           response: ResponseSchema,
+          beforeHandle: async (context) => {
+            const permission = getPermissionFromAction(
+              "update",
+              context.params.type as AvailableEntityType | AvailableSubEntityType | "assets",
+            );
+            if (permission) {
+              return beforeRoleHandler(context, permission);
+            } else {
+              noRoleAccessErrorHandler();
+            }
+          },
         },
       )
       .post(
@@ -97,6 +109,17 @@ export function bulk_router(app: Elysia) {
         {
           body: t.Object({ data: t.Array(t.Union([UpdateEventSchema, UpdateNodeSchema, UpdateEdgeSchema])) }),
           response: ResponseSchema,
+          beforeHandle: async (context) => {
+            const permission = getPermissionFromAction(
+              "update",
+              context.params.type as AvailableEntityType | AvailableSubEntityType | "assets",
+            );
+            if (permission) {
+              return beforeRoleHandler(context, permission);
+            } else {
+              noRoleAccessErrorHandler();
+            }
+          },
         },
       )
       .post(
@@ -123,6 +146,17 @@ export function bulk_router(app: Elysia) {
             }),
           }),
           response: ResponseSchema,
+          beforeHandle: async (context) => {
+            const permission = getPermissionFromAction(
+              "update",
+              context.params.type as AvailableEntityType | AvailableSubEntityType | "assets",
+            );
+            if (permission) {
+              return beforeRoleHandler(context, permission);
+            } else {
+              noRoleAccessErrorHandler();
+            }
+          },
         },
       )
       .delete(
@@ -178,6 +212,17 @@ export function bulk_router(app: Elysia) {
             }),
           }),
           response: ResponseSchema,
+          beforeHandle: async (context) => {
+            const permission = getPermissionFromAction(
+              "delete",
+              context.params.type as AvailableEntityType | AvailableSubEntityType | "assets",
+            );
+            if (permission) {
+              return beforeRoleHandler(context, permission);
+            } else {
+              noRoleAccessErrorHandler();
+            }
+          },
         },
       ),
   );

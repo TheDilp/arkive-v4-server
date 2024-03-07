@@ -1,3 +1,5 @@
+import { RolePermissions } from "../enums";
+
 export type AssetType = "images" | "map_images";
 
 export type BulkDeleteEntitiesType =
@@ -69,3 +71,5 @@ export type MentionType = {
     name: MentionEntityType;
   };
 };
+
+export type AvailablePermissions = (typeof RolePermissions)[keyof typeof RolePermissions];
