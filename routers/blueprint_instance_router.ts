@@ -11,6 +11,7 @@ import {
   UpdateBlueprintInstanceSchema,
 } from "../database/validation/blueprint_instances";
 import { MessageEnum } from "../enums/requestEnums";
+import { beforeRoleHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import {
   blueprintInstanceRelationFilter,
@@ -169,11 +170,13 @@ export function blueprint_instance_router(app: Elysia) {
             data: { project_id: data.project_id, title: body.data.title },
             message: `Blueprint instance ${MessageEnum.successfully_created}`,
             ok: true,
+            role_access: true,
           };
         },
         {
           body: InsertBlueprintInstanceSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "create_blueprint_instances"),
         },
       )
       .post(
@@ -381,11 +384,12 @@ export function blueprint_instance_router(app: Elysia) {
             });
 
           const data = await query.execute();
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ListBlueprintInstanceSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_blueprint_instances"),
         },
       )
       .post(
@@ -574,11 +578,12 @@ export function blueprint_instance_router(app: Elysia) {
             ])
             .executeTakeFirstOrThrow();
 
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ReadBlueprintInstanceSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_blueprint_instances"),
         },
       )
       .post(
@@ -779,11 +784,12 @@ export function blueprint_instance_router(app: Elysia) {
             }
           });
 
-          return { message: `Blueprint instance ${MessageEnum.successfully_updated}`, ok: true };
+          return { message: `Blueprint instance ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
         {
           body: UpdateBlueprintInstanceSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "update_blueprint_instances"),
         },
       )
       .delete(
@@ -805,10 +811,12 @@ export function blueprint_instance_router(app: Elysia) {
             data: { project_id: data.project_id, title: res.title },
             message: `Blueprint instance ${MessageEnum.successfully_deleted}.`,
             ok: true,
+            role_access: true,
           };
         },
         {
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "delete_blueprint_instances"),
         },
       ),
   );
