@@ -713,6 +713,7 @@ export function character_router(app: Elysia) {
         {
           body: UpdateCharacterSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "update_characters"),
         },
       )
       .post(
@@ -756,13 +757,13 @@ export function character_router(app: Elysia) {
           return {
             message: MessageEnum.success,
             ok: true,
-
             role_access: true,
           };
         },
         {
           body: UpdateCharacterSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "update_characters"),
         },
       )
       .delete(
@@ -778,12 +779,12 @@ export function character_router(app: Elysia) {
             data,
             message: `Character ${MessageEnum.successfully_deleted}.`,
             ok: true,
-
             role_access: true,
           };
         },
         {
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "delete_characters"),
         },
       ),
   );
