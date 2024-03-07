@@ -9,6 +9,7 @@ import sharp from "sharp";
 import { db } from "../database/db";
 import { UpdateImageSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
+import { beforeRoleHandler } from "../handlers";
 import { AssetType } from "../types/entityTypes";
 import { RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
@@ -51,11 +52,12 @@ export function asset_router(app: Elysia) {
               return qb;
             })
             .execute();
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: RequestBodySchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_assets"),
         },
       )
       .post(
@@ -67,11 +69,12 @@ export function asset_router(app: Elysia) {
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "images">[]))
             .executeTakeFirstOrThrow();
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: RequestBodySchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_assets"),
         },
       )
       .post(
@@ -110,70 +113,64 @@ export function asset_router(app: Elysia) {
             });
           }
 
-          return { message: "Image(s) uploaded successfully.", ok: true };
+          return { message: "Image(s) uploaded successfully.", ok: true, role_access: true };
         },
         {
           body: t.Record(t.String(), t.File({ maxSize: "100m" })),
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "create_assets"),
         },
       )
-      .post(
-        "/portrait/:character_id/:image_id",
-        async ({ params }) => {
-          await db
-            .updateTable("characters")
-            .where("characters.id", "=", params.character_id)
-            .set({ portrait_id: params.image_id })
-            .execute();
 
-          return { message: `Character portrait ${MessageEnum.successfully_updated}`, ok: true };
-        },
-        {
-          response: ResponseSchema,
-        },
-      )
       .post(
         "/update/:id",
         async ({ params, body }) => {
           await db.updateTable("images").where("id", "=", params.id).set(body.data).execute();
-          return { message: `Image ${MessageEnum.successfully_updated}`, ok: true };
+          return { message: `Image ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
         {
           body: UpdateImageSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "update_assets"),
         },
       )
-      .get("/download/:project_id/:type/:id", async ({ params }) => {
-        const { project_id, type, id } = params;
-        const filePath = `assets/${project_id}/${type}`;
-        const bucketParams = {
-          Bucket: process.env.DO_SPACES_NAME as string,
-          Key: `${filePath}/${id}.webp`,
-        };
+      .get(
+        "/download/:project_id/:type/:id",
+        async ({ params }) => {
+          const { project_id, type, id } = params;
+          const filePath = `assets/${project_id}/${type}`;
+          const bucketParams = {
+            Bucket: process.env.DO_SPACES_NAME as string,
+            Key: `${filePath}/${id}.webp`,
+          };
 
-        // Function to turn the file's body into a string.
-        const streamToString = (stream: StreamingBlobPayloadOutputTypes | undefined) => {
-          const chunks: Buffer[] = [];
-          if (!stream) return chunks;
-          return new Promise((resolve, reject) => {
-            // @ts-ignore
-            stream.on("data", (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
-            // @ts-ignore
-            stream.on("error", (err) => reject(err));
-            // @ts-ignore
-            stream.on("end", () => resolve(Buffer.concat(chunks).toString("base64")));
-          });
-        };
+          // Function to turn the file's body into a string.
+          const streamToString = (stream: StreamingBlobPayloadOutputTypes | undefined) => {
+            const chunks: Buffer[] = [];
+            if (!stream) return chunks;
+            return new Promise((resolve, reject) => {
+              // @ts-ignore
+              stream.on("data", (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+              // @ts-ignore
+              stream.on("error", (err) => reject(err));
+              // @ts-ignore
+              stream.on("end", () => resolve(Buffer.concat(chunks).toString("base64")));
+            });
+          };
 
-        try {
-          const response = await s3Client.send(new GetObjectCommand(bucketParams));
-          const data = await streamToString(response.Body);
+          try {
+            const response = await s3Client.send(new GetObjectCommand(bucketParams));
+            const data = await streamToString(response.Body);
 
-          return { data, message: MessageEnum.success, ok: true };
-        } catch (err) {
-          throw new Error("Error downloading file.");
-        }
-      })
+            return { data, message: MessageEnum.success, ok: true, role_access: true };
+          } catch (err) {
+            throw new Error("Error downloading file.");
+          }
+        },
+        {
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_assets"),
+        },
+      )
       .delete(
         "/:project_id/:type/:id",
         async ({ params }) => {
@@ -187,13 +184,14 @@ export function asset_router(app: Elysia) {
               }),
             );
             await db.deleteFrom("images").where("id", "=", params.id).execute();
-            return { message: `Image ${MessageEnum.successfully_deleted}`, ok: true };
+            return { message: `Image ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
           } catch (error) {
-            return { message: "Could not delete image.", ok: false };
+            return { message: "Could not delete image.", ok: false, role_access: true };
           }
         },
         {
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "delete_assets"),
         },
       ),
   );
