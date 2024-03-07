@@ -12,6 +12,7 @@ import {
   UpdateCalendarSchema,
 } from "../database/validation/calendars";
 import { MessageEnum } from "../enums/requestEnums";
+import { beforeRoleHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import {
@@ -49,11 +50,12 @@ export function calendar_router(app: Elysia) {
             }
           });
 
-          return { message: MessageEnum.success, ok: true };
+          return { message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: InsertCalendarSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "create_calendars"),
         },
       )
       .post(
@@ -78,11 +80,12 @@ export function calendar_router(app: Elysia) {
             })
             .execute();
 
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ListCalendarSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_calendars"),
         },
       )
       .post(
@@ -152,14 +155,15 @@ export function calendar_router(app: Elysia) {
           if (body?.relations?.parents) {
             const parents = await GetParents({ db, id: params.id, table_name: "calendars" });
             data.parents = parents;
-            return { data, message: MessageEnum.success, ok: true };
+            return { data, message: MessageEnum.success, ok: true, role_access: true };
           }
 
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ReadCalendarSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_calendars"),
         },
       )
       .post(
@@ -281,9 +285,13 @@ export function calendar_router(app: Elysia) {
               });
             }
           });
-          return { message: MessageEnum.success, ok: true };
+          return { message: MessageEnum.success, ok: true, role_access: true };
         },
-        { body: UpdateCalendarSchema, response: ResponseSchema },
+        {
+          body: UpdateCalendarSchema,
+          response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "update_calendars"),
+        },
       )
       .delete(
         "/:id",
@@ -294,10 +302,11 @@ export function calendar_router(app: Elysia) {
             .returning(["id", "title", "project_id"])
             .executeTakeFirstOrThrow();
 
-          return { data, message: `Calendar ${MessageEnum.successfully_deleted}.`, ok: true };
+          return { data, message: `Calendar ${MessageEnum.successfully_deleted}.`, ok: true, role_access: true };
         },
         {
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "delete_calendars"),
         },
       ),
   );
