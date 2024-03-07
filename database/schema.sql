@@ -606,6 +606,20 @@ CREATE TABLE public.character_locations_fields (
 
 
 --
+-- Name: character_permissions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.character_permissions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    permission_id uuid,
+    role_id uuid,
+    user_id uuid,
+    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
+);
+
+
+--
 -- Name: character_random_table_fields; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1375,6 +1389,14 @@ ALTER TABLE ONLY public.character_locations_fields
 
 
 --
+-- Name: character_permissions character_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_permissions
+    ADD CONSTRAINT character_permissions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: character_relationship_types character_relationship_types_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1636,6 +1658,22 @@ ALTER TABLE ONLY public.blueprint_instance_value
 
 ALTER TABLE ONLY public.character_value_fields
     ADD CONSTRAINT unique_char_value_fields_constraint UNIQUE (character_field_id, character_id);
+
+
+--
+-- Name: character_permissions unique_character_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_permissions
+    ADD CONSTRAINT unique_character_role_combination UNIQUE (related_id, role_id);
+
+
+--
+-- Name: character_permissions unique_character_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_permissions
+    ADD CONSTRAINT unique_character_user_permission_combination UNIQUE (related_id, user_id, permission_id);
 
 
 --
@@ -2993,6 +3031,30 @@ ALTER TABLE ONLY public.character_locations_fields
 
 
 --
+-- Name: character_permissions character_permissions_char_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_permissions
+    ADD CONSTRAINT character_permissions_char_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.characters(id) ON DELETE CASCADE;
+
+
+--
+-- Name: character_permissions character_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_permissions
+    ADD CONSTRAINT character_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
+
+
+--
+-- Name: character_permissions character_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_permissions
+    ADD CONSTRAINT character_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: character_random_table_fields character_random_table_fields_character_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3618,4 +3680,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240306105236'),
     ('20240306113048'),
     ('20240306115226'),
-    ('20240306150622');
+    ('20240306150622'),
+    ('20240307113544');

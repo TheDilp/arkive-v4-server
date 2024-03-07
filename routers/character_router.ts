@@ -651,6 +651,26 @@ export function character_router(app: Elysia) {
                   .execute();
               }
             }
+            if (body?.permissions) {
+              await tx.deleteFrom("character_permissions").where("related_id", "=", params.id).execute();
+              if (body?.permissions?.length) {
+                await tx
+                  .insertInto("character_permissions")
+                  .values(
+                    body.permissions.map((perm) => ({
+                      related_id: params.id,
+                      permission_id: "permission_id" in perm ? perm.permission_id : null,
+                      user_id: "user_id" in perm ? perm.user_id : null,
+                      role_id: "role_id" in perm ? perm.role_id : null,
+                    })),
+                  )
+                  .onConflict((oc) =>
+                    oc.columns(["related_id", "role_id"]).doUpdateSet((eb) => ({ role_id: eb.ref("excluded.role_id") })),
+                  )
+                  .onConflict((oc) => oc.columns(["user_id", "related_id", "permission_id"]).doNothing())
+                  .execute();
+              }
+            }
             if (body.data) await tx.updateTable("characters").where("characters.id", "=", params.id).set(body.data).execute();
           });
 

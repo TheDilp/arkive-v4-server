@@ -379,6 +379,26 @@ export async function readCharacter(
 
       return qb;
     })
+    .$if(!!body.permissions && !isPublic, (qb) => {
+      qb = qb.select([
+        (eb) =>
+          jsonArrayFrom(
+            eb
+              .selectFrom("character_permissions")
+              .leftJoin("permissions", "permissions.id", "character_permissions.permission_id")
+              .select([
+                "character_permissions.id",
+                "character_permissions.permission_id",
+                "character_permissions.related_id",
+                "character_permissions.role_id",
+                "character_permissions.user_id",
+                "permissions.code",
+              ])
+              .where("related_id", "=", params.id),
+          ).as("permissions"),
+      ]);
+      return qb;
+    })
     .executeTakeFirstOrThrow();
   // If fetching direct relationships return only unique relationships
   if (data?.related_other) {

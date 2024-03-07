@@ -9,7 +9,7 @@ export function permission_router(app: Elysia) {
     server.post(
       "/",
       async () => {
-        const data = await db.selectFrom("permissions").select(["id", "title"]).execute();
+        const data = await db.selectFrom("permissions").select(["id", "title", "code"]).execute();
 
         return { data, message: MessageEnum.success, ok: true, role_access: true };
       },

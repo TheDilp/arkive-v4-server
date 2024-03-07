@@ -28,6 +28,7 @@ export const ReadCharacterSchema = t.Intersect([
           locations: t.Optional(t.Boolean()),
         }),
       ),
+      permissions: t.Optional(t.Boolean()),
     }),
   ),
 ]);
@@ -261,6 +262,23 @@ export const UpdateCharacterSchema = t.Object({
       documents: t.Optional(t.Array(t.Object({ id: t.String() }))),
       images: t.Optional(t.Array(t.Object({ id: t.String() }))),
     }),
+  ),
+  permissions: t.Optional(
+    t.Array(
+      t.Intersect([
+        t.Object({ related_id: t.String() }),
+
+        t.Union([
+          t.Object({
+            permission_id: t.String(),
+            user_id: t.String(),
+          }),
+          t.Object({
+            role_id: t.String(),
+          }),
+        ]),
+      ]),
+    ),
   ),
 });
 
