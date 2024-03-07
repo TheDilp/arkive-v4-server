@@ -59,30 +59,30 @@ export const app = new Elysia()
   .onError(({ code, error, set }) => {
     if (code === "UNAUTHORIZED") {
       set.status = 403;
-      return { message: "UNAUTHORIZED", ok: false };
+      return { message: "UNAUTHORIZED", ok: false, role_access: false };
     }
     if (code === "NO_PUBLIC_ACCESS") {
       set.status = 403;
-      return { message: "NO_PUBLIC_ACCESS", ok: false };
+      return { message: "NO_PUBLIC_ACCESS", ok: false, role_access: false };
     }
     if (code === "NOT_FOUND") {
       set.status = 404;
-      return { message: "Route not found.", ok: false };
+      return { message: "Route not found.", ok: false, role_access: false };
     }
     if (code === "INTERNAL_SERVER_ERROR") {
       set.status = 500;
-      return { message: "There was an error with your request.", ok: false };
+      return { message: "There was an error with your request.", ok: false, role_access: false };
     }
     if (code === "VALIDATION") {
       set.status = 400;
       console.log(error);
-      return { message: "The payload was not formatted correctly.", ok: false };
+      return { message: "The payload was not formatted correctly.", ok: false, role_access: false };
     }
     if (code === "NO_ROLE_ACCESS") {
       set.status = 200;
-      return { message: "NO_ROLE_ACCESS", ok: false };
+      return { message: "NO_ROLE_ACCESS", ok: false, role_access: false };
     }
-    return { message: "There was an error with your request.", ok: false };
+    return { message: "There was an error with your request.", ok: false, role_access: false };
   })
   .use(health_check_router)
 

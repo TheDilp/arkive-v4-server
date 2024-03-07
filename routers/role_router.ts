@@ -4,6 +4,7 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { db } from "../database/db";
 import { InsertRoleSchema, ListRoleSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
+import { beforeProjectOwnerHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 
 export function role_router(app: Elysia) {
@@ -25,11 +26,12 @@ export function role_router(app: Elysia) {
               .execute();
           });
 
-          return { message: `Role ${MessageEnum.successfully_created}`, ok: true };
+          return { message: `Role ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
           body: InsertRoleSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
         },
       )
       .post(
@@ -55,11 +57,12 @@ export function role_router(app: Elysia) {
             })
             .execute();
 
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ListRoleSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
         },
       ),
   );

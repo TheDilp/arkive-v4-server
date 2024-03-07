@@ -495,10 +495,23 @@ export async function readCharacter(
   ]);
   rest.character_fields.push(...(field_values || []));
   if (isPublic) {
-    if (data?.is_public) return { data: rest, message: MessageEnum.success, ok: true };
-    return { data: { is_public: false }, message: MessageEnum.success, ok: true };
+    if (data?.is_public)
+      return {
+        data: rest,
+        message: MessageEnum.success,
+        ok: true,
+
+        role_access: true,
+      };
+    return {
+      data: { is_public: false },
+      message: MessageEnum.success,
+      ok: true,
+
+      role_access: true,
+    };
   }
-  return { data: rest, message: MessageEnum.success, ok: true };
+  return { data: rest, message: MessageEnum.success, ok: true, role_access: true };
 }
 
 export async function getCharacterFamily(params: { id: string; relation_type_id: string; count: string }, isPublic: boolean) {
@@ -586,7 +599,7 @@ export async function getCharacterFamily(params: { id: string; relation_type_id:
         };
       });
 
-    return { data: { edges, nodes }, ok: true, message: MessageEnum.success };
+    return { data: { edges, nodes }, ok: true, message: MessageEnum.success, role_access: true };
   }
 
   const baseCharacterRelationships = await sql<{
@@ -735,5 +748,5 @@ FROM
   const edges = uniqBy(initialEdges, (edge) => [edge.source_id, edge.target_id]);
   // Get ids of main branch/parent characters and their generations
 
-  return { data: { nodes, edges }, ok: true, message: MessageEnum.success };
+  return { data: { nodes, edges }, ok: true, message: MessageEnum.success, role_access: true };
 }

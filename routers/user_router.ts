@@ -4,12 +4,21 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertUserSchema, InviteUserSchema, KickUserSchema, ReadUserSchema, UpdateUserSchema } from "../database/validation";
+import {
+  AssignRoleSchema,
+  InsertUserSchema,
+  InviteUserSchema,
+  KickUserSchema,
+  ReadUserSchema,
+  UpdateUserSchema,
+} from "../database/validation";
 import { EmailInvite } from "../emails/EmailInvite";
 import { DefaultFeatureFlags } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
+import { beforeProjectOwnerHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { resend } from "../utils/emailClient";
+import { decodeUserJwt } from "../utils/requestUtils";
 
 export function user_router(app: Elysia) {
   return app.group("/users", (server) =>
@@ -17,7 +26,7 @@ export function user_router(app: Elysia) {
       .post(
         "/create",
         async () => {
-          return { message: MessageEnum.success, ok: true };
+          return { message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: InsertUserSchema,
@@ -40,7 +49,7 @@ export function user_router(app: Elysia) {
             )
             .where("auth_id", "=", params.auth_id)
             .executeTakeFirstOrThrow();
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ReadUserSchema,
@@ -51,9 +60,36 @@ export function user_router(app: Elysia) {
         "/update/:id",
         async ({ params, body }) => {
           await db.updateTable("users").where("id", "=", params.id).set(body.data).execute();
-          return { message: `User ${MessageEnum.successfully_updated}`, ok: true };
+          return { message: `User ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
         { body: UpdateUserSchema, response: ResponseSchema },
+      )
+      .post(
+        "/assign_role",
+        async ({ body, headers }) => {
+          const token = headers?.["authorization"];
+          if (token) {
+            const jwt = token.replace("Bearer ", "");
+            const { project_id } = decodeUserJwt(jwt);
+            await db
+              .insertInto("user_roles")
+              .values({
+                user_id: body.data.user_id,
+                role_id: body.data.role_id,
+                project_id: project_id as string,
+              })
+              .onConflict((oc) => oc.columns(["user_id", "role_id", "project_id"]).doUpdateSet({ role_id: body.data.role_id }))
+              .execute();
+            return { message: MessageEnum.success, ok: true, role_access: true };
+          }
+          console.error("MISSING TOKEN", "ASSIGN ROLE");
+          return { message: "There was an error with this request.", ok: false, role_access: true };
+        },
+        {
+          body: AssignRoleSchema,
+          response: ResponseSchema,
+          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
+        },
       )
       .post(
         "/invite",
@@ -84,11 +120,12 @@ export function user_router(app: Elysia) {
             react: EmailInvite({ project_name: title, image, isRemoved: false }),
           });
 
-          return { message: MessageEnum.success, ok: true };
+          return { message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: InviteUserSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
         },
       )
       .post(
@@ -118,9 +155,9 @@ export function user_router(app: Elysia) {
             });
           }
 
-          return { message: MessageEnum.success, ok: true };
+          return { message: MessageEnum.success, ok: true, role_access: true };
         },
-        { body: KickUserSchema, response: ResponseSchema },
+        { body: KickUserSchema, response: ResponseSchema, beforeHandle: async (context) => beforeProjectOwnerHandler(context) },
       ),
   );
 }

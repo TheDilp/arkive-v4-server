@@ -6,9 +6,8 @@ import { DB } from "kysely-codegen";
 import { db } from "../database/db";
 import { getCharacterFamily, readCharacter } from "../database/queries";
 import { InsertCharacterSchema, ListCharacterSchema, ReadCharacterSchema, UpdateCharacterSchema } from "../database/validation";
-import { UnauthorizedError } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
-import { checkRoleOrOwner, noRoleAccessErrorHandler } from "../handlers/roleHandler";
+import { beforeRoleHandler } from "../handlers/roleHandler";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import {
   characterRelationFilter,
@@ -25,7 +24,6 @@ import {
   UpdateCharacterRelationships,
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
-import { decodeUserJwt } from "../utils/requestUtils";
 import { groupCharacterResourceFiltersByField, groupRelationFiltersByField } from "../utils/transform";
 
 export function character_router(app: Elysia) {
@@ -187,11 +185,12 @@ export function character_router(app: Elysia) {
             }
           });
 
-          return { message: `Character ${MessageEnum.successfully_created}`, ok: true };
+          return { message: `Character ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
           body: InsertCharacterSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "create_characters"),
         },
       )
       .post(
@@ -265,38 +264,23 @@ export function character_router(app: Elysia) {
             data,
             message: MessageEnum.success,
             ok: true,
+            role_access: true,
           };
         },
         {
           body: ListCharacterSchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => {
-            const token = context.headers["authorization"];
-            if (token) {
-              const jwt = token.replace("Bearer ", "");
-              const { user_id, project_id } = decodeUserJwt(jwt);
-
-              if (user_id && project_id) {
-                const isRoleValid = await checkRoleOrOwner(project_id as string | null, user_id as string, "read_characters");
-                if (!isRoleValid) {
-                  noRoleAccessErrorHandler();
-                }
-              } else {
-                noRoleAccessErrorHandler();
-              }
-            } else {
-              console.error("MISSING TOKEN", "LIST CHARACTERS");
-              throw new UnauthorizedError("UNAUTHORIZED");
-            }
-          },
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_characters"),
         },
       )
       .post("/:id", async ({ params, body }) => readCharacter(body, params, false), {
         body: ReadCharacterSchema,
         response: ResponseWithDataSchema,
+        beforeHandle: async (context) => beforeRoleHandler(context, "read_characters"),
       })
       .get("/family/:relation_type_id/:id/:count", async ({ params }) => getCharacterFamily(params, false), {
         response: ResponseWithDataSchema,
+        beforeHandle: async (context) => beforeRoleHandler(context, "read_characters"),
       })
       .post(
         "/update/:id",
@@ -670,7 +654,7 @@ export function character_router(app: Elysia) {
             if (body.data) await tx.updateTable("characters").where("characters.id", "=", params.id).set(body.data).execute();
           });
 
-          return { message: `Character ${MessageEnum.successfully_updated}`, ok: true };
+          return { message: `Character ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
         {
           body: UpdateCharacterSchema,
@@ -724,7 +708,7 @@ export function character_router(app: Elysia) {
               }
             }
           });
-          return { message: MessageEnum.success, ok: true };
+          return { message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: UpdateCharacterSchema,
@@ -769,7 +753,12 @@ export function character_router(app: Elysia) {
                 .execute();
             }
           });
-          return { message: MessageEnum.success, ok: true };
+          return {
+            message: MessageEnum.success,
+            ok: true,
+
+            role_access: true,
+          };
         },
         {
           body: UpdateCharacterSchema,
@@ -785,7 +774,13 @@ export function character_router(app: Elysia) {
             .returning(["id", "full_name as title", "project_id", "portrait_id as image_id"])
             .executeTakeFirstOrThrow();
 
-          return { data, message: `Character ${MessageEnum.successfully_deleted}.`, ok: true };
+          return {
+            data,
+            message: `Character ${MessageEnum.successfully_deleted}.`,
+            ok: true,
+
+            role_access: true,
+          };
         },
         {
           response: ResponseWithDataSchema,

@@ -27,7 +27,7 @@ export function bulk_router(app: Elysia) {
             .values(body.data.map((item) => item.data))
             .execute();
 
-          return { ok: true, message: `Nodes ${MessageEnum.successfully_created}` };
+          return { ok: true, message: `Nodes ${MessageEnum.successfully_created}`, role_access: true };
         },
         {
           body: t.Object({ data: t.Array(t.Union([InsertNodeSchema, InsertRandomTableOptionSchema])) }),
@@ -43,7 +43,7 @@ export function bulk_router(app: Elysia) {
             .where("id", "in", body.data.ids)
             .execute();
 
-          return { message: MessageEnum.success, ok: true };
+          return { message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: t.Object({ data: t.Object({ ids: t.Array(t.String()), is_public: t.Boolean() }) }),
@@ -92,7 +92,7 @@ export function bulk_router(app: Elysia) {
                 );
             }
           });
-          return { message: MessageEnum.success, ok: true };
+          return { message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: t.Object({ data: t.Array(t.Union([UpdateEventSchema, UpdateNodeSchema, UpdateEdgeSchema])) }),
@@ -113,7 +113,7 @@ export function bulk_router(app: Elysia) {
                   .execute();
             });
           }
-          return { ok: true, message: MessageEnum.success };
+          return { ok: true, message: MessageEnum.success, role_access: true };
         },
         {
           body: t.Object({
@@ -164,7 +164,11 @@ export function bulk_router(app: Elysia) {
                 .execute();
             }
           }
-          return { message: `Many ${params.type.replaceAll("_", " ")} ${MessageEnum.successfully_deleted}`, ok: true };
+          return {
+            message: `Many ${params.type.replaceAll("_", " ")} ${MessageEnum.successfully_deleted}`,
+            ok: true,
+            role_access: true,
+          };
         },
         {
           body: t.Object({

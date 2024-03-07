@@ -1,6 +1,6 @@
 import Elysia from "elysia";
 import { SelectExpression } from "kysely";
-import { jsonArrayFrom } from "kysely/helpers/postgres";
+import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
@@ -11,6 +11,7 @@ import {
   UpdateProjectSchema,
 } from "../database/validation/projects";
 import { MessageEnum } from "../enums/requestEnums";
+import { beforeProjectOwnerHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { deleteFolder } from "../utils/s3Utils";
 
@@ -21,7 +22,7 @@ export function project_router(app: Elysia) {
         "/create",
         async ({ body }) => {
           await db.insertInto("projects").values(body.data).execute();
-          return { message: `Project ${MessageEnum.successfully_created}`, ok: true };
+          return { message: `Project ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
           body: InsertProjectSchema,
@@ -46,7 +47,7 @@ export function project_router(app: Elysia) {
                 ),
             )
             .execute();
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ProjectListSchema,
@@ -99,14 +100,26 @@ export function project_router(app: Elysia) {
                     .leftJoin("_project_members", "_project_members.B", "users.id")
                     .where("_project_members.A", "=", params.id)
                     .whereRef("_project_members.B", "!=", "projects.owner_id")
-                    .select(["users.id", "users.email"])
+                    .select([
+                      "users.id",
+                      "users.email",
+                      (eb) =>
+                        jsonObjectFrom(
+                          eb
+                            .selectFrom("user_roles")
+                            .whereRef("user_roles.user_id", "=", "users.id")
+                            .where("user_roles.project_id", "=", params.id)
+                            .leftJoin("roles", "roles.id", "user_roles.role_id")
+                            .select(["roles.id", "roles.title"]),
+                        ).as("role"),
+                    ])
                     .orderBy("email", "asc"),
                 ).as("members"),
               ),
             )
             .where("id", "=", params.id)
             .executeTakeFirstOrThrow();
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ReadProjectSchema,
@@ -117,120 +130,134 @@ export function project_router(app: Elysia) {
         "/update/:id",
         async ({ params, body }) => {
           await db.updateTable("projects").where("projects.id", "=", params.id).set(body.data).execute();
-          return { message: `Project ${MessageEnum.successfully_updated}`, ok: true };
+          return { message: `Project ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
         {
           body: UpdateProjectSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
         },
       )
-      .get("/:id/dashboard", async ({ params }) => {
-        const requests = [
-          {
-            name: "characters",
-            request: db
-              .selectFrom("characters")
-              .select(["id", "full_name as title", "portrait_id"])
-              .where("project_id", "=", params.id)
-              .limit(5)
-              .orderBy("updated_at desc")
-              .execute(),
-          },
-          {
-            name: "documents",
-            request: db
-              .selectFrom("documents")
-              .select(["id", "title", "icon"])
-              .where("project_id", "=", params.id)
-              .orderBy("updated_at desc")
-              .limit(5)
-              .execute(),
-          },
+      .get(
+        "/:id/dashboard",
+        async ({ params }) => {
+          const requests = [
+            {
+              name: "characters",
+              request: db
+                .selectFrom("characters")
+                .select(["id", "full_name as title", "portrait_id"])
+                .where("project_id", "=", params.id)
+                .limit(5)
+                .orderBy("updated_at desc")
+                .execute(),
+            },
+            {
+              name: "documents",
+              request: db
+                .selectFrom("documents")
+                .select(["id", "title", "icon"])
+                .where("project_id", "=", params.id)
+                .orderBy("updated_at desc")
+                .limit(5)
+                .execute(),
+            },
 
-          {
-            name: "blueprint_instances",
-            request: db
-              .selectFrom("blueprint_instances")
-              .select(["blueprint_instances.id", "blueprint_instances.title", "blueprint_instances.parent_id"])
-              .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
-              .where("blueprints.project_id", "=", params.id)
-              .orderBy("blueprint_instances.updated_at desc")
-              .limit(5)
-              .execute(),
-          },
-          {
-            name: "maps",
-            request: db
-              .selectFrom("maps")
-              .select(["id", "title", "icon"])
-              .orderBy("updated_at desc")
-              .where("project_id", "=", params.id)
-              .limit(5)
-              .execute(),
-          },
-          {
-            name: "graphs",
-            request: db
-              .selectFrom("graphs")
-              .select(["id", "title"])
-              .where("graphs.project_id", "=", params.id)
-              .orderBy("updated_at desc")
-              .limit(5)
-              .execute(),
-          },
-          {
-            name: "calendars",
-            request: db
-              .selectFrom("calendars")
-              .select(["id", "title"])
-              .where("calendars.project_id", "=", params.id)
-              .orderBy("updated_at desc")
-              .limit(5)
-              .execute(),
-          },
-          {
-            name: "events",
-            request: db
-              .selectFrom("events")
-              .select(["events.id", "events.title", "events.parent_id"])
-              .leftJoin("calendars", "calendars.id", "events.parent_id")
-              .where("calendars.project_id", "=", params.id)
-              .orderBy("events.updated_at desc")
-              .limit(5)
-              .execute(),
-          },
+            {
+              name: "blueprint_instances",
+              request: db
+                .selectFrom("blueprint_instances")
+                .select(["blueprint_instances.id", "blueprint_instances.title", "blueprint_instances.parent_id"])
+                .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+                .where("blueprints.project_id", "=", params.id)
+                .orderBy("blueprint_instances.updated_at desc")
+                .limit(5)
+                .execute(),
+            },
+            {
+              name: "maps",
+              request: db
+                .selectFrom("maps")
+                .select(["id", "title", "icon"])
+                .orderBy("updated_at desc")
+                .where("project_id", "=", params.id)
+                .limit(5)
+                .execute(),
+            },
+            {
+              name: "graphs",
+              request: db
+                .selectFrom("graphs")
+                .select(["id", "title"])
+                .where("graphs.project_id", "=", params.id)
+                .orderBy("updated_at desc")
+                .limit(5)
+                .execute(),
+            },
+            {
+              name: "calendars",
+              request: db
+                .selectFrom("calendars")
+                .select(["id", "title"])
+                .where("calendars.project_id", "=", params.id)
+                .orderBy("updated_at desc")
+                .limit(5)
+                .execute(),
+            },
+            {
+              name: "events",
+              request: db
+                .selectFrom("events")
+                .select(["events.id", "events.title", "events.parent_id"])
+                .leftJoin("calendars", "calendars.id", "events.parent_id")
+                .where("calendars.project_id", "=", params.id)
+                .orderBy("events.updated_at desc")
+                .limit(5)
+                .execute(),
+            },
 
-          {
-            name: "dictionaries",
-            request: db
-              .selectFrom("dictionaries")
-              .select(["id", "title"])
-              .where("dictionaries.project_id", "=", params.id)
-              .orderBy("updated_at desc")
-              .limit(5)
-              .execute(),
-          },
-        ];
+            {
+              name: "dictionaries",
+              request: db
+                .selectFrom("dictionaries")
+                .select(["id", "title"])
+                .where("dictionaries.project_id", "=", params.id)
+                .orderBy("updated_at desc")
+                .limit(5)
+                .execute(),
+            },
+          ];
 
-        const data = await Promise.all(
-          requests.map(async (item) => ({
-            name: item.name,
-            result: await item.request,
-          })),
-        );
+          const data = await Promise.all(
+            requests.map(async (item) => ({
+              name: item.name,
+              result: await item.request,
+            })),
+          );
 
-        return { data, message: MessageEnum.success, ok: true };
-      })
-      .delete("/:id", async ({ params }) => {
-        const filePath = `assets/${params.id}`;
-        try {
-          await deleteFolder(filePath);
-        } catch (error) {
-          return { message: "Could not delete images.", ok: false };
-        }
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
+        },
+        {
+          response: ResponseWithDataSchema,
+        },
+      )
+      .delete(
+        "/:id",
+        async ({ params }) => {
+          const filePath = `assets/${params.id}`;
+          try {
+            await deleteFolder(filePath);
+          } catch (error) {
+            return { message: "Could not delete images.", ok: false };
+          }
 
-        await db.deleteFrom("projects").where("projects.id", "=", params.id).execute();
-        return { message: `Project ${MessageEnum.successfully_deleted}`, ok: true };
-      }),
+          await db.deleteFrom("projects").where("projects.id", "=", params.id).execute();
+          return { message: `Project ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
+        },
+        {
+          body: ResponseSchema,
+          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
+        },
+      ),
   );
 }

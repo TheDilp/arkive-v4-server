@@ -21,6 +21,17 @@ export const UpdateUserSchema = t.Object({
   data: t.Object({
     feature_flags: t.Optional(t.Union([t.Any(), t.Null()])),
   }),
+  relations: t.Optional(
+    t.Object({
+      role: t.Optional(t.String()),
+    }),
+  ),
+});
+export const AssignRoleSchema = t.Object({
+  data: t.Object({
+    user_id: t.String(),
+    role_id: t.String(),
+  }),
 });
 export const InviteUserSchema = t.Object({
   data: t.Object({
