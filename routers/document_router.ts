@@ -19,6 +19,7 @@ import {
   UpdateDocumentSchema,
 } from "../database/validation/documents";
 import { MessageEnum } from "../enums/requestEnums";
+import { beforeRoleHandler } from "../handlers";
 import { MentionType } from "../types/entityTypes";
 import { ResponseSchema, ResponseWithDataSchema, SearchableMentionEntities } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
@@ -72,11 +73,12 @@ export function document_router(app: Elysia) {
             }
           });
 
-          return { message: `Document ${MessageEnum.successfully_created}`, ok: true };
+          return { message: `Document ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
           body: InsertDocumentSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "create_documents"),
         },
       )
       .post(
@@ -106,11 +108,12 @@ export function document_router(app: Elysia) {
             }
           });
 
-          return { message: `Document ${MessageEnum.successfully_created}`, ok: true };
+          return { message: `Document ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
           body: InsertDocumentSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "create_documents"),
         },
       )
       .post(
@@ -155,11 +158,12 @@ export function document_router(app: Elysia) {
             }
           });
 
-          return { message: `Document ${MessageEnum.successfully_created}`, ok: true };
+          return { message: `Document ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
           body: FromTemplateSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "create_documents"),
         },
       )
       .post(
@@ -185,11 +189,12 @@ export function document_router(app: Elysia) {
             .$if(!!body.orderBy, (qb) => constructOrdering(body.orderBy, qb))
 
             .execute();
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ListDocumentSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_documents"),
         },
       )
       .post(
@@ -225,13 +230,14 @@ export function document_router(app: Elysia) {
           if (body?.relations?.parents) {
             const parents = await GetParents({ db, id: params.id, table_name: "documents" });
             data.parents = parents;
-            return { data, message: MessageEnum.success, ok: true };
+            return { data, message: MessageEnum.success, ok: true, role_access: true };
           }
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ReadDocumentSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_documents"),
         },
       )
       .post(
@@ -329,11 +335,12 @@ export function document_router(app: Elysia) {
             }
           });
 
-          return { message: `Document ${MessageEnum.successfully_updated}`, ok: true };
+          return { message: `Document ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
         {
           body: UpdateDocumentSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "update_documents"),
         },
       )
       .post(
@@ -341,7 +348,7 @@ export function document_router(app: Elysia) {
         async ({ params, body }) => {
           if (body.data.content) {
             const { id } = await db.insertInto("documents").values(body.data).returning("id").executeTakeFirstOrThrow();
-            return { data: { id }, message: `Document ${MessageEnum.successfully_created}`, ok: true };
+            return { data: { id }, message: `Document ${MessageEnum.successfully_created}`, ok: true, role_access: true };
           }
           if (params.type === "conversations" && body.data.parent_id) {
             const messages = await db
@@ -380,11 +387,15 @@ export function document_router(app: Elysia) {
               .values({ title: body.data.title, project_id: body.data.project_id, content })
               .returning("id")
               .executeTakeFirstOrThrow();
-            return { data: { id }, message: `Document ${MessageEnum.successfully_created}`, ok: true };
+            return { data: { id }, message: `Document ${MessageEnum.successfully_created}`, ok: true, role_access: true };
           }
-          return { data: [], ok: false, message: "error" };
+          return { data: [], ok: false, message: "error", role_access: true };
         },
-        { body: GenerateDocumentSchema, response: ResponseWithDataSchema },
+        {
+          body: GenerateDocumentSchema,
+          response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "create_documents"),
+        },
       )
       .post(
         "/autolink",
@@ -435,9 +446,13 @@ export function document_router(app: Elysia) {
             .select(fields)
             .execute();
 
-          return { data: res, message: MessageEnum.success, ok: true };
+          return { data: res, message: MessageEnum.success, ok: true, role_access: true };
         },
-        { body: AutolinkerSchema, response: ResponseWithDataSchema },
+        {
+          body: AutolinkerSchema,
+          response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "update_documents"),
+        },
       )
       .post(
         "/mentions_in_document",
@@ -455,9 +470,13 @@ export function document_router(app: Elysia) {
                 .execute(),
             ),
           );
-          return { data: Object.values(res).flatMap((m) => m), message: MessageEnum.success, ok: true };
+          return { data: Object.values(res).flatMap((m) => m), message: MessageEnum.success, ok: true, role_access: true };
         },
-        { body: MentionsInDocumentSchema, response: ResponseWithDataSchema },
+        {
+          body: MentionsInDocumentSchema,
+          response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_documents"),
+        },
       )
       .get(
         "/mentioned_in/:id",
@@ -472,32 +491,45 @@ export function document_router(app: Elysia) {
 
           const edges = nodes.map((d) => ({ source_id: d.id, target_id: params.id }));
 
-          return { data: { nodes, edges }, message: MessageEnum.success, ok: true };
+          return {
+            data: { nodes, edges },
+            message: MessageEnum.success,
+            ok: true,
+            role_access: true,
+          };
         },
         {
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_documents"),
         },
       )
-      .get("/mentions/:project_id", async ({ params }) => {
-        const { project_id } = params;
+      .get(
+        "/mentions/:project_id",
+        async ({ params }) => {
+          const { project_id } = params;
 
-        const connections = await db
-          .selectFrom("document_mentions")
-          .select(["parent_document_id as source_id", "mention_id as target_id"])
-          .leftJoin("documents as sources", "sources.id", "document_mentions.parent_document_id")
-          .leftJoin("documents as targets", "targets.id", "document_mentions.mention_id")
-          .where("sources.project_id", "=", project_id)
-          .where("targets.project_id", "=", project_id)
-          .execute();
+          const connections = await db
+            .selectFrom("document_mentions")
+            .select(["parent_document_id as source_id", "mention_id as target_id"])
+            .leftJoin("documents as sources", "sources.id", "document_mentions.parent_document_id")
+            .leftJoin("documents as targets", "targets.id", "document_mentions.mention_id")
+            .where("sources.project_id", "=", project_id)
+            .where("targets.project_id", "=", project_id)
+            .execute();
 
-        const nodes = new Set(connections.flatMap((c) => [c.source_id, c.target_id]));
-        const finalNodes =
-          nodes.size > 0
-            ? await db.selectFrom("documents").select(["id", "title", "icon"]).where("id", "in", Array.from(nodes)).execute()
-            : [];
+          const nodes = new Set(connections.flatMap((c) => [c.source_id, c.target_id]));
+          const finalNodes =
+            nodes.size > 0
+              ? await db.selectFrom("documents").select(["id", "title", "icon"]).where("id", "in", Array.from(nodes)).execute()
+              : [];
 
-        return { data: { nodes: finalNodes, edges: connections }, message: MessageEnum.success, ok: true };
-      })
+          return { data: { nodes: finalNodes, edges: connections }, message: MessageEnum.success, ok: true, role_access: true };
+        },
+        {
+          response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_documents"),
+        },
+      )
       .delete(
         "/:id",
         async ({ params }) => {
@@ -507,10 +539,11 @@ export function document_router(app: Elysia) {
             .returning(["id", "title", "project_id"])
             .executeTakeFirstOrThrow();
 
-          return { data, message: `Document ${MessageEnum.successfully_deleted}.`, ok: true };
+          return { data, message: `Document ${MessageEnum.successfully_deleted}.`, ok: true, role_access: true };
         },
         {
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "delete_documents"),
         },
       ),
   );
