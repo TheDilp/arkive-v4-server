@@ -4,6 +4,7 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { db } from "../database/db";
 import { ListCharacterFieldsSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
+import { beforeRoleHandler } from "../handlers";
 import { ResponseWithDataSchema } from "../types/requestTypes";
 import { constructOrdering } from "../utils/orderByConstructor";
 
@@ -36,11 +37,12 @@ export function character_fields_router(app: Elysia) {
           .$if(!!body.orderBy?.length, (qb) => constructOrdering(body.orderBy, qb))
           .execute();
 
-        return { data: character_fields, message: MessageEnum.success, ok: true };
+        return { data: character_fields, message: MessageEnum.success, ok: true, role_access: true };
       },
       {
         body: ListCharacterFieldsSchema,
         response: ResponseWithDataSchema,
+        beforeHandle: async (context) => beforeRoleHandler(context, "read_character_fields_templates"),
       },
     ),
   );
