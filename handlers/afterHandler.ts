@@ -32,11 +32,30 @@ export async function afterHandler(
       const entityName = title;
       sendNotification(project_id, {
         event_type: "NEW_NOTIFICATION",
-        message: `${name || "User"} ${getAfterHandlerActionFromType(action)} ${
-          action !== "delete_many" ? getSingularEntityType(entity) : entity.replaceAll("_", " ")
-        } ${is_folder ? "folder" : ""} - "${entityName}"`,
+        message: `${name || "User"} ${getAfterHandlerActionFromType(action)} a ${getSingularEntityType(entity)} ${
+          is_folder ? "folder" : ""
+        } - "${entityName}"`,
         entity,
         image_id,
+        userId: auth_id,
+        nickname: name,
+        userImageUrl: image_url,
+        notification_type: `${entity}_${action}_notification`,
+      });
+    }
+  }
+}
+
+export async function afterHandlerMany(entity: string, token: string, action: AfterHandlerActionType) {
+  if (token) {
+    const jwt = token.replace("Bearer ", "");
+    const { name, auth_id, image_url, project_id } = decodeUserJwt(jwt);
+    if (project_id) {
+      sendNotification(project_id as string, {
+        event_type: "NEW_NOTIFICATION",
+        message: `${name || "User"} ${getAfterHandlerActionFromType(action)} multiple ${entity.replaceAll("_", "")}.`,
+        entity,
+        image_id: null,
         userId: auth_id,
         nickname: name,
         userImageUrl: image_url,
@@ -50,54 +69,59 @@ export async function tempAfterHandle(context: any, response: any) {
   const action = getOperationFromPath(context.path, context.request.method);
   const token = context.request.headers.get("authorization");
   if (action && token) {
+    // TODO: CHECK FOR NOTIFICATION SETTINGS
     const entity = getEntityFromPath(context.path) as AvailableEntityType | AvailableSubEntityType;
     if (UserNotificationEntities.includes(entity)) {
-      if (action === "create") {
-        if (entity === "characters") {
-          const { project_id, first_name, last_name, portrait_id: image_id } = context.body.data;
-          afterHandler(
-            { project_id, title: getCharacterFullName(first_name, undefined, last_name), image_id },
-            entity,
-            token,
-            action,
-          );
-        } else if (entity === "tags" && context.body.data.length) {
-          const { project_id } = context.body.data[0];
-
-          afterHandler({ project_id, title: "" }, entity, token, action);
-        } else {
-          const project_id = context?.body?.data?.project_id || context?.response?.data?.project_id;
-          const title = context?.body?.data?.title || context?.response?.data?.title;
-          if (project_id && title) afterHandler({ project_id, title }, entity, token, action);
-        }
-      } else if (action === "update") {
-        // @ts-ignore
-        let query = db.selectFrom(entity).where(`${entity}.id`, "=", context.params.id);
-
-        if (SubEntityEnum.includes(entity)) {
-          // @ts-ignore
-          query = query.select([`${entity}.id`, `${entity}.title`]);
-          const parentEntity = getParentEntity(entity);
-          if (parentEntity) {
-            query = query
-              // @ts-ignore
-              .leftJoin(parentEntity, `${parentEntity}.id`, `${entity}.parent_id`)
-              // @ts-ignore
-              .select([`${parentEntity}.project_id`]);
-          }
-        } else {
+      if (context.path.includes("bulk")) {
+        afterHandlerMany(entity, token, action);
+      } else {
+        if (action === "create") {
           if (entity === "characters") {
-            query = query.select(["id", "full_name as title", "project_id", "portrait_id as image_id"]);
-          } else {
-            query = query.select(["id", "title", "project_id"]);
-          }
-        }
+            const { project_id, first_name, last_name, portrait_id: image_id } = context.body.data;
+            afterHandler(
+              { project_id, title: getCharacterFullName(first_name, undefined, last_name), image_id },
+              entity,
+              token,
+              action,
+            );
+          } else if (entity === "tags" && context.body.data.length) {
+            const { project_id } = context.body.data[0];
 
-        const data: any = await query.executeTakeFirstOrThrow();
-        afterHandler(data, entity, token, action);
-      } else if (action === "delete") {
-        const { data } = context.response;
-        afterHandler(data, entity, token, action);
+            afterHandler({ project_id, title: "" }, entity, token, action);
+          } else {
+            const project_id = context?.body?.data?.project_id || context?.response?.data?.project_id;
+            const title = context?.body?.data?.title || context?.response?.data?.title;
+            if (project_id && title) afterHandler({ project_id, title }, entity, token, action);
+          }
+        } else if (action === "update") {
+          // @ts-ignore
+          let query = db.selectFrom(entity).where(`${entity}.id`, "=", context.params.id);
+
+          if (SubEntityEnum.includes(entity)) {
+            // @ts-ignore
+            query = query.select([`${entity}.id`, `${entity}.title`]);
+            const parentEntity = getParentEntity(entity);
+            if (parentEntity) {
+              query = query
+                // @ts-ignore
+                .leftJoin(parentEntity, `${parentEntity}.id`, `${entity}.parent_id`)
+                // @ts-ignore
+                .select([`${parentEntity}.project_id`]);
+            }
+          } else {
+            if (entity === "characters") {
+              query = query.select(["id", "full_name as title", "project_id", "portrait_id as image_id"]);
+            } else {
+              query = query.select(["id", "title", "project_id"]);
+            }
+          }
+
+          const data: any = await query.executeTakeFirstOrThrow();
+          afterHandler(data, entity, token, action);
+        } else if (action === "delete") {
+          const { data } = context.response;
+          afterHandler(data, entity, token, action);
+        }
       }
     }
   }

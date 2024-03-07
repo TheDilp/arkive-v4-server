@@ -2,7 +2,7 @@ import { t } from "elysia";
 
 import { FilterEnum } from "../enums/requestEnums";
 
-export type AfterHandlerActionType = "create" | "update" | "delete" | "delete_many";
+export type AfterHandlerActionType = "create" | "update" | "delete";
 
 export type SearchableEntities =
   | "characters"
