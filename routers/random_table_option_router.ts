@@ -41,7 +41,7 @@ export function random_table_option_router(app: Elysia) {
             }
           });
 
-          return { message: `Random table options ${MessageEnum.successfully_created}`, ok: true };
+          return { message: `Random table options ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
           body: InsertRandomTableOptionSchema,
@@ -73,7 +73,7 @@ export function random_table_option_router(app: Elysia) {
             )
             .where("random_table_options.parent_id", "=", body.data.parent_id)
             .execute();
-          return { data, message: "Success", ok: true };
+          return { data, message: "Success", ok: true, role_access: true };
         },
         {
           body: ListRandomTableOptionsSchema,
@@ -106,7 +106,7 @@ export function random_table_option_router(app: Elysia) {
             )
             .executeTakeFirstOrThrow();
 
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ReadRandomTableOptionSchema,
@@ -132,11 +132,11 @@ export function random_table_option_router(app: Elysia) {
             .where("random_table_options.parent_id", "=", params.table_id)
             .execute();
           if (body.data.count > options.length) {
-            return { message: "More items requested than there are available.", ok: false };
+            return { message: "More items requested than there are available.", ok: false, role_access: true };
           }
 
           const data = chooseRandomItems(options, body.data.count);
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ListRandomTableOptionsByParentSchema,
@@ -176,7 +176,7 @@ export function random_table_option_router(app: Elysia) {
             });
           }
 
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ListRandomTableOptionRandomManySchema,
@@ -231,7 +231,7 @@ export function random_table_option_router(app: Elysia) {
             }
           });
 
-          return { message: `Random table option ${MessageEnum.successfully_updated}`, ok: true };
+          return { message: `Random table option ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
         {
           body: UpdateRandomTableOptionSchema,
@@ -242,7 +242,7 @@ export function random_table_option_router(app: Elysia) {
         "/:id",
         async ({ params }) => {
           await db.deleteFrom("random_table_options").where("id", "=", params.id).execute();
-          return { message: `Random table option ${MessageEnum.successfully_deleted}`, ok: true };
+          return { message: `Random table option ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
         },
         { response: ResponseSchema },
       ),

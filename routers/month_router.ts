@@ -12,7 +12,7 @@ export function month_router(app: Elysia) {
       async ({ body }) => {
         const data = await db.selectFrom("months").where("months.parent_id", "=", body.data.parent_id).selectAll().execute();
 
-        return { data, message: MessageEnum.success, ok: true };
+        return { data, message: MessageEnum.success, ok: true, role_access: true };
       },
       {
         body: ListMonthSchema,

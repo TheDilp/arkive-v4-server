@@ -79,6 +79,7 @@ export function search_router(app: Elysia) {
             })),
             message: MessageEnum.success,
             ok: true,
+            role_access: true,
           };
         },
         { body: BasicSearchSchema },
@@ -108,6 +109,7 @@ export function search_router(app: Elysia) {
               })),
               message: MessageEnum.success,
               ok: true,
+              role_access: true,
             };
           }
 
@@ -142,6 +144,7 @@ export function search_router(app: Elysia) {
               })),
               message: MessageEnum.success,
               ok: true,
+              role_access: true,
             };
           }
 
@@ -208,9 +211,10 @@ export function search_router(app: Elysia) {
             })),
             message: MessageEnum.success,
             ok: true,
+            role_access: true,
           };
         },
-        { body: BasicSearchSchema },
+        { response: ResponseWithDataSchema, body: BasicSearchSchema },
       )
       .post(
         "/:project_id/:type/mentions",
@@ -238,6 +242,7 @@ export function search_router(app: Elysia) {
               data,
               message: MessageEnum.success,
               ok: true,
+              role_access: true,
             };
           }
 
@@ -262,6 +267,7 @@ export function search_router(app: Elysia) {
               data: combinedResult,
               message: MessageEnum.success,
               ok: true,
+              role_access: true,
             };
           }
           if (type === "maps") {
@@ -277,6 +283,7 @@ export function search_router(app: Elysia) {
               data,
               message: MessageEnum.success,
               ok: true,
+              role_access: true,
             };
           }
           if (type === "map_pins") {
@@ -293,6 +300,7 @@ export function search_router(app: Elysia) {
               data,
               message: MessageEnum.success,
               ok: true,
+              role_access: true,
             };
           }
           if (type === "graphs") {
@@ -308,6 +316,7 @@ export function search_router(app: Elysia) {
               data,
               message: MessageEnum.success,
               ok: true,
+              role_access: true,
             };
           }
           if (type === "words") {
@@ -324,6 +333,7 @@ export function search_router(app: Elysia) {
               data,
               message: MessageEnum.success,
               ok: true,
+              role_access: true,
             };
           }
           if (type === "events") {
@@ -340,6 +350,7 @@ export function search_router(app: Elysia) {
               data,
               message: MessageEnum.success,
               ok: true,
+              role_access: true,
             };
           }
           if (type === "blueprint_instances") {
@@ -361,12 +372,14 @@ export function search_router(app: Elysia) {
               data,
               message: MessageEnum.success,
               ok: true,
+              role_access: true,
             };
           }
           return {
             data: [],
             message: MessageEnum.success,
             ok: true,
+            role_access: true,
           };
         },
         {
@@ -576,7 +589,7 @@ export function search_router(app: Elysia) {
             })),
           );
 
-          return { data: result, ok: true, message: MessageEnum.success };
+          return { data: result, ok: true, role_access: true, message: MessageEnum.success };
         },
         { body: BasicSearchSchema },
       )
@@ -627,9 +640,9 @@ export function search_router(app: Elysia) {
               })),
             );
 
-            return { data: result, ok: true, message: MessageEnum.success };
+            return { data: result, ok: true, role_access: true, message: MessageEnum.success };
           }
-          return { data: [], message: MessageEnum.success, ok: true };
+          return { data: [], message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: TagSearchSchema,

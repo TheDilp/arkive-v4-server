@@ -48,7 +48,7 @@ export function public_router(app: Elysia) {
               .$if(!body?.fields?.length, (qb) => qb.selectAll())
               .$if(!!body?.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "projects">[]))
               .executeTakeFirstOrThrow();
-            return { data, message: MessageEnum.success, ok: true };
+            return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
             body: ReadDocumentSchema,
@@ -148,7 +148,7 @@ export function public_router(app: Elysia) {
               )
 
               .executeTakeFirstOrThrow();
-            return { data, message: MessageEnum.success, ok: true };
+            return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
             body: ReadBlueprintSchema,
@@ -347,8 +347,8 @@ export function public_router(app: Elysia) {
               .where("blueprint_instances.is_public", "=", true)
               .executeTakeFirst();
 
-            if (data?.is_public) return { data, message: MessageEnum.success, ok: true };
-            return { data: { is_public: false }, message: MessageEnum.success, ok: true };
+            if (data?.is_public) return { data, message: MessageEnum.success, ok: true, role_access: true };
+            return { data: { is_public: false }, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
             body: ReadCharacterSchema,
@@ -369,9 +369,9 @@ export function public_router(app: Elysia) {
               .$if(!body?.fields?.length, (qb) => qb.selectAll())
               .$if(!!body?.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "documents">[]))
               .executeTakeFirst();
-            if (data?.is_public) return { data, message: MessageEnum.success, ok: true };
+            if (data?.is_public) return { data, message: MessageEnum.success, ok: true, role_access: true };
 
-            return { data: { is_public: false }, message: MessageEnum.success, ok: true };
+            return { data: { is_public: false }, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
             body: ReadDocumentSchema,
@@ -447,8 +447,8 @@ export function public_router(app: Elysia) {
                 ),
               )
               .executeTakeFirst();
-            if (data?.is_public) return { data, message: MessageEnum.success, ok: true };
-            return { data: { is_public: false }, message: MessageEnum.success, ok: true };
+            if (data?.is_public) return { data, message: MessageEnum.success, ok: true, role_access: true };
+            return { data: { is_public: false }, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
             body: ReadMapSchema,
@@ -513,9 +513,10 @@ export function public_router(app: Elysia) {
                 data,
                 message: MessageEnum.success,
                 ok: true,
+                role_access: true,
               };
 
-            return { data: { is_public: false }, message: MessageEnum.success, ok: true };
+            return { data: { is_public: false }, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
             body: ReadGraphSchema,
@@ -557,8 +558,8 @@ export function public_router(app: Elysia) {
                 return qb;
               })
               .executeTakeFirst();
-            if (data?.is_public) return { data, message: MessageEnum.success, ok: true };
-            return { data: { is_public: false }, message: MessageEnum.success, ok: true };
+            if (data?.is_public) return { data, message: MessageEnum.success, ok: true, role_access: true };
+            return { data: { is_public: false }, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
             body: ReadCalendarSchema,
@@ -674,7 +675,7 @@ export function public_router(app: Elysia) {
                 return qb;
               })
               .execute();
-            return { data, message: MessageEnum.success, ok: true };
+            return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
             body: ListCharacterFieldsTemplateSchema,
@@ -694,7 +695,7 @@ export function public_router(app: Elysia) {
               .$if(!body.fields?.length, (qb) => qb.selectAll())
               .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "images">[]))
               .executeTakeFirst();
-            return { data, message: MessageEnum.success, ok: true };
+            return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
             body: RequestBodySchema,
@@ -720,7 +721,7 @@ export function public_router(app: Elysia) {
         //       .where("is_public", "=", true)
         //       .execute();
 
-        //     return { data, message: MessageEnum.success, ok: true };
+        //     return { data, message: MessageEnum.success, ok: true, role_access:true };
         //   },
         //   {
         //     body: EntityListSchema,
@@ -749,8 +750,8 @@ export function public_router(app: Elysia) {
               )
 
               .executeTakeFirst();
-            if (data?.is_public) return { data, message: MessageEnum.success, ok: true };
-            return { data: { is_public: false }, message: MessageEnum.success, ok: true };
+            if (data?.is_public) return { data, message: MessageEnum.success, ok: true, role_access: true };
+            return { data: { is_public: false }, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
             body: ReadDictionarySchema,
@@ -773,8 +774,8 @@ export function public_router(app: Elysia) {
                 ),
               )
               .executeTakeFirst();
-            if (data?.is_public) return { data, message: MessageEnum.success, ok: true };
-            return { data: { is_public: false }, message: MessageEnum.success, ok: true };
+            if (data?.is_public) return { data, message: MessageEnum.success, ok: true, role_access: true };
+            return { data: { is_public: false }, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
             body: ReadWordSchema,
@@ -792,8 +793,8 @@ export function public_router(app: Elysia) {
               .where("events.is_public", "=", true)
               .executeTakeFirst();
 
-            if (data?.is_public) return { data, message: MessageEnum.success, ok: true };
-            return { data: { is_public: false }, message: MessageEnum.success, ok: true };
+            if (data?.is_public) return { data, message: MessageEnum.success, ok: true, role_access: true };
+            return { data: { is_public: false }, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
             body: ReadEventSchema,
@@ -824,7 +825,7 @@ export function public_router(app: Elysia) {
               .where("events.is_public", "=", true)
               .execute();
 
-            return { data, message: MessageEnum.success, ok: true };
+            return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
             body: EntityListSchema,
@@ -874,6 +875,7 @@ export function public_router(app: Elysia) {
               data,
               message: MessageEnum.success,
               ok: true,
+              role_access: true,
             };
           },
           {
@@ -898,7 +900,7 @@ export function public_router(app: Elysia) {
               .where("blueprint_instances.is_public", "=", true);
 
             const data = await query.execute();
-            return { data, message: MessageEnum.success, ok: true };
+            return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
             body: PublicListBlueprintInstanceSchema,
@@ -927,7 +929,7 @@ export function public_router(app: Elysia) {
               .$if(!!body.orderBy, (qb) => constructOrdering(body.orderBy, qb))
 
               .execute();
-            return { data, message: MessageEnum.success, ok: true };
+            return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
             body: ListDocumentSchema,
@@ -949,7 +951,7 @@ export function public_router(app: Elysia) {
                 return qb;
               })
               .execute();
-            return { data, message: MessageEnum.success, ok: true };
+            return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
             body: EntityListSchema,
@@ -976,7 +978,7 @@ export function public_router(app: Elysia) {
                 return qb;
               })
               .execute();
-            return { data, message: MessageEnum.success, ok: true };
+            return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
             body: EntityListSchema,
@@ -998,7 +1000,7 @@ export function public_router(app: Elysia) {
               })
               .execute();
 
-            return { data, message: MessageEnum.success, ok: true };
+            return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
             body: ListCalendarSchema,
@@ -1028,7 +1030,7 @@ export function public_router(app: Elysia) {
               .where("is_public", "=", true)
               .execute();
 
-            return { data, message: MessageEnum.success, ok: true };
+            return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
             body: EntityListSchema,
@@ -1056,7 +1058,7 @@ export function public_router(app: Elysia) {
               .leftJoin("dictionaries", "dictionaries.id", "words.parent_id")
               .where("dictionaries.is_public", "=", true)
               .execute();
-            return { data, ok: true, message: MessageEnum.success };
+            return { data, ok: true, role_access: true, message: MessageEnum.success };
           },
           {
             body: ListWordSchema,
@@ -1181,7 +1183,7 @@ export function public_router(app: Elysia) {
                 result: await item.request.execute(),
               })),
             );
-            return { data: result, ok: true, message: MessageEnum.success };
+            return { data: result, ok: true, role_access: true, message: MessageEnum.success };
           },
           { body: BasicSearchSchema },
         )

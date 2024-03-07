@@ -11,7 +11,7 @@ export function permission_router(app: Elysia) {
       async () => {
         const data = await db.selectFrom("permissions").select(["id", "title"]).execute();
 
-        return { data, message: MessageEnum.success, ok: true };
+        return { data, message: MessageEnum.success, ok: true, role_access: true };
       },
       {
         response: ResponseWithDataSchema,

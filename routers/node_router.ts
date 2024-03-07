@@ -25,7 +25,7 @@ export function node_router(app: Elysia) {
         async ({ body }) => {
           const returningData = await db.insertInto("nodes").values(body.data).returning("id").executeTakeFirstOrThrow();
 
-          return { data: returningData, message: `Node ${MessageEnum.successfully_created}`, ok: true };
+          return { data: returningData, message: `Node ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
           body: InsertNodeSchema,
@@ -50,7 +50,7 @@ export function node_router(app: Elysia) {
               return qb;
             })
             .execute();
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ListNodesSchema,
@@ -107,7 +107,7 @@ export function node_router(app: Elysia) {
               ),
             )
             .executeTakeFirstOrThrow();
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ReadNodeSchema,
@@ -131,7 +131,7 @@ export function node_router(app: Elysia) {
                 });
             }
           });
-          return { message: MessageEnum.success, ok: true };
+          return { message: MessageEnum.success, ok: true, role_access: true };
         },
         { body: UpdateNodeSchema, response: ResponseSchema },
       )
@@ -144,7 +144,7 @@ export function node_router(app: Elysia) {
             .where((eb) => eb.or([eb("source_id", "=", params.id), eb("target_id", "=", params.id)]))
             .execute();
           await db.deleteFrom("nodes").where("nodes.id", "=", params.id).execute();
-          return { message: `Node ${MessageEnum.successfully_deleted}`, ok: true };
+          return { message: `Node ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
         },
         {
           response: ResponseSchema,
@@ -163,7 +163,7 @@ export function node_router(app: Elysia) {
             await db.deleteFrom("nodes").where("id", "in", node_ids).execute();
           }
 
-          return { message: `Nodes ${MessageEnum.successfully_deleted}`, ok: true };
+          return { message: `Nodes ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
         },
         {
           body: DeleteManyNodesSchema,

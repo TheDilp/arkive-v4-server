@@ -8,6 +8,7 @@ import { EntitiesWithChildren } from "../database/types";
 import { EntityListSchema } from "../database/validation";
 import { InsertRandomTableSchema, ReadRandomTableSchema, UpdateRandomTableSchema } from "../database/validation/random_tables";
 import { MessageEnum } from "../enums/requestEnums";
+import { beforeRoleHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -30,11 +31,12 @@ export function random_table_router(app: Elysia) {
               }
             }
           });
-          return { message: `Random table ${MessageEnum.successfully_created}`, ok: true };
+          return { message: `Random table ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
           body: InsertRandomTableSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "create_random_tables"),
         },
       )
       .post(
@@ -53,11 +55,12 @@ export function random_table_router(app: Elysia) {
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
             .$if(!!body.orderBy, (qb) => constructOrdering(body.orderBy, qb))
             .execute();
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: EntityListSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_random_tables"),
         },
       )
       .post(
@@ -107,14 +110,15 @@ export function random_table_router(app: Elysia) {
 
           if (body?.relations?.parents) {
             const parents = await GetParents({ db, id: params.id, table_name: "random_tables" });
-            return { data: { ...data, parents }, message: "Success.", ok: true };
+            return { data: { ...data, parents }, message: "Success.", ok: true, role_access: true };
           }
 
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ReadRandomTableSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_random_tables"),
         },
       )
       .post(
@@ -167,20 +171,21 @@ export function random_table_router(app: Elysia) {
             }
           });
 
-          return { message: `Random table ${MessageEnum.successfully_updated}.`, ok: true };
+          return { message: `Random table ${MessageEnum.successfully_updated}.`, ok: true, role_access: true };
         },
         {
           body: UpdateRandomTableSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "update_random_tables"),
         },
       )
       .delete(
         "/:id",
         async ({ params }) => {
           await db.deleteFrom("random_tables").where("id", "=", params.id).execute();
-          return { message: `Random table ${MessageEnum.successfully_deleted}`, ok: true };
+          return { message: `Random table ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
         },
-        { response: ResponseSchema },
+        { response: ResponseSchema, beforeHandle: async (context) => beforeRoleHandler(context, "delete_random_tables") },
       ),
   );
 }
