@@ -8,6 +8,7 @@ import { EntitiesWithChildren } from "../database/types";
 import { EntityListSchema } from "../database/validation";
 import { InsertDictionarySchema, ReadDictionarySchema, UpdateDictionarySchema } from "../database/validation/dictionaries";
 import { MessageEnum } from "../enums/requestEnums";
+import { beforeRoleHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -20,9 +21,13 @@ export function dictionary_router(app: Elysia) {
         "/create",
         async ({ body }) => {
           await db.insertInto("dictionaries").values(body.data).execute();
-          return { ok: true, message: `Dictionary ${MessageEnum.successfully_created}` };
+          return { ok: true, role_access: true, message: `Dictionary ${MessageEnum.successfully_created}` };
         },
-        { body: InsertDictionarySchema, response: ResponseSchema },
+        {
+          body: InsertDictionarySchema,
+          response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "create_dictionaries"),
+        },
       )
       .post(
         "/",
@@ -44,11 +49,12 @@ export function dictionary_router(app: Elysia) {
             .where("project_id", "=", body.data.project_id)
             .execute();
 
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: EntityListSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_dictionaries"),
         },
       )
       .post(
@@ -76,22 +82,27 @@ export function dictionary_router(app: Elysia) {
             .executeTakeFirstOrThrow();
           if (body?.relations?.parents) {
             const parents = await GetParents({ db, id: params.id, table_name: "dictionaries" });
-            return { data: { ...data, parents }, message: MessageEnum.success, ok: true };
+            return { data: { ...data, parents }, message: MessageEnum.success, ok: true, role_access: true };
           }
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ReadDictionarySchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_dictionaries"),
         },
       )
       .post(
         "/update/:id",
         async ({ params, body }) => {
           await db.updateTable("dictionaries").where("id", "=", params.id).set(body.data).execute();
-          return { message: MessageEnum.success, ok: true };
+          return { message: MessageEnum.success, ok: true, role_access: true };
         },
-        { body: UpdateDictionarySchema, response: ResponseSchema },
+        {
+          body: UpdateDictionarySchema,
+          response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "update_dictionaries"),
+        },
       )
       .delete(
         "/:id",
@@ -102,10 +113,11 @@ export function dictionary_router(app: Elysia) {
             .returning(["id", "title", "project_id"])
             .executeTakeFirstOrThrow();
 
-          return { data, message: `Dictionary ${MessageEnum.successfully_deleted}.`, ok: true };
+          return { data, message: `Dictionary ${MessageEnum.successfully_deleted}.`, ok: true, role_access: true };
         },
         {
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "delete_dictionaries"),
         },
       ),
   );

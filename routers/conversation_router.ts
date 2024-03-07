@@ -39,7 +39,7 @@ export function conversation_router(app: Elysia) {
           if (token) {
             afterHandler(body.data, "conversations", token, "create");
           }
-          return { message: `Conversation ${MessageEnum.successfully_created}`, ok: true };
+          return { message: `Conversation ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
           body: InsertConversationSchema,
@@ -89,7 +89,7 @@ export function conversation_router(app: Elysia) {
             .distinctOn("conversations.id")
             .execute();
 
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         { body: ListConversationSchema, response: ResponseWithDataSchema },
       )
@@ -132,7 +132,7 @@ export function conversation_router(app: Elysia) {
             .executeTakeFirstOrThrow();
           const sortedMessages = [...(data.messages || [])].reverse();
           data.messages = sortedMessages;
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         { body: ReadConversationSchema, response: ResponseWithDataSchema },
       )
@@ -166,7 +166,7 @@ export function conversation_router(app: Elysia) {
               }
             }
           });
-          return { message: `Conversation ${MessageEnum.successfully_updated}`, ok: true };
+          return { message: `Conversation ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
         {
           body: UpdateConversationSchema,
@@ -185,7 +185,7 @@ export function conversation_router(app: Elysia) {
           const token = request.headers.get("authorization");
           if (token) afterHandler(data, "characters", token, "create");
 
-          return { message: `Character ${MessageEnum.successfully_deleted}`, ok: true };
+          return { message: `Character ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
         },
         {
           response: ResponseSchema,
