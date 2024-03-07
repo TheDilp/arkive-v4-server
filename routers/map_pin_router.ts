@@ -35,6 +35,7 @@ export function map_pin_router(app: Elysia) {
             data: { title: body.data.title, project_id: data.project_id },
             message: `Map pin ${MessageEnum.successfully_created}`,
             ok: true,
+            role_access: true,
           };
         },
         {
@@ -65,7 +66,7 @@ export function map_pin_router(app: Elysia) {
               ]),
             )
             .execute();
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ListMapPinSchema,
@@ -125,7 +126,7 @@ export function map_pin_router(app: Elysia) {
             })
             .where("map_pins.id", "=", params.id)
             .executeTakeFirstOrThrow();
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ReadMapPinSchema,
@@ -137,7 +138,7 @@ export function map_pin_router(app: Elysia) {
         async ({ params, body }) => {
           await db.updateTable("map_pins").set(body.data).where("map_pins.id", "=", params.id).executeTakeFirstOrThrow();
 
-          return { message: `Map pin ${MessageEnum.successfully_updated}`, ok: true };
+          return { message: `Map pin ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
         {
           body: UpdateMapPinSchema,
@@ -162,6 +163,7 @@ export function map_pin_router(app: Elysia) {
             data: { project_id: data.project_id, title: res.title },
             message: `Map pin ${MessageEnum.successfully_deleted}`,
             ok: true,
+            role_access: true,
           };
         },
         {

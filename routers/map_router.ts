@@ -7,6 +7,7 @@ import { db } from "../database/db";
 import { EntityListSchema } from "../database/validation";
 import { InsertMapSchema, ReadMapSchema, UpdateMapSchema } from "../database/validation/maps";
 import { MessageEnum } from "../enums/requestEnums";
+import { beforeRoleHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import {
@@ -35,11 +36,12 @@ export function map_router(app: Elysia) {
             }
           });
 
-          return { message: `Map ${MessageEnum.successfully_created}`, ok: true };
+          return { message: `Map ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
           body: InsertMapSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "create_maps"),
         },
       )
       .post(
@@ -58,11 +60,12 @@ export function map_router(app: Elysia) {
               return qb;
             })
             .execute();
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: EntityListSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_maps"),
         },
       )
       .post(
@@ -144,12 +147,16 @@ export function map_router(app: Elysia) {
           if (body?.relations?.parents) {
             const parents = await GetParents({ db, id: params.id, table_name: "maps" });
             data.parents = parents;
-            return { data, message: MessageEnum.success, ok: true };
+            return { data, message: MessageEnum.success, ok: true, role_access: true };
           }
 
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
-        { body: ReadMapSchema, response: ResponseWithDataSchema },
+        {
+          body: ReadMapSchema,
+          response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_maps"),
+        },
       )
       .post(
         "/update/:id",
@@ -199,11 +206,12 @@ export function map_router(app: Elysia) {
             if (body.data) await tx.updateTable("maps").where("maps.id", "=", params.id).set(body.data).execute();
           });
 
-          return { message: `Map ${MessageEnum.successfully_updated}`, ok: true };
+          return { message: `Map ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
         {
           body: UpdateMapSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "update_maps"),
         },
       )
       .delete(
@@ -215,10 +223,11 @@ export function map_router(app: Elysia) {
             .returning(["id", "title", "project_id"])
             .executeTakeFirstOrThrow();
 
-          return { data, message: `Map ${MessageEnum.successfully_deleted}.`, ok: true };
+          return { data, message: `Map ${MessageEnum.successfully_deleted}.`, ok: true, role_access: true };
         },
         {
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "delete_maps"),
         },
       ),
   );

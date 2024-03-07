@@ -13,7 +13,7 @@ export function map_pin_types_router(app: Elysia) {
         async ({ body }) => {
           await db.insertInto("map_pin_types").values(body.data).execute();
 
-          return { message: `Map pin type ${MessageEnum.successfully_created}`, ok: true };
+          return { message: `Map pin type ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
           body: InsertMapPinTypeSchema,
@@ -29,7 +29,7 @@ export function map_pin_types_router(app: Elysia) {
             .select(["id", "title", "default_icon", "default_icon_color"])
             .execute();
 
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ListMapPinTypeSchema,
@@ -45,7 +45,7 @@ export function map_pin_types_router(app: Elysia) {
             .select(["id", "title", "project_id", "default_icon", "default_icon_color"])
             .executeTakeFirstOrThrow();
 
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           response: ResponseWithDataSchema,
@@ -56,7 +56,7 @@ export function map_pin_types_router(app: Elysia) {
         async ({ params, body }) => {
           await db.updateTable("map_pin_types").where("id", "=", params.id).set(body.data).execute();
 
-          return { message: `Map pin type ${MessageEnum.successfully_updated}`, ok: true };
+          return { message: `Map pin type ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
         {
           body: UpdateMapPinTypeSchema,
@@ -68,7 +68,7 @@ export function map_pin_types_router(app: Elysia) {
         async ({ params }) => {
           await db.deleteFrom("map_pin_types").where("id", "=", params.id).execute();
 
-          return { message: `Map pin type ${MessageEnum.successfully_deleted}`, ok: true };
+          return { message: `Map pin type ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
         },
         {
           response: ResponseSchema,

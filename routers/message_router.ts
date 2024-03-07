@@ -21,7 +21,7 @@ export function message_router(app: Elysia) {
         "/create",
         async ({ body }) => {
           await db.insertInto("messages").values(body.data).execute();
-          return { message: MessageEnum.success, ok: true };
+          return { message: MessageEnum.success, ok: true, role_access: true };
         },
         { body: InsertMessageSchema, response: ResponseSchema },
       )
@@ -38,7 +38,7 @@ export function message_router(app: Elysia) {
             .limit(body.pagination?.limit || 10)
             .execute();
 
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         { body: ListMessagesSchema, response: ResponseWithDataSchema },
       )
@@ -65,7 +65,7 @@ export function message_router(app: Elysia) {
             .where("messages.id", "=", params.id)
             .executeTakeFirstOrThrow();
 
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ReadMessageSchema,
@@ -76,7 +76,7 @@ export function message_router(app: Elysia) {
         "/update/:id",
         async ({ params, body }) => {
           await db.updateTable("messages").set(body.data).where("messages.id", "=", params.id).execute();
-          return { message: MessageEnum.success, ok: true };
+          return { message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: UpdateMessageSchema,
@@ -87,7 +87,7 @@ export function message_router(app: Elysia) {
         "/:id",
         async ({ params }) => {
           await db.deleteFrom("messages").where("id", "=", params.id).execute();
-          return { message: `Message ${MessageEnum.successfully_deleted}`, ok: true };
+          return { message: `Message ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
         },
         {
           response: ResponseSchema,
