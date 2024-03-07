@@ -3,6 +3,7 @@ import Elysia from "elysia";
 import { db } from "../database/db";
 import { EntityListSchema, InsertTagSchema, UpdateTagSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
+import { beforeRoleHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -14,11 +15,12 @@ export function tag_router(app: Elysia) {
         "/create",
         async ({ body }) => {
           await db.insertInto("tags").values(body.data).execute();
-          return { message: `Tags ${MessageEnum.successfully_created}`, ok: true };
+          return { message: `Tags ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
           body: InsertTagSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "create_tags"),
         },
       )
       .post(
@@ -40,20 +42,25 @@ export function tag_router(app: Elysia) {
             })
             .execute();
 
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
-        { body: EntityListSchema, response: ResponseWithDataSchema },
+        {
+          body: EntityListSchema,
+          response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_tags"),
+        },
       )
 
       .post(
         "/update/:id",
         async ({ params, body }) => {
           await db.updateTable("tags").where("id", "=", params.id).set(body.data).execute();
-          return { message: `Tag ${MessageEnum.successfully_updated}`, ok: true };
+          return { message: `Tag ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
         {
           body: UpdateTagSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "update_tags"),
         },
       )
       .delete(
@@ -64,10 +71,11 @@ export function tag_router(app: Elysia) {
             .where("id", "=", params.id)
             .returning(["id", "title", "project_id"])
             .executeTakeFirstOrThrow();
-          return { data, message: `Tag ${MessageEnum.successfully_deleted}`, ok: true };
+          return { data, message: `Tag ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
         },
         {
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "delete_tags"),
         },
       ),
   );

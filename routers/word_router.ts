@@ -26,6 +26,7 @@ export function word_router(app: Elysia) {
           return {
             data: { title: body.data.title, project_id: data.project_id },
             ok: true,
+            role_access: true,
             message: `Word ${MessageEnum.successfully_created}`,
           };
         },
@@ -53,7 +54,7 @@ export function word_router(app: Elysia) {
             })
             .where("parent_id", "=", body.data.parent_id)
             .execute();
-          return { data, ok: true, message: MessageEnum.success };
+          return { data, ok: true, role_access: true, message: MessageEnum.success };
         },
         {
           body: ListWordSchema,
@@ -69,7 +70,7 @@ export function word_router(app: Elysia) {
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "words">[]))
             .executeTakeFirstOrThrow();
-          return { data, ok: true, message: MessageEnum.success };
+          return { data, ok: true, role_access: true, message: MessageEnum.success };
         },
         {
           body: ReadWordSchema,
@@ -80,7 +81,7 @@ export function word_router(app: Elysia) {
         "/update/:id",
         async ({ params, body }) => {
           await db.updateTable("words").where("words.id", "=", params.id).set(body.data).execute();
-          return { message: `Word ${MessageEnum.successfully_updated}`, ok: true };
+          return { message: `Word ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
         { body: UpdateWordSchema, response: ResponseSchema },
       )
@@ -99,7 +100,7 @@ export function word_router(app: Elysia) {
             .select(["project_id"])
             .executeTakeFirstOrThrow();
 
-          return { data, message: `Word ${MessageEnum.successfully_deleted}.`, ok: true };
+          return { data, message: `Word ${MessageEnum.successfully_deleted}.`, ok: true, role_access: true };
         },
         {
           response: ResponseWithDataSchema,

@@ -5,6 +5,7 @@ import { DB } from "kysely-codegen";
 import { db } from "../database/db";
 import { InsertWebhookSchema, ListWebhookSchema, ReadWebhookSchema, SendWebhookSchema } from "../database/validation/webhooks";
 import { MessageEnum } from "../enums/requestEnums";
+import { beforeProjectOwnerHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { createEntityURL, getDefaultEntityIcon, getIconUrlFromIconEnum, getImageURL } from "../utils/transform";
 
@@ -17,11 +18,12 @@ export function webhook_router(app: Elysia) {
         async ({ body }) => {
           await db.insertInto("webhooks").values(body.data).execute();
 
-          return { message: `Webhook ${MessageEnum.successfully_created}`, ok: true };
+          return { message: `Webhook ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
           body: InsertWebhookSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
         },
       )
       .post(
@@ -33,22 +35,24 @@ export function webhook_router(app: Elysia) {
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "webhooks">[]))
             .where("user_id", "=", body.data.user_id)
             .execute();
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ListWebhookSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
         },
       )
       .post(
         "/:id",
         async ({ body }) => {
           const data = await db.selectFrom("webhooks").selectAll().where("id", "=", body.data.id).executeTakeFirstOrThrow();
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: ReadWebhookSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
         },
       )
       .post(
@@ -158,18 +162,23 @@ export function webhook_router(app: Elysia) {
             }),
           });
 
-          return { message: MessageEnum.success, ok: true };
+          return { message: MessageEnum.success, ok: true, role_access: true };
         },
-        { body: SendWebhookSchema, response: ResponseSchema },
+        {
+          body: SendWebhookSchema,
+          response: ResponseSchema,
+          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
+        },
       )
       .delete(
         "/:id",
         async ({ params }) => {
           await db.deleteFrom("webhooks").where("id", "=", params.id).execute();
-          return { message: `Webhook ${MessageEnum.successfully_deleted}`, ok: true };
+          return { message: `Webhook ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
         },
         {
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
         },
       ),
   );
