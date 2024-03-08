@@ -59,6 +59,19 @@ export type AvailableSubEntityType =
 
 export type MentionEntityType = "blueprint_instances" | "characters" | "documents" | "events" | "graphs" | "maps" | "words";
 
+export type EntitiesWithPermissionCheck =
+  | "characters"
+  | "blueprints"
+  | "blueprint_instances"
+  | "documents"
+  | "maps"
+  | "graphs"
+  | "calendars"
+  | "dictionaries"
+  | "random_tables"
+  | "character_fields_templates"
+  | "tags";
+
 export type MentionType = {
   type: "mentionAtom";
   attrs: {

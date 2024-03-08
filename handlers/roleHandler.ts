@@ -1,31 +1,34 @@
 import { db } from "../database/db";
 import { NoRoleAccess, UnauthorizedError } from "../enums";
 import { AvailablePermissions } from "../types/entityTypes";
+import { PermissionDecorationType } from "../types/requestTypes";
 import { decodeUserJwt } from "../utils/requestUtils";
 
-export async function checkRoleOrOwner(project_id: string | null, user_id: string, required_permission: AvailablePermissions) {
-  if (!project_id) return false;
+export async function checkRole(
+  project_id: string | null,
+  user_id: string,
+  required_permission: AvailablePermissions,
+): Promise<PermissionDecorationType> {
+  if (!project_id) return { is_owner: false, user_id: "", role_access: false, role_id: null, permission_id: null };
   const data = await db
     .selectFrom("user_project_roles_permissions")
-    .where((wb) =>
-      wb.or([
-        wb.and([
-          wb("permission_slug", "=", required_permission as string),
-          wb("project_id", "=", project_id),
-          wb("user_id", "=", user_id),
-        ]),
-        wb("owner_id", "=", user_id),
-      ]),
-    )
-    .select(["permission_slug" as const, "owner_id"])
+    .where("permission_slug", "=", required_permission as string)
+    .where("project_id", "=", project_id)
+    .where("user_id", "=", user_id)
+    .select(["permission_slug", "owner_id", "role_id", "permission_id"])
     .executeTakeFirst();
   if (data) {
-    if (data.owner_id === user_id) return true;
-    if (data.permission_slug === required_permission) return true;
-    return false;
+    return {
+      user_id,
+      is_owner: data.owner_id === user_id,
+      role_access: data.permission_slug === required_permission,
+      role_id: data.role_id,
+      permission_id: data.permission_id,
+    };
   } else {
-    return false;
+    if (!project_id) return { user_id, is_owner: false, role_access: false, role_id: null, permission_id: null };
   }
+  return { user_id, is_owner: false, role_access: false, role_id: null, permission_id: null };
 }
 
 export async function checkOwner(project_id: string | null, user_id: string) {
@@ -46,14 +49,31 @@ export async function beforeRoleHandler(context: any, permission: AvailablePermi
     const { user_id, project_id } = decodeUserJwt(jwt);
 
     if (user_id && project_id) {
-      const isRoleValid = await checkRoleOrOwner(project_id as string | null, user_id as string, permission);
-      if (!isRoleValid) {
+      const isOwner = await checkOwner(project_id as string, user_id as string);
+      if (isOwner) {
+        context.permissions = { is_owner: isOwner, role_access: false, user_id };
+        return;
+      }
+      const { is_owner, role_access, role_id, permission_id } = await checkRole(
+        project_id as string | null,
+        user_id as string,
+        permission,
+      );
+      if (is_owner || role_access) {
+        context.permissions = { is_owner, role_access, user_id, role_id, permission_id };
+        return;
+      } else {
+        context.permissions = { is_owner: false, role_access: false, user_id };
+
         noRoleAccessErrorHandler();
       }
     } else {
+      context.permissions = { is_owner: false, role_access: false, user_id };
+
       noRoleAccessErrorHandler();
     }
   } else {
+    context.permissions = { is_owner: false, role_access: false, user_id: "" };
     console.error("MISSING TOKEN", "LIST CHARACTERS");
     throw new UnauthorizedError("UNAUTHORIZED");
   }

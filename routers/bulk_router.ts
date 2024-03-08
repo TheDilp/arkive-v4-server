@@ -1,5 +1,6 @@
 import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import Elysia, { t } from "elysia";
+import uniq from "lodash.uniq";
 
 import { db } from "../database/db";
 import {
@@ -9,13 +10,20 @@ import {
   UpdateEventSchema,
   UpdateNodeSchema,
 } from "../database/validation";
+import { BulkUpdateAccess } from "../database/validation/bulk";
 import { BulkDeleteEntities } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
-import { AvailableEntityType, AvailableSubEntityType, BulkDeleteEntitiesType, PublicEntities } from "../types/entityTypes";
+import { beforeProjectOwnerHandler, beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
+import {
+  AvailableEntityType,
+  AvailableSubEntityType,
+  BulkDeleteEntitiesType,
+  EntitiesWithPermissionCheck,
+  PublicEntities,
+} from "../types/entityTypes";
 import { ResponseSchema } from "../types/requestTypes";
 import { UpdateTagRelations } from "../utils/relationalQueryHelpers";
-import { getEntityTagTable, getPermissionFromAction } from "../utils/requestUtils";
+import { getEntityTagTable, getPermissionFromAction, getPermissionTableFromEntity } from "../utils/requestUtils";
 import { s3Client } from "../utils/s3Utils";
 
 export function bulk_router(app: Elysia) {
@@ -104,6 +112,7 @@ export function bulk_router(app: Elysia) {
                 );
             }
           });
+
           return { message: MessageEnum.success, ok: true, role_access: true };
         },
         {
@@ -120,6 +129,50 @@ export function bulk_router(app: Elysia) {
               noRoleAccessErrorHandler();
             }
           },
+        },
+      )
+      .post(
+        "/update/access/:type",
+        async ({ params, body }) => {
+          const permissionsTable = getPermissionTableFromEntity(params.type as EntitiesWithPermissionCheck);
+
+          if (permissionsTable) {
+            await db.transaction().execute(async (tx) => {
+              const userPermissions = body.data.permissions.filter((perm) => "user_id" in perm && !!perm.user_id) as {
+                related_id: string;
+                user_id: string;
+                permission_id: string;
+              }[];
+              const rolePermissions = body.data.permissions.filter((perm) => "role_id" in perm && !!perm.role_id) as {
+                related_id: string;
+                role_id: string;
+              }[];
+
+              const relatedIds = uniq(body.data.permissions.map((p) => p.related_id));
+
+              tx.deleteFrom(permissionsTable).where("related_id", "in", relatedIds).execute();
+
+              if (userPermissions.length) {
+                tx.insertInto(permissionsTable)
+                  .values(userPermissions)
+                  .onConflict((oc) => oc.doNothing())
+                  .execute();
+              }
+              if (rolePermissions.length) {
+                tx.insertInto(permissionsTable)
+                  .values(rolePermissions)
+                  .onConflict((oc) => oc.doNothing())
+                  .execute();
+              }
+            });
+          }
+
+          return { message: MessageEnum.success, ok: true, role_access: true };
+        },
+        {
+          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
+          body: BulkUpdateAccess,
+          response: ResponseSchema,
         },
       )
       .post(

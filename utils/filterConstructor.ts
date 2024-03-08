@@ -62,7 +62,7 @@ function getCharacterValue(value: string | number | boolean | null) {
 
 export function constructFilter(
   table: DBKeys,
-  queryBuilder: SelectQueryBuilder<DB, any, any>,
+  queryBuilder: SelectQueryBuilder<any, any, any>,
   filters: RequestBodyFiltersType | undefined,
 ) {
   return queryBuilder.where(({ eb, and, or }) => {
@@ -103,7 +103,7 @@ export function constructFilter(
 export function tagsRelationFilter(
   table: DBKeys,
   tagTable: TagsRelationTables,
-  queryBuilder: SelectQueryBuilder<DB, any, any>,
+  queryBuilder: SelectQueryBuilder<any, any, any>,
   filters: GroupedQueryFilter[] | undefined,
 ) {
   let count = 0;
@@ -152,7 +152,7 @@ export function tagsRelationFilter(
 // #region blueprintFilters
 export function blueprintInstanceRelationFilter(
   blueprintInstanceRelationTable: BlueprintInstanceRelationTables,
-  queryBuilder: SelectQueryBuilder<DB, any, any>,
+  queryBuilder: SelectQueryBuilder<any, any, any>,
   filters: GroupedQueryFilter[],
 ) {
   let count = 0;
@@ -246,7 +246,7 @@ export function blueprintInstanceRelationFilter(
       });
   return queryBuilder;
 }
-export function blueprintInstanceValueFilter(queryBuilder: SelectQueryBuilder<DB, any, any>, filters: GroupedQueryFilter[]) {
+export function blueprintInstanceValueFilter(queryBuilder: SelectQueryBuilder<any, any, any>, filters: GroupedQueryFilter[]) {
   // let count = 0;
   const andRequestFilters = (filters || []).filter((filt) => filt.type === "AND");
   // count += andRequestFilters.length;
@@ -332,7 +332,7 @@ export function blueprintInstanceValueFilter(queryBuilder: SelectQueryBuilder<DB
 // #region characterFilters
 export function characterRelationFilter(
   characterRelationTable: CharacterRelationTables,
-  queryBuilder: SelectQueryBuilder<DB, any, any>,
+  queryBuilder: SelectQueryBuilder<any, any, any>,
   filters: GroupedQueryFilter[],
 ) {
   let count = 0;
@@ -420,7 +420,7 @@ export function characterRelationFilter(
       });
   return queryBuilder;
 }
-export function characterValueFilter(queryBuilder: SelectQueryBuilder<DB, any, any>, filters: GroupedQueryFilter[]) {
+export function characterValueFilter(queryBuilder: SelectQueryBuilder<any, any, any>, filters: GroupedQueryFilter[]) {
   // let count = 0;
   const andRequestFilters = (filters || []).filter((filt) => filt.type === "AND");
   // count += andRequestFilters.length;
@@ -504,7 +504,7 @@ export function characterValueFilter(queryBuilder: SelectQueryBuilder<DB, any, a
 }
 export function characterResourceFilter(
   characterResourceTable: CharacterResourceTables,
-  queryBuilder: SelectQueryBuilder<DB, any, any>,
+  queryBuilder: SelectQueryBuilder<any, any, any>,
   filters: GroupedQueryFilter[],
 ) {
   let count = 0;
@@ -735,7 +735,7 @@ export function characterResourceFilter(
 // #region eventFilters
 export function eventRelationFilters(
   eventRelationTable: EventRelationTables,
-  queryBuilder: SelectQueryBuilder<DB, any, any>,
+  queryBuilder: SelectQueryBuilder<any, any, any>,
   filters: GroupedQueryFilter[],
 ) {
   let count = 0;

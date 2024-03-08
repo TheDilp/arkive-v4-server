@@ -462,7 +462,8 @@ CREATE TABLE public.blueprint_instances (
     parent_id uuid NOT NULL,
     title text NOT NULL,
     ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
-    is_public boolean
+    is_public boolean,
+    owner_id uuid
 );
 
 
@@ -477,7 +478,8 @@ CREATE TABLE public.blueprints (
     title text NOT NULL,
     project_id uuid NOT NULL,
     title_name text NOT NULL,
-    icon text
+    icon text,
+    owner_id uuid
 );
 
 
@@ -499,6 +501,7 @@ CREATE TABLE public.calendars (
     minutes integer,
     days text[],
     starts_on_day integer DEFAULT 0,
+    owner_id uuid,
     CONSTRAINT id_cannot_equal_parent_id_calendars CHECK ((id <> parent_id))
 );
 
@@ -579,7 +582,8 @@ CREATE TABLE public.character_fields_templates (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     title text NOT NULL,
     project_id uuid NOT NULL,
-    sort integer DEFAULT 0 NOT NULL
+    sort integer DEFAULT 0 NOT NULL,
+    owner_id uuid
 );
 
 
@@ -674,7 +678,8 @@ CREATE TABLE public.characters (
     ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, ((COALESCE(first_name, ''::text) || ' '::text) || COALESCE(last_name, ''::text)))) STORED,
     full_name text GENERATED ALWAYS AS (((COALESCE(first_name, ''::text) || ' '::text) || COALESCE(last_name, ''::text))) STORED,
     is_public boolean,
-    biography jsonb
+    biography jsonb,
+    owner_id uuid
 );
 
 
@@ -717,6 +722,7 @@ CREATE TABLE public.dictionaries (
     is_folder boolean,
     is_public boolean,
     parent_id uuid,
+    owner_id uuid,
     CONSTRAINT id_cannot_equal_parent_id_dictionaries CHECK ((id <> parent_id))
 );
 
@@ -753,6 +759,7 @@ CREATE TABLE public.documents (
     parent_id uuid,
     image_id uuid,
     ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
+    owner_id uuid,
     CONSTRAINT id_cannot_equal_parent_id_docs CHECK ((id <> parent_id))
 );
 
@@ -885,6 +892,7 @@ CREATE TABLE public.graphs (
     project_id uuid NOT NULL,
     parent_id uuid,
     ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
+    owner_id uuid,
     CONSTRAINT id_cannot_equal_parent_id_graphs CHECK ((id <> parent_id))
 );
 
@@ -900,7 +908,8 @@ CREATE TABLE public.images (
     project_image_id uuid,
     character_id uuid,
     type public."ImageType" DEFAULT 'images'::public."ImageType" NOT NULL,
-    is_public boolean
+    is_public boolean,
+    owner_id uuid
 );
 
 
@@ -985,6 +994,7 @@ CREATE TABLE public.maps (
     parent_id uuid,
     image_id uuid,
     ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
+    owner_id uuid,
     CONSTRAINT id_cannot_equal_parent_id_maps CHECK ((id <> parent_id))
 );
 
@@ -1118,6 +1128,7 @@ CREATE TABLE public.random_tables (
     icon text,
     is_folder boolean,
     is_public boolean,
+    owner_id uuid,
     CONSTRAINT id_cannot_equal_parent_id_random_tables CHECK ((id <> parent_id))
 );
 
@@ -1164,7 +1175,8 @@ CREATE TABLE public.tags (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     title text NOT NULL,
     color text NOT NULL,
-    project_id uuid NOT NULL
+    project_id uuid NOT NULL,
+    owner_id uuid
 );
 
 
@@ -1206,7 +1218,9 @@ CREATE VIEW public.user_project_roles_permissions AS
  SELECT COALESCE(a.user_id, p.owner_id) AS user_id,
     a.project_id,
     p.owner_id,
-    c.code AS permission_slug
+    b.role_id,
+    c.code AS permission_slug,
+    c.id AS permission_id
    FROM (((public.projects p
      LEFT JOIN public.user_roles a ON ((p.id = a.project_id)))
      LEFT JOIN public.role_permissions b ON ((a.role_id = b.role_id)))
@@ -3681,4 +3695,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240306113048'),
     ('20240306115226'),
     ('20240306150622'),
-    ('20240307113544');
+    ('20240307113544'),
+    ('20240307145300');

@@ -5,7 +5,7 @@ import { DB } from "kysely-codegen";
 import { EntitiesWithChildren, EntitiesWithTags, TagsRelationTables } from "../database/types";
 import { EntitiesWithFolders } from "../types/entityTypes";
 
-export function TagQuery(eb: ExpressionBuilder<DB, any>, relationalTable: TagsRelationTables, table: EntitiesWithTags) {
+export function TagQuery(eb: ExpressionBuilder<any, any>, relationalTable: TagsRelationTables, table: EntitiesWithTags) {
   return jsonArrayFrom(
     eb
       .selectFrom(relationalTable)
@@ -21,7 +21,7 @@ export async function CreateTagRelations({
   id,
   tags,
 }: {
-  tx: Transaction<DB>;
+  tx: Transaction<any>;
   relationalTable: TagsRelationTables;
   id: string;
   tags: { id: string }[];
@@ -40,7 +40,7 @@ export async function UpdateTagRelations({
 }: {
   relationalTable: TagsRelationTables;
   newTags: { id: string }[];
-  tx: Transaction<DB>;
+  tx: Transaction<any>;
   id: string;
 }) {
   const existingTags = await tx

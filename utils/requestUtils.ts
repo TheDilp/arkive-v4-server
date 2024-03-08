@@ -9,11 +9,17 @@ import {
   CharacterRelationTables,
   CharacterResourceEntities,
   CharacterResourceTables,
+  EntityPermissionTables,
   EventRelationEntities,
   EventRelationTables,
   TagsRelationTables,
 } from "../database/types";
-import { AvailableEntityType, AvailablePermissions, AvailableSubEntityType } from "../types/entityTypes";
+import {
+  AvailableEntityType,
+  AvailablePermissions,
+  AvailableSubEntityType,
+  EntitiesWithPermissionCheck,
+} from "../types/entityTypes";
 import { AfterHandlerActionType, JWTPayloadType, SearchableEntities } from "../types/requestTypes";
 
 export function getSearchTableFromType(type: SearchableEntities | keyof DB): keyof DB {
@@ -128,5 +134,10 @@ export function getPermissionFromAction(
     if (type === "character_fields_templates") return "update_character_fields_templates";
     if (type === "assets") return "update_assets";
   }
+  return null;
+}
+
+export function getPermissionTableFromEntity(entity: EntitiesWithPermissionCheck): EntityPermissionTables | null {
+  if (entity === "characters") return "character_permissions";
   return null;
 }
