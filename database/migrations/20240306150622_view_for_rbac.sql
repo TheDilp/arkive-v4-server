@@ -4,7 +4,9 @@ SELECT
     COALESCE(A.user_id, P.owner_id) as user_id,
     A.project_id,
     P.owner_id,
-    C.code as permission_slug
+    B.role_id,
+    C.code as permission_slug,
+    C.id as permission_id
 FROM
     projects AS P
     LEFT JOIN user_roles AS A ON P.id = A.project_id
