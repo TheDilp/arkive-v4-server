@@ -137,34 +137,44 @@ export function bulk_router(app: Elysia) {
           const permissionsTable = getPermissionTableFromEntity(params.type as EntitiesWithPermissionCheck);
 
           if (permissionsTable) {
-            await db.transaction().execute(async (tx) => {
-              const userPermissions = body.data.permissions.filter((perm) => "user_id" in perm && !!perm.user_id) as {
-                related_id: string;
-                user_id: string;
-                permission_id: string;
-              }[];
-              const rolePermissions = body.data.permissions.filter((perm) => "role_id" in perm && !!perm.role_id) as {
-                related_id: string;
-                role_id: string;
-              }[];
+            const relatedIds = uniq(body.data.permissions.map((p) => p.related_id));
 
-              const relatedIds = uniq(body.data.permissions.map((p) => p.related_id));
+            // If there is an entry with actual permission changes
+            if (body.data.permissions.some((p) => !!p.permission_id || !!p.role_id || !!p.permission_id)) {
+              await db.transaction().execute(async (tx) => {
+                const userPermissions = body.data.permissions.filter((perm) => !!perm.user_id) as {
+                  related_id: string;
+                  user_id: string;
+                  permission_id: string;
+                }[];
+                const rolePermissions = body.data.permissions.filter((perm) => !!perm.role_id) as {
+                  related_id: string;
+                  role_id: string;
+                }[];
 
-              tx.deleteFrom(permissionsTable).where("related_id", "in", relatedIds).execute();
+                tx.deleteFrom(permissionsTable).where("related_id", "in", relatedIds).execute();
 
-              if (userPermissions.length) {
-                tx.insertInto(permissionsTable)
-                  .values(userPermissions)
-                  .onConflict((oc) => oc.doNothing())
-                  .execute();
-              }
-              if (rolePermissions.length) {
-                tx.insertInto(permissionsTable)
-                  .values(rolePermissions)
-                  .onConflict((oc) => oc.doNothing())
-                  .execute();
-              }
-            });
+                if (userPermissions.length) {
+                  tx.insertInto(permissionsTable)
+                    .values(userPermissions)
+                    .onConflict((oc) => oc.doNothing())
+                    .execute();
+                }
+                if (rolePermissions.length) {
+                  tx.insertInto(permissionsTable)
+                    .values(rolePermissions)
+                    .onConflict((oc) => oc.doNothing())
+                    .execute();
+                }
+              });
+            }
+            // Everything is empty for the related enteties
+            // !Do not remove and place before IF statement
+            // !The other delete needs to be within a transaction
+            // !in case of failure
+            else {
+              await db.deleteFrom(permissionsTable).where("related_id", "in", relatedIds).execute();
+            }
           }
 
           return { message: MessageEnum.success, ok: true, role_access: true };

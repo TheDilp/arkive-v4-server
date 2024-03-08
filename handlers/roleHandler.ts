@@ -87,7 +87,10 @@ export async function beforeProjectOwnerHandler(context: any) {
 
     if (user_id && project_id) {
       const isRoleValid = await checkOwner(project_id as string | null, user_id as string);
-      if (!isRoleValid) {
+      if (isRoleValid) {
+        context.permissions = { user_id, project_id };
+      } else {
+        context.permissions = { user_id: null, project_id: null };
         noRoleAccessErrorHandler();
       }
     } else {

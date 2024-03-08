@@ -10,19 +10,19 @@ export function checkEntityLevelPermission(
   entity: EntitiesWithPermissionCheck,
 ) {
   const entityRelationTable = getPermissionTableFromEntity(entity);
-  qb = qb.where((wb) =>
-    wb.or([
-      wb(`${entity}.owner_id`, "=", permissions.user_id),
-      wb.and([
-        wb(`${entityRelationTable}.user_id`, "=", permissions.user_id),
-        wb(`${entityRelationTable}.permission_id`, "=", permissions.permission_id),
-        wb(`${entityRelationTable}.related_id`, "=", wb.ref(`${entity}.id`)),
+  console.log(permissions);
+  if (entityRelationTable) {
+    qb = qb.where((wb) =>
+      wb.or([
+        wb(`${entity}.owner_id`, "=", permissions.user_id),
+        wb.and([
+          wb(`${entityRelationTable}.user_id`, "=", permissions.user_id),
+          wb(`${entityRelationTable}.permission_id`, "=", permissions.permission_id),
+          wb(`${entityRelationTable}.related_id`, "=", wb.ref(`${entity}.id`)),
+        ]),
+        wb.and([wb(`${entityRelationTable}.role_id`, "=", permissions.role_id)]),
       ]),
-      wb.and([
-        wb(`${entityRelationTable}.user_id`, "=", permissions.user_id),
-        wb(`${entityRelationTable}.role_id`, "=", permissions.role_id),
-      ]),
-    ]),
-  );
+    );
+  }
   return qb;
 }
