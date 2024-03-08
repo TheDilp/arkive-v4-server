@@ -6,11 +6,12 @@ import uniq from "lodash.uniq";
 import uniqBy from "lodash.uniqby";
 
 import { MessageEnum } from "../../enums";
-import { ResponseWithDataSchema } from "../../types/requestTypes";
+import { PermissionDecorationType, ResponseWithDataSchema } from "../../types/requestTypes";
 import { TagQuery } from "../../utils/relationalQueryHelpers";
 import { groupCharacterFields } from "../../utils/transform";
 import { db } from "../db";
 import { ReadCharacterSchema } from "../validation";
+import { checkEntityLevelPermission } from ".";
 
 type bodyTp = (typeof ReadCharacterSchema)["static"];
 
@@ -18,11 +19,14 @@ export async function readCharacter(
   body: bodyTp,
   params: { id: string },
   isPublic: boolean,
+  permissions: PermissionDecorationType,
 ): Promise<(typeof ResponseWithDataSchema)["static"]> {
   const data = await db
     .selectFrom("characters")
     .$if(!body.fields?.length, (qb) => qb.selectAll())
-    .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "characters">[]))
+    .$if(!!body.fields?.length, (qb) =>
+      qb.clearSelect().select(body.fields.map((f) => `characters.${f}`) as SelectExpression<DB, "characters">[]),
+    )
     .where("characters.id", "=", params.id)
     .$if(!!body.relations, (qb) => {
       if (body?.relations?.character_fields) {
@@ -398,6 +402,9 @@ export async function readCharacter(
           ).as("permissions"),
       ]);
       return qb;
+    })
+    .$if(!permissions.is_owner, (qb) => {
+      return checkEntityLevelPermission(qb, permissions, "characters", params.id);
     })
     .executeTakeFirstOrThrow();
   // If fetching direct relationships return only unique relationships

@@ -316,3 +316,9 @@ export function groupCharacterFields(originalItems: any[]): any[] {
 
   return Object.values(groupedItems);
 }
+
+export function getEntityWithOwnerId<T>(entity: T, owner_id: string): T & { owner_id: string } {
+  // @ts-ignore
+  entity.owner_id = owner_id;
+  return entity as T & { owner_id: string };
+}
