@@ -1,6 +1,7 @@
 import Elysia from "elysia";
 
 import { db } from "../database/db";
+import { WebsocketConversationMessage } from "../types/websocketTypes";
 
 export function websocket_router(app: Elysia) {
   return app
@@ -15,17 +16,7 @@ export function websocket_router(app: Elysia) {
       },
       async message(ws, message) {
         const { conversation_id } = ws.data.params;
-        const typedMessage = message as {
-          data: {
-            id: string;
-            parent_id: string;
-            sender_id?: string;
-            content: string;
-            type: "character" | "narration" | "place";
-          };
-          project_id: string;
-          conversation: { id?: string; title?: string };
-        };
+        const typedMessage = message as WebsocketConversationMessage;
         if (conversation_id) {
           try {
             if (typedMessage.data.content.length === 0) {

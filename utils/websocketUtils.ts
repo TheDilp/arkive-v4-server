@@ -3,16 +3,20 @@ import { EventType } from "../enums/websocketEnums";
 
 export function sendNotification(
   room: string,
-  notification: {
-    event_type: EventType;
-    message: string;
-    entity: string;
-    image_id?: string | null;
-    userId: string;
-    nickname?: string;
-    userImageUrl?: string;
-    notification_type: string;
-  },
+  notification:
+    | {
+        event_type: EventType;
+        message: string;
+        entity: string;
+        image_id?: string | null;
+        userId: string;
+        nickname?: string;
+        userImageUrl?: string;
+        notification_type: string;
+      }
+    | {
+        event_type: "ROLE_UPDATED";
+      },
 ) {
   app.server.publish(`notifications/${room}`, JSON.stringify(notification));
 }
