@@ -12,7 +12,7 @@ export function character_relationship_types_router(app: Elysia) {
         "/create",
         async ({ body }) => {
           await db.insertInto("character_relationship_types").values(body.data).execute();
-          return { message: `Relationship type ${MessageEnum.successfully_created}`, ok: true };
+          return { message: `Relationship type ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         { body: InsertRelationshipTypeSchema, response: ResponseSchema },
       )
@@ -24,7 +24,7 @@ export function character_relationship_types_router(app: Elysia) {
             .select(["id", "title", "ascendant_title", "descendant_title"])
             .where("project_id", "=", body.data.project_id)
             .execute();
-          return { data, message: MessageEnum.success, ok: true };
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         { body: ListCharacterRelationshipTypeSchema, respose: ResponseWithDataSchema },
       )
@@ -32,7 +32,7 @@ export function character_relationship_types_router(app: Elysia) {
         "/:id",
         async ({ params }) => {
           await db.deleteFrom("character_relationship_types").where("id", "=", params.id).execute();
-          return { message: `Relationship type ${MessageEnum.successfully_deleted}`, ok: true };
+          return { message: `Relationship type ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
         },
         {
           response: ResponseSchema,

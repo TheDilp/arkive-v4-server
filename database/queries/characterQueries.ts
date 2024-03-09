@@ -36,7 +36,6 @@ export async function readCharacter(
               eb
                 .selectFrom("character_documents_fields")
                 .where("character_documents_fields.character_id", "=", params.id)
-
                 .select([
                   "character_field_id as id",
                   "related_id",
@@ -45,10 +44,13 @@ export async function readCharacter(
                       ebb
                         .selectFrom("documents")
                         .whereRef("documents.id", "=", "character_documents_fields.related_id")
-                        .select(["id", "title", "icon"])
+                        .select(["documents.id", "documents.title", "documents.icon"])
                         .$if(isPublic, (eb) => {
-                          eb = eb.where("is_public", "=", true);
+                          eb = eb.where("documents.is_public", "=", true);
                           return eb;
+                        })
+                        .$if(!permissions.is_owner && !isPublic, (qb) => {
+                          return checkEntityLevelPermission(qb, permissions, "documents", params.id);
                         }),
                     ).as("documents"),
                 ]),
@@ -191,7 +193,9 @@ export async function readCharacter(
               )
               .where("character_relationship_types.ascendant_title", "is not", null)
               .$if(isPublic, (eb) => eb.where("characters.is_public", "=", true))
-
+              .$if(!permissions.is_owner && !isPublic, (qb) => {
+                return checkEntityLevelPermission(qb, permissions, "characters", params.id);
+              })
               .select([
                 "character_b_id as id",
                 "characters.full_name",
@@ -217,6 +221,9 @@ export async function readCharacter(
               )
               .where("character_relationship_types.ascendant_title", "is not", null)
               .$if(isPublic, (eb) => eb.where("characters.is_public", "=", true))
+              .$if(!permissions.is_owner && !isPublic, (qb) => {
+                return checkEntityLevelPermission(qb, permissions, "characters", params.id);
+              })
               .select([
                 "character_a_id as id",
                 "characters.full_name",
@@ -242,6 +249,9 @@ export async function readCharacter(
               .where("character_relationship_types.ascendant_title", "is", null)
               .$if(isPublic, (eb) => eb.where("characters.is_public", "=", true))
               .leftJoin("characters", "characters.id", "character_b_id")
+              .$if(!permissions.is_owner && !isPublic, (qb) => {
+                return checkEntityLevelPermission(qb, permissions, "characters", params.id);
+              })
               .select([
                 "character_b_id as id",
                 "characters.full_name",
@@ -263,6 +273,9 @@ export async function readCharacter(
                   .where("character_relationship_types.descendant_title", "is", null)
                   .$if(isPublic, (eb) => eb.where("characters.is_public", "=", true))
                   .leftJoin("characters", "characters.id", "character_a_id")
+                  .$if(!permissions.is_owner && !isPublic, (qb) => {
+                    return checkEntityLevelPermission(qb, permissions, "characters", params.id);
+                  })
                   .select([
                     "character_a_id as id",
                     "characters.full_name",
@@ -355,6 +368,9 @@ export async function readCharacter(
               .leftJoin("documents", "_charactersTodocuments.B", "documents.id")
               .where("documents.is_folder", "is not", true)
               .where("documents.is_template", "is not", true)
+              .$if(!permissions.is_owner && !isPublic, (qb) => {
+                return checkEntityLevelPermission(qb, permissions, "documents", params.id);
+              })
               .$if(isPublic, (eb) => {
                 eb = eb.where("documents.is_public", "=", true);
                 return eb;
