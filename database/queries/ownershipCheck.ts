@@ -23,7 +23,7 @@ export function checkEntityLevelPermission(
             wb(`${entityRelationTable}.permission_id`, "=", permissions.permission_id),
             wb(`${entityRelationTable}.related_id`, "=", related_id || wb.ref(`${entity}.id`)),
           ]),
-          wb.and([wb(`${entityRelationTable}.role_id`, "=", permissions.role_id)]),
+          wb(`${entityRelationTable}.role_id`, "=", permissions.role_id),
         ]),
       );
   }
