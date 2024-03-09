@@ -14,6 +14,7 @@ export const ReadDocumentSchema = t.Intersect([
           parents: t.Optional(t.Boolean()),
         }),
       ),
+      permissions: t.Optional(t.Boolean()),
     }),
   ),
 ]);
@@ -38,6 +39,7 @@ export const InsertDocumentSchema = t.Object({
     parent_id: t.Optional(t.Union([t.String(), t.Null()])),
     image_id: t.Optional(t.Union([t.String(), t.Null()])),
     dice_color: t.Optional(t.Union([t.String(), t.Null()])),
+    owner_id: t.String(),
   }),
   relations: t.Optional(
     t.Object({
@@ -88,6 +90,23 @@ export const UpdateDocumentSchema = t.Object({
         ),
       ),
     }),
+  ),
+  permissions: t.Optional(
+    t.Array(
+      t.Intersect([
+        t.Object({ related_id: t.String() }),
+
+        t.Union([
+          t.Object({
+            permission_id: t.String(),
+            user_id: t.String(),
+          }),
+          t.Object({
+            role_id: t.String(),
+          }),
+        ]),
+      ]),
+    ),
   ),
 });
 

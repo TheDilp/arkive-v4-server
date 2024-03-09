@@ -2,7 +2,7 @@ import { ExpressionBuilder, Kysely, SelectQueryBuilder, Transaction } from "kyse
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
-import { EntitiesWithChildren, EntitiesWithTags, TagsRelationTables } from "../database/types";
+import { EntitiesWithChildren, EntitiesWithTags, EntityPermissionTables, TagsRelationTables } from "../database/types";
 import { EntitiesWithFolders } from "../types/entityTypes";
 
 export function TagQuery(eb: ExpressionBuilder<any, any>, relationalTable: TagsRelationTables, table: EntitiesWithTags) {
@@ -271,6 +271,42 @@ export async function UpdateCharacterRelationships({
           relation_type_id: item.relation_type_id,
         })),
       )
+      .execute();
+  }
+}
+
+export async function UpdateEntityPermissions(
+  tx: Transaction<DB>,
+  id: string,
+  relationalTable: EntityPermissionTables,
+  permissions:
+    | ({
+        related_id: string;
+      } & (
+        | {
+            permission_id: string;
+            user_id: string;
+          }
+        | {
+            role_id: string;
+          }
+      ))[]
+    | undefined,
+) {
+  await tx.deleteFrom(relationalTable).where("related_id", "=", id).execute();
+  if (permissions?.length) {
+    await tx
+      .insertInto(relationalTable)
+      .values(
+        permissions.map((perm) => ({
+          related_id: id,
+          permission_id: "permission_id" in perm ? perm.permission_id : null,
+          user_id: "user_id" in perm ? perm.user_id : null,
+          role_id: "role_id" in perm ? perm.role_id : null,
+        })),
+      )
+      .onConflict((oc) => oc.columns(["related_id", "role_id"]).doUpdateSet((eb) => ({ role_id: eb.ref("excluded.role_id") })))
+      .onConflict((oc) => oc.columns(["user_id", "related_id", "permission_id"]).doNothing())
       .execute();
   }
 }

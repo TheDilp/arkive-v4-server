@@ -322,3 +322,11 @@ export function getEntityWithOwnerId<T>(entity: T, owner_id: string): T & { owne
   entity.owner_id = owner_id;
   return entity as T & { owner_id: string };
 }
+
+export function getEntitiesWithOwnerId<T>(entities: T[], owner_id: string): (T & { owner_id: string })[] {
+  for (let index = 0; index < entities.length; index += 1) {
+    // @ts-ignore
+    entities[index].owner_id = owner_id;
+  }
+  return entities as (T & { owner_id: string })[];
+}

@@ -468,6 +468,20 @@ CREATE TABLE public.blueprint_instances (
 
 
 --
+-- Name: blueprint_permissions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.blueprint_permissions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    permission_id uuid,
+    role_id uuid,
+    user_id uuid,
+    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
+);
+
+
+--
 -- Name: blueprints; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -736,6 +750,20 @@ CREATE TABLE public.document_mentions (
     parent_document_id uuid NOT NULL,
     mention_id uuid NOT NULL,
     mention_type public."MentionTypeEnum" NOT NULL
+);
+
+
+--
+-- Name: document_permissions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.document_permissions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    permission_id uuid,
+    role_id uuid,
+    user_id uuid,
+    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
 );
 
 
@@ -1355,6 +1383,14 @@ ALTER TABLE ONLY public.blueprint_instances
 
 
 --
+-- Name: blueprint_permissions blueprint_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.blueprint_permissions
+    ADD CONSTRAINT blueprint_permissions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: blueprints blueprints_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1456,6 +1492,14 @@ ALTER TABLE ONLY public.dictionaries
 
 ALTER TABLE ONLY public.document_mentions
     ADD CONSTRAINT document_mentions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: document_permissions document_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_permissions
+    ADD CONSTRAINT document_permissions_pkey PRIMARY KEY (id);
 
 
 --
@@ -1659,6 +1703,22 @@ ALTER TABLE ONLY public.timelines
 
 
 --
+-- Name: blueprint_permissions unique_blueprint_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.blueprint_permissions
+    ADD CONSTRAINT unique_blueprint_role_combination UNIQUE (related_id, role_id);
+
+
+--
+-- Name: blueprint_permissions unique_blueprint_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.blueprint_permissions
+    ADD CONSTRAINT unique_blueprint_user_permission_combination UNIQUE (related_id, user_id, permission_id);
+
+
+--
 -- Name: blueprint_instance_value unique_bpi_value_fields_constraint; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1728,6 +1788,22 @@ ALTER TABLE ONLY public.character_events_fields
 
 ALTER TABLE ONLY public.character_random_table_fields
     ADD CONSTRAINT unique_combination_constraint_char_rand UNIQUE (character_id, character_field_id, related_id);
+
+
+--
+-- Name: document_permissions unique_document_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_permissions
+    ADD CONSTRAINT unique_document_role_combination UNIQUE (related_id, role_id);
+
+
+--
+-- Name: document_permissions unique_document_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_permissions
+    ADD CONSTRAINT unique_document_user_permission_combination UNIQUE (related_id, user_id, permission_id);
 
 
 --
@@ -2845,6 +2921,30 @@ ALTER TABLE ONLY public.blueprint_instances
 
 
 --
+-- Name: blueprint_permissions blueprint_permissions_blueprint_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.blueprint_permissions
+    ADD CONSTRAINT blueprint_permissions_blueprint_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.blueprints(id) ON DELETE CASCADE;
+
+
+--
+-- Name: blueprint_permissions blueprint_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.blueprint_permissions
+    ADD CONSTRAINT blueprint_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
+
+
+--
+-- Name: blueprint_permissions blueprint_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.blueprint_permissions
+    ADD CONSTRAINT blueprint_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: blueprints blueprints_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3194,6 +3294,30 @@ ALTER TABLE ONLY public.dictionaries
 
 ALTER TABLE ONLY public.dictionaries
     ADD CONSTRAINT dictionaries_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: document_permissions document_permissions_document_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_permissions
+    ADD CONSTRAINT document_permissions_document_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.documents(id) ON DELETE CASCADE;
+
+
+--
+-- Name: document_permissions document_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_permissions
+    ADD CONSTRAINT document_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
+
+
+--
+-- Name: document_permissions document_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_permissions
+    ADD CONSTRAINT document_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -3697,4 +3821,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240306150622'),
     ('20240307113544'),
     ('20240307145300'),
-    ('20240308123748');
+    ('20240308123748'),
+    ('20240308151021');
