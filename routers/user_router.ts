@@ -1,6 +1,6 @@
 import Elysia from "elysia";
 import { SelectExpression } from "kysely";
-import { jsonArrayFrom } from "kysely/helpers/postgres";
+import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
@@ -34,7 +34,7 @@ export function user_router(app: Elysia) {
         },
       )
       .post(
-        "/:auth_id",
+        "/:project_id/:auth_id",
         async ({ params, body }) => {
           const data = await db
             .selectFrom("users")
@@ -45,6 +45,27 @@ export function user_router(app: Elysia) {
                 jsonArrayFrom(
                   eb.selectFrom("webhooks").whereRef("webhooks.user_id", "=", "users.id").select(["id", "title"]),
                 ).as("webhooks"),
+              ),
+            )
+            .$if(!!body.relations?.roles, (qb) =>
+              qb.select((eb) =>
+                jsonObjectFrom(
+                  eb
+                    .selectFrom("user_roles")
+                    .where("user_roles.project_id", "=", params.project_id)
+                    .whereRef("user_roles.user_id", "=", "users.id")
+                    .select([
+                      "user_roles.role_id as id",
+                      (ebb) =>
+                        jsonArrayFrom(
+                          ebb
+                            .selectFrom("role_permissions")
+                            .whereRef("role_permissions.role_id", "=", "user_roles.role_id")
+                            .leftJoin("permissions", "permissions.id", "role_permissions.permission_id")
+                            .select(["permissions.code"]),
+                        ).as("permissions"),
+                    ]),
+                ).as("role"),
               ),
             )
             .where("auth_id", "=", params.auth_id)
