@@ -86,3 +86,36 @@ export type MentionType = {
 };
 
 export type AvailablePermissions = (typeof RolePermissions)[keyof typeof RolePermissions];
+
+export type InsertPermissionType =
+  | ({
+      related_id?: null;
+    } & (
+      | {
+          permission_id: string;
+          user_id: string;
+          role_id: null;
+        }
+      | {
+          permission_id: null;
+          user_id: null;
+          role_id: string;
+        }
+    ))[]
+  | undefined;
+export type UpdatePermissionType =
+  | ({
+      related_id: string;
+    } & (
+      | {
+          permission_id: string;
+          user_id: string;
+          role_id: null;
+        }
+      | {
+          permission_id: null;
+          user_id: null;
+          role_id: string;
+        }
+    ))[]
+  | undefined;

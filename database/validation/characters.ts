@@ -140,14 +140,16 @@ export const InsertCharacterSchema = t.Object({
   permissions: t.Optional(
     t.Array(
       t.Intersect([
-        t.Object({ related_id: t.String() }),
-
+        t.Object({ related_id: t.Optional(t.Null()) }),
         t.Union([
           t.Object({
             permission_id: t.String(),
             user_id: t.String(),
+            role_id: t.Null(),
           }),
           t.Object({
+            permission_id: t.Null(),
+            user_id: t.Null(),
             role_id: t.String(),
           }),
         ]),
@@ -289,8 +291,11 @@ export const UpdateCharacterSchema = t.Object({
           t.Object({
             permission_id: t.String(),
             user_id: t.String(),
+            role_id: t.Null(),
           }),
           t.Object({
+            permission_id: t.Null(),
+            user_id: t.Null(),
             role_id: t.String(),
           }),
         ]),

@@ -31,6 +31,7 @@ import {
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import {
+  CreateEntityPermissions,
   CreateTagRelations,
   GetEntityChildren,
   GetParents,
@@ -91,6 +92,9 @@ export function document_router(app: Elysia) {
               if (body.relations?.tags?.length) {
                 const { tags } = body.relations;
                 await CreateTagRelations({ tx, relationalTable: "_documentsTotags", id: document.id, tags });
+              }
+              if (body.permissions?.length) {
+                await CreateEntityPermissions(tx, document.id, "document_permissions", body.permissions);
               }
             });
 
@@ -298,9 +302,9 @@ export function document_router(app: Elysia) {
         .post(
           "/update/:id",
           async ({ params, body, permissions }) => {
-            await db.transaction().execute(async (tx) => {
-              const permissionCheck = await getHasEntityPermission("documents", params.id, permissions);
-              if (permissionCheck) {
+            const permissionCheck = await getHasEntityPermission("documents", params.id, permissions);
+            if (permissionCheck) {
+              await db.transaction().execute(async (tx) => {
                 if (body.data) await tx.updateTable("documents").where("documents.id", "=", params.id).set(body.data).execute();
                 if (body.relations?.tags) {
                   await UpdateTagRelations({
@@ -398,10 +402,12 @@ export function document_router(app: Elysia) {
                 if (body?.permissions) {
                   await UpdateEntityPermissions(tx, params.id, "document_permissions", body.permissions);
                 }
-              }
-            });
-
-            return { message: `Document ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
+              });
+              return { message: `Document ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
+            } else {
+              noRoleAccessErrorHandler();
+              return { message: "", ok: false, role_access: false };
+            }
           },
           {
             body: UpdateDocumentSchema,

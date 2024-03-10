@@ -18,6 +18,7 @@ import {
 } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import {
+  CreateEntityPermissions,
   CreateTagRelations,
   GetRelationsForUpdating,
   TagQuery,
@@ -194,6 +195,9 @@ export function character_router(app: Elysia) {
                       })),
                     )
                     .execute();
+                }
+                if (body.permissions?.length) {
+                  await CreateEntityPermissions(tx, character.id, "character_permissions", body.permissions);
                 }
               }
             });

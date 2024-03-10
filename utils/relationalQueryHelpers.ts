@@ -3,7 +3,7 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { EntitiesWithChildren, EntitiesWithTags, EntityPermissionTables, TagsRelationTables } from "../database/types";
-import { EntitiesWithFolders } from "../types/entityTypes";
+import { EntitiesWithFolders, InsertPermissionType, UpdatePermissionType } from "../types/entityTypes";
 
 export function TagQuery(eb: ExpressionBuilder<any, any>, relationalTable: TagsRelationTables, table: EntitiesWithTags) {
   return jsonArrayFrom(
@@ -275,23 +275,30 @@ export async function UpdateCharacterRelationships({
   }
 }
 
+export async function CreateEntityPermissions(
+  tx: Transaction<DB>,
+  id: string,
+  relationalTable: EntityPermissionTables,
+  permissions: InsertPermissionType,
+) {
+  if (permissions?.length)
+    await tx
+      .insertInto(relationalTable)
+      .values(
+        permissions.map((p) => ({
+          related_id: id,
+          user_id: p.user_id,
+          role_id: p.role_id,
+          permission_id: p.permission_id,
+        })),
+      )
+      .execute();
+}
 export async function UpdateEntityPermissions(
   tx: Transaction<DB>,
   id: string,
   relationalTable: EntityPermissionTables,
-  permissions:
-    | ({
-        related_id: string;
-      } & (
-        | {
-            permission_id: string;
-            user_id: string;
-          }
-        | {
-            role_id: string;
-          }
-      ))[]
-    | undefined,
+  permissions: UpdatePermissionType,
 ) {
   await tx.deleteFrom(relationalTable).where("related_id", "=", id).execute();
   if (permissions?.length) {
