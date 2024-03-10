@@ -12,7 +12,7 @@ import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { GetRelationsForUpdating } from "../utils/relationalQueryHelpers";
+import { CreateEntityPermissions, GetRelationsForUpdating, UpdateEntityPermissions } from "../utils/relationalQueryHelpers";
 import { getEntityWithOwnerId } from "../utils/transform";
 
 export function blueprint_router(app: Elysia) {
@@ -30,7 +30,7 @@ export function blueprint_router(app: Elysia) {
           "/create",
           async ({ body, permissions }) => {
             await db.transaction().execute(async (tx) => {
-              const newTemplate = await tx
+              const newBlueprint = await tx
                 .insertInto("blueprints")
                 .values(getEntityWithOwnerId(body.data, permissions.user_id))
                 .returning("id")
@@ -42,7 +42,7 @@ export function blueprint_router(app: Elysia) {
                   .values(
                     body.relations.blueprint_fields.map((field) => ({
                       title: field.title,
-                      parent_id: newTemplate.id,
+                      parent_id: newBlueprint.id,
                       field_type: field.field_type,
                       sort: field.sort,
                       formula: field?.formula,
@@ -51,6 +51,10 @@ export function blueprint_router(app: Elysia) {
                     })),
                   )
                   .execute();
+              }
+
+              if (body.permissions?.length) {
+                await CreateEntityPermissions(tx, newBlueprint.id, "blueprint_permissions", body.permissions);
               }
             });
             return { message: `Blueprint ${MessageEnum.successfully_created}`, ok: true, role_access: true };
@@ -68,7 +72,9 @@ export function blueprint_router(app: Elysia) {
               .selectFrom("blueprints")
               .where("blueprints.project_id", "=", body.data.project_id)
               .$if(!body.fields?.length, (qb) => qb.selectAll())
-              .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "blueprints">[]))
+              .$if(!!body.fields?.length, (qb) =>
+                qb.clearSelect().select(body.fields.map((f) => `blueprints.${f}`) as SelectExpression<DB, "blueprints">[]),
+              )
               .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
                 qb = constructFilter("blueprints", qb, body.filters);
                 return qb;
@@ -117,7 +123,9 @@ export function blueprint_router(app: Elysia) {
             const data = await db
               .selectFrom("blueprints")
               .$if(!body.fields?.length, (qb) => qb.selectAll())
-              .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "blueprints">[]))
+              .$if(!!body.fields?.length, (qb) =>
+                qb.clearSelect().select(body.fields.map((f) => `blueprints.${f}`) as SelectExpression<DB, "blueprints">[]),
+              )
               .where("blueprints.id", "=", params.id)
               .$if(!!body?.relations?.blueprint_fields, (qb) =>
                 qb.select((eb) =>
@@ -202,6 +210,26 @@ export function blueprint_router(app: Elysia) {
                   ).as("blueprint_instances"),
                 ),
               )
+              .$if(!!body.permissions, (qb) => {
+                qb = qb.select([
+                  (eb) =>
+                    jsonArrayFrom(
+                      eb
+                        .selectFrom("blueprint_permissions")
+                        .leftJoin("permissions", "permissions.id", "blueprint_permissions.permission_id")
+                        .select([
+                          "blueprint_permissions.id",
+                          "blueprint_permissions.permission_id",
+                          "blueprint_permissions.related_id",
+                          "blueprint_permissions.role_id",
+                          "blueprint_permissions.user_id",
+                          "permissions.code",
+                        ])
+                        .where("related_id", "=", params.id),
+                    ).as("permissions"),
+                ]);
+                return qb;
+              })
               .$if(!permissions.is_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "blueprints");
               })
@@ -268,6 +296,9 @@ export function blueprint_router(app: Elysia) {
                         ),
                       );
                     }
+                  }
+                  if (body.permissions?.length) {
+                    await UpdateEntityPermissions(tx, params.id, "blueprint_permissions", body.permissions);
                   }
                 });
               }
