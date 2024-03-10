@@ -68,6 +68,7 @@ export function search_router(app: Elysia) {
             .where("project_id", "=", project_id)
             .where("is_folder", "=", true)
             .where("title", "ilike", `%${body.data.search_term}%`)
+
             .limit(body.limit || 10)
             .execute();
 

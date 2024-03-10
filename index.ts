@@ -43,7 +43,6 @@ import {
   websocket_router,
   word_router,
 } from "./routers";
-
 export const app = new Elysia()
   .use(
     cors({

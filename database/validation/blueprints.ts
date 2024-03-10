@@ -54,6 +54,7 @@ export const ReadBlueprintSchema = t.Intersect([
         random_table_options: t.Optional(t.Boolean()),
       }),
     ),
+    permissions: t.Optional(t.Boolean()),
   }),
 ]);
 
@@ -63,7 +64,7 @@ export const InsertBlueprintSchema = t.Object({
     title: t.String(),
     title_name: t.String(),
     icon: t.Optional(t.Union([t.String(), t.Null()])),
-    // title_width: FieldWidthSchema,
+    owner_id: t.String(),
   }),
   relations: t.Optional(
     t.Object({
