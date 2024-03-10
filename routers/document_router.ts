@@ -241,7 +241,7 @@ export function document_router(app: Elysia) {
                 qb.clearSelect().select(body.fields.map((f) => `documents.${f}`) as SelectExpression<DB, "documents">[]),
               )
               .$if(!permissions.is_owner, (qb) => {
-                return checkEntityLevelPermission(qb, permissions, "documents");
+                return checkEntityLevelPermission(qb, permissions, "documents", params.id);
               })
               .where("documents.id", "=", params.id)
               .$if(!!body?.relations, (qb) => {

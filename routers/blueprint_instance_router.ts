@@ -4,6 +4,7 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
+import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
 import {
   InsertBlueprintInstanceSchema,
   ListBlueprintInstanceSchema,
@@ -11,7 +12,7 @@ import {
   UpdateBlueprintInstanceSchema,
 } from "../database/validation/blueprint_instances";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler } from "../handlers";
+import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import {
   blueprintInstanceRelationFilter,
@@ -198,12 +199,14 @@ export function blueprint_instance_router(app: Elysia) {
         )
         .post(
           "/",
-          async ({ body }) => {
+          async ({ body, permissions }) => {
             const query = db
               .selectFrom("blueprint_instances")
               .select(
                 body.fields.map((field) => `blueprint_instances.${field}`) as SelectExpression<DB, "blueprint_instances">[],
               )
+              .limit(body?.pagination?.limit || 10)
+              .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
               .distinctOn(
                 body.orderBy
                   ? ([...body.orderBy.map((o) => o.field), "blueprint_instances.id"] as any)
@@ -406,6 +409,9 @@ export function blueprint_instance_router(app: Elysia) {
                 qb = constructOrdering(body.orderBy, qb);
                 return qb;
               })
+              .$if(!permissions.is_owner, (qb) => {
+                return checkEntityLevelPermission(qb, permissions, "blueprint_instances");
+              })
               .$if(!!body.relations?.tags, (qb) => {
                 if (body?.relations?.tags) {
                   return qb.select((eb) => TagQuery(eb, "_blueprint_instancesTotags", "blueprint_instances"));
@@ -424,7 +430,7 @@ export function blueprint_instance_router(app: Elysia) {
         )
         .post(
           "/:id",
-          async ({ params, body }) => {
+          async ({ params, body, permissions }) => {
             const data = await db
               .selectFrom("blueprint_instances")
               .$if(!body.fields?.length, (qb) => qb.selectAll())
@@ -606,6 +612,29 @@ export function blueprint_instance_router(app: Elysia) {
                       .where("_blueprint_instancesTotags.A", "=", params.id),
                   ).as("tags"),
               ])
+              .$if(!!body.permissions, (qb) => {
+                qb = qb.select([
+                  (eb) =>
+                    jsonArrayFrom(
+                      eb
+                        .selectFrom("blueprint_instance_permissions")
+                        .leftJoin("permissions", "permissions.id", "blueprint_instance_permissions.permission_id")
+                        .select([
+                          "blueprint_instance_permissions.id",
+                          "blueprint_instance_permissions.permission_id",
+                          "blueprint_instance_permissions.related_id",
+                          "blueprint_instance_permissions.role_id",
+                          "blueprint_instance_permissions.user_id",
+                          "permissions.code",
+                        ])
+                        .where("related_id", "=", params.id),
+                    ).as("permissions"),
+                ]);
+                return qb;
+              })
+              .$if(!permissions.is_owner, (qb) => {
+                return checkEntityLevelPermission(qb, permissions, "blueprint_instances", params.id);
+              })
               .executeTakeFirstOrThrow();
 
             return { data, message: MessageEnum.success, ok: true, role_access: true };
@@ -618,206 +647,212 @@ export function blueprint_instance_router(app: Elysia) {
         )
         .post(
           "/update/:id",
-          async ({ params, body }) => {
-            await db.transaction().execute(async (tx) => {
-              tx.updateTable("blueprint_instances")
-                .set(body.data)
-                .where("blueprint_instances.id", "=", params.id)
-                .executeTakeFirstOrThrow();
+          async ({ params, body, permissions }) => {
+            const permissionCheck = await getHasEntityPermission("blueprint_instances", params.id, permissions);
+            if (permissionCheck) {
+              await db.transaction().execute(async (tx) => {
+                tx.updateTable("blueprint_instances")
+                  .set(body.data)
+                  .where("blueprint_instances.id", "=", params.id)
+                  .executeTakeFirstOrThrow();
 
-              if (body.relations?.blueprint_fields) {
-                await Promise.all(
-                  body.relations.blueprint_fields.flatMap(async (field) => {
-                    if (field.value || typeof field.value === "boolean") {
-                      return tx
-                        .insertInto("blueprint_instance_value")
-                        .values({
-                          blueprint_field_id: field.id,
-                          blueprint_instance_id: params.id,
-                          value: JSON.stringify(field.value),
-                        })
-                        .onConflict((oc) =>
-                          oc
-                            .columns(["blueprint_field_id", "blueprint_instance_id"])
-                            .doUpdateSet({ value: JSON.stringify(field.value) }),
-                        )
-                        .execute();
-                    } else if (field.id && !field?.value) {
-                      return tx
-                        .deleteFrom("blueprint_instance_value")
-                        .where("blueprint_field_id", "=", field.id)
-                        .where("blueprint_instance_id", "=", params.id)
-                        .execute();
-                    }
-                    if (field.characters) {
-                      await tx
-                        .deleteFrom("blueprint_instance_characters")
-                        .where("blueprint_instance_id", "=", params.id)
-                        .where("blueprint_field_id", "=", field.id)
-                        .execute();
-                      if (field.characters.length) {
-                        return field.characters.map((char) =>
-                          tx
-                            .insertInto("blueprint_instance_characters")
-                            .values({
-                              blueprint_field_id: field.id,
-                              blueprint_instance_id: params.id,
-                              related_id: char.related_id,
-                            })
-                            .execute(),
-                        );
+                if (body.relations?.blueprint_fields) {
+                  await Promise.all(
+                    body.relations.blueprint_fields.flatMap(async (field) => {
+                      if (field.value || typeof field.value === "boolean") {
+                        return tx
+                          .insertInto("blueprint_instance_value")
+                          .values({
+                            blueprint_field_id: field.id,
+                            blueprint_instance_id: params.id,
+                            value: JSON.stringify(field.value),
+                          })
+                          .onConflict((oc) =>
+                            oc
+                              .columns(["blueprint_field_id", "blueprint_instance_id"])
+                              .doUpdateSet({ value: JSON.stringify(field.value) }),
+                          )
+                          .execute();
+                      } else if (field.id && !field?.value) {
+                        return tx
+                          .deleteFrom("blueprint_instance_value")
+                          .where("blueprint_field_id", "=", field.id)
+                          .where("blueprint_instance_id", "=", params.id)
+                          .execute();
                       }
-                    }
-                    if (field.blueprint_instances) {
-                      await tx
-                        .deleteFrom("blueprint_instance_blueprint_instances")
-                        .where("blueprint_instance_id", "=", params.id)
-                        .where("blueprint_field_id", "=", field.id)
-                        .execute();
-                      if (field.blueprint_instances.length) {
-                        return field.blueprint_instances.map((char) =>
-                          tx
-                            .insertInto("blueprint_instance_blueprint_instances")
-                            .values({
-                              blueprint_field_id: field.id,
-                              blueprint_instance_id: params.id,
-                              related_id: char.related_id,
-                            })
-                            .execute(),
-                        );
-                      }
-                    }
-                    if (field.documents) {
-                      if (field.documents.length) {
+                      if (field.characters) {
                         await tx
-                          .deleteFrom("blueprint_instance_documents")
+                          .deleteFrom("blueprint_instance_characters")
                           .where("blueprint_instance_id", "=", params.id)
                           .where("blueprint_field_id", "=", field.id)
                           .execute();
-                        return field.documents.map((char) =>
-                          tx
-                            .insertInto("blueprint_instance_documents")
-                            .values({
-                              blueprint_field_id: field.id,
-                              blueprint_instance_id: params.id,
-                              related_id: char.related_id,
-                            })
-                            .execute(),
-                        );
+                        if (field.characters.length) {
+                          return field.characters.map((char) =>
+                            tx
+                              .insertInto("blueprint_instance_characters")
+                              .values({
+                                blueprint_field_id: field.id,
+                                blueprint_instance_id: params.id,
+                                related_id: char.related_id,
+                              })
+                              .execute(),
+                          );
+                        }
                       }
-                    }
-                    if (field.map_pins) {
-                      await tx
-                        .deleteFrom("blueprint_instance_map_pins")
-                        .where("blueprint_instance_id", "=", params.id)
-                        .where("blueprint_field_id", "=", field.id)
-                        .execute();
-                      if (field.map_pins.length) {
-                        return field.map_pins.map((char) =>
-                          tx
-                            .insertInto("blueprint_instance_map_pins")
-                            .values({
-                              blueprint_field_id: field.id,
-                              blueprint_instance_id: params.id,
-                              related_id: char.related_id,
-                            })
-                            .execute(),
-                        );
+                      if (field.blueprint_instances) {
+                        await tx
+                          .deleteFrom("blueprint_instance_blueprint_instances")
+                          .where("blueprint_instance_id", "=", params.id)
+                          .where("blueprint_field_id", "=", field.id)
+                          .execute();
+                        if (field.blueprint_instances.length) {
+                          return field.blueprint_instances.map((char) =>
+                            tx
+                              .insertInto("blueprint_instance_blueprint_instances")
+                              .values({
+                                blueprint_field_id: field.id,
+                                blueprint_instance_id: params.id,
+                                related_id: char.related_id,
+                              })
+                              .execute(),
+                          );
+                        }
                       }
-                    }
-                    if (field.events) {
-                      await tx
-                        .deleteFrom("blueprint_instance_events")
-                        .where("blueprint_instance_id", "=", params.id)
-                        .where("blueprint_field_id", "=", field.id)
-                        .execute();
-                      if (field.events.length) {
-                        return field.events.map((char) =>
-                          tx
-                            .insertInto("blueprint_instance_events")
-                            .values({
-                              blueprint_field_id: field.id,
-                              blueprint_instance_id: params.id,
-                              related_id: char.related_id,
-                            })
-                            .execute(),
-                        );
+                      if (field.documents) {
+                        if (field.documents.length) {
+                          await tx
+                            .deleteFrom("blueprint_instance_documents")
+                            .where("blueprint_instance_id", "=", params.id)
+                            .where("blueprint_field_id", "=", field.id)
+                            .execute();
+                          return field.documents.map((char) =>
+                            tx
+                              .insertInto("blueprint_instance_documents")
+                              .values({
+                                blueprint_field_id: field.id,
+                                blueprint_instance_id: params.id,
+                                related_id: char.related_id,
+                              })
+                              .execute(),
+                          );
+                        }
                       }
-                    }
-                    if (field.images) {
-                      await tx
-                        .deleteFrom("blueprint_instance_images")
-                        .where("blueprint_instance_id", "=", params.id)
-                        .where("blueprint_field_id", "=", field.id)
-                        .execute();
-                      if (field.images.length) {
-                        return field.images.map((char) =>
-                          tx
-                            .insertInto("blueprint_instance_images")
-                            .values({
-                              blueprint_field_id: field.id,
-                              blueprint_instance_id: params.id,
-                              related_id: char.related_id,
-                            })
-                            .execute(),
-                        );
+                      if (field.map_pins) {
+                        await tx
+                          .deleteFrom("blueprint_instance_map_pins")
+                          .where("blueprint_instance_id", "=", params.id)
+                          .where("blueprint_field_id", "=", field.id)
+                          .execute();
+                        if (field.map_pins.length) {
+                          return field.map_pins.map((char) =>
+                            tx
+                              .insertInto("blueprint_instance_map_pins")
+                              .values({
+                                blueprint_field_id: field.id,
+                                blueprint_instance_id: params.id,
+                                related_id: char.related_id,
+                              })
+                              .execute(),
+                          );
+                        }
                       }
-                    }
-                    if (field.random_table) {
-                      await tx
-                        .deleteFrom("blueprint_instance_random_tables")
-                        .where("blueprint_instance_id", "=", params.id)
-                        .where("blueprint_field_id", "=", field.id)
-                        .execute();
-                      return tx
-                        .insertInto("blueprint_instance_random_tables")
-                        .values({
-                          blueprint_field_id: field.id,
-                          blueprint_instance_id: params.id,
-                          related_id: field.random_table.related_id,
-                          option_id: field.random_table.option_id,
-                          suboption_id: field.random_table.suboption_id,
-                        })
-                        .execute();
-                    }
-                    if (field.calendar) {
-                      await tx
-                        .deleteFrom("blueprint_instance_calendars")
-                        .where("blueprint_instance_id", "=", params.id)
-                        .where("blueprint_field_id", "=", field.id)
-                        .execute();
-                      return tx
-                        .insertInto("blueprint_instance_calendars")
-                        .values({
-                          blueprint_field_id: field.id,
-                          blueprint_instance_id: params.id,
-                          related_id: field.calendar.related_id,
-                          start_day: field.calendar.start_day,
-                          start_month_id: field.calendar.start_month_id,
-                          start_year: field.calendar.start_year,
-                          end_day: field.calendar.end_day,
-                          end_month_id: field.calendar.end_month_id,
-                          end_year: field.calendar.end_year,
-                        })
-                        .execute();
-                    }
-                  }),
-                );
-              }
-              if (body.relations?.tags) {
-                await UpdateTagRelations({
-                  relationalTable: "_blueprint_instancesTotags",
-                  id: params.id,
-                  newTags: body.relations.tags,
-                  tx,
-                });
-              }
-              if (body.permissions?.length) {
-                await UpdateEntityPermissions(tx, params.id, "blueprint_permissions", body.permissions);
-              }
-            });
+                      if (field.events) {
+                        await tx
+                          .deleteFrom("blueprint_instance_events")
+                          .where("blueprint_instance_id", "=", params.id)
+                          .where("blueprint_field_id", "=", field.id)
+                          .execute();
+                        if (field.events.length) {
+                          return field.events.map((char) =>
+                            tx
+                              .insertInto("blueprint_instance_events")
+                              .values({
+                                blueprint_field_id: field.id,
+                                blueprint_instance_id: params.id,
+                                related_id: char.related_id,
+                              })
+                              .execute(),
+                          );
+                        }
+                      }
+                      if (field.images) {
+                        await tx
+                          .deleteFrom("blueprint_instance_images")
+                          .where("blueprint_instance_id", "=", params.id)
+                          .where("blueprint_field_id", "=", field.id)
+                          .execute();
+                        if (field.images.length) {
+                          return field.images.map((char) =>
+                            tx
+                              .insertInto("blueprint_instance_images")
+                              .values({
+                                blueprint_field_id: field.id,
+                                blueprint_instance_id: params.id,
+                                related_id: char.related_id,
+                              })
+                              .execute(),
+                          );
+                        }
+                      }
+                      if (field.random_table) {
+                        await tx
+                          .deleteFrom("blueprint_instance_random_tables")
+                          .where("blueprint_instance_id", "=", params.id)
+                          .where("blueprint_field_id", "=", field.id)
+                          .execute();
+                        return tx
+                          .insertInto("blueprint_instance_random_tables")
+                          .values({
+                            blueprint_field_id: field.id,
+                            blueprint_instance_id: params.id,
+                            related_id: field.random_table.related_id,
+                            option_id: field.random_table.option_id,
+                            suboption_id: field.random_table.suboption_id,
+                          })
+                          .execute();
+                      }
+                      if (field.calendar) {
+                        await tx
+                          .deleteFrom("blueprint_instance_calendars")
+                          .where("blueprint_instance_id", "=", params.id)
+                          .where("blueprint_field_id", "=", field.id)
+                          .execute();
+                        return tx
+                          .insertInto("blueprint_instance_calendars")
+                          .values({
+                            blueprint_field_id: field.id,
+                            blueprint_instance_id: params.id,
+                            related_id: field.calendar.related_id,
+                            start_day: field.calendar.start_day,
+                            start_month_id: field.calendar.start_month_id,
+                            start_year: field.calendar.start_year,
+                            end_day: field.calendar.end_day,
+                            end_month_id: field.calendar.end_month_id,
+                            end_year: field.calendar.end_year,
+                          })
+                          .execute();
+                      }
+                    }),
+                  );
+                }
+                if (body.relations?.tags) {
+                  await UpdateTagRelations({
+                    relationalTable: "_blueprint_instancesTotags",
+                    id: params.id,
+                    newTags: body.relations.tags,
+                    tx,
+                  });
+                }
+                if (body.permissions) {
+                  await UpdateEntityPermissions(tx, params.id, "blueprint_instance_permissions", body.permissions);
+                }
+              });
 
-            return { message: `Blueprint instance ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
+              return { message: `Blueprint instance ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
+            } else {
+              noRoleAccessErrorHandler();
+              return { message: "", ok: false, role_access: false };
+            }
           },
           {
             body: UpdateBlueprintInstanceSchema,
@@ -827,25 +862,37 @@ export function blueprint_instance_router(app: Elysia) {
         )
         .delete(
           "/:id",
-          async ({ params }) => {
-            const res = await db
-              .deleteFrom("blueprint_instances")
-              .where("blueprint_instances.id", "=", params.id)
-              .returning(["blueprint_instances.parent_id", "blueprint_instances.title"])
-              .executeTakeFirstOrThrow();
+          async ({ params, permissions }) => {
+            const permissionCheck = await getHasEntityPermission("blueprint_instances", params.id, permissions);
 
-            const data = await db
-              .selectFrom("blueprints")
-              .where("id", "=", res.parent_id)
-              .select(["project_id"])
-              .executeTakeFirstOrThrow();
+            if (permissionCheck) {
+              const res = await db
+                .deleteFrom("blueprint_instances")
+                .where("blueprint_instances.id", "=", params.id)
+                .returning(["blueprint_instances.parent_id", "blueprint_instances.title"])
+                .executeTakeFirstOrThrow();
 
-            return {
-              data: { project_id: data.project_id, title: res.title },
-              message: `Blueprint instance ${MessageEnum.successfully_deleted}.`,
-              ok: true,
-              role_access: true,
-            };
+              const data = await db
+                .selectFrom("blueprints")
+                .where("id", "=", res.parent_id)
+                .select(["project_id"])
+                .executeTakeFirstOrThrow();
+
+              return {
+                data: { project_id: data.project_id, title: res.title },
+                message: `Blueprint instance ${MessageEnum.successfully_deleted}.`,
+                ok: true,
+                role_access: true,
+              };
+            } else {
+              noRoleAccessErrorHandler();
+              return {
+                data: {},
+                message: "",
+                ok: false,
+                role_access: false,
+              };
+            }
           },
           {
             response: ResponseWithDataSchema,

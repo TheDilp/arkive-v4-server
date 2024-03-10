@@ -71,6 +71,8 @@ export function blueprint_router(app: Elysia) {
             const data = await db
               .selectFrom("blueprints")
               .where("blueprints.project_id", "=", body.data.project_id)
+              .limit(body?.pagination?.limit || 10)
+              .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
               .$if(!body.fields?.length, (qb) => qb.selectAll())
               .$if(!!body.fields?.length, (qb) =>
                 qb.clearSelect().select(body.fields.map((f) => `blueprints.${f}`) as SelectExpression<DB, "blueprints">[]),
@@ -231,7 +233,7 @@ export function blueprint_router(app: Elysia) {
                 return qb;
               })
               .$if(!permissions.is_owner, (qb) => {
-                return checkEntityLevelPermission(qb, permissions, "blueprints");
+                return checkEntityLevelPermission(qb, permissions, "blueprints", params.id);
               })
 
               .executeTakeFirstOrThrow();
@@ -297,7 +299,7 @@ export function blueprint_router(app: Elysia) {
                       );
                     }
                   }
-                  if (body.permissions?.length) {
+                  if (body.permissions) {
                     await UpdateEntityPermissions(tx, params.id, "blueprint_permissions", body.permissions);
                   }
                 });

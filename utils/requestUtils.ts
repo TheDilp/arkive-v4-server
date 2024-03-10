@@ -140,6 +140,7 @@ export function getPermissionFromAction(
 export function getPermissionTableFromEntity(entity: EntitiesWithPermissionCheck): EntityPermissionTables | null {
   if (entity === "characters") return "character_permissions";
   if (entity === "blueprints") return "blueprint_permissions";
+  if (entity === "blueprint_instances") return "blueprint_instance_permissions";
   if (entity === "documents") return "document_permissions";
   return null;
 }

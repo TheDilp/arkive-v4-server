@@ -1,4 +1,4 @@
-import { sql } from "kysely";
+import { SelectQueryBuilder, sql } from "kysely";
 
 import { EntitiesWithPermissionCheck } from "../../types/entityTypes";
 import { PermissionDecorationType } from "../../types/requestTypes";
@@ -6,7 +6,7 @@ import { getPermissionTableFromEntity } from "../../utils/requestUtils";
 import { db } from "../db";
 
 export function checkEntityLevelPermission(
-  qb: any,
+  qb: SelectQueryBuilder<any, any, any>,
   permissions: PermissionDecorationType,
   entity: EntitiesWithPermissionCheck,
   related_id?: string,
@@ -26,6 +26,8 @@ export function checkEntityLevelPermission(
           wb(`${entityRelationTable}.role_id`, "=", permissions.role_id),
         ]),
       );
+  } else {
+    qb = qb.clearLimit().limit(0);
   }
   return qb;
 }
