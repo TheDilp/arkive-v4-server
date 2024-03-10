@@ -70,6 +70,11 @@ export function blueprint_router(app: Elysia) {
           async ({ body, permissions }) => {
             const data = await db
               .selectFrom("blueprints")
+              .distinctOn(
+                body.orderBy?.length
+                  ? (["blueprints.id", ...body.orderBy.map((order) => order.field)] as any)
+                  : "blueprints.id",
+              )
               .where("blueprints.project_id", "=", body.data.project_id)
               .limit(body?.pagination?.limit || 10)
               .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))

@@ -433,9 +433,16 @@ export function blueprint_instance_router(app: Elysia) {
           async ({ params, body, permissions }) => {
             const data = await db
               .selectFrom("blueprint_instances")
+              .distinctOn(
+                body.orderBy?.length
+                  ? (["blueprint_instances.id", ...body.orderBy.map((order) => order.field)] as any)
+                  : "blueprint_instances.id",
+              )
               .$if(!body.fields?.length, (qb) => qb.selectAll())
               .$if(!!body.fields?.length, (qb) =>
-                qb.clearSelect().select(body.fields as SelectExpression<DB, "blueprint_instances">[]),
+                qb
+                  .clearSelect()
+                  .select(body.fields.map((f) => `blueprint_instances.${f}`) as SelectExpression<DB, "blueprint_instances">[]),
               )
               .where("blueprint_instances.id", "=", params.id)
               .select([
@@ -635,7 +642,7 @@ export function blueprint_instance_router(app: Elysia) {
               .$if(!permissions.is_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "blueprint_instances", params.id);
               })
-              .executeTakeFirstOrThrow();
+              .executeTakeFirst();
 
             return { data, message: MessageEnum.success, ok: true, role_access: true };
           },

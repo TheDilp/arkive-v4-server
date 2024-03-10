@@ -43,6 +43,7 @@ import {
   websocket_router,
   word_router,
 } from "./routers";
+
 export const app = new Elysia()
   .use(
     cors({
@@ -81,7 +82,7 @@ export const app = new Elysia()
       set.status = 200;
       return { message: "NO_ROLE_ACCESS", ok: false, role_access: false };
     }
-    console.error(error);
+
     return { message: "There was an error with your request.", ok: false, role_access: false };
   })
   .use(health_check_router)

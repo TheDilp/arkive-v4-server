@@ -200,6 +200,9 @@ export function document_router(app: Elysia) {
           async ({ body, permissions }) => {
             const data = await db
               .selectFrom("documents")
+              .distinctOn(
+                body.orderBy?.length ? (["documents.id", ...body.orderBy.map((order) => order.field)] as any) : "documents.id",
+              )
               .where("documents.project_id", "=", body?.data?.project_id)
               .limit(body?.pagination?.limit || 10)
               .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
@@ -236,6 +239,7 @@ export function document_router(app: Elysia) {
           async ({ params, body, permissions }) => {
             const data = await db
               .selectFrom("documents")
+
               .$if(!body.fields?.length, (qb) => qb.selectAll())
               .$if(!!body.fields?.length, (qb) =>
                 qb.clearSelect().select(body.fields.map((f) => `documents.${f}`) as SelectExpression<DB, "documents">[]),
