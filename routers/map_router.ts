@@ -72,7 +72,9 @@ export function map_router(app: Elysia) {
               .limit(body?.pagination?.limit || 10)
               .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
               .$if(!body.fields?.length, (qb) => qb.selectAll())
-              .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "maps">[]))
+              .$if(!!body.fields?.length, (qb) =>
+                qb.clearSelect().select(body.fields.map((f) => `maps.${f}`) as SelectExpression<DB, "maps">[]),
+              )
               .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_mapsTotags", "maps")))
               .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
                 qb = constructFilter("maps", qb, body.filters);
@@ -82,6 +84,7 @@ export function map_router(app: Elysia) {
                 return checkEntityLevelPermission(qb, permissions, "maps");
               })
               .execute();
+            console.log(data);
             return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
@@ -162,6 +165,26 @@ export function map_router(app: Elysia) {
                   ),
                 ),
               )
+              .$if(!!body.permissions, (qb) => {
+                qb = qb.select([
+                  (eb) =>
+                    jsonArrayFrom(
+                      eb
+                        .selectFrom("map_permissions")
+                        .leftJoin("permissions", "permissions.id", "map_permissions.permission_id")
+                        .select([
+                          "map_permissions.id",
+                          "map_permissions.permission_id",
+                          "map_permissions.related_id",
+                          "map_permissions.role_id",
+                          "map_permissions.user_id",
+                          "permissions.code",
+                        ])
+                        .where("related_id", "=", params.id),
+                    ).as("permissions"),
+                ]);
+                return qb;
+              })
 
               .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_mapsTotags", "maps")))
               .$if(!permissions.is_owner, (qb) => {

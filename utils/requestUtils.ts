@@ -142,5 +142,6 @@ export function getPermissionTableFromEntity(entity: EntitiesWithPermissionCheck
   if (entity === "blueprints") return "blueprint_permissions";
   if (entity === "blueprint_instances") return "blueprint_instance_permissions";
   if (entity === "documents") return "document_permissions";
+  if (entity === "maps") return "map_permissions";
   return null;
 }

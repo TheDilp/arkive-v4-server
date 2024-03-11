@@ -56,4 +56,10 @@ export type EntityPermissionTables =
   | "blueprint_permissions"
   | "blueprint_instance_permissions"
   | "document_permissions"
-  | "map_permissions";
+  | "map_permissions"
+  | "graph_permissions"
+  | "calendar_permissions"
+  | "dictionary_permissions"
+  | "random_table_permissions"
+  | "tag_permissions"
+  | "character_field_template_permissions";
