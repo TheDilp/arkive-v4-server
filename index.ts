@@ -82,7 +82,13 @@ export const app = new Elysia()
       set.status = 200;
       return { message: "NO_ROLE_ACCESS", ok: false, role_access: false };
     }
-
+    if (error?.message === "no result") {
+      return {
+        message: "This entity could not be found or you do not have permission to view it.",
+        ok: true,
+        role_access: false,
+      };
+    }
     return { message: "There was an error with your request.", ok: false, role_access: false };
   })
   .use(health_check_router)
