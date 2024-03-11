@@ -64,7 +64,6 @@ export const InsertBlueprintSchema = t.Object({
     title: t.String(),
     title_name: t.String(),
     icon: t.Optional(t.Union([t.String(), t.Null()])),
-    owner_id: t.String(),
   }),
   relations: t.Optional(
     t.Object({
