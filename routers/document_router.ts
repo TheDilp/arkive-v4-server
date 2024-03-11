@@ -72,9 +72,13 @@ export function document_router(app: Elysia) {
       server
         .post(
           "/create",
-          async ({ body }) => {
+          async ({ body, permissions }) => {
             await db.transaction().execute(async (tx) => {
-              const document = await tx.insertInto("documents").values(body.data).returning("id").executeTakeFirstOrThrow();
+              const document = await tx
+                .insertInto("documents")
+                .values(getEntityWithOwnerId(body.data, permissions.user_id))
+                .returning("id")
+                .executeTakeFirstOrThrow();
 
               if (body.relations?.alter_names?.length) {
                 const { alter_names } = body.relations;
@@ -108,11 +112,15 @@ export function document_router(app: Elysia) {
         )
         .post(
           "/create/template",
-          async ({ body }) => {
+          async ({ body, permissions }) => {
             await db.transaction().execute(async (tx) => {
               const formatted = body.data;
               formatted.is_template = true;
-              const document = await tx.insertInto("documents").values(formatted).returning("id").executeTakeFirstOrThrow();
+              const document = await tx
+                .insertInto("documents")
+                .values(getEntityWithOwnerId(formatted, permissions.user_id))
+                .returning("id")
+                .executeTakeFirstOrThrow();
 
               if (body.relations?.alter_names?.length) {
                 const { alter_names } = body.relations;
