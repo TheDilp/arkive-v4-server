@@ -917,6 +917,20 @@ CREATE TABLE public.events (
 
 
 --
+-- Name: graph_permissions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.graph_permissions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    permission_id uuid,
+    role_id uuid,
+    user_id uuid,
+    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
+);
+
+
+--
 -- Name: graphs; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1571,6 +1585,14 @@ ALTER TABLE ONLY public.events
 
 
 --
+-- Name: graph_permissions graph_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.graph_permissions
+    ADD CONSTRAINT graph_permissions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: graphs graphs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1864,6 +1886,22 @@ ALTER TABLE ONLY public.document_permissions
 
 ALTER TABLE ONLY public.document_permissions
     ADD CONSTRAINT unique_document_user_permission_combination UNIQUE (related_id, user_id, permission_id);
+
+
+--
+-- Name: graph_permissions unique_graph_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.graph_permissions
+    ADD CONSTRAINT unique_graph_role_combination UNIQUE (related_id, role_id);
+
+
+--
+-- Name: graph_permissions unique_graph_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.graph_permissions
+    ADD CONSTRAINT unique_graph_user_permission_combination UNIQUE (related_id, user_id, permission_id);
 
 
 --
@@ -3541,6 +3579,30 @@ ALTER TABLE ONLY public.events
 
 
 --
+-- Name: graph_permissions graph_permissions_bpi_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.graph_permissions
+    ADD CONSTRAINT graph_permissions_bpi_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.graphs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: graph_permissions graph_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.graph_permissions
+    ADD CONSTRAINT graph_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
+
+
+--
+-- Name: graph_permissions graph_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.graph_permissions
+    ADD CONSTRAINT graph_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: graphs graphs_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3948,4 +4010,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240308123748'),
     ('20240308151021'),
     ('20240310113906'),
-    ('20240311084151');
+    ('20240311084151'),
+    ('20240311135335');
