@@ -34,7 +34,7 @@ export function user_router(app: Elysia) {
         },
       )
       .post(
-        "/:project_id/:auth_id",
+        "/:auth_id",
         async ({ params, body }) => {
           const data = await db
             .selectFrom("users")
@@ -47,12 +47,12 @@ export function user_router(app: Elysia) {
                 ).as("webhooks"),
               ),
             )
-            .$if(!!body.relations?.roles, (qb) =>
+            .$if(!!body.relations?.roles && !!body.data.project_id, (qb) =>
               qb.select((eb) =>
                 jsonObjectFrom(
                   eb
                     .selectFrom("user_roles")
-                    .where("user_roles.project_id", "=", params.project_id)
+                    .where("user_roles.project_id", "=", body.data.project_id as string)
                     .whereRef("user_roles.user_id", "=", "users.id")
                     .select([
                       "user_roles.role_id as id",

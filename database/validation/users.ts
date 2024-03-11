@@ -15,6 +15,12 @@ export const ReadUserSchema = t.Intersect([
       ),
     }),
   ),
+  t.Object({
+    data: t.Object({
+      auth_id: t.String(),
+      project_id: t.Optional(t.String()),
+    }),
+  }),
 ]);
 
 export const InsertUserSchema = t.Object({});
