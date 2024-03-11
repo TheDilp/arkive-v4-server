@@ -68,6 +68,7 @@ export function map_router(app: Elysia) {
           async ({ body, permissions }) => {
             const data = await db
               .selectFrom("maps")
+              .distinctOn(body.orderBy?.length ? (["maps.id", ...body.orderBy.map((order) => order.field)] as any) : "maps.id")
               .where("project_id", "=", body.data.project_id)
               .limit(body?.pagination?.limit || 10)
               .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
@@ -84,7 +85,6 @@ export function map_router(app: Elysia) {
                 return checkEntityLevelPermission(qb, permissions, "maps");
               })
               .execute();
-            console.log(data);
             return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
@@ -99,7 +99,9 @@ export function map_router(app: Elysia) {
             const data = await db
               .selectFrom("maps")
               .$if(!body.fields?.length, (qb) => qb.selectAll())
-              .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "maps">[]))
+              .$if(!!body.fields?.length, (qb) =>
+                qb.clearSelect().select(body.fields.map((f) => `maps.${f}`) as SelectExpression<DB, "maps">[]),
+              )
               .where("maps.id", "=", params.id)
               .$if(!!body?.relations?.map_pins, (qb) =>
                 qb.select((eb) =>
@@ -191,7 +193,6 @@ export function map_router(app: Elysia) {
                 return checkEntityLevelPermission(qb, permissions, "maps", params.id);
               })
               .executeTakeFirstOrThrow();
-
             if (body?.relations?.parents) {
               const parents = await GetParents({ db, id: params.id, table_name: "maps" });
               data.parents = parents;
