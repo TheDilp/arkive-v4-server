@@ -122,7 +122,8 @@ export function role_router(app: Elysia) {
                     .execute();
                 }
               });
-              if (permissions) sendNotification(permissions.project_id as string, { event_type: "ROLE_UPDATED" });
+              if (permissions)
+                sendNotification(permissions.project_id as string, { entity_id: params.id, event_type: "ROLE_UPDATED" });
             }
             return { message: `Role ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
           },

@@ -6,6 +6,7 @@ export function sendNotification(
   notification:
     | {
         event_type: EventType;
+        entity_id?: string;
         message: string;
         entity: string;
         image_id?: string | null;
