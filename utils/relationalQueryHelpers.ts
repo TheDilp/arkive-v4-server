@@ -335,8 +335,13 @@ export function GetRelatedEntityPermissions(
   if (permissionTable) {
     qb = qb.select([
       (eb: ExpressionBuilder<any, any>) => {
-        const expression = eb
-          .selectFrom(permissionTable)
+        let expression = eb.selectFrom(permissionTable);
+        if (id) {
+          expression = expression.where(`${permissionTable}.related_id`, "=", id);
+        } else {
+          expression = expression.whereRef(`${permissionTable}.related_id`, "=", `${entity}.id`);
+        }
+        expression = expression
           .leftJoin("permissions", "permissions.id", `${permissionTable}.permission_id`)
           .select([
             `${permissionTable}.id`,
@@ -346,17 +351,13 @@ export function GetRelatedEntityPermissions(
             `${permissionTable}.user_id`,
             "permissions.code",
           ]);
-
         if (!permissions.is_project_owner) {
-          qb = qb.where((wb) =>
+          expression = expression.where((wb) =>
             wb.or([
               wb(`${permissionTable}.user_id`, "=", permissions.user_id),
               wb(`${permissionTable}.role_id`, "=", permissions.role_id),
             ]),
           );
-        }
-        if (id) {
-          expression.where(`${permissionTable}.related_id`, "=", id);
         }
 
         return jsonArrayFrom(expression).as("permissions");
