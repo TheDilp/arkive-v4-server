@@ -18,7 +18,7 @@ import { getEntityWithOwnerId } from "../utils/transform";
 export function blueprint_router(app: Elysia) {
   return app
     .decorate("permissions", {
-      is_owner: false,
+      is_project_owner: false,
       role_access: false,
       user_id: "",
       role_id: null,
@@ -112,7 +112,7 @@ export function blueprint_router(app: Elysia) {
 
                 return qb;
               })
-              .$if(!permissions.is_owner, (qb) => {
+              .$if(!permissions.is_project_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "blueprints");
               })
               .execute();
@@ -237,7 +237,7 @@ export function blueprint_router(app: Elysia) {
                 ]);
                 return qb;
               })
-              .$if(!permissions.is_owner, (qb) => {
+              .$if(!permissions.is_project_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "blueprints", params.id);
               })
 

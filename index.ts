@@ -89,6 +89,7 @@ export const app = new Elysia()
         role_access: false,
       };
     }
+    console.error(error);
     return { message: "There was an error with your request.", ok: false, role_access: false };
   })
   .use(health_check_router)

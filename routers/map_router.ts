@@ -25,7 +25,7 @@ import { getEntityWithOwnerId } from "../utils/transform";
 export function map_router(app: Elysia) {
   return app
     .decorate("permissions", {
-      is_owner: false,
+      is_project_owner: false,
       role_access: false,
       user_id: "",
       role_id: null,
@@ -81,7 +81,7 @@ export function map_router(app: Elysia) {
                 qb = constructFilter("maps", qb, body.filters);
                 return qb;
               })
-              .$if(!permissions.is_owner, (qb) => {
+              .$if(!permissions.is_project_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "maps");
               })
               .execute();
@@ -189,7 +189,7 @@ export function map_router(app: Elysia) {
               })
 
               .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_mapsTotags", "maps")))
-              .$if(!permissions.is_owner, (qb) => {
+              .$if(!permissions.is_project_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "maps", params.id);
               })
               .executeTakeFirstOrThrow();

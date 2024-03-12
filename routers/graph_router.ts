@@ -28,7 +28,7 @@ import { getEntityWithOwnerId } from "../utils/transform";
 export function graph_router(app: Elysia) {
   return app
     .decorate("permissions", {
-      is_owner: false,
+      is_project_owner: false,
       role_access: false,
       user_id: "",
       role_id: null,
@@ -80,7 +80,7 @@ export function graph_router(app: Elysia) {
               })
               .limit(body?.pagination?.limit || 10)
               .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
-              .$if(!permissions.is_owner, (qb) => {
+              .$if(!permissions.is_project_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "graphs");
               })
               .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_graphsTotags", "graphs")))
@@ -181,7 +181,7 @@ export function graph_router(app: Elysia) {
                 ]);
                 return qb;
               })
-              .$if(!permissions.is_owner, (qb) => {
+              .$if(!permissions.is_project_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "graphs", params.id);
               })
               .executeTakeFirstOrThrow();

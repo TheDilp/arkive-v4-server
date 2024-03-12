@@ -35,7 +35,6 @@ export const ReadBlueprintInstanceSchema = t.Intersect([
         tags: t.Optional(t.Boolean()),
       }),
     ),
-    permissions: t.Optional(t.Boolean()),
   }),
 ]);
 

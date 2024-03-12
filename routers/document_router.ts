@@ -62,7 +62,7 @@ function getAutoLinkerFields(
 export function document_router(app: Elysia) {
   return app
     .decorate("permissions", {
-      is_owner: false,
+      is_project_owner: false,
       role_access: false,
       user_id: "",
       role_id: null,
@@ -214,7 +214,7 @@ export function document_router(app: Elysia) {
               .where("documents.project_id", "=", body?.data?.project_id)
               .limit(body?.pagination?.limit || 10)
               .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
-              .$if(!permissions.is_owner, (qb) => {
+              .$if(!permissions.is_project_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "documents");
               })
               .$if(!body?.fields?.length, (qb) => qb.selectAll())
@@ -252,7 +252,7 @@ export function document_router(app: Elysia) {
               .$if(!!body.fields?.length, (qb) =>
                 qb.clearSelect().select(body.fields.map((f) => `documents.${f}`) as SelectExpression<DB, "documents">[]),
               )
-              .$if(!permissions.is_owner, (qb) => {
+              .$if(!permissions.is_project_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "documents", params.id);
               })
               .where("documents.id", "=", params.id)
@@ -560,7 +560,7 @@ export function document_router(app: Elysia) {
                     "in",
                     mentions.map((m) => m.id),
                   )
-                  .$if(!permissions.is_owner, (qb) => {
+                  .$if(!permissions.is_project_owner, (qb) => {
                     return checkEntityLevelPermission(qb, permissions, type as EntitiesWithPermissionCheck);
                   })
                   .execute(),
@@ -583,7 +583,7 @@ export function document_router(app: Elysia) {
               .leftJoin("documents", "documents.id", "document_mentions.parent_document_id")
               .select(["documents.id", "documents.title", "documents.icon"])
               .where("mention_id", "=", params.id)
-              .$if(!permissions.is_owner, (qb) => {
+              .$if(!permissions.is_project_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "documents");
               })
               .execute();
@@ -610,7 +610,7 @@ export function document_router(app: Elysia) {
             const nodes = await db
               .selectFrom("documents")
               .where("project_id", "=", project_id)
-              .$if(!permissions.is_owner, (qb) => {
+              .$if(!permissions.is_project_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "documents");
               })
 

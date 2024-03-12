@@ -33,7 +33,7 @@ import { getEntityWithOwnerId, groupRelationFiltersByField } from "../utils/tran
 export function blueprint_instance_router(app: Elysia) {
   return app
     .decorate("permissions", {
-      is_owner: false,
+      is_project_owner: false,
       role_access: false,
       user_id: "",
       role_id: null,
@@ -409,7 +409,7 @@ export function blueprint_instance_router(app: Elysia) {
                 qb = constructOrdering(body.orderBy, qb);
                 return qb;
               })
-              .$if(!permissions.is_owner, (qb) => {
+              .$if(!permissions.is_project_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "blueprint_instances");
               })
               .$if(!!body.relations?.tags, (qb) => {
@@ -639,7 +639,7 @@ export function blueprint_instance_router(app: Elysia) {
                 ]);
                 return qb;
               })
-              .$if(!permissions.is_owner, (qb) => {
+              .$if(!permissions.is_project_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "blueprint_instances", params.id);
               })
               .executeTakeFirst();

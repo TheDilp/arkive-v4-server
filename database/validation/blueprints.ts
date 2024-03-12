@@ -54,7 +54,6 @@ export const ReadBlueprintSchema = t.Intersect([
         random_table_options: t.Optional(t.Boolean()),
       }),
     ),
-    permissions: t.Optional(t.Boolean()),
   }),
 ]);
 

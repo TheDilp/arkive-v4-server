@@ -3,7 +3,15 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { EntitiesWithChildren, EntitiesWithTags, EntityPermissionTables, TagsRelationTables } from "../database/types";
-import { EntitiesWithFolders, InsertPermissionType, UpdatePermissionType } from "../types/entityTypes";
+import {
+  AvailableEntityType,
+  EntitiesWithFolders,
+  EntitiesWithPermissionCheck,
+  InsertPermissionType,
+  UpdatePermissionType,
+} from "../types/entityTypes";
+import { PermissionDecorationType } from "../types/requestTypes";
+import { getPermissionTableFromEntity } from "./requestUtils";
 
 export function TagQuery(eb: ExpressionBuilder<any, any>, relationalTable: TagsRelationTables, table: EntitiesWithTags) {
   return jsonArrayFrom(
@@ -316,4 +324,44 @@ export async function UpdateEntityPermissions(
       .onConflict((oc) => oc.columns(["user_id", "related_id", "permission_id"]).doNothing())
       .execute();
   }
+}
+export function GetRelatedEntityPermissions(
+  qb: SelectQueryBuilder<DB, any, any>,
+  permissions: PermissionDecorationType,
+  entity: EntitiesWithPermissionCheck,
+  id?: string,
+) {
+  const permissionTable = getPermissionTableFromEntity(entity);
+  if (permissionTable) {
+    qb = qb.select([
+      (eb: ExpressionBuilder<any, any>) => {
+        const expression = eb
+          .selectFrom(permissionTable)
+          .leftJoin("permissions", "permissions.id", `${permissionTable}.permission_id`)
+          .select([
+            `${permissionTable}.id`,
+            `${permissionTable}.permission_id`,
+            `${permissionTable}.related_id`,
+            `${permissionTable}.role_id`,
+            `${permissionTable}.user_id`,
+            "permissions.code",
+          ]);
+
+        if (!permissions.is_project_owner) {
+          qb = qb.where((wb) =>
+            wb.or([
+              wb(`${permissionTable}.user_id`, "=", permissions.user_id),
+              wb(`${permissionTable}.role_id`, "=", permissions.role_id),
+            ]),
+          );
+        }
+        if (id) {
+          expression.where(`${permissionTable}.related_id`, "=", id);
+        }
+
+        return jsonArrayFrom(expression).as("permissions");
+      },
+    ]);
+  }
+  return qb;
 }

@@ -7,7 +7,7 @@ import uniqBy from "lodash.uniqby";
 
 import { MessageEnum } from "../../enums";
 import { PermissionDecorationType, ResponseWithDataSchema } from "../../types/requestTypes";
-import { TagQuery } from "../../utils/relationalQueryHelpers";
+import { GetRelatedEntityPermissions, TagQuery } from "../../utils/relationalQueryHelpers";
 import { groupCharacterFields } from "../../utils/transform";
 import { db } from "../db";
 import { ReadCharacterSchema } from "../validation";
@@ -21,7 +21,7 @@ export async function readCharacter(
   isPublic: boolean,
   permissions: PermissionDecorationType,
 ): Promise<(typeof ResponseWithDataSchema)["static"]> {
-  const data = await db
+  let query = db
     .selectFrom("characters")
     .$if(!body.fields?.length, (qb) => qb.selectAll())
     .$if(!!body.fields?.length, (qb) =>
@@ -49,7 +49,7 @@ export async function readCharacter(
                           eb = eb.where("documents.is_public", "=", true);
                           return eb;
                         })
-                        .$if(!permissions.is_owner && !isPublic, (qb) => {
+                        .$if(!permissions.is_project_owner && !isPublic, (qb) => {
                           return checkEntityLevelPermission(qb, permissions, "documents", params.id);
                         }),
                     ).as("documents"),
@@ -193,7 +193,7 @@ export async function readCharacter(
               )
               .where("character_relationship_types.ascendant_title", "is not", null)
               .$if(isPublic, (eb) => eb.where("characters.is_public", "=", true))
-              .$if(!permissions.is_owner && !isPublic, (qb) => {
+              .$if(!permissions.is_project_owner && !isPublic, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "characters", params.id);
               })
               .select([
@@ -221,7 +221,7 @@ export async function readCharacter(
               )
               .where("character_relationship_types.ascendant_title", "is not", null)
               .$if(isPublic, (eb) => eb.where("characters.is_public", "=", true))
-              .$if(!permissions.is_owner && !isPublic, (qb) => {
+              .$if(!permissions.is_project_owner && !isPublic, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "characters", params.id);
               })
               .select([
@@ -249,7 +249,7 @@ export async function readCharacter(
               .where("character_relationship_types.ascendant_title", "is", null)
               .$if(isPublic, (eb) => eb.where("characters.is_public", "=", true))
               .leftJoin("characters", "characters.id", "character_b_id")
-              .$if(!permissions.is_owner && !isPublic, (qb) => {
+              .$if(!permissions.is_project_owner && !isPublic, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "characters", params.id);
               })
               .select([
@@ -273,7 +273,7 @@ export async function readCharacter(
                   .where("character_relationship_types.descendant_title", "is", null)
                   .$if(isPublic, (eb) => eb.where("characters.is_public", "=", true))
                   .leftJoin("characters", "characters.id", "character_a_id")
-                  .$if(!permissions.is_owner && !isPublic, (qb) => {
+                  .$if(!permissions.is_project_owner && !isPublic, (qb) => {
                     return checkEntityLevelPermission(qb, permissions, "characters", params.id);
                   })
                   .select([
@@ -368,7 +368,7 @@ export async function readCharacter(
               .leftJoin("documents", "_charactersTodocuments.B", "documents.id")
               .where("documents.is_folder", "is not", true)
               .where("documents.is_template", "is not", true)
-              .$if(!permissions.is_owner && !isPublic, (qb) => {
+              .$if(!permissions.is_project_owner && !isPublic, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "documents", params.id);
               })
               .$if(isPublic, (eb) => {
@@ -398,31 +398,18 @@ export async function readCharacter(
       }
 
       return qb;
-    })
-    .$if(!!body.permissions && !isPublic, (qb) => {
-      qb = qb.select([
-        (eb) =>
-          jsonArrayFrom(
-            eb
-              .selectFrom("character_permissions")
-              .leftJoin("permissions", "permissions.id", "character_permissions.permission_id")
-              .select([
-                "character_permissions.id",
-                "character_permissions.permission_id",
-                "character_permissions.related_id",
-                "character_permissions.role_id",
-                "character_permissions.user_id",
-                "permissions.code",
-              ])
-              .where("related_id", "=", params.id),
-          ).as("permissions"),
-      ]);
-      return qb;
-    })
-    .$if(!permissions.is_owner, (qb) => {
-      return checkEntityLevelPermission(qb, permissions, "characters", params.id);
-    })
-    .executeTakeFirstOrThrow();
+    });
+
+  if (permissions.is_project_owner) {
+    query = query.leftJoin("character_permissions", (join) => join.on("character_permissions.related_id", "=", params.id));
+  } else {
+    query = checkEntityLevelPermission(query, permissions, "characters", params.id);
+  }
+  if (!!body.permissions && !isPublic) {
+    query = GetRelatedEntityPermissions(query, permissions, "characters", params.id);
+  }
+
+  const data = await query.executeTakeFirstOrThrow();
   // If fetching direct relationships return only unique relationships
   if (data?.related_other) {
     data.related_other = uniqBy(data.related_other, "id");

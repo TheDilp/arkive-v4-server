@@ -20,6 +20,7 @@ import { constructOrdering } from "../utils/orderByConstructor";
 import {
   CreateEntityPermissions,
   CreateTagRelations,
+  GetRelatedEntityPermissions,
   GetRelationsForUpdating,
   TagQuery,
   UpdateCharacterRelationships,
@@ -31,7 +32,7 @@ import { getEntityWithOwnerId, groupCharacterResourceFiltersByField, groupRelati
 export function character_router(app: Elysia) {
   return app
     .decorate("permissions", {
-      is_owner: false,
+      is_project_owner: false,
       role_access: false,
       user_id: "",
       role_id: null,
@@ -222,14 +223,15 @@ export function character_router(app: Elysia) {
                   ? (["characters.id", ...body.orderBy.map((order) => order.field)] as any)
                   : "characters.id",
               )
-
               .where("characters.project_id", "=", body?.data?.project_id)
-              .$if(!permissions.is_owner, (qb) => {
-                return checkEntityLevelPermission(qb, permissions, "characters");
-              })
-
               .limit(body?.pagination?.limit || 10)
               .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
+              .$if(!permissions.is_project_owner, (qb) => {
+                return checkEntityLevelPermission(qb, permissions, "characters");
+              })
+              .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
+                GetRelatedEntityPermissions(qb, permissions, "characters"),
+              )
               .$if(!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length, (qb) => {
                 const { blueprint_instances, documents, map_pins, events, tags, value } = groupRelationFiltersByField(
                   body.relationFilters || {},

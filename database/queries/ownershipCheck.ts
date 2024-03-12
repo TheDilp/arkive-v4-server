@@ -40,7 +40,7 @@ export async function getHasEntityPermission(
   const permissionCheck = await db
     .selectFrom(entity)
     .where(`${entity}.id`, "=", id)
-    .$if(!permissions.is_owner, (qb) => {
+    .$if(!permissions.is_project_owner, (qb) => {
       return checkEntityLevelPermission(qb, permissions, entity, id);
     })
     .select(sql<boolean>`${true}`.as("hasPermission"))

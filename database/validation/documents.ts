@@ -14,7 +14,6 @@ export const ReadDocumentSchema = t.Intersect([
           parents: t.Optional(t.Boolean()),
         }),
       ),
-      permissions: t.Optional(t.Boolean()),
     }),
   ),
 ]);

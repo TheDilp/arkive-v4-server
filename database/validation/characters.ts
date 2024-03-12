@@ -28,7 +28,6 @@ export const ReadCharacterSchema = t.Intersect([
           locations: t.Optional(t.Boolean()),
         }),
       ),
-      permissions: t.Optional(t.Boolean()),
     }),
   ),
 ]);
