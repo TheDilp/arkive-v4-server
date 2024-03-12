@@ -35,6 +35,7 @@ import {
   CreateTagRelations,
   GetEntityChildren,
   GetParents,
+  GetRelatedEntityPermissions,
   GetRelationsForUpdating,
   TagQuery,
   UpdateEntityPermissions,
@@ -214,9 +215,7 @@ export function document_router(app: Elysia) {
               .where("documents.project_id", "=", body?.data?.project_id)
               .limit(body?.pagination?.limit || 10)
               .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
-              .$if(!permissions.is_project_owner, (qb) => {
-                return checkEntityLevelPermission(qb, permissions, "documents");
-              })
+
               .$if(!body?.fields?.length, (qb) => qb.selectAll())
               .$if(!!body?.fields?.length, (qb) =>
                 qb.clearSelect().select(body.fields.map((f) => `documents.${f}`) as SelectExpression<DB, "documents">[]),
@@ -232,6 +231,12 @@ export function document_router(app: Elysia) {
                 return qb;
               })
               .$if(!!body.orderBy, (qb) => constructOrdering(body.orderBy, qb))
+              .$if(!permissions.is_project_owner, (qb) => {
+                return checkEntityLevelPermission(qb, permissions, "documents");
+              })
+              .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
+                GetRelatedEntityPermissions(qb, permissions, "documents"),
+              )
 
               .execute();
             return { data, message: MessageEnum.success, ok: true, role_access: true };
@@ -245,17 +250,13 @@ export function document_router(app: Elysia) {
         .post(
           "/:id",
           async ({ params, body, permissions }) => {
-            const data = await db
+            let query = db
               .selectFrom("documents")
-
+              .where("documents.id", "=", params.id)
               .$if(!body.fields?.length, (qb) => qb.selectAll())
               .$if(!!body.fields?.length, (qb) =>
                 qb.clearSelect().select(body.fields.map((f) => `documents.${f}`) as SelectExpression<DB, "documents">[]),
               )
-              .$if(!permissions.is_project_owner, (qb) => {
-                return checkEntityLevelPermission(qb, permissions, "documents", params.id);
-              })
-              .where("documents.id", "=", params.id)
               .$if(!!body?.relations, (qb) => {
                 if (body?.relations?.tags) {
                   qb = qb.select((eb) => TagQuery(eb, "_documentsTotags", "documents"));
@@ -273,30 +274,23 @@ export function document_router(app: Elysia) {
 
                 return qb;
               })
-              .$if(!!body.permissions, (qb) => {
-                qb = qb.select([
-                  (eb) =>
-                    jsonArrayFrom(
-                      eb
-                        .selectFrom("document_permissions")
-                        .leftJoin("permissions", "permissions.id", "document_permissions.permission_id")
-                        .select([
-                          "document_permissions.id",
-                          "document_permissions.permission_id",
-                          "document_permissions.related_id",
-                          "document_permissions.role_id",
-                          "document_permissions.user_id",
-                          "permissions.code",
-                        ])
-                        .where("related_id", "=", params.id),
-                    ).as("permissions"),
-                ]);
-                return qb;
-              })
+
               .$if(!!body?.relations?.children, (qb) =>
                 GetEntityChildren(qb as SelectQueryBuilder<DB, EntitiesWithChildren, {}>, "documents"),
-              )
-              .executeTakeFirstOrThrow();
+              );
+
+            if (permissions.is_project_owner) {
+              query = query.leftJoin("document_permissions", (join) =>
+                join.on("document_permissions.related_id", "=", params.id),
+              );
+            } else {
+              query = checkEntityLevelPermission(query, permissions, "documents", params.id);
+            }
+            if (body.permissions) {
+              query = GetRelatedEntityPermissions(query, permissions, "documents", params.id);
+            }
+
+            const data = await query.executeTakeFirstOrThrow();
 
             if (body?.relations?.parents) {
               const parents = await GetParents({ db, id: params.id, table_name: "documents" });

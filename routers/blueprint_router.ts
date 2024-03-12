@@ -12,7 +12,12 @@ import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { CreateEntityPermissions, GetRelationsForUpdating, UpdateEntityPermissions } from "../utils/relationalQueryHelpers";
+import {
+  CreateEntityPermissions,
+  GetRelatedEntityPermissions,
+  GetRelationsForUpdating,
+  UpdateEntityPermissions,
+} from "../utils/relationalQueryHelpers";
 import { getEntityWithOwnerId } from "../utils/transform";
 
 export function blueprint_router(app: Elysia) {
@@ -115,6 +120,9 @@ export function blueprint_router(app: Elysia) {
               .$if(!permissions.is_project_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "blueprints");
               })
+              .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
+                GetRelatedEntityPermissions(qb, permissions, "blueprints"),
+              )
               .execute();
             return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
@@ -127,7 +135,7 @@ export function blueprint_router(app: Elysia) {
         .post(
           "/:id",
           async ({ params, body, permissions }) => {
-            const data = await db
+            let query = db
               .selectFrom("blueprints")
               .$if(!body.fields?.length, (qb) => qb.selectAll())
               .$if(!!body.fields?.length, (qb) =>
@@ -216,32 +224,20 @@ export function blueprint_router(app: Elysia) {
                       .select(["blueprint_instances.id", "blueprint_instances.parent_id"]),
                   ).as("blueprint_instances"),
                 ),
-              )
-              .$if(!!body.permissions, (qb) => {
-                qb = qb.select([
-                  (eb) =>
-                    jsonArrayFrom(
-                      eb
-                        .selectFrom("blueprint_permissions")
-                        .leftJoin("permissions", "permissions.id", "blueprint_permissions.permission_id")
-                        .select([
-                          "blueprint_permissions.id",
-                          "blueprint_permissions.permission_id",
-                          "blueprint_permissions.related_id",
-                          "blueprint_permissions.role_id",
-                          "blueprint_permissions.user_id",
-                          "permissions.code",
-                        ])
-                        .where("related_id", "=", params.id),
-                    ).as("permissions"),
-                ]);
-                return qb;
-              })
-              .$if(!permissions.is_project_owner, (qb) => {
-                return checkEntityLevelPermission(qb, permissions, "blueprints", params.id);
-              })
+              );
 
-              .executeTakeFirstOrThrow();
+            if (permissions.is_project_owner) {
+              query = query.leftJoin("blueprint_permissions", (join) =>
+                join.on("blueprint_permissions.related_id", "=", params.id),
+              );
+            } else {
+              query = checkEntityLevelPermission(query, permissions, "blueprints", params.id);
+            }
+            if (body.permissions) {
+              query = GetRelatedEntityPermissions(query, permissions, "blueprints", params.id);
+            }
+
+            const data = await query.executeTakeFirstOrThrow();
             return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
           {

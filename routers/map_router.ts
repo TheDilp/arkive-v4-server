@@ -15,6 +15,7 @@ import {
   CreateEntityPermissions,
   CreateTagRelations,
   GetParents,
+  GetRelatedEntityPermissions,
   GetRelationsForUpdating,
   TagQuery,
   UpdateEntityPermissions,
@@ -84,6 +85,9 @@ export function map_router(app: Elysia) {
               .$if(!permissions.is_project_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "maps");
               })
+              .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
+                GetRelatedEntityPermissions(qb, permissions, "maps"),
+              )
               .execute();
             return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
@@ -96,7 +100,7 @@ export function map_router(app: Elysia) {
         .post(
           "/:id",
           async ({ params, body, permissions }) => {
-            const data = await db
+            let query = db
               .selectFrom("maps")
               .$if(!body.fields?.length, (qb) => qb.selectAll())
               .$if(!!body.fields?.length, (qb) =>
@@ -167,32 +171,19 @@ export function map_router(app: Elysia) {
                   ),
                 ),
               )
-              .$if(!!body.permissions, (qb) => {
-                qb = qb.select([
-                  (eb) =>
-                    jsonArrayFrom(
-                      eb
-                        .selectFrom("map_permissions")
-                        .leftJoin("permissions", "permissions.id", "map_permissions.permission_id")
-                        .select([
-                          "map_permissions.id",
-                          "map_permissions.permission_id",
-                          "map_permissions.related_id",
-                          "map_permissions.role_id",
-                          "map_permissions.user_id",
-                          "permissions.code",
-                        ])
-                        .where("related_id", "=", params.id),
-                    ).as("permissions"),
-                ]);
-                return qb;
-              })
 
-              .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_mapsTotags", "maps")))
-              .$if(!permissions.is_project_owner, (qb) => {
-                return checkEntityLevelPermission(qb, permissions, "maps", params.id);
-              })
-              .executeTakeFirstOrThrow();
+              .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_mapsTotags", "maps")));
+
+            if (permissions.is_project_owner) {
+              query = query.leftJoin("map_permissions", (join) => join.on("map_permissions.related_id", "=", params.id));
+            } else {
+              query = checkEntityLevelPermission(query, permissions, "maps", params.id);
+            }
+            if (body.permissions) {
+              query = GetRelatedEntityPermissions(query, permissions, "maps", params.id);
+            }
+
+            const data = await query.executeTakeFirstOrThrow();
             if (body?.relations?.parents) {
               const parents = await GetParents({ db, id: params.id, table_name: "maps" });
               data.parents = parents;
