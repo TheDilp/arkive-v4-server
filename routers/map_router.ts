@@ -15,7 +15,7 @@ import {
   CreateEntityPermissions,
   CreateTagRelations,
   GetParents,
-  GetRelatedEntityPermissions,
+  GetRelatedEntityPermissionsAndRoles,
   GetRelationsForUpdating,
   TagQuery,
   UpdateEntityPermissions,
@@ -86,7 +86,7 @@ export function map_router(app: Elysia) {
                 return checkEntityLevelPermission(qb, permissions, "maps");
               })
               .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
-                GetRelatedEntityPermissions(qb, permissions, "maps"),
+                GetRelatedEntityPermissionsAndRoles(qb, permissions, "maps"),
               )
               .execute();
             return { data, message: MessageEnum.success, ok: true, role_access: true };
@@ -180,7 +180,7 @@ export function map_router(app: Elysia) {
               query = checkEntityLevelPermission(query, permissions, "maps", params.id);
             }
             if (body.permissions) {
-              query = GetRelatedEntityPermissions(query, permissions, "maps", params.id);
+              query = GetRelatedEntityPermissionsAndRoles(query, permissions, "maps", params.id);
             }
 
             const data = await query.executeTakeFirstOrThrow();

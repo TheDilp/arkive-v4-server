@@ -14,7 +14,7 @@ import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import {
   CreateEntityPermissions,
-  GetRelatedEntityPermissions,
+  GetRelatedEntityPermissionsAndRoles,
   GetRelationsForUpdating,
   UpdateEntityPermissions,
 } from "../utils/relationalQueryHelpers";
@@ -121,7 +121,7 @@ export function blueprint_router(app: Elysia) {
                 return checkEntityLevelPermission(qb, permissions, "blueprints");
               })
               .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
-                GetRelatedEntityPermissions(qb, permissions, "blueprints"),
+                GetRelatedEntityPermissionsAndRoles(qb, permissions, "blueprints"),
               )
               .execute();
             return { data, message: MessageEnum.success, ok: true, role_access: true };
@@ -234,7 +234,7 @@ export function blueprint_router(app: Elysia) {
               query = checkEntityLevelPermission(query, permissions, "blueprints", params.id);
             }
             if (body.permissions) {
-              query = GetRelatedEntityPermissions(query, permissions, "blueprints", params.id);
+              query = GetRelatedEntityPermissionsAndRoles(query, permissions, "blueprints", params.id);
             }
 
             const data = await query.executeTakeFirstOrThrow();

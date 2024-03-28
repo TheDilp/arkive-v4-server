@@ -35,7 +35,7 @@ import {
   CreateTagRelations,
   GetEntityChildren,
   GetParents,
-  GetRelatedEntityPermissions,
+  GetRelatedEntityPermissionsAndRoles,
   GetRelationsForUpdating,
   TagQuery,
   UpdateEntityPermissions,
@@ -235,7 +235,7 @@ export function document_router(app: Elysia) {
                 return checkEntityLevelPermission(qb, permissions, "documents");
               })
               .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
-                GetRelatedEntityPermissions(qb, permissions, "documents"),
+                GetRelatedEntityPermissionsAndRoles(qb, permissions, "documents"),
               )
 
               .execute();
@@ -287,7 +287,7 @@ export function document_router(app: Elysia) {
               query = checkEntityLevelPermission(query, permissions, "documents", params.id);
             }
             if (body.permissions) {
-              query = GetRelatedEntityPermissions(query, permissions, "documents", params.id);
+              query = GetRelatedEntityPermissionsAndRoles(query, permissions, "documents", params.id);
             }
 
             const data = await query.executeTakeFirstOrThrow();

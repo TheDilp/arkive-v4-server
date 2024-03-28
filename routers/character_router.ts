@@ -20,7 +20,7 @@ import { constructOrdering } from "../utils/orderByConstructor";
 import {
   CreateEntityPermissions,
   CreateTagRelations,
-  GetRelatedEntityPermissions,
+  GetRelatedEntityPermissionsAndRoles,
   GetRelationsForUpdating,
   TagQuery,
   UpdateCharacterRelationships,
@@ -230,7 +230,7 @@ export function character_router(app: Elysia) {
                 return checkEntityLevelPermission(qb, permissions, "characters");
               })
               .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
-                GetRelatedEntityPermissions(qb, permissions, "characters"),
+                GetRelatedEntityPermissionsAndRoles(qb, permissions, "characters"),
               )
               .$if(!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length, (qb) => {
                 const { blueprint_instances, documents, map_pins, events, tags, value } = groupRelationFiltersByField(

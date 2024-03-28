@@ -7,7 +7,7 @@ import uniqBy from "lodash.uniqby";
 
 import { MessageEnum } from "../../enums";
 import { PermissionDecorationType, ResponseWithDataSchema } from "../../types/requestTypes";
-import { GetRelatedEntityPermissions, TagQuery } from "../../utils/relationalQueryHelpers";
+import { GetRelatedEntityPermissionsAndRoles, TagQuery } from "../../utils/relationalQueryHelpers";
 import { groupCharacterFields } from "../../utils/transform";
 import { db } from "../db";
 import { ReadCharacterSchema } from "../validation";
@@ -406,7 +406,7 @@ export async function readCharacter(
     query = checkEntityLevelPermission(query, permissions, "characters", params.id);
   }
   if (!!body.permissions && !isPublic) {
-    query = GetRelatedEntityPermissions(query, permissions, "characters", params.id);
+    query = GetRelatedEntityPermissionsAndRoles(query, permissions, "characters", params.id);
   }
 
   const data = await query.executeTakeFirstOrThrow();

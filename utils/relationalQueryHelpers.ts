@@ -325,7 +325,7 @@ export async function UpdateEntityPermissions(
       .execute();
   }
 }
-export function GetRelatedEntityPermissions(
+export function GetRelatedEntityPermissionsAndRoles(
   qb: SelectQueryBuilder<DB, any, any>,
   permissions: PermissionDecorationType,
   entity: EntitiesWithPermissionCheck,
@@ -343,14 +343,19 @@ export function GetRelatedEntityPermissions(
         }
         expression = expression
           .leftJoin("permissions", "permissions.id", `${permissionTable}.permission_id`)
-          .select([
-            `${permissionTable}.id`,
-            `${permissionTable}.permission_id`,
-            `${permissionTable}.related_id`,
-            `${permissionTable}.role_id`,
-            `${permissionTable}.user_id`,
-            "permissions.code",
-          ]);
+          .select(
+            id
+              ? [
+                  `${permissionTable}.id`,
+                  `${permissionTable}.permission_id`,
+                  `${permissionTable}.related_id`,
+                  `${permissionTable}.role_id`,
+                  `${permissionTable}.user_id`,
+                  "permissions.code",
+                ]
+              : ["permissions.code", `${permissionTable}.role_id`],
+          );
+
         if (!permissions.is_project_owner) {
           expression = expression.where((wb) =>
             wb.or([
