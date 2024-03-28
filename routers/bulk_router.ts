@@ -5,7 +5,7 @@ import uniq from "lodash.uniq";
 import { db } from "../database/db";
 import {
   InsertNodeSchema,
-  InsertRandomTableOptionSchema,
+  InsertRandomTableOptionItemSchema,
   UpdateEdgeSchema,
   UpdateEventSchema,
   UpdateNodeSchema,
@@ -39,7 +39,7 @@ export function bulk_router(app: Elysia) {
           return { ok: true, message: `Nodes ${MessageEnum.successfully_created}`, role_access: true };
         },
         {
-          body: t.Object({ data: t.Array(t.Union([InsertNodeSchema, InsertRandomTableOptionSchema])) }),
+          body: t.Object({ data: t.Array(t.Union([InsertNodeSchema, t.Object({ data: InsertRandomTableOptionItemSchema })])) }),
           response: ResponseSchema,
         },
       )
@@ -152,15 +152,18 @@ export function bulk_router(app: Elysia) {
                   role_id: string;
                 }[];
 
+                // @ts-ignore
                 tx.deleteFrom(permissionsTable).where("related_id", "in", relatedIds).execute();
 
                 if (userPermissions.length) {
+                  // @ts-ignore
                   tx.insertInto(permissionsTable)
                     .values(userPermissions)
                     .onConflict((oc) => oc.doNothing())
                     .execute();
                 }
                 if (rolePermissions.length) {
+                  // @ts-ignore
                   tx.insertInto(permissionsTable)
                     .values(rolePermissions)
                     .onConflict((oc) => oc.doNothing())
@@ -173,6 +176,7 @@ export function bulk_router(app: Elysia) {
             // !The other delete needs to be within a transaction
             // !in case of failure
             else {
+              // @ts-ignore
               await db.deleteFrom(permissionsTable).where("related_id", "in", relatedIds).execute();
             }
           }
