@@ -4,7 +4,7 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { getHasEntityPermission } from "../database/queries";
+import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
 import { EntitiesWithChildren } from "../database/types";
 import { EntityListSchema } from "../database/validation";
 import { InsertRandomTableSchema, ReadRandomTableSchema, UpdateRandomTableSchema } from "../database/validation/random_tables";
@@ -64,7 +64,7 @@ export function random_table_router(app: Elysia) {
         )
         .post(
           "/",
-          async ({ body }) => {
+          async ({ body, permissions }) => {
             const data = await db
               .selectFrom("random_tables")
               .where("project_id", "=", body.data.project_id)
@@ -79,6 +79,9 @@ export function random_table_router(app: Elysia) {
               .limit(body?.pagination?.limit || 10)
               .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
               .$if(!!body.orderBy, (qb) => constructOrdering(body.orderBy, qb))
+              .$if(!permissions.is_project_owner, (qb) => {
+                return checkEntityLevelPermission(qb, permissions, "random_tables");
+              })
               .execute();
             return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
@@ -90,7 +93,7 @@ export function random_table_router(app: Elysia) {
         )
         .post(
           "/:id",
-          async ({ params, body }) => {
+          async ({ params, body, permissions }) => {
             const data = await db
 
               .selectFrom("random_tables")
@@ -131,6 +134,9 @@ export function random_table_router(app: Elysia) {
                 "random_tables.parent_id",
                 "random_tables.description",
               ])
+              .$if(!permissions.is_project_owner, (qb) => {
+                return checkEntityLevelPermission(qb, permissions, "random_tables");
+              })
               .executeTakeFirstOrThrow();
 
             if (body?.relations?.parents) {

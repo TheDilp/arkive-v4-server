@@ -4,7 +4,7 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { getHasEntityPermission } from "../database/queries";
+import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
 import { EntitiesWithChildren } from "../database/types";
 import { EntityListSchema } from "../database/validation";
 import { InsertDictionarySchema, ReadDictionarySchema, UpdateDictionarySchema } from "../database/validation/dictionaries";
@@ -40,7 +40,7 @@ export function dictionary_router(app: Elysia) {
       )
       .post(
         "/",
-        async ({ body }) => {
+        async ({ body, permissions }) => {
           const data = await db
             .selectFrom("dictionaries")
             .limit(body?.pagination?.limit || 10)
@@ -55,6 +55,9 @@ export function dictionary_router(app: Elysia) {
               qb = constructFilter("dictionaries", qb, body.filters);
               return qb;
             })
+            .$if(!permissions.is_project_owner, (qb) => {
+              return checkEntityLevelPermission(qb, permissions, "dictionaries");
+            })
             .where("project_id", "=", body.data.project_id)
             .execute();
 
@@ -68,7 +71,7 @@ export function dictionary_router(app: Elysia) {
       )
       .post(
         "/:id",
-        async ({ params, body }) => {
+        async ({ params, body, permissions }) => {
           const data = await db
             .selectFrom("dictionaries")
             .where("id", "=", params.id)
@@ -87,6 +90,9 @@ export function dictionary_router(app: Elysia) {
                 ).as("words"),
               ),
             )
+            .$if(!permissions.is_project_owner, (qb) => {
+              return checkEntityLevelPermission(qb, permissions, "dictionaries");
+            })
 
             .executeTakeFirstOrThrow();
           if (body?.relations?.parents) {

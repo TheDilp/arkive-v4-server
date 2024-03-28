@@ -4,7 +4,7 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { getHasEntityPermission } from "../database/queries";
+import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
 import { EntitiesWithChildren } from "../database/types";
 import {
   InsertCalendarSchema,
@@ -78,7 +78,7 @@ export function calendar_router(app: Elysia) {
       )
       .post(
         "/",
-        async ({ body }) => {
+        async ({ body, permissions }) => {
           const data = await db
             .selectFrom("calendars")
             .where("calendars.project_id", "=", body?.data?.project_id)
@@ -96,6 +96,9 @@ export function calendar_router(app: Elysia) {
               }
               return qb;
             })
+            .$if(!permissions.is_project_owner, (qb) => {
+              return checkEntityLevelPermission(qb, permissions, "calendars");
+            })
             .execute();
 
           return { data, message: MessageEnum.success, ok: true, role_access: true };
@@ -108,7 +111,7 @@ export function calendar_router(app: Elysia) {
       )
       .post(
         "/:id",
-        async ({ params, body }) => {
+        async ({ params, body, permissions }) => {
           const data = await db
             .selectFrom("calendars")
             .where("calendars.id", "=", params.id)
@@ -168,6 +171,9 @@ export function calendar_router(app: Elysia) {
             .$if(!!body?.relations?.children, (qb) =>
               GetEntityChildren(qb as SelectQueryBuilder<DB, EntitiesWithChildren, {}>, "calendars"),
             )
+            .$if(!permissions.is_project_owner, (qb) => {
+              return checkEntityLevelPermission(qb, permissions, "calendars");
+            })
             .executeTakeFirstOrThrow();
 
           if (body?.relations?.parents) {
