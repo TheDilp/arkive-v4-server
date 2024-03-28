@@ -512,6 +512,20 @@ CREATE TABLE public.blueprints (
 
 
 --
+-- Name: calendar_permissions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.calendar_permissions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    permission_id uuid,
+    role_id uuid,
+    user_id uuid,
+    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
+);
+
+
+--
 -- Name: calendars; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1463,6 +1477,14 @@ ALTER TABLE ONLY public.blueprints
 
 
 --
+-- Name: calendar_permissions calendar_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.calendar_permissions
+    ADD CONSTRAINT calendar_permissions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: calendars calendars_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1828,6 +1850,22 @@ ALTER TABLE ONLY public.blueprint_permissions
 
 ALTER TABLE ONLY public.blueprint_instance_value
     ADD CONSTRAINT unique_bpi_value_fields_constraint UNIQUE (blueprint_field_id, blueprint_instance_id);
+
+
+--
+-- Name: calendar_permissions unique_calendar_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.calendar_permissions
+    ADD CONSTRAINT unique_calendar_role_combination UNIQUE (related_id, role_id);
+
+
+--
+-- Name: calendar_permissions unique_calendar_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.calendar_permissions
+    ADD CONSTRAINT unique_calendar_user_permission_combination UNIQUE (related_id, user_id, permission_id);
 
 
 --
@@ -3129,6 +3167,30 @@ ALTER TABLE ONLY public.blueprints
 
 
 --
+-- Name: calendar_permissions calendar_permissions_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.calendar_permissions
+    ADD CONSTRAINT calendar_permissions_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.calendars(id) ON DELETE CASCADE;
+
+
+--
+-- Name: calendar_permissions calendar_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.calendar_permissions
+    ADD CONSTRAINT calendar_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
+
+
+--
+-- Name: calendar_permissions calendar_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.calendar_permissions
+    ADD CONSTRAINT calendar_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: calendars calendars_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4074,4 +4136,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240310113906'),
     ('20240311084151'),
     ('20240311135335'),
-    ('20240328103025');
+    ('20240328103025'),
+    ('20240328104529');

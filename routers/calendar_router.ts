@@ -4,6 +4,7 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
+import { getHasEntityPermission } from "../database/queries";
 import { EntitiesWithChildren } from "../database/types";
 import {
   InsertCalendarSchema,
@@ -12,10 +13,11 @@ import {
   UpdateCalendarSchema,
 } from "../database/validation/calendars";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler } from "../handlers";
-import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
+import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import {
+  CreateEntityPermissions,
   CreateTagRelations,
   GetEntityChildren,
   GetParents,
@@ -23,15 +25,27 @@ import {
   TagQuery,
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
+import { getEntityWithOwnerId } from "../utils/transform";
 
 export function calendar_router(app: Elysia) {
   return app.group("/calendars", (server) =>
     server
+      .decorate("permissions", {
+        is_project_owner: false,
+        role_access: false,
+        user_id: "",
+        role_id: null,
+        permission_id: null,
+      } as PermissionDecorationType)
       .post(
         "/create",
-        async ({ body }) => {
+        async ({ body, permissions }) => {
           await db.transaction().execute(async (tx) => {
-            const { id } = await tx.insertInto("calendars").values(body.data).returning("id").executeTakeFirstOrThrow();
+            const { id } = await tx
+              .insertInto("calendars")
+              .values(getEntityWithOwnerId(body.data, permissions.user_id))
+              .returning("id")
+              .executeTakeFirstOrThrow();
 
             if (body?.relations?.months?.length)
               await tx
@@ -47,6 +61,9 @@ export function calendar_router(app: Elysia) {
             if (body.relations?.tags?.length) {
               const { tags } = body.relations;
               await CreateTagRelations({ tx, relationalTable: "_calendarsTotags", id, tags });
+            }
+            if (body.permissions?.length) {
+              await CreateEntityPermissions(tx, id, "calendar_permissions", body.permissions);
             }
           });
 
@@ -168,124 +185,139 @@ export function calendar_router(app: Elysia) {
       )
       .post(
         "/update/:id",
-        async ({ params, body }) => {
-          await db.transaction().execute(async (tx) => {
-            await tx.updateTable("calendars").where("calendars.id", "=", params.id).set(body.data).execute();
-            if (body.relations.leap_days) {
-              const existingLeapDays = await tx
-                .selectFrom("leap_days")
-                .where("leap_days.parent_id", "=", params.id)
-                .select(["id"])
-                .execute();
-              const existingLeapDayIds = existingLeapDays.map((month) => month.id);
-
-              const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
-                existingLeapDayIds,
-                body.relations.leap_days.map((ld) => ld.data),
-              );
-              if (idsToRemove.length) {
-                await tx.deleteFrom("leap_days").where("leap_days.id", "in", idsToRemove).execute();
-              }
-              if (itemsToAdd.length) {
-                await tx
-                  .insertInto("leap_days")
-                  .values(
-                    itemsToAdd.map((m) => ({ ...(m as any), conditions: JSON.stringify(m.conditions), parent_id: params.id })),
-                  )
+        async ({ params, body, permissions }) => {
+          const permissionCheck = await getHasEntityPermission("calendars", params.id, permissions);
+          if (permissionCheck) {
+            await db.transaction().execute(async (tx) => {
+              await tx.updateTable("calendars").where("calendars.id", "=", params.id).set(body.data).execute();
+              if (body.relations.leap_days) {
+                const existingLeapDays = await tx
+                  .selectFrom("leap_days")
+                  .where("leap_days.parent_id", "=", params.id)
+                  .select(["id"])
                   .execute();
-              }
-              if (itemsToUpdate.length) {
-                await Promise.all(
-                  itemsToUpdate.map(async (item) => {
-                    await tx
-                      .updateTable("leap_days")
-                      .where("parent_id", "=", params.id)
-                      .where("id", "=", item.id)
-                      .set(item)
-                      .execute();
-                  }),
+                const existingLeapDayIds = existingLeapDays.map((month) => month.id);
+
+                const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+                  existingLeapDayIds,
+                  body.relations.leap_days.map((ld) => ld.data),
                 );
+                if (idsToRemove.length) {
+                  await tx.deleteFrom("leap_days").where("leap_days.id", "in", idsToRemove).execute();
+                }
+                if (itemsToAdd.length) {
+                  await tx
+                    .insertInto("leap_days")
+                    .values(
+                      itemsToAdd.map((m) => ({
+                        ...(m as any),
+                        conditions: JSON.stringify(m.conditions),
+                        parent_id: params.id,
+                      })),
+                    )
+                    .execute();
+                }
+                if (itemsToUpdate.length) {
+                  await Promise.all(
+                    itemsToUpdate.map(async (item) => {
+                      await tx
+                        .updateTable("leap_days")
+                        .where("parent_id", "=", params.id)
+                        .where("id", "=", item.id)
+                        .set(item)
+                        .execute();
+                    }),
+                  );
+                }
               }
-            }
 
-            if (body.relations.months) {
-              const existingMonths = await tx
-                .selectFrom("months")
-                .where("months.parent_id", "=", params.id)
-                .select(["id"])
-                .execute();
-
-              const existingMonthIds = existingMonths.map((month) => month.id);
-
-              const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
-                existingMonthIds,
-                body.relations.months.map((m) => m.data),
-              );
-              if (idsToRemove.length) {
-                await tx.deleteFrom("months").where("months.id", "in", idsToRemove).execute();
-              }
-              if (itemsToAdd.length) {
-                await tx
-                  .insertInto("months")
-                  .values(itemsToAdd.map((m) => ({ ...(m as any), parent_id: params.id })))
+              if (body.relations.months) {
+                const existingMonths = await tx
+                  .selectFrom("months")
+                  .where("months.parent_id", "=", params.id)
+                  .select(["id"])
                   .execute();
-              }
-              if (itemsToUpdate.length) {
-                await Promise.all(
-                  itemsToUpdate.map(async (item) => {
-                    await tx
-                      .updateTable("months")
-                      .where("parent_id", "=", params.id)
-                      .where("months.id", "=", item.id)
-                      .set(item)
-                      .execute();
-                  }),
+
+                const existingMonthIds = existingMonths.map((month) => month.id);
+
+                const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+                  existingMonthIds,
+                  body.relations.months.map((m) => m.data),
                 );
+                if (idsToRemove.length) {
+                  await tx.deleteFrom("months").where("months.id", "in", idsToRemove).execute();
+                }
+                if (itemsToAdd.length) {
+                  await tx
+                    .insertInto("months")
+                    .values(itemsToAdd.map((m) => ({ ...(m as any), parent_id: params.id })))
+                    .execute();
+                }
+                if (itemsToUpdate.length) {
+                  await Promise.all(
+                    itemsToUpdate.map(async (item) => {
+                      await tx
+                        .updateTable("months")
+                        .where("parent_id", "=", params.id)
+                        .where("months.id", "=", item.id)
+                        .set(item)
+                        .execute();
+                    }),
+                  );
+                }
               }
-            }
 
-            if (body.relations.eras) {
-              const existingEras = await tx.selectFrom("eras").where("eras.parent_id", "=", params.id).select(["id"]).execute();
-
-              const existingEraIds = existingEras.map((era) => era.id);
-
-              const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
-                existingEraIds,
-                body.relations.eras.map((m) => m.data),
-              );
-              if (idsToRemove.length) {
-                await tx.deleteFrom("eras").where("eras.id", "in", idsToRemove).execute();
-              }
-              if (itemsToAdd.length) {
-                await tx
-                  .insertInto("eras")
-                  .values(itemsToAdd.map((m) => ({ ...(m as any), parent_id: params.id })))
+              if (body.relations.eras) {
+                const existingEras = await tx
+                  .selectFrom("eras")
+                  .where("eras.parent_id", "=", params.id)
+                  .select(["id"])
                   .execute();
-              }
-              if (itemsToUpdate.length) {
-                await Promise.all(
-                  itemsToUpdate.map(async (item) => {
-                    await tx
-                      .updateTable("eras")
-                      .where("parent_id", "=", params.id)
-                      .where("eras.id", "=", item.id)
-                      .set(item)
-                      .execute();
-                  }),
-                );
-              }
-            }
 
-            if (body?.relations?.tags) {
-              await UpdateTagRelations({
-                relationalTable: "_calendarsTotags",
-                id: params.id,
-                newTags: body.relations.tags,
-                tx,
-              });
-            }
-          });
-          return { message: MessageEnum.success, ok: true, role_access: true };
+                const existingEraIds = existingEras.map((era) => era.id);
+
+                const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+                  existingEraIds,
+                  body.relations.eras.map((m) => m.data),
+                );
+                if (idsToRemove.length) {
+                  await tx.deleteFrom("eras").where("eras.id", "in", idsToRemove).execute();
+                }
+                if (itemsToAdd.length) {
+                  await tx
+                    .insertInto("eras")
+                    .values(itemsToAdd.map((m) => ({ ...(m as any), parent_id: params.id })))
+                    .execute();
+                }
+                if (itemsToUpdate.length) {
+                  await Promise.all(
+                    itemsToUpdate.map(async (item) => {
+                      await tx
+                        .updateTable("eras")
+                        .where("parent_id", "=", params.id)
+                        .where("eras.id", "=", item.id)
+                        .set(item)
+                        .execute();
+                    }),
+                  );
+                }
+              }
+
+              if (body?.relations?.tags) {
+                await UpdateTagRelations({
+                  relationalTable: "_calendarsTotags",
+                  id: params.id,
+                  newTags: body.relations.tags,
+                  tx,
+                });
+              }
+            });
+
+            return { message: MessageEnum.success, ok: true, role_access: true };
+          } else {
+            noRoleAccessErrorHandler();
+            return { message: "", ok: false, role_access: false };
+          }
         },
         {
           body: UpdateCalendarSchema,
@@ -295,14 +327,20 @@ export function calendar_router(app: Elysia) {
       )
       .delete(
         "/:id",
-        async ({ params }) => {
-          const data = await db
-            .deleteFrom("calendars")
-            .where("calendars.id", "=", params.id)
-            .returning(["id", "title", "project_id"])
-            .executeTakeFirstOrThrow();
+        async ({ params, permissions }) => {
+          const permissionCheck = await getHasEntityPermission("calendars", params.id, permissions);
+          if (permissionCheck) {
+            const data = await db
+              .deleteFrom("calendars")
+              .where("calendars.id", "=", params.id)
+              .returning(["id", "title", "project_id"])
+              .executeTakeFirstOrThrow();
 
-          return { data, message: `Calendar ${MessageEnum.successfully_deleted}.`, ok: true, role_access: true };
+            return { data, message: `Calendar ${MessageEnum.successfully_deleted}.`, ok: true, role_access: true };
+          } else {
+            noRoleAccessErrorHandler();
+            return { data: {}, message: "", ok: false, role_access: false };
+          }
         },
         {
           response: ResponseWithDataSchema,
