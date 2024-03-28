@@ -617,6 +617,20 @@ CREATE TABLE public.character_fields (
 
 
 --
+-- Name: character_fields_template_permissions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.character_fields_template_permissions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    permission_id uuid,
+    role_id uuid,
+    user_id uuid,
+    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
+);
+
+
+--
 -- Name: character_fields_templates; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1280,6 +1294,20 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: tag_permissions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.tag_permissions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    permission_id uuid,
+    role_id uuid,
+    user_id uuid,
+    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
+);
+
+
+--
 -- Name: tags; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1512,6 +1540,14 @@ ALTER TABLE ONLY public.calendars
 
 ALTER TABLE ONLY public.character_fields
     ADD CONSTRAINT character_fields_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: character_fields_template_permissions character_fields_template_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_fields_template_permissions
+    ADD CONSTRAINT character_fields_template_permissions_pkey PRIMARY KEY (id);
 
 
 --
@@ -1819,6 +1855,14 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
+-- Name: tag_permissions tag_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tag_permissions
+    ADD CONSTRAINT tag_permissions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: tags tags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1896,6 +1940,22 @@ ALTER TABLE ONLY public.calendar_permissions
 
 ALTER TABLE ONLY public.character_value_fields
     ADD CONSTRAINT unique_char_value_fields_constraint UNIQUE (character_field_id, character_id);
+
+
+--
+-- Name: character_fields_template_permissions unique_character_fields_template_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_fields_template_permissions
+    ADD CONSTRAINT unique_character_fields_template_role_combination UNIQUE (related_id, role_id);
+
+
+--
+-- Name: character_fields_template_permissions unique_character_fields_template_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_fields_template_permissions
+    ADD CONSTRAINT unique_character_fields_template_user_permission_combination UNIQUE (related_id, user_id, permission_id);
 
 
 --
@@ -2056,6 +2116,22 @@ ALTER TABLE ONLY public.random_table_permissions
 
 ALTER TABLE ONLY public.roles
     ADD CONSTRAINT unique_roles_constraint UNIQUE (title, project_id);
+
+
+--
+-- Name: tag_permissions unique_tag_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tag_permissions
+    ADD CONSTRAINT unique_tag_role_combination UNIQUE (related_id, role_id);
+
+
+--
+-- Name: tag_permissions unique_tag_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tag_permissions
+    ADD CONSTRAINT unique_tag_user_permission_combination UNIQUE (related_id, user_id, permission_id);
 
 
 --
@@ -3365,6 +3441,30 @@ ALTER TABLE ONLY public.character_fields
 
 
 --
+-- Name: character_fields_template_permissions character_fields_template_permissions_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_fields_template_permissions
+    ADD CONSTRAINT character_fields_template_permissions_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.character_fields_templates(id) ON DELETE CASCADE;
+
+
+--
+-- Name: character_fields_template_permissions character_fields_template_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_fields_template_permissions
+    ADD CONSTRAINT character_fields_template_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
+
+
+--
+-- Name: character_fields_template_permissions character_fields_template_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_fields_template_permissions
+    ADD CONSTRAINT character_fields_template_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: character_fields_templates character_fields_templates_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4085,6 +4185,30 @@ ALTER TABLE ONLY public.events
 
 
 --
+-- Name: tag_permissions tag_permissions_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tag_permissions
+    ADD CONSTRAINT tag_permissions_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.tags(id) ON DELETE CASCADE;
+
+
+--
+-- Name: tag_permissions tag_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tag_permissions
+    ADD CONSTRAINT tag_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
+
+
+--
+-- Name: tag_permissions tag_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tag_permissions
+    ADD CONSTRAINT tag_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: tags tags_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4200,4 +4324,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240311135335'),
     ('20240328103025'),
     ('20240328104529'),
-    ('20240328104825');
+    ('20240328104825'),
+    ('20240328111135'),
+    ('20240328111345');

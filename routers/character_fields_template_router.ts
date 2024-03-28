@@ -5,6 +5,7 @@ import { DB } from "kysely-codegen";
 import omit from "lodash.omit";
 
 import { db } from "../database/db";
+import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
 import {
   InsertCharacterFieldsTemplateSchema,
   ListCharacterFieldsTemplateSchema,
@@ -12,23 +13,36 @@ import {
   UpdateTemplateSchema,
 } from "../database/validation/character_fields_templates";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler } from "../handlers";
-import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
+import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { CreateTagRelations, GetRelationsForUpdating, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
-import { groupRelationFiltersByField } from "../utils/transform";
+import {
+  CreateEntityPermissions,
+  CreateTagRelations,
+  GetRelationsForUpdating,
+  TagQuery,
+  UpdateTagRelations,
+} from "../utils/relationalQueryHelpers";
+import { getEntityWithOwnerId, groupRelationFiltersByField } from "../utils/transform";
 
 export function character_fields_templates_router(app: Elysia) {
   return app.group("/character_fields_templates", (server) =>
     server
+      .decorate("permissions", {
+        is_project_owner: false,
+        role_access: false,
+        user_id: "",
+        role_id: null,
+        permission_id: null,
+      } as PermissionDecorationType)
       .post(
         "/create",
-        async ({ body }) => {
+        async ({ body, permissions }) => {
           await db.transaction().execute(async (tx) => {
             const newTemplate = await tx
               .insertInto("character_fields_templates")
-              .values(body.data)
+              .values(getEntityWithOwnerId(body.data, permissions.user_id))
               .returning("id")
               .executeTakeFirstOrThrow();
 
@@ -52,6 +66,9 @@ export function character_fields_templates_router(app: Elysia) {
                 tags: body.relations.tags,
               });
             }
+            if (body.permissions?.length) {
+              await CreateEntityPermissions(tx, newTemplate.id, "character_field_template_permissions", body.permissions);
+            }
           });
           return { message: `Template ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
@@ -63,7 +80,7 @@ export function character_fields_templates_router(app: Elysia) {
       )
       .post(
         "/",
-        async ({ body }) => {
+        async ({ body, permissions }) => {
           const data = await db
             .selectFrom("character_fields_templates")
             .distinctOn(
@@ -170,6 +187,9 @@ export function character_fields_templates_router(app: Elysia) {
               }
               return qb;
             })
+            .$if(!permissions.is_project_owner, (qb) => {
+              return checkEntityLevelPermission(qb, permissions, "character_fields_templates");
+            })
             .execute();
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
@@ -181,7 +201,7 @@ export function character_fields_templates_router(app: Elysia) {
       )
       .post(
         "/:id",
-        async ({ params, body }) => {
+        async ({ params, body, permissions }) => {
           const data = await db
             .selectFrom("character_fields_templates")
             .$if(!body.fields?.length, (qb) => qb.selectAll())
@@ -235,6 +255,9 @@ export function character_fields_templates_router(app: Elysia) {
             .$if(!!body?.relations?.tags, (qb) =>
               qb.select((eb) => TagQuery(eb, "_character_fields_templatesTotags", "character_fields_templates")),
             )
+            .$if(!permissions.is_project_owner, (qb) => {
+              return checkEntityLevelPermission(qb, permissions, "character_fields_templates");
+            })
             .executeTakeFirstOrThrow();
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
@@ -246,70 +269,77 @@ export function character_fields_templates_router(app: Elysia) {
       )
       .post(
         "/update/:id",
-        async ({ params, body }) => {
-          if (body.data) {
-            await db.transaction().execute(async (tx) => {
-              if (body.data) {
-                await tx
-                  .updateTable("character_fields_templates")
-                  .set(body.data)
-                  .where("character_fields_templates.id", "=", params.id)
-                  .executeTakeFirstOrThrow();
-              }
-              if (body?.relations?.character_fields) {
-                const { character_fields } = body.relations;
-                const existingCharacterFields = await tx
-                  .selectFrom("character_fields")
-                  .select(["id", "parent_id"])
-                  .where("character_fields.parent_id", "=", params.id)
-                  .execute();
+        async ({ params, body, permissions }) => {
+          const permissionCheck = await getHasEntityPermission("character_fields_templates", params.id, permissions);
 
-                const existingIds = existingCharacterFields.map((field) => field.id);
-
-                const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(existingIds, character_fields);
-
-                if (idsToRemove.length) {
-                  await tx.deleteFrom("character_fields").where("id", "in", idsToRemove).execute();
-                }
-                if (itemsToAdd.length) {
+          if (permissionCheck) {
+            if (body.data) {
+              await db.transaction().execute(async (tx) => {
+                if (body.data) {
                   await tx
-                    .insertInto("character_fields")
-                    .values(
-                      // @ts-ignore
-                      itemsToAdd.map((field) => ({
-                        ...omit(field, ["id"]),
-                        options: JSON.stringify(field.options || []),
-                        parent_id: params.id,
-                      })),
-                    )
+                    .updateTable("character_fields_templates")
+                    .set(body.data)
+                    .where("character_fields_templates.id", "=", params.id)
+                    .executeTakeFirstOrThrow();
+                }
+                if (body?.relations?.character_fields) {
+                  const { character_fields } = body.relations;
+                  const existingCharacterFields = await tx
+                    .selectFrom("character_fields")
+                    .select(["id", "parent_id"])
+                    .where("character_fields.parent_id", "=", params.id)
                     .execute();
-                }
-                if (itemsToUpdate.length) {
-                  await Promise.all(
-                    itemsToUpdate.map(async (item) =>
-                      tx
-                        .updateTable("character_fields")
-                        .where("character_fields.id", "=", item.id as string)
-                        .set({ ...omit(item, ["id"]), options: JSON.stringify(item.options || []) })
-                        .execute(),
-                    ),
-                  );
-                }
-              }
-              if (body.relations?.tags) {
-                if (body.relations.tags.length)
-                  UpdateTagRelations({
-                    relationalTable: "_character_fields_templatesTotags",
-                    id: params.id,
-                    newTags: body.relations.tags,
-                    tx,
-                  });
-                else await tx.deleteFrom("_character_fields_templatesTotags").where("A", "=", params.id).execute();
-              }
-            });
-          }
 
-          return { message: `Template ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
+                  const existingIds = existingCharacterFields.map((field) => field.id);
+
+                  const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(existingIds, character_fields);
+
+                  if (idsToRemove.length) {
+                    await tx.deleteFrom("character_fields").where("id", "in", idsToRemove).execute();
+                  }
+                  if (itemsToAdd.length) {
+                    await tx
+                      .insertInto("character_fields")
+                      .values(
+                        // @ts-ignore
+                        itemsToAdd.map((field) => ({
+                          ...omit(field, ["id"]),
+                          options: JSON.stringify(field.options || []),
+                          parent_id: params.id,
+                        })),
+                      )
+                      .execute();
+                  }
+                  if (itemsToUpdate.length) {
+                    await Promise.all(
+                      itemsToUpdate.map(async (item) =>
+                        tx
+                          .updateTable("character_fields")
+                          .where("character_fields.id", "=", item.id as string)
+                          .set({ ...omit(item, ["id"]), options: JSON.stringify(item.options || []) })
+                          .execute(),
+                      ),
+                    );
+                  }
+                }
+                if (body.relations?.tags) {
+                  if (body.relations.tags.length)
+                    UpdateTagRelations({
+                      relationalTable: "_character_fields_templatesTotags",
+                      id: params.id,
+                      newTags: body.relations.tags,
+                      tx,
+                    });
+                  else await tx.deleteFrom("_character_fields_templatesTotags").where("A", "=", params.id).execute();
+                }
+              });
+            }
+
+            return { message: `Template ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
+          } else {
+            noRoleAccessErrorHandler();
+            return { message: "", ok: false, role_access: false };
+          }
         },
         {
           body: UpdateTemplateSchema,
@@ -319,13 +349,24 @@ export function character_fields_templates_router(app: Elysia) {
       )
       .delete(
         "/:id",
-        async ({ params }) => {
-          const data = await db
-            .deleteFrom("character_fields_templates")
-            .where("id", "=", params.id)
-            .returning(["id", "title", "project_id"])
-            .executeTakeFirstOrThrow();
-          return { data, message: `Character field template ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
+        async ({ params, permissions }) => {
+          const permissionCheck = await getHasEntityPermission("character_fields_templates", params.id, permissions);
+          if (permissionCheck) {
+            const data = await db
+              .deleteFrom("character_fields_templates")
+              .where("id", "=", params.id)
+              .returning(["id", "title", "project_id"])
+              .executeTakeFirstOrThrow();
+            return {
+              data,
+              message: `Character field template ${MessageEnum.successfully_deleted}`,
+              ok: true,
+              role_access: true,
+            };
+          } else {
+            noRoleAccessErrorHandler();
+            return { data: {}, message: "", ok: false, role_access: false };
+          }
         },
         {
           response: ResponseWithDataSchema,
