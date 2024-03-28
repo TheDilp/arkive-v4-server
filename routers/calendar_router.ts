@@ -23,6 +23,7 @@ import {
   GetParents,
   GetRelationsForUpdating,
   TagQuery,
+  UpdateEntityPermissions,
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
 import { getEntityWithOwnerId } from "../utils/transform";
@@ -310,6 +311,9 @@ export function calendar_router(app: Elysia) {
                   newTags: body.relations.tags,
                   tx,
                 });
+              }
+              if (body?.permissions) {
+                await UpdateEntityPermissions(tx, params.id, "calendar_permissions", body.permissions);
               }
             });
 

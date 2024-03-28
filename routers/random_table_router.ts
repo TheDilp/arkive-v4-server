@@ -18,6 +18,7 @@ import {
   GetEntityChildren,
   GetParents,
   GetRelationsForUpdating,
+  UpdateEntityPermissions,
 } from "../utils/relationalQueryHelpers";
 import { getEntityWithOwnerId } from "../utils/transform";
 
@@ -194,6 +195,9 @@ export function random_table_router(app: Elysia) {
                       );
                     }
                   }
+                }
+                if (body?.permissions) {
+                  await UpdateEntityPermissions(tx, params.id, "random_table_permissions", body.permissions);
                 }
               });
             } else {
