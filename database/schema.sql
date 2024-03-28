@@ -996,6 +996,20 @@ CREATE TABLE public.graphs (
 
 
 --
+-- Name: image_permissions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.image_permissions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    permission_id uuid,
+    role_id uuid,
+    user_id uuid,
+    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
+);
+
+
+--
 -- Name: images; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1695,6 +1709,14 @@ ALTER TABLE ONLY public.graphs
 
 
 --
+-- Name: image_permissions image_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.image_permissions
+    ADD CONSTRAINT image_permissions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: images images_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2060,6 +2082,22 @@ ALTER TABLE ONLY public.graph_permissions
 
 ALTER TABLE ONLY public.graph_permissions
     ADD CONSTRAINT unique_graph_user_permission_combination UNIQUE (related_id, user_id, permission_id);
+
+
+--
+-- Name: image_permissions unique_image_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.image_permissions
+    ADD CONSTRAINT unique_image_role_combination UNIQUE (related_id, role_id);
+
+
+--
+-- Name: image_permissions unique_image_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.image_permissions
+    ADD CONSTRAINT unique_image_user_permission_combination UNIQUE (related_id, user_id, permission_id);
 
 
 --
@@ -3881,6 +3919,30 @@ ALTER TABLE ONLY public.graphs
 
 
 --
+-- Name: image_permissions image_permissions_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.image_permissions
+    ADD CONSTRAINT image_permissions_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.images(id) ON DELETE CASCADE;
+
+
+--
+-- Name: image_permissions image_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.image_permissions
+    ADD CONSTRAINT image_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
+
+
+--
+-- Name: image_permissions image_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.image_permissions
+    ADD CONSTRAINT image_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: images images_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4326,4 +4388,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240328104529'),
     ('20240328104825'),
     ('20240328111135'),
-    ('20240328111345');
+    ('20240328111345'),
+    ('20240328173310');
