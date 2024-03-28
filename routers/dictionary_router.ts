@@ -13,7 +13,12 @@ import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { GetEntityChildren, GetParents, UpdateEntityPermissions } from "../utils/relationalQueryHelpers";
+import {
+  GetEntityChildren,
+  GetParents,
+  GetRelatedEntityPermissionsAndRoles,
+  UpdateEntityPermissions,
+} from "../utils/relationalQueryHelpers";
 import { getEntityWithOwnerId } from "../utils/transform";
 
 export function dictionary_router(app: Elysia) {
@@ -58,6 +63,9 @@ export function dictionary_router(app: Elysia) {
             .$if(!permissions.is_project_owner, (qb) => {
               return checkEntityLevelPermission(qb, permissions, "dictionaries");
             })
+            .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
+              GetRelatedEntityPermissionsAndRoles(qb, permissions, "dictionaries"),
+            )
             .where("project_id", "=", body.data.project_id)
             .execute();
 
@@ -93,7 +101,9 @@ export function dictionary_router(app: Elysia) {
             .$if(!permissions.is_project_owner, (qb) => {
               return checkEntityLevelPermission(qb, permissions, "dictionaries");
             })
-
+            .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
+              GetRelatedEntityPermissionsAndRoles(qb, permissions, "dictionaries"),
+            )
             .executeTakeFirstOrThrow();
           if (body?.relations?.parents) {
             const parents = await GetParents({ db, id: params.id, table_name: "dictionaries" });

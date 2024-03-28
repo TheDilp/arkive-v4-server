@@ -20,6 +20,7 @@ import {
   CreateTagRelations,
   GetEntityChildren,
   GetParents,
+  GetRelatedEntityPermissionsAndRoles,
   TagQuery,
   UpdateEntityPermissions,
   UpdateTagRelations,
@@ -84,6 +85,9 @@ export function graph_router(app: Elysia) {
               .$if(!permissions.is_project_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "graphs");
               })
+              .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
+                GetRelatedEntityPermissionsAndRoles(qb, permissions, "graphs"),
+              )
               .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_graphsTotags", "graphs")))
               .$if(!!body.orderBy?.length, (qb) => {
                 qb = constructOrdering(body.orderBy, qb);
@@ -149,7 +153,6 @@ export function graph_router(app: Elysia) {
                   jsonArrayFrom(eb.selectFrom("edges").where("edges.parent_id", "=", params.id).selectAll()).as("edges"),
                 ),
               )
-
               .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_graphsTotags", "graphs")))
               .select([
                 "graphs.id",
@@ -162,29 +165,12 @@ export function graph_router(app: Elysia) {
                 "graphs.default_node_color",
                 "graphs.default_edge_color",
               ])
-              .$if(!!body.permissions, (qb) => {
-                qb = qb.select([
-                  (eb) =>
-                    jsonArrayFrom(
-                      eb
-                        .selectFrom("graph_permissions")
-                        .leftJoin("permissions", "permissions.id", "graph_permissions.permission_id")
-                        .select([
-                          "graph_permissions.id",
-                          "graph_permissions.permission_id",
-                          "graph_permissions.related_id",
-                          "graph_permissions.role_id",
-                          "graph_permissions.user_id",
-                          "permissions.code",
-                        ])
-                        .where("related_id", "=", params.id),
-                    ).as("permissions"),
-                ]);
-                return qb;
-              })
               .$if(!permissions.is_project_owner, (qb) => {
-                return checkEntityLevelPermission(qb, permissions, "graphs", params.id);
+                return checkEntityLevelPermission(qb, permissions, "graphs");
               })
+              .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
+                GetRelatedEntityPermissionsAndRoles(qb, permissions, "graphs"),
+              )
               .executeTakeFirstOrThrow();
 
             const parents = body?.relations?.parents ? await GetParents({ db, id: params.id, table_name: "graphs" }) : [];

@@ -21,6 +21,7 @@ import {
   CreateTagRelations,
   GetEntityChildren,
   GetParents,
+  GetRelatedEntityPermissionsAndRoles,
   GetRelationsForUpdating,
   TagQuery,
   UpdateEntityPermissions,
@@ -174,6 +175,9 @@ export function calendar_router(app: Elysia) {
             .$if(!permissions.is_project_owner, (qb) => {
               return checkEntityLevelPermission(qb, permissions, "calendars");
             })
+            .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
+              GetRelatedEntityPermissionsAndRoles(qb, permissions, "calendars"),
+            )
             .executeTakeFirstOrThrow();
 
           if (body?.relations?.parents) {

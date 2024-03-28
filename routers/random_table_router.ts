@@ -17,6 +17,7 @@ import {
   CreateEntityPermissions,
   GetEntityChildren,
   GetParents,
+  GetRelatedEntityPermissionsAndRoles,
   GetRelationsForUpdating,
   UpdateEntityPermissions,
 } from "../utils/relationalQueryHelpers";
@@ -82,6 +83,9 @@ export function random_table_router(app: Elysia) {
               .$if(!permissions.is_project_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "random_tables");
               })
+              .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
+                GetRelatedEntityPermissionsAndRoles(qb, permissions, "random_tables"),
+              )
               .execute();
             return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
@@ -137,6 +141,9 @@ export function random_table_router(app: Elysia) {
               .$if(!permissions.is_project_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "random_tables");
               })
+              .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
+                GetRelatedEntityPermissionsAndRoles(qb, permissions, "random_tables"),
+              )
               .executeTakeFirstOrThrow();
 
             if (body?.relations?.parents) {
