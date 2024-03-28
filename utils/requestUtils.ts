@@ -148,6 +148,6 @@ export function getPermissionTableFromEntity(entity: EntitiesWithPermissionCheck
   if (entity === "dictionaries") return "dictionary_permissions";
   if (entity === "random_tables") return "random_table_permissions";
   if (entity === "tags") return "tag_permissions";
-  if (entity === "character_fields_templates") return "character_field_template_permissions";
+  if (entity === "character_fields_templates") return "character_fields_template_permissions";
   return null;
 }
