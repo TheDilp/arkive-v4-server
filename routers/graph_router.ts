@@ -21,6 +21,7 @@ import {
   GetEntityChildren,
   GetParents,
   TagQuery,
+  UpdateEntityPermissions,
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
 import { getEntityWithOwnerId } from "../utils/transform";
@@ -223,6 +224,9 @@ export function graph_router(app: Elysia) {
                       newTags: body.relations.tags,
                       tx,
                     });
+                }
+                if (body?.permissions) {
+                  await UpdateEntityPermissions(tx, params.id, "graph_permissions", body.permissions);
                 }
               });
 
