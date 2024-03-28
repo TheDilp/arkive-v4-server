@@ -770,6 +770,20 @@ CREATE TABLE public.dictionaries (
 
 
 --
+-- Name: dictionary_permissions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.dictionary_permissions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    permission_id uuid,
+    role_id uuid,
+    user_id uuid,
+    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
+);
+
+
+--
 -- Name: document_mentions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1573,6 +1587,14 @@ ALTER TABLE ONLY public.dictionaries
 
 
 --
+-- Name: dictionary_permissions dictionary_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dictionary_permissions
+    ADD CONSTRAINT dictionary_permissions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: document_mentions document_mentions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1930,6 +1952,22 @@ ALTER TABLE ONLY public.character_events_fields
 
 ALTER TABLE ONLY public.character_random_table_fields
     ADD CONSTRAINT unique_combination_constraint_char_rand UNIQUE (character_id, character_field_id, related_id);
+
+
+--
+-- Name: dictionary_permissions unique_dictionary_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dictionary_permissions
+    ADD CONSTRAINT unique_dictionary_role_combination UNIQUE (related_id, role_id);
+
+
+--
+-- Name: dictionary_permissions unique_dictionary_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dictionary_permissions
+    ADD CONSTRAINT unique_dictionary_user_permission_combination UNIQUE (related_id, user_id, permission_id);
 
 
 --
@@ -3535,6 +3573,30 @@ ALTER TABLE ONLY public.dictionaries
 
 
 --
+-- Name: dictionary_permissions dictionary_permissions_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dictionary_permissions
+    ADD CONSTRAINT dictionary_permissions_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.dictionaries(id) ON DELETE CASCADE;
+
+
+--
+-- Name: dictionary_permissions dictionary_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dictionary_permissions
+    ADD CONSTRAINT dictionary_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
+
+
+--
+-- Name: dictionary_permissions dictionary_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dictionary_permissions
+    ADD CONSTRAINT dictionary_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: document_permissions document_permissions_document_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4137,4 +4199,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240311084151'),
     ('20240311135335'),
     ('20240328103025'),
-    ('20240328104529');
+    ('20240328104529'),
+    ('20240328104825');

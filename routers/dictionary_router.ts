@@ -4,23 +4,32 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
+import { getHasEntityPermission } from "../database/queries";
 import { EntitiesWithChildren } from "../database/types";
 import { EntityListSchema } from "../database/validation";
 import { InsertDictionarySchema, ReadDictionarySchema, UpdateDictionarySchema } from "../database/validation/dictionaries";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler } from "../handlers";
-import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
+import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { GetEntityChildren, GetParents } from "../utils/relationalQueryHelpers";
+import { GetEntityChildren, GetParents, UpdateEntityPermissions } from "../utils/relationalQueryHelpers";
+import { getEntityWithOwnerId } from "../utils/transform";
 
 export function dictionary_router(app: Elysia) {
   return app.group("/dictionaries", (server) =>
     server
+      .decorate("permissions", {
+        is_project_owner: false,
+        role_access: false,
+        user_id: "",
+        role_id: null,
+        permission_id: null,
+      } as PermissionDecorationType)
       .post(
         "/create",
-        async ({ body }) => {
-          await db.insertInto("dictionaries").values(body.data).execute();
+        async ({ body, permissions }) => {
+          await db.insertInto("dictionaries").values(getEntityWithOwnerId(body.data, permissions.user_id)).execute();
           return { ok: true, role_access: true, message: `Dictionary ${MessageEnum.successfully_created}` };
         },
         {
@@ -94,9 +103,20 @@ export function dictionary_router(app: Elysia) {
       )
       .post(
         "/update/:id",
-        async ({ params, body }) => {
-          await db.updateTable("dictionaries").where("id", "=", params.id).set(body.data).execute();
-          return { message: MessageEnum.success, ok: true, role_access: true };
+        async ({ params, body, permissions }) => {
+          const permissionCheck = await getHasEntityPermission("dictionaries", params.id, permissions);
+          if (permissionCheck) {
+            await db.transaction().execute(async (tx) => {
+              await tx.updateTable("dictionaries").where("id", "=", params.id).set(body.data).execute();
+              if (body?.permissions) {
+                await UpdateEntityPermissions(tx, params.id, "dictionary_permissions", body.permissions);
+              }
+            });
+            return { message: MessageEnum.success, ok: true, role_access: true };
+          } else {
+            noRoleAccessErrorHandler();
+            return { message: "", ok: false, role_access: false };
+          }
         },
         {
           body: UpdateDictionarySchema,
@@ -106,14 +126,20 @@ export function dictionary_router(app: Elysia) {
       )
       .delete(
         "/:id",
-        async ({ params }) => {
-          const data = await db
-            .deleteFrom("dictionaries")
-            .where("dictionaries.id", "=", params.id)
-            .returning(["id", "title", "project_id"])
-            .executeTakeFirstOrThrow();
+        async ({ params, permissions }) => {
+          const permissionCheck = await getHasEntityPermission("dictionaries", params.id, permissions);
+          if (permissionCheck) {
+            const data = await db
+              .deleteFrom("dictionaries")
+              .where("dictionaries.id", "=", params.id)
+              .returning(["id", "title", "project_id"])
+              .executeTakeFirstOrThrow();
 
-          return { data, message: `Dictionary ${MessageEnum.successfully_deleted}.`, ok: true, role_access: true };
+            return { data, message: `Dictionary ${MessageEnum.successfully_deleted}.`, ok: true, role_access: true };
+          } else {
+            noRoleAccessErrorHandler();
+            return { data: {}, message: "", ok: false, role_access: false };
+          }
         },
         {
           response: ResponseWithDataSchema,
