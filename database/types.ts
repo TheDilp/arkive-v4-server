@@ -62,4 +62,4 @@ export type EntityPermissionTables =
   | "dictionary_permissions"
   | "random_table_permissions"
   | "tag_permissions"
-  | "character_field_template_permissions";
+  | "character_fields_template_permissions";

@@ -5,7 +5,7 @@ import { checkEntityLevelPermission } from "../database/queries";
 import { EntityListSchema, InsertTagSchema, UpdateTagSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeRoleHandler } from "../handlers";
-import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { PermissionDecorationType, RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { CreateEntityPermissions, GetRelatedEntityPermissionsAndRoles } from "../utils/relationalQueryHelpers";
@@ -76,6 +76,33 @@ export function tag_router(app: Elysia) {
         },
         {
           body: EntityListSchema,
+          response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_tags"),
+        },
+      )
+      .post(
+        "/:id",
+        async ({ params, body, permissions }) => {
+          let query = db.selectFrom("tags").distinctOn("tags.id").where("tags.id", "=", params.id);
+
+          if (permissions.is_project_owner) {
+            query = query
+              .leftJoin("tag_permissions", (join) => join.on("tag_permissions.related_id", "=", params.id))
+              .select(["tags.id", "tags.title", "tags.color"]);
+          } else {
+            query = checkEntityLevelPermission(query, permissions, "tags", params.id);
+          }
+
+          if (body.permissions) {
+            query = GetRelatedEntityPermissionsAndRoles(query, permissions, "tags", params.id);
+          }
+
+          const data = await query.executeTakeFirst();
+
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
+        },
+        {
+          body: RequestBodySchema,
           response: ResponseWithDataSchema,
           beforeHandle: async (context) => beforeRoleHandler(context, "read_tags"),
         },
