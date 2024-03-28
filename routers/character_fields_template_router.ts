@@ -206,7 +206,14 @@ export function character_fields_templates_router(app: Elysia) {
             .selectFrom("character_fields_templates")
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) =>
-              qb.clearSelect().select(body.fields as SelectExpression<DB, "character_fields_templates">[]),
+              qb
+                .clearSelect()
+                .select(
+                  body.fields.map((f) => `character_fields_templates.${f}`) as SelectExpression<
+                    DB,
+                    "character_fields_templates"
+                  >[],
+                ),
             )
             .where("character_fields_templates.id", "=", params.id)
             .$if(!!body?.relations?.character_fields, (qb) =>
@@ -354,8 +361,12 @@ export function character_fields_templates_router(app: Elysia) {
           if (permissionCheck) {
             const data = await db
               .deleteFrom("character_fields_templates")
-              .where("id", "=", params.id)
-              .returning(["id", "title", "project_id"])
+              .where("character_fields_templates.id", "=", params.id)
+              .returning([
+                "character_fields_templates.id",
+                "character_fields_templates.title",
+                "character_fields_templates.project_id",
+              ])
               .executeTakeFirstOrThrow();
             return {
               data,

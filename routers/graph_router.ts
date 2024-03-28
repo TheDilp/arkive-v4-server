@@ -106,7 +106,6 @@ export function graph_router(app: Elysia) {
           "/:id",
           async ({ params, body, permissions }) => {
             const data = await db
-
               .selectFrom("graphs")
               .where("graphs.id", "=", params.id)
               .$if(!!body?.relations?.children, (qb) =>

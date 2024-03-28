@@ -86,7 +86,9 @@ export function calendar_router(app: Elysia) {
             .limit(body?.pagination?.limit || 10)
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
             .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "calendars">[]))
+            .$if(!!body.fields?.length, (qb) =>
+              qb.clearSelect().select(body.fields.map((f) => `calendars.${f}`) as SelectExpression<DB, "calendars">[]),
+            )
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
               qb = constructFilter("calendars", qb, body.filters);
               return qb;
@@ -117,7 +119,9 @@ export function calendar_router(app: Elysia) {
             .selectFrom("calendars")
             .where("calendars.id", "=", params.id)
             .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "calendars">[]))
+            .$if(!!body.fields?.length, (qb) =>
+              qb.clearSelect().select(body.fields.map((f) => `calendars.${f}`) as SelectExpression<DB, "calendars">[]),
+            )
             .$if(!!body?.relations, (qb) => {
               if (body.relations?.months) {
                 qb = qb.select((eb) =>

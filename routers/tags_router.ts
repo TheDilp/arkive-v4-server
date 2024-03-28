@@ -52,12 +52,12 @@ export function tag_router(app: Elysia) {
         async ({ body, permissions }) => {
           const data = await db
             .selectFrom("tags")
-            .where("project_id", "=", body.data.project_id)
+            .where("tags.project_id", "=", body.data.project_id)
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
               qb = constructFilter("tags", qb, body.filters);
               return qb;
             })
-            .select(["id", "title", "color"])
+            .select(["tags.id", "tags.title", "tags.color"])
             .limit(body?.pagination?.limit || 10)
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
             .$if(!!body.orderBy?.length, (qb) => {
@@ -99,7 +99,7 @@ export function tag_router(app: Elysia) {
           const data = await db
             .deleteFrom("tags")
             .where("id", "=", params.id)
-            .returning(["id", "title", "project_id"])
+            .returning(["tags.id", "tags.title", "tags.project_id"])
             .executeTakeFirstOrThrow();
           return { data, message: `Tag ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
         },

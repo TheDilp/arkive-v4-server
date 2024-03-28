@@ -71,7 +71,9 @@ export function random_table_router(app: Elysia) {
               .where("project_id", "=", body.data.project_id)
               .$if(!body.fields?.length, (qb) => qb.selectAll())
               .$if(!!body.fields?.length, (qb) =>
-                qb.clearSelect().select(body.fields as SelectExpression<DB, "random_tables">[]),
+                qb
+                  .clearSelect()
+                  .select(body.fields.map((f) => `random_tables.${f}`) as SelectExpression<DB, "random_tables">[]),
               )
               .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
                 qb = constructFilter("random_tables", qb, body.filters);
@@ -128,7 +130,6 @@ export function random_table_router(app: Elysia) {
                   ).as("random_table_options"),
                 ),
               )
-
               .select([
                 "random_tables.id",
                 "random_tables.title",
