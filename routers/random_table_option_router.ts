@@ -15,6 +15,7 @@ import {
 } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { constructOrdering } from "../utils/orderByConstructor";
 import { GetRelationsForUpdating } from "../utils/relationalQueryHelpers";
 import { chooseRandomItems } from "../utils/transform";
 
@@ -57,6 +58,7 @@ export function random_table_option_router(app: Elysia) {
             .$if(!!body.fields?.length, (qb) =>
               qb.clearSelect().select(body.fields as SelectExpression<DB, "random_table_options">[]),
             )
+            .$if(!!body.orderBy, (qb) => constructOrdering(body.orderBy, qb))
             .$if(!!body.relations?.random_table_suboptions, (qb) =>
               qb.select((eb) =>
                 jsonArrayFrom(
