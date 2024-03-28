@@ -24,6 +24,7 @@ import { constructOrdering } from "../utils/orderByConstructor";
 import {
   CreateEntityPermissions,
   CreateTagRelations,
+  GetRelatedEntityPermissionsAndRoles,
   TagQuery,
   UpdateEntityPermissions,
   UpdateTagRelations,
@@ -431,7 +432,7 @@ export function blueprint_instance_router(app: Elysia) {
         .post(
           "/:id",
           async ({ params, body, permissions }) => {
-            const data = await db
+            let query = db
               .selectFrom("blueprint_instances")
               .distinctOn(
                 body.orderBy?.length
@@ -618,31 +619,20 @@ export function blueprint_instance_router(app: Elysia) {
                       .select(["tags.id", "tags.title", "tags.color"])
                       .where("_blueprint_instancesTotags.A", "=", params.id),
                   ).as("tags"),
-              ])
-              .$if(!!body.permissions, (qb) => {
-                qb = qb.select([
-                  (eb) =>
-                    jsonArrayFrom(
-                      eb
-                        .selectFrom("blueprint_instance_permissions")
-                        .leftJoin("permissions", "permissions.id", "blueprint_instance_permissions.permission_id")
-                        .select([
-                          "blueprint_instance_permissions.id",
-                          "blueprint_instance_permissions.permission_id",
-                          "blueprint_instance_permissions.related_id",
-                          "blueprint_instance_permissions.role_id",
-                          "blueprint_instance_permissions.user_id",
-                          "permissions.code",
-                        ])
-                        .where("related_id", "=", params.id),
-                    ).as("permissions"),
-                ]);
-                return qb;
-              })
-              .$if(!permissions.is_project_owner, (qb) => {
-                return checkEntityLevelPermission(qb, permissions, "blueprint_instances", params.id);
-              })
-              .executeTakeFirst();
+              ]);
+
+            if (permissions.is_project_owner) {
+              query = query.leftJoin("blueprint_instance_permissions", (join) =>
+                join.on("blueprint_instance_permissions.related_id", "=", params.id),
+              );
+            } else {
+              query = checkEntityLevelPermission(query, permissions, "blueprint_instances", params.id);
+            }
+            if (body.permissions) {
+              query = GetRelatedEntityPermissionsAndRoles(query, permissions, "blueprint_instances", params.id);
+            }
+
+            const data = await query.executeTakeFirstOrThrow();
 
             return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
