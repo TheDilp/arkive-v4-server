@@ -4,7 +4,6 @@ import { DB } from "kysely-codegen";
 
 import { EntitiesWithChildren, EntitiesWithTags, EntityPermissionTables, TagsRelationTables } from "../database/types";
 import {
-  AvailableEntityType,
   EntitiesWithFolders,
   EntitiesWithPermissionCheck,
   InsertPermissionType,
@@ -320,6 +319,7 @@ export async function UpdateEntityPermissions(
           role_id: "role_id" in perm ? perm.role_id : null,
         })),
       )
+      // @ts-ignore
       .onConflict((oc) => oc.columns(["related_id", "role_id"]).doUpdateSet((eb) => ({ role_id: eb.ref("excluded.role_id") })))
       .onConflict((oc) => oc.columns(["user_id", "related_id", "permission_id"]).doNothing())
       .execute();

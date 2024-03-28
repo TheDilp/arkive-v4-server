@@ -273,11 +273,11 @@ export function document_router(app: Elysia) {
                 }
 
                 return qb;
-              })
+              });
 
-              .$if(!!body?.relations?.children, (qb) =>
-                GetEntityChildren(qb as SelectQueryBuilder<DB, EntitiesWithChildren, {}>, "documents"),
-              );
+            if (body?.relations?.children) {
+              GetEntityChildren(query as SelectQueryBuilder<DB, EntitiesWithChildren, {}>, "documents");
+            }
 
             if (permissions.is_project_owner) {
               query = query.leftJoin("document_permissions", (join) =>
