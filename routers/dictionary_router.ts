@@ -80,7 +80,7 @@ export function dictionary_router(app: Elysia) {
       .post(
         "/:id",
         async ({ params, body, permissions }) => {
-          const data = await db
+          let query = db
             .selectFrom("dictionaries")
             .where("id", "=", params.id)
             .$if(!!body?.relations?.children, (qb) =>
@@ -100,11 +100,13 @@ export function dictionary_router(app: Elysia) {
             )
             .$if(!permissions.is_project_owner, (qb) => {
               return checkEntityLevelPermission(qb, permissions, "dictionaries");
-            })
-            .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
-              GetRelatedEntityPermissionsAndRoles(qb, permissions, "dictionaries"),
-            )
-            .executeTakeFirstOrThrow();
+            });
+
+          if (body.permissions) {
+            query = GetRelatedEntityPermissionsAndRoles(query, permissions, "dictionaries", params.id);
+          }
+
+          const data = await query.executeTakeFirstOrThrow();
           if (body?.relations?.parents) {
             const parents = await GetParents({ db, id: params.id, table_name: "dictionaries" });
             return { data: { ...data, parents }, message: MessageEnum.success, ok: true, role_access: true };
