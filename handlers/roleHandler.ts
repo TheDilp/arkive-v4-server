@@ -7,9 +7,14 @@ import { decodeUserJwt } from "../utils/requestUtils";
 export async function checkRole(
   project_id: string | null,
   user_id: string,
-  required_permission: AvailablePermissions,
+  required_permission: AvailablePermissions | undefined,
+  isGlobalSearch?: boolean,
 ): Promise<PermissionDecorationType> {
-  if (!project_id) return { is_project_owner: false, user_id: "", role_access: false, role_id: null, permission_id: null };
+  if (isGlobalSearch) {
+    return { is_project_owner: false, user_id, role_access: true, role_id: null, permission_id: null };
+  }
+  if (!project_id || !required_permission)
+    return { is_project_owner: false, user_id, role_access: false, role_id: null, permission_id: null };
   const data = await db
     .selectFrom("user_project_roles_permissions")
     .where("permission_slug", "=", required_permission as string)
@@ -42,12 +47,11 @@ export async function checkOwner(project_id: string | null, user_id: string) {
   }
 }
 
-export async function beforeRoleHandler(context: any, permission: AvailablePermissions) {
+export async function beforeRoleHandler(context: any, permission: AvailablePermissions | undefined, isGlobalSearch?: boolean) {
   const token = context?.headers?.["authorization"];
   if (token) {
     const jwt = token.replace("Bearer ", "");
     const { user_id, project_id } = decodeUserJwt(jwt);
-
     if (user_id && project_id) {
       // Required as the permissions table won't retrieve the project owner's role as there will be none
       const isProjectOwner = await checkOwner(project_id as string, user_id as string);
@@ -59,6 +63,7 @@ export async function beforeRoleHandler(context: any, permission: AvailablePermi
         project_id as string | null,
         user_id as string,
         permission,
+        isGlobalSearch,
       );
       if (is_project_owner || role_access) {
         context.permissions = { is_project_owner, role_access, user_id, role_id, permission_id };

@@ -1,4 +1,5 @@
 import { TagsRelationTables } from "../database/types";
+import { EntitiesWithPermissionCheck } from "../types/entityTypes";
 
 export const AllEntities = [
   "characters",
@@ -30,7 +31,7 @@ export const SubEntityEnum = [
   "words",
 ];
 
-export const EntitiesWithTagsTables: TagsRelationTables[] = [
+export const EntitiesWithTagsTablesEnum: TagsRelationTables[] = [
   "_charactersTotags",
   "_documentsTotags",
   "_graphsTotags",
@@ -42,9 +43,9 @@ export const EntitiesWithTagsTables: TagsRelationTables[] = [
   "_nodesTotags",
 ];
 
-export const EntitiesWithoutProjectId = ["map_pins", "character_map_pins", "map_layers", "nodes", "edges", "events"];
+export const EntitiesWithoutProjectIdEnum = ["map_pins", "character_map_pins", "map_layers", "nodes", "edges", "events"];
 
-export const UserNotificationEntities = [
+export const UserNotificationEntitiesEnum = [
   "characters",
   "blueprints",
   "blueprint_instances",
@@ -60,7 +61,7 @@ export const UserNotificationEntities = [
   "tags",
 ];
 
-export const BulkDeleteEntities = [
+export const BulkDeleteEntitiesEnum = [
   "characters",
   "blueprints",
   "blueprint_instances",
@@ -79,7 +80,7 @@ export const BulkDeleteEntities = [
   "images",
 ];
 
-export const RolePermissions = [
+export const RolePermissionsEnum = [
   "create_characters" as const,
   "read_characters" as const,
   "update_characters" as const,
@@ -128,4 +129,19 @@ export const RolePermissions = [
   "read_assets" as const,
   "update_assets" as const,
   "delete_assets" as const,
+];
+
+export const EntitiesWithPermissionsEnum: EntitiesWithPermissionCheck[] = [
+  "characters",
+  "blueprints",
+  "blueprint_instances",
+  "documents",
+  "maps",
+  "graphs",
+  "calendars",
+  "dictionaries",
+  "random_tables",
+  "images",
+  "tags",
+  "character_fields_templates",
 ];

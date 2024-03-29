@@ -11,7 +11,7 @@ import {
   UpdateNodeSchema,
 } from "../database/validation";
 import { BulkUpdateAccess } from "../database/validation/bulk";
-import { BulkDeleteEntities } from "../enums";
+import { BulkDeleteEntitiesEnum } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeProjectOwnerHandler, beforeRoleHandler } from "../handlers";
 import {
@@ -202,7 +202,7 @@ export function bulk_router(app: Elysia) {
         "/delete/:type",
         async ({ params, body }) => {
           if (params.type) {
-            if (!BulkDeleteEntities.includes(params.type)) {
+            if (!BulkDeleteEntitiesEnum.includes(params.type)) {
               console.error("ATTEMPTED BULK DELETE WITH UNALLOWED TYPE", params.type);
               throw new Error("INTERNAL_SERVER_ERROR");
             }
@@ -230,7 +230,7 @@ export function bulk_router(app: Elysia) {
                 throw new Error("INTERNAL_SERVER_ERROR");
               }
             }
-            if (BulkDeleteEntities.includes(params.type)) {
+            if (BulkDeleteEntitiesEnum.includes(params.type)) {
               await db
                 .deleteFrom(params.type as BulkDeleteEntitiesType)
                 .where("id", "in", body.data.ids)

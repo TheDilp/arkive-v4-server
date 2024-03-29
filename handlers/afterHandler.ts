@@ -1,5 +1,5 @@
 import { db } from "../database/db";
-import { SubEntityEnum, UserNotificationEntities } from "../enums";
+import { SubEntityEnum, UserNotificationEntitiesEnum } from "../enums";
 import { AvailableEntityType, AvailableSubEntityType } from "../types/entityTypes";
 import { AfterHandlerActionType } from "../types/requestTypes";
 import {
@@ -71,7 +71,7 @@ export async function tempAfterHandle(context: any, response: any) {
   if (action && token) {
     // TODO: CHECK FOR NOTIFICATION SETTINGS
     const entity = getEntityFromPath(context.path) as AvailableEntityType | AvailableSubEntityType;
-    if (UserNotificationEntities.includes(entity)) {
+    if (UserNotificationEntitiesEnum.includes(entity)) {
       if (context.path.includes("bulk")) {
         afterHandlerMany(entity, token, action);
       } else {

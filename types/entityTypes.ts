@@ -1,4 +1,4 @@
-import { RolePermissions } from "../enums";
+import { RolePermissionsEnum } from "../enums";
 
 export type AssetType = "images" | "map_images";
 
@@ -86,7 +86,7 @@ export type MentionType = {
   };
 };
 
-export type AvailablePermissions = (typeof RolePermissions)[keyof typeof RolePermissions];
+export type AvailablePermissions = (typeof RolePermissionsEnum)[keyof typeof RolePermissionsEnum];
 
 export type InsertPermissionType =
   | ({

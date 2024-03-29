@@ -3,12 +3,14 @@ import { ExpressionBuilder, SelectExpression, sql } from "kysely";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
+import { checkEntityLevelPermission } from "../database/queries";
 import { EntitiesWithTags } from "../database/types";
 import { BasicSearchSchema, CategorySearchSchema, TagSearchSchema } from "../database/validation/search";
-import { EntitiesWithTagsTables, SubEntityEnum } from "../enums/entityEnums";
+import { EntitiesWithPermissionsEnum, EntitiesWithTagsTablesEnum, SubEntityEnum } from "../enums/entityEnums";
 import { MessageEnum } from "../enums/requestEnums";
-import { EntitiesWithFolders } from "../types/entityTypes";
-import { ResponseWithDataSchema, SearchableEntities } from "../types/requestTypes";
+import { beforeRoleHandler } from "../handlers";
+import { AvailablePermissions, EntitiesWithFolders, EntitiesWithPermissionCheck } from "../types/entityTypes";
+import { PermissionDecorationType, ResponseWithDataSchema, SearchableEntities } from "../types/requestTypes";
 import { getSearchTableFromType } from "../utils/requestUtils";
 
 function getSearchFields(type: SearchableEntities): string[] {
@@ -57,6 +59,13 @@ function getSearchWhere(
 export function search_router(app: Elysia) {
   return app.group("/search", (server) =>
     server
+      .decorate("permissions", {
+        is_project_owner: false,
+        role_access: false,
+        user_id: "",
+        role_id: null,
+        permission_id: null,
+      } as PermissionDecorationType)
       .post(
         "/:project_id/:type/folder",
         async ({ params, body }) => {
@@ -87,7 +96,7 @@ export function search_router(app: Elysia) {
       )
       .post(
         "/:project_id/:type",
-        async ({ params, body }) => {
+        async ({ params, body, permissions }) => {
           const { project_id, type } = params;
 
           if (type === "documents_content") {
@@ -149,51 +158,56 @@ export function search_router(app: Elysia) {
             };
           }
 
-          const result = await db
+          let query = db
             .selectFrom(getSearchTableFromType(type as SearchableEntities | keyof DB))
             // @ts-ignore
-            .select(fields as SelectExpression<DB, SearchableEntities>[])
-            .$if(type === "nodes", (eb) =>
-              eb
-                .leftJoin("characters", "characters.id", "nodes.character_id")
-                .leftJoin("graphs", "graphs.id", "nodes.parent_id")
-                .select([
-                  "graphs.title as parent_title",
-                  "characters.id as character_id",
-                  "characters.full_name",
-                  "characters.portrait_id",
-                ]),
-            )
-            .$if(type === "edges", (eb) =>
-              eb.leftJoin("graphs", "graphs.id", "nodes.parent_id").select(["graphs.title as parent_title"]),
-            )
-            .$if(type === "map_pins", (eb) =>
-              eb.leftJoin("maps", "maps.id", "map_pins.parent_id").select(["maps.title as parent_title"]),
-            )
-            .$if(type === "events", (eb) =>
-              eb.leftJoin("calendars", "calendars.id", "events.parent_id").select(["calendars.title as parent_title"]),
-            )
-            .$if(type === "words", (eb) =>
-              eb.leftJoin("dictionaries", "dictionaries.id", "words.parent_id").select(["dictionaries.title as parent_title"]),
-            )
-            .$if(type === "blueprint_instances", (eb) =>
-              eb.leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id").select(["blueprints.icon as icon"]),
-            )
-            .$if(!!body.data.parent_id, (qb) => {
-              qb = qb.where("blueprint_instances.parent_id", "=", body.data.parent_id || "");
+            .select(fields as SelectExpression<DB, SearchableEntities>[]);
 
-              return qb;
-            })
-            .$if(type === "images", (eb) => eb.where("type", "=", "images"))
-            .where((eb) => getSearchWhere(eb, type as SearchableEntities, body.data.search_term, params.project_id))
-            .$if(!SubEntityEnum.includes(type) || type === "alter_names", (qb) => {
-              qb = qb.where("project_id", "=", params.project_id);
-              return qb;
-            })
-            // .where("project_id", "=", body.data.project_id)
-            .limit(body.limit || 10)
-            .$if(!body.limit, (qb) => qb.clearLimit())
-            .execute();
+          if (type === "nodes") {
+            query = query
+              .leftJoin("characters", "characters.id", "nodes.character_id")
+              .leftJoin("graphs", "graphs.id", "nodes.parent_id")
+              .select([
+                "graphs.title as parent_title",
+                "characters.id as character_id",
+                "characters.full_name",
+                "characters.portrait_id",
+              ]);
+          } else if (type === "edges") {
+            query = query.leftJoin("graphs", "graphs.id", "nodes.parent_id").select(["graphs.title as parent_title"]);
+          } else if (type === "map_pins") {
+            query = query.leftJoin("maps", "maps.id", "map_pins.parent_id").select(["maps.title as parent_title"]);
+          } else if (type === "events") {
+            query = query.leftJoin("calendars", "calendars.id", "events.parent_id").select(["calendars.title as parent_title"]);
+          } else if (type === "words") {
+            query = query
+              .leftJoin("dictionaries", "dictionaries.id", "words.parent_id")
+              .select(["dictionaries.title as parent_title"]);
+          } else if (type === "blueprint_instances") {
+            query = query
+              .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+              .select(["blueprints.icon as icon"]);
+          } else if (body.data.parent_id) {
+            query = query.where("blueprint_instances.parent_id", "=", body.data.parent_id || "");
+          } else if (type === "images") {
+            query = query.where("type", "=", "images");
+          }
+
+          query = query.where((eb) => getSearchWhere(eb, type as SearchableEntities, body.data.search_term, params.project_id));
+
+          if (!SubEntityEnum.includes(type) || type === "alter_names") {
+            query = query.where("project_id", "=", params.project_id);
+          }
+
+          if (EntitiesWithPermissionsEnum.includes(type as EntitiesWithPermissionCheck) && !permissions.is_project_owner) {
+            if (!permissions.is_project_owner) {
+              query = checkEntityLevelPermission(query, permissions, type as EntitiesWithPermissionCheck);
+            }
+          }
+
+          query = query.limit(body.limit || 10);
+          const result = await query.execute();
+
           return {
             data: result.map((item) => ({
               value: item.id,
@@ -215,7 +229,11 @@ export function search_router(app: Elysia) {
             role_access: true,
           };
         },
-        { response: ResponseWithDataSchema, body: BasicSearchSchema },
+        {
+          response: ResponseWithDataSchema,
+          body: BasicSearchSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, `read_${context.params.type}` as AvailablePermissions),
+        },
       )
       .post(
         "/:project_id/:type/mentions",
@@ -390,15 +408,26 @@ export function search_router(app: Elysia) {
       )
       .post(
         "/:project_id",
-        async ({ params, body }) => {
+        async ({ params, body, permissions }) => {
           const { project_id } = params;
           const { search_term } = body.data;
+
+          console.log(permissions);
+
+          const userPermissionsQuery = db
+            .selectFrom("user_roles")
+            .leftJoin("role_permissions", "role_permissions.role_id", "user_roles.role_id")
+            .leftJoin("permissions", "permissions.id", "role_permissions.permission_id")
+            .where("user_roles.project_id", "=", project_id)
+            .where("user_roles.user_id", "=", permissions.user_id)
+            .where("permissions.code", "like", "read_%")
+            .select(["permissions.code"]);
 
           const charactersSearch = {
             name: "characters",
             request: db
               .selectFrom("characters")
-              .select(["id", "full_name", "portrait_id"])
+              .select(["characters.id", "characters.full_name", "characters.portrait_id"])
               .where("characters.full_name", "ilike", `%${search_term}%`)
               .where("project_id", "=", project_id)
               .limit(5),
@@ -407,7 +436,7 @@ export function search_router(app: Elysia) {
             name: "documents",
             request: db
               .selectFrom("documents")
-              .select(["id", "title", "icon"])
+              .select(["documents.id", "documents.title", "documents.icon"])
               .where("documents.title", "ilike", `%${search_term}%`)
               .where("project_id", "=", project_id)
               .limit(5),
@@ -426,7 +455,7 @@ export function search_router(app: Elysia) {
             name: "maps",
             request: db
               .selectFrom("maps")
-              .select(["id", "title"])
+              .select(["maps.id", "maps.title", "maps.image_id"])
               .where("maps.title", "ilike", `%${search_term}%`)
               .where("project_id", "=", project_id)
               .limit(5),
@@ -465,7 +494,7 @@ export function search_router(app: Elysia) {
               .selectFrom("graphs")
               .where("graphs.title", "ilike", `%${search_term}%`)
               .where("project_id", "=", project_id)
-              .select(["id", "title", "icon"])
+              .select(["graphs.id", "graphs.title", "graphs.icon"])
               .limit(5),
           };
           const nodeSearch = {
@@ -506,7 +535,7 @@ export function search_router(app: Elysia) {
               .selectFrom("calendars")
               .where("calendars.title", "ilike", `%${search_term}%`)
               .where("project_id", "=", project_id)
-              .select(["id", "title", "icon"])
+              .select(["calendars.id", "calendars.title", "calendars.icon"])
               .limit(5),
           };
           const eventsSearch = {
@@ -546,7 +575,7 @@ export function search_router(app: Elysia) {
               .selectFrom("blueprints")
               .where("blueprints.title", "ilike", `%${search_term}%`)
               .where("project_id", "=", project_id)
-              .select(["id", "title", "icon"])
+              .select(["blueprints.id", "blueprints.title", "blueprints.icon"])
               .limit(5),
           };
           const blueprintInstancesSearch = {
@@ -566,40 +595,93 @@ export function search_router(app: Elysia) {
               .limit(5),
           };
 
-          const requests = [
-            charactersSearch,
-            documentSearch,
-            alterNameSearch,
-            mapSearch,
-            characterMapPinSearch,
-            mapPinSearch,
-            graphSearch,
-            nodeSearch,
-            dictionariesSearch,
-            wordsSearch,
-            edgeSearch,
-            calendarSearch,
-            eventsSearch,
-            blueprintsSearch,
-            blueprintInstancesSearch,
-          ];
+          const permissionsForSearch = permissions.is_project_owner || (await userPermissionsQuery.execute());
+
+          const requests =
+            permissionsForSearch === true
+              ? [
+                  charactersSearch,
+                  documentSearch,
+                  alterNameSearch,
+                  mapSearch,
+                  characterMapPinSearch,
+                  mapPinSearch,
+                  graphSearch,
+                  nodeSearch,
+                  edgeSearch,
+                  calendarSearch,
+                  eventsSearch,
+                  dictionariesSearch,
+                  wordsSearch,
+                  blueprintsSearch,
+                  blueprintInstancesSearch,
+                ]
+              : [];
+          if (permissionsForSearch !== true && typeof permissionsForSearch !== "boolean") {
+            const formattedPermissions: Partial<Record<EntitiesWithPermissionCheck, boolean>> = {};
+
+            permissionsForSearch.forEach((perm) => {
+              if (perm.code) {
+                const entity = perm.code.replace("read_", "") as EntitiesWithPermissionCheck;
+                formattedPermissions[entity] = true;
+              }
+            });
+
+            if (formattedPermissions.characters) {
+              requests.push(charactersSearch);
+            }
+            if (formattedPermissions.blueprints) {
+              requests.push(blueprintsSearch);
+            }
+            if (formattedPermissions.blueprint_instances) {
+              requests.push(blueprintInstancesSearch);
+            }
+            if (formattedPermissions.documents) {
+              requests.push(documentSearch, alterNameSearch);
+            }
+            if (formattedPermissions.maps) {
+              requests.push(mapSearch, mapPinSearch, characterMapPinSearch);
+            }
+            if (formattedPermissions.graphs) {
+              requests.push(graphSearch, nodeSearch, edgeSearch);
+            }
+            if (formattedPermissions.dictionaries) {
+              requests.push(dictionariesSearch, wordsSearch);
+            }
+            if (formattedPermissions.calendars) {
+              requests.push(calendarSearch, eventsSearch);
+            }
+          }
+
           const result = await Promise.all(
-            requests.map(async (item) => ({
-              name: item.name,
-              result: await item.request.execute(),
-            })),
+            requests.map(async (item) => {
+              if (
+                EntitiesWithPermissionsEnum.includes(item.name as EntitiesWithPermissionCheck) &&
+                !permissions.is_project_owner
+              ) {
+                item.request = checkEntityLevelPermission(item.request, permissions, item.name as EntitiesWithPermissionCheck);
+              }
+
+              return {
+                name: item.name,
+                result: await item.request.execute(),
+              };
+            }),
           );
 
           return { data: result, ok: true, role_access: true, message: MessageEnum.success };
         },
-        { body: BasicSearchSchema },
+        {
+          body: BasicSearchSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, undefined, true),
+        },
       )
       .post(
         "/:project_id/all/tags",
         async ({ body }) => {
           const { tag_ids = [], match = "any" } = body.data;
           if (tag_ids.length) {
-            const requests = EntitiesWithTagsTables.map((tb) => {
+            const requests = EntitiesWithTagsTablesEnum.map((tb) => {
               const entity_name = tb.replace("_", "").replace("Totags", "") as EntitiesWithTags;
 
               const fields = [`${entity_name}.id`];
