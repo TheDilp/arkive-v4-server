@@ -115,7 +115,7 @@ export function calendar_router(app: Elysia) {
       .post(
         "/:id",
         async ({ params, body, permissions }) => {
-          const data = await db
+          let query = db
             .selectFrom("calendars")
             .where("calendars.id", "=", params.id)
             .$if(!body.fields?.length, (qb) => qb.selectAll())
@@ -178,14 +178,17 @@ export function calendar_router(app: Elysia) {
             )
             .$if(!permissions.is_project_owner, (qb) => {
               return checkEntityLevelPermission(qb, permissions, "calendars");
-            })
-            .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
-              GetRelatedEntityPermissionsAndRoles(qb, permissions, "calendars"),
-            )
-            .executeTakeFirstOrThrow();
+            });
+
+          if (body.permissions) {
+            query = GetRelatedEntityPermissionsAndRoles(query, permissions, "calendars", params.id);
+          }
+
+          const data = await query.executeTakeFirstOrThrow();
 
           if (body?.relations?.parents) {
             const parents = await GetParents({ db, id: params.id, table_name: "calendars" });
+            // @ts-ignore
             data.parents = parents;
             return { data, message: MessageEnum.success, ok: true, role_access: true };
           }
