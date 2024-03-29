@@ -7,14 +7,17 @@ import { DB } from "kysely-codegen";
 import sharp from "sharp";
 
 import { db } from "../database/db";
+import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
 import { UpdateImageSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler } from "../handlers";
+import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
 import { AssetType } from "../types/entityTypes";
-import { RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { PermissionDecorationType, RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
+import { GetRelatedEntityPermissionsAndRoles, UpdateEntityPermissions } from "../utils/relationalQueryHelpers";
 import { s3Client } from "../utils/s3Utils";
+import { getEntityWithOwnerId } from "../utils/transform";
 
 async function createFile(data: Blob) {
   const buff = await data.arrayBuffer();
@@ -31,9 +34,16 @@ async function createFile(data: Blob) {
 export function asset_router(app: Elysia) {
   return app.group("/assets", (server) =>
     server
+      .decorate("permissions", {
+        is_project_owner: false,
+        role_access: false,
+        user_id: "",
+        role_id: null,
+        permission_id: null,
+      } as PermissionDecorationType)
       .post(
         "/:project_id/:type",
-        async ({ params, body }) => {
+        async ({ params, body, permissions }) => {
           const data = await db
             .selectFrom("images")
             .selectAll()
@@ -46,7 +56,15 @@ export function asset_router(app: Elysia) {
               return qb;
             })
             .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "images">[]))
+            .$if(!!body.fields?.length, (qb) =>
+              qb.clearSelect().select(body.fields.map((f) => `images.${f}`) as SelectExpression<DB, "images">[]),
+            )
+            .$if(!permissions.is_project_owner, (qb) => {
+              return checkEntityLevelPermission(qb, permissions, "images");
+            })
+            .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
+              GetRelatedEntityPermissionsAndRoles(qb, permissions, "images"),
+            )
             .$if(!!body.orderBy?.length, (qb) => {
               qb = constructOrdering(body.orderBy, qb);
               return qb;
@@ -62,13 +80,25 @@ export function asset_router(app: Elysia) {
       )
       .post(
         "/:project_id/:type/:id",
-        async ({ params, body }) => {
-          const data = await db
+        async ({ params, body, permissions }) => {
+          let query = db
             .selectFrom("images")
             .where("images.id", "=", params.id)
             .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "images">[]))
-            .executeTakeFirstOrThrow();
+            .$if(!!body.fields?.length, (qb) =>
+              qb.clearSelect().select(body.fields.map((f) => `images.${f}`) as SelectExpression<DB, "images">[]),
+            );
+
+          if (permissions.is_project_owner) {
+            query = query.leftJoin("images_permissions", (join) => join.on("images_permissions.related_id", "=", params.id));
+          } else {
+            query = checkEntityLevelPermission(query, permissions, "images", params.id);
+          }
+          if (body.permissions) {
+            query = GetRelatedEntityPermissionsAndRoles(query, permissions, "images", params.id);
+          }
+
+          const data = await query.executeTakeFirstOrThrow();
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
@@ -79,7 +109,7 @@ export function asset_router(app: Elysia) {
       )
       .post(
         "/upload/:project_id/:type",
-        async ({ params, body }) => {
+        async ({ params, body, permissions }) => {
           const { type, project_id } = params;
 
           const objectEntries = Object.entries(body);
@@ -88,7 +118,7 @@ export function asset_router(app: Elysia) {
             const buffer = await createFile(file);
             const { id: image_id } = await db
               .insertInto("images")
-              .values({ title: file.name, project_id, type: type as AssetType })
+              .values(getEntityWithOwnerId({ title: file.name, project_id, type: type as AssetType }, permissions.user_id))
               .returning("id")
               .executeTakeFirstOrThrow();
             const filePath = `assets/${project_id}/${type}`;
@@ -124,9 +154,20 @@ export function asset_router(app: Elysia) {
 
       .post(
         "/update/:id",
-        async ({ params, body }) => {
-          await db.updateTable("images").where("id", "=", params.id).set(body.data).execute();
-          return { message: `Image ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
+        async ({ params, body, permissions }) => {
+          const permissionCheck = await getHasEntityPermission("images", params.id, permissions);
+          if (permissionCheck) {
+            await db.transaction().execute(async (tx) => {
+              await tx.updateTable("images").where("id", "=", params.id).set(body.data).execute();
+              if (body?.permissions) {
+                await UpdateEntityPermissions(tx, params.id, "image_permissions", body.permissions);
+              }
+            });
+            return { message: `Image ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
+          } else {
+            noRoleAccessErrorHandler();
+            return { message: "", ok: false, role_access: false };
+          }
         },
         {
           body: UpdateImageSchema,
@@ -173,20 +214,26 @@ export function asset_router(app: Elysia) {
       )
       .delete(
         "/:project_id/:type/:id",
-        async ({ params }) => {
-          const filePath = `assets/${params.project_id}/${params.type}`;
+        async ({ params, permissions }) => {
+          const permissionCheck = await getHasEntityPermission("images", params.id, permissions);
+          if (permissionCheck) {
+            const filePath = `assets/${params.project_id}/${params.type}`;
 
-          try {
-            await s3Client.send(
-              new DeleteObjectCommand({
-                Bucket: process.env.DO_SPACES_NAME as string,
-                Key: `${filePath}/${params.id}.webp`,
-              }),
-            );
-            await db.deleteFrom("images").where("id", "=", params.id).execute();
-            return { message: `Image ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
-          } catch (error) {
-            return { message: "Could not delete image.", ok: false, role_access: true };
+            try {
+              await s3Client.send(
+                new DeleteObjectCommand({
+                  Bucket: process.env.DO_SPACES_NAME as string,
+                  Key: `${filePath}/${params.id}.webp`,
+                }),
+              );
+              await db.deleteFrom("images").where("id", "=", params.id).execute();
+              return { message: `Image ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
+            } catch (error) {
+              return { message: "Could not delete image.", ok: false, role_access: true };
+            }
+          } else {
+            noRoleAccessErrorHandler();
+            return { message: "", ok: false, role_access: false };
           }
         },
         {
