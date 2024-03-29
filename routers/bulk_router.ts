@@ -13,9 +13,10 @@ import {
 import { BulkUpdateAccess } from "../database/validation/bulk";
 import { BulkDeleteEntities } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeProjectOwnerHandler, beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
+import { beforeProjectOwnerHandler, beforeRoleHandler } from "../handlers";
 import {
   AvailableEntityType,
+  AvailablePermissions,
   AvailableSubEntityType,
   BulkDeleteEntitiesType,
   EntitiesWithPermissionCheck,
@@ -23,7 +24,7 @@ import {
 } from "../types/entityTypes";
 import { ResponseSchema } from "../types/requestTypes";
 import { UpdateTagRelations } from "../utils/relationalQueryHelpers";
-import { getEntityTagTable, getPermissionFromAction, getPermissionTableFromEntity } from "../utils/requestUtils";
+import { getEntityTagTable, getPermissionTableFromEntity } from "../utils/requestUtils";
 import { s3Client } from "../utils/s3Utils";
 
 export function bulk_router(app: Elysia) {
@@ -41,6 +42,7 @@ export function bulk_router(app: Elysia) {
         {
           body: t.Object({ data: t.Array(t.Union([InsertNodeSchema, t.Object({ data: InsertRandomTableOptionItemSchema })])) }),
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, `create_${context.params.type}` as AvailablePermissions),
         },
       )
       .post(
@@ -57,17 +59,7 @@ export function bulk_router(app: Elysia) {
         {
           body: t.Object({ data: t.Object({ ids: t.Array(t.String()), is_public: t.Boolean() }) }),
           response: ResponseSchema,
-          beforeHandle: async (context) => {
-            const permission = getPermissionFromAction(
-              "update",
-              context.params.type as AvailableEntityType | AvailableSubEntityType | "assets",
-            );
-            if (permission) {
-              return beforeRoleHandler(context, permission);
-            } else {
-              noRoleAccessErrorHandler();
-            }
-          },
+          beforeHandle: async (context) => beforeRoleHandler(context, `update_${context.params.type}` as AvailablePermissions),
         },
       )
       .post(
@@ -118,17 +110,7 @@ export function bulk_router(app: Elysia) {
         {
           body: t.Object({ data: t.Array(t.Union([UpdateEventSchema, UpdateNodeSchema, UpdateEdgeSchema])) }),
           response: ResponseSchema,
-          beforeHandle: async (context) => {
-            const permission = getPermissionFromAction(
-              "update",
-              context.params.type as AvailableEntityType | AvailableSubEntityType | "assets",
-            );
-            if (permission) {
-              return beforeRoleHandler(context, permission);
-            } else {
-              noRoleAccessErrorHandler();
-            }
-          },
+          beforeHandle: async (context) => beforeRoleHandler(context, `update_${context.params.type}` as AvailablePermissions),
         },
       )
       .post(
@@ -213,17 +195,7 @@ export function bulk_router(app: Elysia) {
             }),
           }),
           response: ResponseSchema,
-          beforeHandle: async (context) => {
-            const permission = getPermissionFromAction(
-              "update",
-              context.params.type as AvailableEntityType | AvailableSubEntityType | "assets",
-            );
-            if (permission) {
-              return beforeRoleHandler(context, permission);
-            } else {
-              noRoleAccessErrorHandler();
-            }
-          },
+          beforeHandle: async (context) => beforeRoleHandler(context, `update_${context.params.type}` as AvailablePermissions),
         },
       )
       .delete(
@@ -279,17 +251,7 @@ export function bulk_router(app: Elysia) {
             }),
           }),
           response: ResponseSchema,
-          beforeHandle: async (context) => {
-            const permission = getPermissionFromAction(
-              "delete",
-              context.params.type as AvailableEntityType | AvailableSubEntityType | "assets",
-            );
-            if (permission) {
-              return beforeRoleHandler(context, permission);
-            } else {
-              noRoleAccessErrorHandler();
-            }
-          },
+          beforeHandle: async (context) => beforeRoleHandler(context, `delete_${context.params.type}` as AvailablePermissions),
         },
       ),
   );
