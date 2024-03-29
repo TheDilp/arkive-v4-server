@@ -397,13 +397,15 @@ export async function readCharacter(
       return qb;
     });
 
-  if (permissions.is_project_owner) {
-    query = query.leftJoin("character_permissions", (join) => join.on("character_permissions.related_id", "=", params.id));
-  } else {
-    query = checkEntityLevelPermission(query, permissions, "characters", params.id);
-  }
-  if (!!body.permissions && !isPublic) {
-    query = GetRelatedEntityPermissionsAndRoles(query, permissions, "characters", params.id);
+  if (!isPublic) {
+    if (permissions?.is_project_owner) {
+      query = query.leftJoin("character_permissions", (join) => join.on("character_permissions.related_id", "=", params.id));
+    } else {
+      query = checkEntityLevelPermission(query, permissions, "characters", params.id);
+    }
+    if (!!body.permissions && !isPublic) {
+      query = GetRelatedEntityPermissionsAndRoles(query, permissions, "characters", params.id);
+    }
   }
 
   const data = await query.executeTakeFirstOrThrow();
