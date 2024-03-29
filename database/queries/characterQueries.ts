@@ -23,10 +23,7 @@ export async function readCharacter(
 ): Promise<(typeof ResponseWithDataSchema)["static"]> {
   let query = db
     .selectFrom("characters")
-    .$if(!body.fields?.length, (qb) => qb.selectAll())
-    .$if(!!body.fields?.length, (qb) =>
-      qb.clearSelect().select(body.fields.map((f) => `characters.${f}`) as SelectExpression<DB, "characters">[]),
-    )
+    .select(body.fields.map((f) => `characters.${f}`) as SelectExpression<DB, "characters">[])
     .where("characters.id", "=", params.id)
     .$if(!!body.relations, (qb) => {
       if (body?.relations?.character_fields) {
