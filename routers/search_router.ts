@@ -412,8 +412,6 @@ export function search_router(app: Elysia) {
           const { project_id } = params;
           const { search_term } = body.data;
 
-          console.log(permissions);
-
           const userPermissionsQuery = db
             .selectFrom("user_roles")
             .leftJoin("role_permissions", "role_permissions.role_id", "user_roles.role_id")
@@ -421,7 +419,7 @@ export function search_router(app: Elysia) {
             .where("user_roles.project_id", "=", project_id)
             .where("user_roles.user_id", "=", permissions.user_id)
             .where("permissions.code", "like", "read_%")
-            .select(["permissions.code"]);
+            .select(["permissions.code", "permissions.id"]);
 
           const charactersSearch = {
             name: "characters",
@@ -596,6 +594,7 @@ export function search_router(app: Elysia) {
           };
 
           const permissionsForSearch = permissions.is_project_owner || (await userPermissionsQuery.execute());
+          const formattedPermissions: Partial<Record<EntitiesWithPermissionCheck, string>> = {};
 
           const requests =
             permissionsForSearch === true
@@ -618,12 +617,10 @@ export function search_router(app: Elysia) {
                 ]
               : [];
           if (permissionsForSearch !== true && typeof permissionsForSearch !== "boolean") {
-            const formattedPermissions: Partial<Record<EntitiesWithPermissionCheck, boolean>> = {};
-
             permissionsForSearch.forEach((perm) => {
-              if (perm.code) {
+              if (perm.code && perm.id) {
                 const entity = perm.code.replace("read_", "") as EntitiesWithPermissionCheck;
-                formattedPermissions[entity] = true;
+                formattedPermissions[entity] = perm.id;
               }
             });
 
@@ -659,7 +656,11 @@ export function search_router(app: Elysia) {
                 EntitiesWithPermissionsEnum.includes(item.name as EntitiesWithPermissionCheck) &&
                 !permissions.is_project_owner
               ) {
-                item.request = checkEntityLevelPermission(item.request, permissions, item.name as EntitiesWithPermissionCheck);
+                item.request = checkEntityLevelPermission(
+                  item.request,
+                  { ...permissions, permission_id: formattedPermissions[item.name as EntitiesWithPermissionCheck] || null },
+                  item.name as EntitiesWithPermissionCheck,
+                );
               }
 
               return {
@@ -678,10 +679,37 @@ export function search_router(app: Elysia) {
       )
       .post(
         "/:project_id/all/tags",
-        async ({ body }) => {
+        async ({ params, body, permissions }) => {
+          const userPermissionsQuery = db
+            .selectFrom("user_roles")
+            .leftJoin("role_permissions", "role_permissions.role_id", "user_roles.role_id")
+            .leftJoin("permissions", "permissions.id", "role_permissions.permission_id")
+            .where("user_roles.project_id", "=", params.project_id)
+            .where("user_roles.user_id", "=", permissions.user_id)
+            .where("permissions.code", "like", "read_%")
+            .select(["permissions.code", "permissions.id"]);
+
+          const permissionsForSearch = permissions.is_project_owner || (await userPermissionsQuery.execute());
+          const formattedPermissions: Partial<Record<EntitiesWithPermissionCheck, string>> = {};
+
+          if (permissionsForSearch !== true && typeof permissionsForSearch !== "boolean") {
+            permissionsForSearch.forEach((perm) => {
+              if (perm.code && perm.id) {
+                const entity = perm.code.replace("read_", "") as EntitiesWithPermissionCheck;
+                formattedPermissions[entity] = perm.id;
+              }
+            });
+          }
+
           const { tag_ids = [], match = "any" } = body.data;
           if (tag_ids.length) {
-            const requests = EntitiesWithTagsTablesEnum.map((tb) => {
+            const requests = EntitiesWithTagsTablesEnum.filter((tb) => {
+              const entity_name = tb.replace("_", "").replace("Totags", "") as EntitiesWithPermissionCheck | "nodes" | "edges";
+              if (permissionsForSearch === true) return true;
+              if (entity_name === "graphs" || entity_name === "nodes" || entity_name === "edges")
+                return !!formattedPermissions.graphs;
+              return !!formattedPermissions[entity_name];
+            }).map((tb) => {
               const entity_name = tb.replace("_", "").replace("Totags", "") as EntitiesWithTags;
 
               const fields = [`${entity_name}.id`];
@@ -710,17 +738,28 @@ export function search_router(app: Elysia) {
                         // @ts-ignore
                         .leftJoin("tags", "tags.id", `${tb}.B`)
                         // @ts-ignore
-                        .where("tags.id", "in", tag_ids)
+                        .where(`${tb}.B`, "in", tag_ids)
                         .groupBy(`${entity_name}.id`)
                         .having(sql`count(distinct tags.id)`, "=", tag_ids.length),
               };
             });
-
             const result = await Promise.all(
-              requests.map(async (item) => ({
-                name: item.name,
-                result: await item.request.execute(),
-              })),
+              requests.map(async (item) => {
+                if (
+                  EntitiesWithPermissionsEnum.includes(item.name as EntitiesWithPermissionCheck) &&
+                  !permissions.is_project_owner
+                ) {
+                  item.request = checkEntityLevelPermission(
+                    item.request,
+                    { ...permissions, permission_id: formattedPermissions[item.name as EntitiesWithPermissionCheck] || null },
+                    item.name as EntitiesWithPermissionCheck,
+                  );
+                }
+                return {
+                  name: item.name,
+                  result: await item.request.execute(),
+                };
+              }),
             );
 
             return { data: result, ok: true, role_access: true, message: MessageEnum.success };
@@ -730,6 +769,7 @@ export function search_router(app: Elysia) {
         {
           body: TagSearchSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, undefined, true),
         },
       ),
   );
