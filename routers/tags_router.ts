@@ -8,7 +8,11 @@ import { beforeRoleHandler } from "../handlers";
 import { PermissionDecorationType, RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { CreateEntityPermissions, GetRelatedEntityPermissionsAndRoles } from "../utils/relationalQueryHelpers";
+import {
+  CreateEntityPermissions,
+  GetRelatedEntityPermissionsAndRoles,
+  UpdateEntityPermissions,
+} from "../utils/relationalQueryHelpers";
 import { getEntitiesWithOwnerId, getEntityWithOwnerId } from "../utils/transform";
 
 export function tag_router(app: Elysia) {
@@ -111,7 +115,14 @@ export function tag_router(app: Elysia) {
       .post(
         "/update/:id",
         async ({ params, body }) => {
-          await db.updateTable("tags").where("id", "=", params.id).set(body.data).execute();
+          await db.transaction().execute(async (tx) => {
+            await tx.updateTable("tags").where("id", "=", params.id).set(body.data).execute();
+
+            if (body?.permissions) {
+              await UpdateEntityPermissions(tx, params.id, "tag_permissions", body.permissions);
+            }
+          });
+
           return { message: `Tag ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
         {
