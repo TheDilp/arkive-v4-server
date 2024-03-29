@@ -100,7 +100,7 @@ export function random_table_router(app: Elysia) {
         .post(
           "/:id",
           async ({ params, body, permissions }) => {
-            const data = await db
+            let query = db
 
               .selectFrom("random_tables")
               .where("random_tables.id", "=", params.id)
@@ -144,8 +144,12 @@ export function random_table_router(app: Elysia) {
               })
               .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
                 GetRelatedEntityPermissionsAndRoles(qb, permissions, "random_tables"),
-              )
-              .executeTakeFirstOrThrow();
+              );
+
+            if (body.permissions) {
+              query = GetRelatedEntityPermissionsAndRoles(query, permissions, "random_tables", params.id);
+            }
+            const data = await query.executeTakeFirstOrThrow();
 
             if (body?.relations?.parents) {
               const parents = await GetParents({ db, id: params.id, table_name: "random_tables" });
