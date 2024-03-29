@@ -11,13 +11,20 @@ import {
   UpdateProjectSchema,
 } from "../database/validation/projects";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeProjectOwnerHandler } from "../handlers";
-import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { beforeProjectOwnerHandler, beforeRoleHandler } from "../handlers";
+import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { deleteFolder } from "../utils/s3Utils";
 
 export function project_router(app: Elysia) {
   return app.group("/projects", (server) =>
     server
+      .decorate("permissions", {
+        is_project_owner: false,
+        role_access: false,
+        user_id: "",
+        role_id: null,
+        permission_id: null,
+      } as PermissionDecorationType)
       .post(
         "/create",
         async ({ body }) => {
@@ -147,14 +154,15 @@ export function project_router(app: Elysia) {
       )
       .get(
         "/:id/dashboard",
-        async ({ params }) => {
+        async ({ params, permissions }) => {
           const requests = [
             {
               name: "characters",
               request: db
                 .selectFrom("characters")
-                .select(["id", "full_name as title", "portrait_id"])
+                .select(["characters.id", "characters.full_name as title", "characters.portrait_id"])
                 .where("project_id", "=", params.id)
+                .where("characters.owner_id", "=", permissions.user_id)
                 .limit(5)
                 .orderBy("updated_at desc")
                 .execute(),
@@ -163,8 +171,9 @@ export function project_router(app: Elysia) {
               name: "documents",
               request: db
                 .selectFrom("documents")
-                .select(["id", "title", "icon"])
+                .select(["documents.id", "documents.title", "documents.icon"])
                 .where("project_id", "=", params.id)
+                .where("documents.owner_id", "=", permissions.user_id)
                 .orderBy("updated_at desc")
                 .limit(5)
                 .execute(),
@@ -177,6 +186,7 @@ export function project_router(app: Elysia) {
                 .select(["blueprint_instances.id", "blueprint_instances.title", "blueprint_instances.parent_id"])
                 .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
                 .where("blueprints.project_id", "=", params.id)
+                .where("blueprint_instances.owner_id", "=", permissions.user_id)
                 .orderBy("blueprint_instances.updated_at desc")
                 .limit(5)
                 .execute(),
@@ -188,6 +198,7 @@ export function project_router(app: Elysia) {
                 .select(["id", "title", "icon"])
                 .orderBy("updated_at desc")
                 .where("project_id", "=", params.id)
+                .where("owner_id", "=", permissions.user_id)
                 .limit(5)
                 .execute(),
             },
@@ -197,6 +208,7 @@ export function project_router(app: Elysia) {
                 .selectFrom("graphs")
                 .select(["id", "title"])
                 .where("graphs.project_id", "=", params.id)
+                .where("owner_id", "=", permissions.user_id)
                 .orderBy("updated_at desc")
                 .limit(5)
                 .execute(),
@@ -207,6 +219,7 @@ export function project_router(app: Elysia) {
                 .selectFrom("calendars")
                 .select(["id", "title"])
                 .where("calendars.project_id", "=", params.id)
+                .where("owner_id", "=", permissions.user_id)
                 .orderBy("updated_at desc")
                 .limit(5)
                 .execute(),
@@ -229,6 +242,7 @@ export function project_router(app: Elysia) {
                 .selectFrom("dictionaries")
                 .select(["id", "title"])
                 .where("dictionaries.project_id", "=", params.id)
+                .where("owner_id", "=", permissions.user_id)
                 .orderBy("updated_at desc")
                 .limit(5)
                 .execute(),
@@ -246,6 +260,7 @@ export function project_router(app: Elysia) {
         },
         {
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, undefined, true),
         },
       )
       .delete(
