@@ -237,21 +237,41 @@ export function search_router(app: Elysia) {
       )
       .post(
         "/:project_id/:type/mentions",
-        async ({ params, body }) => {
+        async ({ params, body, permissions }) => {
           const { type } = params;
           const fields = ["id"];
+
+          const userPermissionsQuery = db
+            .selectFrom("user_roles")
+            .leftJoin("role_permissions", "role_permissions.role_id", "user_roles.role_id")
+            .leftJoin("permissions", "permissions.id", "role_permissions.permission_id")
+            .where("user_roles.project_id", "=", params.project_id)
+            .where("user_roles.user_id", "=", permissions.user_id)
+            .where("permissions.code", "like", `read_${type}`)
+            .select(["permissions.code", "permissions.id"]);
+
+          const permissionsForSearch = permissions.is_project_owner || (await userPermissionsQuery.executeTakeFirst());
 
           if (type === "characters") fields.push("full_name", "portrait_id");
           else fields.push("title");
 
           if (type === "characters") {
-            const characters = await db
+            let query = db
               .selectFrom("characters")
-              .select(["id", "full_name", "portrait_id"])
+              .select(["characters.id", "characters.full_name", "characters.portrait_id"])
               .where("full_name", "ilike", `%${body.data.search_term}%`)
               .where("project_id", "=", params.project_id)
-              .limit(body.limit || 10)
-              .execute();
+              .limit(body.limit || 10);
+            if (typeof permissionsForSearch !== "boolean") {
+              query = checkEntityLevelPermission(
+                query,
+                { ...permissions, permission_id: permissionsForSearch?.id || null },
+                "characters",
+              );
+            }
+
+            const characters = await query.execute();
+
             const data = characters.map((char) => ({
               id: char.id,
               title: char.full_name,
@@ -266,16 +286,26 @@ export function search_router(app: Elysia) {
           }
 
           if (type === "documents") {
-            const documents = await db
+            let document_query = await db
               .selectFrom("documents")
-              .select(["id", "title"])
+              .select(["documents.id", "documents.title"])
               .where("title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
               .where("project_id", "=", params.project_id)
-              .limit(body.limit || 10)
-              .execute();
+              .limit(body.limit || 10);
+
+            if (typeof permissionsForSearch !== "boolean") {
+              document_query = checkEntityLevelPermission(
+                document_query,
+                { ...permissions, permission_id: permissionsForSearch?.id || null },
+                "documents",
+              );
+            }
+
+            const documents = await document_query.execute();
+
             const alter_names = await db
               .selectFrom("alter_names")
-              .select(["id as alterId", "title", "parent_id"])
+              .select(["alter_names.id as alterId", "alter_names.title", "alter_names.parent_id"])
               .where("alter_names.title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
               .where("alter_names.project_id", "=", params.project_id)
               .limit(body.limit || 10)
@@ -290,13 +320,21 @@ export function search_router(app: Elysia) {
             };
           }
           if (type === "maps") {
-            const data = await db
+            let query = db
               .selectFrom("maps")
               .select(["maps.id", "maps.title", "maps.image_id"])
               .where("maps.title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
               .where("maps.project_id", "=", params.project_id)
-              .limit(body.limit || 10)
-              .execute();
+              .limit(body.limit || 10);
+
+            if (typeof permissionsForSearch !== "boolean") {
+              query = checkEntityLevelPermission(
+                query,
+                { ...permissions, permission_id: permissionsForSearch?.id || null },
+                "maps",
+              );
+            }
+            const data = await query.execute();
 
             return {
               data,
@@ -323,13 +361,22 @@ export function search_router(app: Elysia) {
             };
           }
           if (type === "graphs") {
-            const data = await db
+            let query = db
               .selectFrom("graphs")
-              .select(["id", "title"])
+              .select(["graphs.id", "graphs.title"])
               .where("title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
               .where("project_id", "=", params.project_id)
-              .limit(body.limit || 10)
-              .execute();
+              .limit(body.limit || 10);
+
+            if (typeof permissionsForSearch !== "boolean") {
+              query = checkEntityLevelPermission(
+                query,
+                { ...permissions, permission_id: permissionsForSearch?.id || null },
+                "graphs",
+              );
+            }
+
+            const data = await query.execute();
 
             return {
               data,
@@ -373,7 +420,7 @@ export function search_router(app: Elysia) {
             };
           }
           if (type === "blueprint_instances") {
-            const data = await db
+            let query = db
               .selectFrom("blueprint_instances")
               .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
               .select([
@@ -384,8 +431,17 @@ export function search_router(app: Elysia) {
               ])
               .where("blueprints.project_id", "=", params.project_id)
               .where("blueprint_instances.title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
-              .limit(body.limit || 10)
-              .execute();
+              .limit(body.limit || 10);
+
+            if (typeof permissionsForSearch !== "boolean") {
+              query = checkEntityLevelPermission(
+                query,
+                { ...permissions, permission_id: permissionsForSearch?.id || null },
+                "blueprint_instances",
+              );
+            }
+
+            const data = await query.execute();
 
             return {
               data,
@@ -404,6 +460,7 @@ export function search_router(app: Elysia) {
         {
           body: CategorySearchSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, undefined, true),
         },
       )
       .post(
