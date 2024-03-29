@@ -90,7 +90,7 @@ export function asset_router(app: Elysia) {
             );
 
           if (permissions.is_project_owner) {
-            query = query.leftJoin("images_permissions", (join) => join.on("images_permissions.related_id", "=", params.id));
+            query = query.leftJoin("image_permissions", (join) => join.on("image_permissions.related_id", "=", params.id));
           } else {
             query = checkEntityLevelPermission(query, permissions, "images", params.id);
           }
@@ -99,6 +99,7 @@ export function asset_router(app: Elysia) {
           }
 
           const data = await query.executeTakeFirstOrThrow();
+
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {

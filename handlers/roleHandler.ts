@@ -75,7 +75,7 @@ export async function beforeRoleHandler(context: any, permission: AvailablePermi
     }
   } else {
     context.permissions = { is_project_owner: false, role_access: false, user_id: "" };
-    console.error("MISSING TOKEN", "LIST CHARACTERS");
+    console.error("MISSING TOKEN");
     throw new UnauthorizedError("UNAUTHORIZED");
   }
 }
