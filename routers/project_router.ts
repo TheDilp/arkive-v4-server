@@ -127,7 +127,7 @@ export function project_router(app: Elysia) {
             .$if(!!body?.relations?.roles, (qb) =>
               qb.select((eb) =>
                 jsonArrayFrom(
-                  eb.selectFrom("roles").select(["roles.id", "roles.title"]).where("project_id", "=", params.id),
+                  eb.selectFrom("roles").select(["roles.id", "roles.title", "roles.icon"]).where("project_id", "=", params.id),
                 ).as("roles"),
               ),
             )

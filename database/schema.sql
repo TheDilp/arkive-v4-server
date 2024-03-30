@@ -1294,7 +1294,8 @@ CREATE TABLE public.roles (
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     title text NOT NULL,
-    project_id uuid NOT NULL
+    project_id uuid NOT NULL,
+    icon text
 );
 
 
@@ -4389,4 +4390,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240328104825'),
     ('20240328111135'),
     ('20240328111345'),
-    ('20240328173310');
+    ('20240328173310'),
+    ('20240330101909');

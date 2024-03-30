@@ -19,6 +19,7 @@ export const ReadRoleSchema = t.Intersect([
 export const InsertRoleSchema = t.Object({
   data: t.Object({
     title: t.String(),
+    icon: t.String(),
     project_id: t.String(),
     permissions: t.Array(t.String(), { minItems: 1 }),
   }),
@@ -26,6 +27,7 @@ export const InsertRoleSchema = t.Object({
 export const UpdateRoleSchema = t.Object({
   data: t.Object({
     id: t.String(),
+    icon: t.String(),
     title: t.String(),
     permissions: t.Array(t.String(), { minItems: 1 }),
   }),

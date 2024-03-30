@@ -22,7 +22,7 @@ export function role_router(app: Elysia) {
             await db.transaction().execute(async (tx) => {
               const newRole = await tx
                 .insertInto("roles")
-                .values({ title: body.data.title, project_id: body.data.project_id })
+                .values({ title: body.data.title, project_id: body.data.project_id, icon: body.data.icon })
                 .returning("id")
                 .executeTakeFirstOrThrow();
 
@@ -77,7 +77,7 @@ export function role_router(app: Elysia) {
             const data = await db
               .selectFrom("roles")
               .where("project_id", "=", body.data.project_id)
-              .select(["id", "title"])
+              .select(["id", "title", "icon"])
               .$if(!!body.relations?.permissions, (qb) => {
                 qb = qb.select([
                   (eb) =>
@@ -110,7 +110,7 @@ export function role_router(app: Elysia) {
                 await tx
                   .updateTable("roles")
                   .where("id", "=", params.id)
-                  .set({ title: body.data.title })
+                  .set({ title: body.data.title, icon: body.data.icon })
 
                   .executeTakeFirst();
 
