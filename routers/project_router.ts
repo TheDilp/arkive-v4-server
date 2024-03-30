@@ -54,6 +54,7 @@ export function project_router(app: Elysia) {
                 ),
             )
             .execute();
+
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
@@ -117,7 +118,7 @@ export function project_router(app: Elysia) {
                             .whereRef("user_roles.user_id", "=", "users.id")
                             .where("user_roles.project_id", "=", params.id)
                             .leftJoin("roles", "roles.id", "user_roles.role_id")
-                            .select(["roles.id", "roles.title"]),
+                            .select(["roles.id", "roles.title", "roles.icon"]),
                         ).as("role"),
                     ])
                     .orderBy("email", "asc"),
