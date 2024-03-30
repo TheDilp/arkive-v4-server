@@ -152,3 +152,14 @@ export function getPermissionTableFromEntity(entity: EntitiesWithPermissionCheck
   if (entity === "images") return "image_permissions";
   return null;
 }
+
+export function getAutomentionFields(
+  type: "characters" | "documents" | "blueprint_instances" | "maps" | "map_pins" | "graphs" | "words",
+) {
+  if (type === "characters") return ["id", "full_name as title", "portrait_id as image_id"] as const;
+  if (type === "blueprint_instances")
+    return ["blueprint_instances.id", "blueprint_instances.title", "blueprint_instances.parent_id", "blueprints.icon"] as const;
+  if (type === "maps" || type === "graphs") return ["id", "title"] as const;
+  if (type === "words") return ["id", "title", "parent_id"] as const;
+  return ["id", "title", "image_id"] as const;
+}

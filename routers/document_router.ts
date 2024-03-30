@@ -41,24 +41,15 @@ import {
   UpdateEntityPermissions,
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
+import { getAutomentionFields } from "../utils/requestUtils";
 import {
+  buildTSQueryString,
   findObjectsByType,
   getCharacterFullName,
   getEntitiesWithOwnerId,
   getEntityWithOwnerId,
   insertSenderToMessage,
 } from "../utils/transform";
-
-function getAutoLinkerFields(
-  type: "characters" | "documents" | "blueprint_instances" | "maps" | "map_pins" | "graphs" | "words",
-) {
-  if (type === "characters") return ["id", "full_name as title", "portrait_id as image_id"] as const;
-  if (type === "blueprint_instances")
-    return ["blueprint_instances.id", "blueprint_instances.title", "blueprint_instances.parent_id", "blueprints.icon"] as const;
-  if (type === "maps" || type === "graphs") return ["id", "title"] as const;
-  if (type === "words") return ["id", "title", "parent_id"] as const;
-  return ["id", "title", "image_id"] as const;
-}
 
 export function document_router(app: Elysia) {
   return app
@@ -486,45 +477,41 @@ export function document_router(app: Elysia) {
               (word) => !!word && word.length > 1 && !["the", "a", "an", "and", "or", "of", "in", "out", "at"].includes(word),
             );
 
-            const string = splitWords.join(" | ");
+            const string = buildTSQueryString(splitWords);
 
             const formattedString = `(${string}) ${body.data.ignore ? `& ! '${body.data.ignore}'` : ""}`;
-            const fields = getAutoLinkerFields(body.data.type);
-            const res = await db
+            const fields = getAutomentionFields(body.data.type);
+            let query = db
               .selectFrom(body.data.type)
-              .$if(body.data.type === "map_pins", (qb) => {
-                if (body.data.type === "map_pins") {
-                  qb.leftJoin("maps", "maps.id", "map_pins.parent_id")
-                    .clearWhere()
-                    .where("maps.project_id", "=", body.data.project_id);
-                }
-                return qb;
-              })
-              .$if(body.data.type === "blueprint_instances", (qb) => {
-                if (body.data.type === "blueprint_instances") {
-                  // @ts-ignore
-                  qb = qb
-                    .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
-                    .clearWhere()
-                    .where("blueprints.project_id", "=", body.data.project_id);
-                }
-                return qb;
-              })
-              .$if(body.data.type === "words", (qb) => {
-                if (body.data.type === "words") {
-                  qb.leftJoin("dictionaries", "dictionaries.id", "words.parent_id")
-                    .clearWhere()
-                    .where("dictionaries.project_id", "=", body.data.project_id);
-                }
-                return qb;
-              })
-              .$if(!["blueprint_instances", "words", "map_pins"].includes(body.data.type), (qb) => {
-                qb = qb.where("project_id", "=", body.data.project_id);
-                return checkEntityLevelPermission(qb, permissions, body.data.type as EntitiesWithPermissionCheck);
-              })
-              .where("ts", "@@", sql<string>`to_tsquery(${sql.lit("english")}, ${formattedString})`)
+              // BPI fields need to be formatted in the getAutomentionFields fn due to using the blueprints icon
               // @ts-ignore
-              .select(fields.map((f) => `${body.data.type}.${f}`))
+              .select(body.data.type === "blueprint_instances" ? fields : fields.map((f) => `${body.data.type}.${f}`));
+
+            if (body.data.type === "map_pins") {
+              query = query
+                .leftJoin("maps", "maps.id", "map_pins.parent_id")
+                .where("maps.project_id", "=", body.data.project_id);
+            } else if (body.data.type === "words") {
+              query = query
+                .leftJoin("dictionaries", "dictionaries.id", "words.parent_id")
+                .where("dictionaries.project_id", "=", body.data.project_id);
+            } else if (body.data.type === "blueprint_instances") {
+              query = query
+                .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+                .where("blueprints.project_id", "=", body.data.project_id);
+              // BPI have permissions
+              query = checkEntityLevelPermission(query, permissions, body.data.type as EntitiesWithPermissionCheck);
+            }
+            // If it is not one of these entities add project_id WHERE clause
+            else {
+              query = query.where("project_id", "=", body.data.project_id);
+              query = checkEntityLevelPermission(query, permissions, body.data.type as EntitiesWithPermissionCheck);
+            }
+
+            console.log(query.compile().sql);
+
+            const res = await query
+              .where(`${body.data.type}.ts`, "@@", sql<string>`to_tsquery(${sql.lit("english")}, ${formattedString})`)
               .execute();
 
             return { data: res, message: MessageEnum.success, ok: true, role_access: true };
