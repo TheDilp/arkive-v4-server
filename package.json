@@ -25,7 +25,7 @@
     "@react-email/components": "^0.0.10",
     "@react-email/tailwind": "^0.0.12",
     "@sinclair/typebox": "^0.31.14",
-    "elysia": "^1.0.0",
+    "elysia": "0.8.8",
     "elysia-rate-limit": "^2.0.1",
     "jose": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
