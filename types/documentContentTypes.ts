@@ -6,7 +6,7 @@ export type MentionAtomType = {
   type: "mentionAtom";
   attrs: {
     id: string;
-    name: "documents" | "maps" | "boards" | "words";
+    name: "characters" | "blueprint_instances" | "documents" | "maps" | "graphs" | "events" | "words";
     label: string;
     alterId: string | null;
     projectId?: string;

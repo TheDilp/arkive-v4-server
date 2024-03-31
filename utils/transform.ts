@@ -342,7 +342,7 @@ export function buildTSQueryString(searchTerms: string[]): string {
 
 export function extractMentionContent(mention: MentionAtomType) {
   if (mention.attrs?.projectId) {
-    let link = `https://thearkive.app/view/documents/${mention.attrs.id}`;
+    let link = `https://thearkive.app/public/${mention.attrs.projectId}/${mention.attrs.name}/${mention.attrs.id}`;
     const text = `[${mention?.attrs?.label}](${link})`;
     return text;
   }
