@@ -47,7 +47,7 @@ import {
 export const app = new Elysia()
   .use(
     cors({
-      origin: process.env.NODE_ENV === "development" ? true : "https://thearkive.app",
+      origin: process.env.NODE_ENV === "development" ? true : "thearkive.app",
       methods: ["GET", "POST", "DELETE"],
     }),
   )
