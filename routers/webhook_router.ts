@@ -13,7 +13,13 @@ import {
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeProjectOwnerHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { createEntityURL, getDefaultEntityIcon, getIconUrlFromIconEnum, getImageURL } from "../utils/transform";
+import {
+  createEntityURL,
+  extractDocumentText,
+  getDefaultEntityIcon,
+  getIconUrlFromIconEnum,
+  getImageURL,
+} from "../utils/transform";
 
 export function webhook_router(app: Elysia) {
   return app.group("/webhooks", (server) =>
@@ -88,11 +94,12 @@ export function webhook_router(app: Elysia) {
             const data = await db
               .selectFrom("characters")
               .where("id", "=", body.data.id)
-              .select(["id", "full_name", "portrait_id", "project_id"])
+              .select(["id", "full_name", "biography", "portrait_id", "project_id"])
               .executeTakeFirstOrThrow();
 
             content.url = `${createEntityURL(data.project_id, "characters", data.id)}`;
             content.title = `${data.full_name} (Character)`;
+            content.description = extractDocumentText(data.biography) || "";
             if (data?.portrait_id) content.image = { url: getImageURL(data.project_id, "images", data.portrait_id) };
           } else if (body.data.type === "document_text") {
             content.title = body.data.title;
@@ -101,10 +108,11 @@ export function webhook_router(app: Elysia) {
             const data = await db
               .selectFrom("documents")
               .where("id", "=", body.data.id)
-              .select(["id", "title", "image_id", "icon", "project_id"])
+              .select(["id", "title", "content", "image_id", "icon", "project_id"])
               .executeTakeFirstOrThrow();
             content.url = `${createEntityURL(data.project_id, "documents", data.id)}`;
             content.title = `${data.title} (Document)`;
+            content.description = extractDocumentText(data.content) || "";
             if (data?.image_id) content.image = { url: getImageURL(data.project_id, "images", data.image_id) };
             else content.thumbnail = { url: getIconUrlFromIconEnum(data.icon || getDefaultEntityIcon("documents")) };
           } else if (body.data.type === "maps") {

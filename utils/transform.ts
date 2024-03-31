@@ -1,4 +1,5 @@
 import { baseURLS } from "../enums/baseEnums";
+import { HeadingType, MentionAtomType, ParagraphType } from "../types/documentContentTypes";
 import { AssetType, AvailableEntityType, AvailableSubEntityType, MentionType } from "../types/entityTypes";
 import { RequestBodyFiltersType, RequestFilterType } from "../types/requestTypes";
 
@@ -337,4 +338,67 @@ export function buildTSQueryString(searchTerms: string[]): string {
   const tsQuery = sanitizedSearchTerms.join(" | ");
 
   return tsQuery;
+}
+
+export function extractMentionContent(mention: MentionAtomType) {
+  if (mention.attrs?.projectId) {
+    let link = `https://thearkive.app/view/documents/${mention.attrs.id}`;
+    const text = `[${mention?.attrs?.label}](${link})`;
+    return text;
+  }
+  return mention.attrs.label;
+}
+
+export function extractParagraphContent(paragraph: ParagraphType) {
+  if (paragraph?.content) {
+    const text = paragraph?.content
+      .filter((obj) => obj?.type !== "image")
+      .map((obj) => {
+        if ("text" in obj) return obj.text;
+        // if ("attrs" in obj && "alt" in obj.attrs) return "";
+        if ("attrs" in obj && "label" in obj.attrs) {
+          return extractMentionContent(obj as MentionAtomType);
+        }
+      })
+      .join("");
+    return `${text}`;
+  }
+  return "";
+}
+export function extractHeadingContent(heading: HeadingType) {
+  const text = heading?.content?.map((obj) => obj?.text).join(" ");
+  return `${text}\n`;
+}
+
+export function extractDocumentText(content: any) {
+  if (!content) return false;
+  const text: string[] = [];
+  let len = 0;
+  Object.entries(content).forEach(([key, value]) => {
+    if (len >= 250) {
+      return;
+    }
+
+    if (key === "content") {
+      if (Array.isArray(value)) {
+        value.forEach((obj) => {
+          if (len >= 250) {
+            return;
+          }
+          if (obj?.type === "heading") {
+            const heading = extractHeadingContent(obj);
+            len += heading.length;
+            text.push(heading);
+          } else if (obj?.type === "paragraph") {
+            const paragraph = extractParagraphContent(obj);
+            text.push(paragraph);
+            len += paragraph.length;
+          }
+        });
+      }
+    }
+  });
+
+  // eslint-disable-next-line prettier/prettier, quotes
+  return text.join("").slice(0, 246).replaceAll('"', "'").concat("...");
 }
