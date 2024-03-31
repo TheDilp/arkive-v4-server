@@ -198,38 +198,34 @@ export function document_router(app: Elysia) {
         .post(
           "/",
           async ({ body, permissions }) => {
-            const data = await db
+            let query = db
               .selectFrom("documents")
+              .select(body.fields.map((f) => `documents.${f}`) as SelectExpression<DB, "documents">[])
               .distinctOn(
                 body.orderBy?.length ? (["documents.id", ...body.orderBy.map((order) => order.field)] as any) : "documents.id",
               )
               .where("documents.project_id", "=", body?.data?.project_id)
+              .where("documents.deleted_at", body.arkived ? "is not" : "is", null)
               .limit(body?.pagination?.limit || 10)
-              .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
+              .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10));
 
-              .$if(!body?.fields?.length, (qb) => qb.selectAll())
-              .$if(!!body?.fields?.length, (qb) =>
-                qb.clearSelect().select(body.fields.map((f) => `documents.${f}`) as SelectExpression<DB, "documents">[]),
-              )
-              .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
-                qb = constructFilter("documents", qb, body.filters);
-                return qb;
-              })
-              .$if(!!body.relations?.tags, (qb) => {
-                if (body?.relations?.tags) {
-                  return qb.select((eb) => TagQuery(eb, "_documentsTotags", "documents"));
-                }
-                return qb;
-              })
-              .$if(!!body.orderBy, (qb) => constructOrdering(body.orderBy, qb))
-              .$if(!permissions.is_project_owner, (qb) => {
-                return checkEntityLevelPermission(qb, permissions, "documents");
-              })
-              .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
-                GetRelatedEntityPermissionsAndRoles(qb, permissions, "documents"),
-              )
+            if (!!body?.filters?.and?.length || !!body?.filters?.or?.length) {
+              query = constructFilter("documents", query, body.filters);
+            }
+            if (body?.relations?.tags) {
+              query = query.select((eb) => TagQuery(eb, "_documentsTotags", "documents"));
+            }
+            if (body.orderBy) {
+              query = constructOrdering(body.orderBy, query);
+            }
+            if (!permissions.is_project_owner) {
+              query = checkEntityLevelPermission(query, permissions, "documents");
+            }
+            if (!!body.permissions && !permissions.is_project_owner) {
+              GetRelatedEntityPermissionsAndRoles(query, permissions, "documents");
+            }
 
-              .execute();
+            const data = await query.execute();
             return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
           {

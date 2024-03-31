@@ -11,6 +11,7 @@ import { MessageEnum } from "../enums/requestEnums";
 import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
+import { constructOrdering } from "../utils/orderByConstructor";
 import {
   CreateEntityPermissions,
   CreateTagRelations,
@@ -69,13 +70,15 @@ export function map_router(app: Elysia) {
           async ({ body, permissions }) => {
             let query = db
               .selectFrom("maps")
+              .select(body.fields.map((f) => `maps.${f}`) as SelectExpression<DB, "maps">[])
               .distinctOn(body.orderBy?.length ? (["maps.id", ...body.orderBy.map((order) => order.field)] as any) : "maps.id")
               .where("project_id", "=", body.data.project_id)
+              .where("maps.deleted_at", body.arkived ? "is not" : "is", null)
               .limit(body?.pagination?.limit || 10)
               .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10));
 
-            if (body.fields?.length) {
-              query = query.clearSelect().select(body.fields.map((f) => `maps.${f}`) as SelectExpression<DB, "maps">[]);
+            if (body.orderBy) {
+              query = constructOrdering(body.orderBy, query);
             }
             if (body?.relations?.tags) {
               query = query.select((eb) => TagQuery(eb, "_mapsTotags", "maps"));
@@ -89,8 +92,6 @@ export function map_router(app: Elysia) {
             if (!!body.permissions && !permissions.is_project_owner) {
               GetRelatedEntityPermissionsAndRoles(query, permissions, "maps");
             }
-
-            query = query.where("maps.deleted_at", body.arkived ? "is not" : "is", null);
 
             const data = await query.execute();
 
