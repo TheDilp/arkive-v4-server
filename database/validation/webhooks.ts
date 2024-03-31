@@ -13,6 +13,11 @@ export const InsertWebhookSchema = t.Object({
     user_id: t.String(),
   }),
 });
+export const UpdateWebhookSchema = t.Object({
+  data: t.Object({
+    title: t.String(),
+  }),
+});
 
 export const SendWebhookSchema = t.Object({
   data: t.Union([

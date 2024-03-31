@@ -54,10 +54,7 @@ export function random_table_option_router(app: Elysia) {
         async ({ body }) => {
           const data = await db
             .selectFrom("random_table_options")
-            .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) =>
-              qb.clearSelect().select(body.fields as SelectExpression<DB, "random_table_options">[]),
-            )
+            .select(body.fields as SelectExpression<DB, "random_table_options">[])
             .$if(!!body.orderBy, (qb) => constructOrdering(body.orderBy, qb))
             .$if(!!body.relations?.random_table_suboptions, (qb) =>
               qb.select((eb) =>

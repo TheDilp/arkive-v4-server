@@ -3,7 +3,13 @@ import { SelectExpression } from "kysely";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertWebhookSchema, ListWebhookSchema, ReadWebhookSchema, SendWebhookSchema } from "../database/validation/webhooks";
+import {
+  InsertWebhookSchema,
+  ListWebhookSchema,
+  ReadWebhookSchema,
+  SendWebhookSchema,
+  UpdateWebhookSchema,
+} from "../database/validation/webhooks";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeProjectOwnerHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
@@ -12,7 +18,6 @@ import { createEntityURL, getDefaultEntityIcon, getIconUrlFromIconEnum, getImage
 export function webhook_router(app: Elysia) {
   return app.group("/webhooks", (server) =>
     server
-
       .post(
         "/create",
         async ({ body }) => {
@@ -51,6 +56,19 @@ export function webhook_router(app: Elysia) {
         {
           body: ReadWebhookSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
+        },
+      )
+      .post(
+        "/update/:id",
+        async ({ params, body }) => {
+          await db.updateTable("webhooks").where("id", "=", params.id).set(body.data).execute();
+
+          return { message: `Webhook ${MessageEnum.successfully_created}`, ok: true, role_access: true };
+        },
+        {
+          body: UpdateWebhookSchema,
+          response: ResponseSchema,
           beforeHandle: async (context) => beforeProjectOwnerHandler(context),
         },
       )
