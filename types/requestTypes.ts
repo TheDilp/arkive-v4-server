@@ -124,6 +124,7 @@ export const RequestBodySchema = t.Object({
     }),
   ),
   permissions: t.Optional(t.Boolean()),
+  arkived: t.Optional(t.Boolean()),
 });
 
 export const ResponseSchema = t.Object({

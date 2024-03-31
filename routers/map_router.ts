@@ -67,28 +67,33 @@ export function map_router(app: Elysia) {
         .post(
           "/",
           async ({ body, permissions }) => {
-            const data = await db
+            let query = db
               .selectFrom("maps")
               .distinctOn(body.orderBy?.length ? (["maps.id", ...body.orderBy.map((order) => order.field)] as any) : "maps.id")
               .where("project_id", "=", body.data.project_id)
               .limit(body?.pagination?.limit || 10)
-              .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
-              .$if(!body.fields?.length, (qb) => qb.selectAll())
-              .$if(!!body.fields?.length, (qb) =>
-                qb.clearSelect().select(body.fields.map((f) => `maps.${f}`) as SelectExpression<DB, "maps">[]),
-              )
-              .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_mapsTotags", "maps")))
-              .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
-                qb = constructFilter("maps", qb, body.filters);
-                return qb;
-              })
-              .$if(!permissions.is_project_owner, (qb) => {
-                return checkEntityLevelPermission(qb, permissions, "maps");
-              })
-              .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
-                GetRelatedEntityPermissionsAndRoles(qb, permissions, "maps"),
-              )
-              .execute();
+              .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10));
+
+            if (body.fields?.length) {
+              query = query.clearSelect().select(body.fields.map((f) => `maps.${f}`) as SelectExpression<DB, "maps">[]);
+            }
+            if (body?.relations?.tags) {
+              query = query.select((eb) => TagQuery(eb, "_mapsTotags", "maps"));
+            }
+            if (!!body?.filters?.and?.length || !!body?.filters?.or?.length) {
+              query = constructFilter("maps", query, body.filters);
+            }
+            if (!permissions.is_project_owner) {
+              query = checkEntityLevelPermission(query, permissions, "maps");
+            }
+            if (!!body.permissions && !permissions.is_project_owner) {
+              GetRelatedEntityPermissionsAndRoles(query, permissions, "maps");
+            }
+
+            query = query.where("maps.deleted_at", body.arkived ? "is not" : "is", null);
+
+            const data = await query.execute();
+
             return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
@@ -264,6 +269,29 @@ export function map_router(app: Elysia) {
           },
         )
         .delete(
+          "/arkive/:id",
+          async ({ params, permissions }) => {
+            const permissionCheck = await getHasEntityPermission("maps", params.id, permissions);
+
+            if (permissionCheck) {
+              await db
+                .updateTable("maps")
+                .where("maps.id", "=", params.id)
+                .set({ deleted_at: new Date().toUTCString(), is_public: false })
+                .execute();
+
+              return { message: `Map ${MessageEnum.successfully_arkived}.`, ok: true, role_access: true };
+            } else {
+              noRoleAccessErrorHandler();
+              return { message: "", ok: false, role_access: false };
+            }
+          },
+          {
+            response: ResponseSchema,
+            beforeHandle: async (context) => beforeRoleHandler(context, "delete_maps"),
+          },
+        )
+        .delete(
           "/:id",
           async ({ params, permissions }) => {
             const permissionCheck = await getHasEntityPermission("maps", params.id, permissions);
@@ -272,6 +300,7 @@ export function map_router(app: Elysia) {
               const data = await db
                 .deleteFrom("maps")
                 .where("maps.id", "=", params.id)
+                .where("maps.deleted_at", "is not", null)
                 .returning(["id", "title", "project_id"])
                 .executeTakeFirstOrThrow();
 
