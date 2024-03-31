@@ -31,8 +31,7 @@ export function webhook_router(app: Elysia) {
         async ({ body }) => {
           const data = await db
             .selectFrom("webhooks")
-            .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "webhooks">[]))
+            .select(body.fields as SelectExpression<DB, "webhooks">[])
             .where("user_id", "=", body.data.user_id)
             .execute();
           return { data, message: MessageEnum.success, ok: true, role_access: true };
