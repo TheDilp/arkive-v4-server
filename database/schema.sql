@@ -477,7 +477,8 @@ CREATE TABLE public.blueprint_instances (
     title text NOT NULL,
     ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
     is_public boolean,
-    owner_id uuid NOT NULL
+    owner_id uuid NOT NULL,
+    deleted_at timestamp(3) without time zone
 );
 
 
@@ -507,7 +508,8 @@ CREATE TABLE public.blueprints (
     project_id uuid NOT NULL,
     title_name text NOT NULL,
     icon text,
-    owner_id uuid NOT NULL
+    owner_id uuid NOT NULL,
+    deleted_at timestamp(3) without time zone
 );
 
 
@@ -544,6 +546,7 @@ CREATE TABLE public.calendars (
     days text[],
     starts_on_day integer DEFAULT 0,
     owner_id uuid NOT NULL,
+    deleted_at timestamp(3) without time zone,
     CONSTRAINT id_cannot_equal_parent_id_calendars CHECK ((id <> parent_id))
 );
 
@@ -639,7 +642,8 @@ CREATE TABLE public.character_fields_templates (
     title text NOT NULL,
     project_id uuid NOT NULL,
     sort integer DEFAULT 0 NOT NULL,
-    owner_id uuid NOT NULL
+    owner_id uuid NOT NULL,
+    deleted_at timestamp(3) without time zone
 );
 
 
@@ -735,7 +739,8 @@ CREATE TABLE public.characters (
     full_name text GENERATED ALWAYS AS (((COALESCE(first_name, ''::text) || ' '::text) || COALESCE(last_name, ''::text))) STORED,
     is_public boolean,
     biography jsonb,
-    owner_id uuid NOT NULL
+    owner_id uuid NOT NULL,
+    deleted_at timestamp(3) without time zone
 );
 
 
@@ -779,6 +784,7 @@ CREATE TABLE public.dictionaries (
     is_public boolean,
     parent_id uuid,
     owner_id uuid NOT NULL,
+    deleted_at timestamp(3) without time zone,
     CONSTRAINT id_cannot_equal_parent_id_dictionaries CHECK ((id <> parent_id))
 );
 
@@ -844,6 +850,7 @@ CREATE TABLE public.documents (
     image_id uuid,
     ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
     owner_id uuid NOT NULL,
+    deleted_at timestamp(3) without time zone,
     CONSTRAINT id_cannot_equal_parent_id_docs CHECK ((id <> parent_id))
 );
 
@@ -954,7 +961,8 @@ CREATE TABLE public.events (
     start_hours integer,
     start_minutes integer,
     end_hours integer,
-    end_minutes integer
+    end_minutes integer,
+    deleted_at timestamp(3) without time zone
 );
 
 
@@ -991,6 +999,7 @@ CREATE TABLE public.graphs (
     parent_id uuid,
     ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
     owner_id uuid NOT NULL,
+    deleted_at timestamp(3) without time zone,
     CONSTRAINT id_cannot_equal_parent_id_graphs CHECK ((id <> parent_id))
 );
 
@@ -1099,7 +1108,8 @@ CREATE TABLE public.map_pins (
     image_id uuid,
     character_id uuid,
     map_pin_type_id uuid,
-    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED
+    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
+    deleted_at timestamp(3) without time zone
 );
 
 
@@ -1121,6 +1131,7 @@ CREATE TABLE public.maps (
     image_id uuid,
     ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
     owner_id uuid NOT NULL,
+    deleted_at timestamp(3) without time zone,
     CONSTRAINT id_cannot_equal_parent_id_maps CHECK ((id <> parent_id))
 );
 
@@ -1269,6 +1280,7 @@ CREATE TABLE public.random_tables (
     is_folder boolean,
     is_public boolean,
     owner_id uuid NOT NULL,
+    deleted_at timestamp(3) without time zone,
     CONSTRAINT id_cannot_equal_parent_id_random_tables CHECK ((id <> parent_id))
 );
 
@@ -1331,7 +1343,8 @@ CREATE TABLE public.tags (
     title text NOT NULL,
     color text NOT NULL,
     project_id uuid NOT NULL,
-    owner_id uuid NOT NULL
+    owner_id uuid NOT NULL,
+    deleted_at timestamp(3) without time zone
 );
 
 
@@ -1417,7 +1430,8 @@ CREATE TABLE public.words (
     description text,
     translation text NOT NULL,
     parent_id uuid NOT NULL,
-    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED
+    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
+    deleted_at timestamp(3) without time zone
 );
 
 
@@ -4391,4 +4405,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240328111135'),
     ('20240328111345'),
     ('20240328173310'),
-    ('20240330101909');
+    ('20240330101909'),
+    ('20240331085133');
