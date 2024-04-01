@@ -57,6 +57,7 @@ export function tag_router(app: Elysia) {
           const data = await db
             .selectFrom("tags")
             .where("tags.project_id", "=", body.data.project_id)
+            .where("tags.deleted_at", body.arkived ? "is not" : "is", null)
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
               qb = constructFilter("tags", qb, body.filters);
               return qb;

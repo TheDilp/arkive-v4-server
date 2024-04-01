@@ -213,6 +213,7 @@ export function blueprint_instance_router(app: Elysia) {
                   ? ([...body.orderBy.map((o) => o.field), "blueprint_instances.id"] as any)
                   : ["blueprint_instances.id"],
               )
+              .where("blueprint_instances.deleted_at", body.arkived ? "is not" : "is", null)
               .$if(!!body.data?.parent_id, (qb) => {
                 if (body.data?.parent_id) return qb.where("blueprint_instances.parent_id", "=", body.data.parent_id);
                 return qb;

@@ -224,6 +224,7 @@ export function character_router(app: Elysia) {
                   : "characters.id",
               )
               .where("characters.project_id", "=", body?.data?.project_id)
+              .where("characters.deleted_at", body.arkived ? "is not" : "is", null)
               .limit(body?.pagination?.limit || 10)
               .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
               .$if(!permissions.is_project_owner, (qb) => {

@@ -67,6 +67,7 @@ export function dictionary_router(app: Elysia) {
               GetRelatedEntityPermissionsAndRoles(qb, permissions, "dictionaries"),
             )
             .where("project_id", "=", body.data.project_id)
+            .where("dictionaries.deleted_at", body.arkived ? "is not" : "is", null)
             .execute();
 
           return { data, message: MessageEnum.success, ok: true, role_access: true };

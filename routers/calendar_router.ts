@@ -83,6 +83,7 @@ export function calendar_router(app: Elysia) {
           const data = await db
             .selectFrom("calendars")
             .where("calendars.project_id", "=", body?.data?.project_id)
+            .where("calendars.deleted_at", body.arkived ? "is not" : "is", null)
             .limit(body?.pagination?.limit || 10)
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
             .$if(!body.fields?.length, (qb) => qb.selectAll())
