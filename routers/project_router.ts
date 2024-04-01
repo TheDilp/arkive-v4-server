@@ -271,14 +271,14 @@ export function project_router(app: Elysia) {
           try {
             await deleteFolder(filePath);
           } catch (error) {
-            return { message: "Could not delete images.", ok: false };
+            return { message: "Could not delete images.", ok: false, role_access: true };
           }
 
           await db.deleteFrom("projects").where("projects.id", "=", params.id).execute();
           return { message: `Project ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
         },
         {
-          body: ResponseSchema,
+          response: ResponseSchema,
           beforeHandle: async (context) => beforeProjectOwnerHandler(context),
         },
       ),
