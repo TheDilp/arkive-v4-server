@@ -11,7 +11,6 @@ import {
   UpdateWebhookSchema,
 } from "../database/validation/webhooks";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeProjectOwnerHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import {
   createEntityURL,
@@ -34,7 +33,6 @@ export function webhook_router(app: Elysia) {
         {
           body: InsertWebhookSchema,
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
         },
       )
       .post(
@@ -50,7 +48,6 @@ export function webhook_router(app: Elysia) {
         {
           body: ListWebhookSchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
         },
       )
       .post(
@@ -62,7 +59,6 @@ export function webhook_router(app: Elysia) {
         {
           body: ReadWebhookSchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
         },
       )
       .post(
@@ -75,7 +71,6 @@ export function webhook_router(app: Elysia) {
         {
           body: UpdateWebhookSchema,
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
         },
       )
       .post(
@@ -192,7 +187,6 @@ export function webhook_router(app: Elysia) {
         {
           body: SendWebhookSchema,
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
         },
       )
       .delete(
@@ -203,7 +197,6 @@ export function webhook_router(app: Elysia) {
         },
         {
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
         },
       ),
   );
