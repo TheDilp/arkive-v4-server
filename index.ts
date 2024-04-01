@@ -83,6 +83,8 @@ export const app = new Elysia()
       return { message: "NO_ROLE_ACCESS", ok: false, role_access: false };
     }
     if (error?.message === "no result") {
+      console.error(error);
+
       return {
         message: "This entity could not be found or you do not have permission to view it.",
         ok: true,
