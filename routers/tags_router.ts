@@ -1,10 +1,10 @@
 import Elysia from "elysia";
 
 import { db } from "../database/db";
-import { checkEntityLevelPermission } from "../database/queries";
+import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
 import { EntityListSchema, InsertTagSchema, UpdateTagSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler } from "../handlers";
+import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -112,7 +112,6 @@ export function tag_router(app: Elysia) {
           beforeHandle: async (context) => beforeRoleHandler(context, "read_tags"),
         },
       )
-
       .post(
         "/update/:id",
         async ({ params, body }) => {
@@ -130,6 +129,29 @@ export function tag_router(app: Elysia) {
           body: UpdateTagSchema,
           response: ResponseSchema,
           beforeHandle: async (context) => beforeRoleHandler(context, "update_tags"),
+        },
+      )
+      .delete(
+        "/arkive/:id",
+        async ({ params, permissions }) => {
+          const permissionCheck = await getHasEntityPermission("tags", params.id, permissions);
+
+          if (permissionCheck) {
+            await db
+              .updateTable("tags")
+              .where("tags.id", "=", params.id)
+              .set({ deleted_at: new Date().toUTCString() })
+              .execute();
+
+            return { message: `Tag ${MessageEnum.successfully_arkived}.`, ok: true, role_access: true };
+          } else {
+            noRoleAccessErrorHandler();
+            return { message: "", ok: false, role_access: false };
+          }
+        },
+        {
+          response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "delete_tags"),
         },
       )
       .delete(

@@ -89,6 +89,7 @@ export function character_fields_templates_router(app: Elysia) {
                 : "character_fields_templates.id",
             )
             .where("character_fields_templates.project_id", "=", body.data.project_id)
+            .where("character_fields_templates.deleted_at", body.arkived ? "=" : "is not", null)
             .select(
               (body.fields || [])?.map((field) => `character_fields_templates.${field}`) as SelectExpression<
                 DB,
@@ -352,6 +353,29 @@ export function character_fields_templates_router(app: Elysia) {
           body: UpdateTemplateSchema,
           response: ResponseSchema,
           beforeHandle: async (context) => beforeRoleHandler(context, "update_character_fields_templates"),
+        },
+      )
+      .delete(
+        "/arkive/:id",
+        async ({ params, permissions }) => {
+          const permissionCheck = await getHasEntityPermission("character_fields_templates", params.id, permissions);
+
+          if (permissionCheck) {
+            await db
+              .updateTable("character_fields_templates")
+              .where("character_fields_templates.id", "=", params.id)
+              .set({ deleted_at: new Date().toUTCString() })
+              .execute();
+
+            return { message: `Character field template ${MessageEnum.successfully_arkived}.`, ok: true, role_access: true };
+          } else {
+            noRoleAccessErrorHandler();
+            return { message: "", ok: false, role_access: false };
+          }
+        },
+        {
+          response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "delete_documents"),
         },
       )
       .delete(

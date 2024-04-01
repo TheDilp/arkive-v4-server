@@ -233,6 +233,29 @@ export function random_table_router(app: Elysia) {
           },
         )
         .delete(
+          "/arkive/:id",
+          async ({ params, permissions }) => {
+            const permissionCheck = await getHasEntityPermission("random_tables", params.id, permissions);
+
+            if (permissionCheck) {
+              await db
+                .updateTable("random_tables")
+                .where("random_tables.id", "=", params.id)
+                .set({ deleted_at: new Date().toUTCString(), is_public: false })
+                .execute();
+
+              return { message: `Radnom tables ${MessageEnum.successfully_arkived}.`, ok: true, role_access: true };
+            } else {
+              noRoleAccessErrorHandler();
+              return { message: "", ok: false, role_access: false };
+            }
+          },
+          {
+            response: ResponseSchema,
+            beforeHandle: async (context) => beforeRoleHandler(context, "delete_documents"),
+          },
+        )
+        .delete(
           "/:id",
           async ({ params, permissions }) => {
             const permissionCheck = await getHasEntityPermission("random_tables", params.id, permissions);

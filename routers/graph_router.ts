@@ -72,6 +72,7 @@ export function graph_router(app: Elysia) {
                 body.orderBy?.length ? (["graphs.id", ...body.orderBy.map((order) => order.field)] as any) : "graphs.id",
               )
               .where("project_id", "=", body.data.project_id)
+              .where("graphs.deleted_at", body.arkived ? "is not" : "is", null)
               .$if(!body.fields?.length, (qb) => qb.selectAll())
               .$if(!!body.fields?.length, (qb) =>
                 qb.clearSelect().select(body.fields.map((f) => `graphs.${f}`) as SelectExpression<DB, "graphs">[]),
@@ -272,6 +273,29 @@ export function graph_router(app: Elysia) {
             body: GenerateGraphSchema,
             response: ResponseWithDataSchema,
             beforeHandle: async (context) => beforeRoleHandler(context, "read_graphs"),
+          },
+        )
+        .delete(
+          "/arkive/:id",
+          async ({ params, permissions }) => {
+            const permissionCheck = await getHasEntityPermission("graphs", params.id, permissions);
+
+            if (permissionCheck) {
+              await db
+                .updateTable("graphs")
+                .where("graphs.id", "=", params.id)
+                .set({ deleted_at: new Date().toUTCString(), is_public: false })
+                .execute();
+
+              return { message: `Graph ${MessageEnum.successfully_arkived}.`, ok: true, role_access: true };
+            } else {
+              noRoleAccessErrorHandler();
+              return { message: "", ok: false, role_access: false };
+            }
+          },
+          {
+            response: ResponseSchema,
+            beforeHandle: async (context) => beforeRoleHandler(context, "delete_graphs"),
           },
         )
         .delete(

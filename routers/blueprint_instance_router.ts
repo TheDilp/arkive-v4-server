@@ -859,6 +859,29 @@ export function blueprint_instance_router(app: Elysia) {
           },
         )
         .delete(
+          "/arkive/:id",
+          async ({ params, permissions }) => {
+            const permissionCheck = await getHasEntityPermission("blueprint_instances", params.id, permissions);
+
+            if (permissionCheck) {
+              await db
+                .updateTable("blueprint_instances")
+                .where("blueprint_instances.id", "=", params.id)
+                .set({ deleted_at: new Date().toUTCString(), is_public: false })
+                .execute();
+
+              return { message: `Blueprint instance ${MessageEnum.successfully_arkived}.`, ok: true, role_access: true };
+            } else {
+              noRoleAccessErrorHandler();
+              return { message: "", ok: false, role_access: false };
+            }
+          },
+          {
+            response: ResponseSchema,
+            beforeHandle: async (context) => beforeRoleHandler(context, "delete_documents"),
+          },
+        )
+        .delete(
           "/:id",
           async ({ params, permissions }) => {
             const permissionCheck = await getHasEntityPermission("blueprint_instances", params.id, permissions);

@@ -348,6 +348,29 @@ export function calendar_router(app: Elysia) {
         },
       )
       .delete(
+        "/arkive/:id",
+        async ({ params, permissions }) => {
+          const permissionCheck = await getHasEntityPermission("calendars", params.id, permissions);
+
+          if (permissionCheck) {
+            await db
+              .updateTable("calendars")
+              .where("calendars.id", "=", params.id)
+              .set({ deleted_at: new Date().toUTCString(), is_public: false })
+              .execute();
+
+            return { message: `Calendar ${MessageEnum.successfully_arkived}.`, ok: true, role_access: true };
+          } else {
+            noRoleAccessErrorHandler();
+            return { message: "", ok: false, role_access: false };
+          }
+        },
+        {
+          response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "delete_calendars"),
+        },
+      )
+      .delete(
         "/:id",
         async ({ params, permissions }) => {
           const permissionCheck = await getHasEntityPermission("calendars", params.id, permissions);
