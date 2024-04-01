@@ -890,6 +890,7 @@ export function blueprint_instance_router(app: Elysia) {
               const res = await db
                 .deleteFrom("blueprint_instances")
                 .where("blueprint_instances.id", "=", params.id)
+                .where("blueprint_instances.deleted_at", "is not", null)
                 .returning(["blueprint_instances.parent_id", "blueprint_instances.title"])
                 .executeTakeFirstOrThrow();
 

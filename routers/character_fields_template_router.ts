@@ -386,6 +386,7 @@ export function character_fields_templates_router(app: Elysia) {
             const data = await db
               .deleteFrom("character_fields_templates")
               .where("character_fields_templates.id", "=", params.id)
+              .where("character_fields_templates.deleted_at", "is not", null)
               .returning([
                 "character_fields_templates.id",
                 "character_fields_templates.title",

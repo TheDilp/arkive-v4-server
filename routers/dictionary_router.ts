@@ -174,6 +174,7 @@ export function dictionary_router(app: Elysia) {
             const data = await db
               .deleteFrom("dictionaries")
               .where("dictionaries.id", "=", params.id)
+              .where("dictionaries.deleted_at", "is not", null)
               .returning(["id", "title", "project_id"])
               .executeTakeFirstOrThrow();
 

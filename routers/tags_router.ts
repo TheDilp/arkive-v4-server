@@ -159,7 +159,8 @@ export function tag_router(app: Elysia) {
         async ({ params }) => {
           const data = await db
             .deleteFrom("tags")
-            .where("id", "=", params.id)
+            .where("tags.id", "=", params.id)
+            .where("tags.deleted_at", "is not", null)
             .returning(["tags.id", "tags.title", "tags.project_id"])
             .executeTakeFirstOrThrow();
           return { data, message: `Tag ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };

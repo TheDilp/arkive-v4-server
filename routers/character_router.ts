@@ -842,6 +842,7 @@ export function character_router(app: Elysia) {
               const data = await db
                 .deleteFrom("characters")
                 .where("characters.id", "=", params.id)
+                .where("characters.deleted_at", "is not", null)
                 .returning(["id", "full_name as title", "project_id", "portrait_id as image_id"])
                 .executeTakeFirstOrThrow();
 

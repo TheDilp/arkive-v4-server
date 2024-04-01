@@ -378,6 +378,7 @@ export function calendar_router(app: Elysia) {
             const data = await db
               .deleteFrom("calendars")
               .where("calendars.id", "=", params.id)
+              .where("calendars.deleted_at", "is not", null)
               .returning(["id", "title", "project_id"])
               .executeTakeFirstOrThrow();
 

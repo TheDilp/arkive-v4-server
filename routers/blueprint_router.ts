@@ -350,6 +350,7 @@ export function blueprint_router(app: Elysia) {
               const data = await db
                 .deleteFrom("blueprints")
                 .where("blueprints.id", "=", params.id)
+                .where("blueprints.deleted_at", "is not", null)
                 .returning(["id", "title", "project_id"])
                 .executeTakeFirstOrThrow();
 

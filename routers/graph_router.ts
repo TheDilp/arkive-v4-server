@@ -306,6 +306,7 @@ export function graph_router(app: Elysia) {
               const data = await db
                 .deleteFrom("graphs")
                 .where("graphs.id", "=", params.id)
+                .where("graphs.deleted_at", "is not", null)
                 .returning(["id", "title", "project_id"])
                 .executeTakeFirstOrThrow();
 
