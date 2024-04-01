@@ -1,4 +1,6 @@
 import Elysia from "elysia";
+import { SelectExpression } from "kysely";
+import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
 import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
@@ -62,7 +64,7 @@ export function tag_router(app: Elysia) {
               qb = constructFilter("tags", qb, body.filters);
               return qb;
             })
-            .select(["tags.id", "tags.title", "tags.color"])
+            .select(body.fields.map((f) => `tags.${f}`) as SelectExpression<DB, "tags">[])
             .limit(body?.pagination?.limit || 10)
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
             .$if(!!body.orderBy?.length, (qb) => {
