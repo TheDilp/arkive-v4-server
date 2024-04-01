@@ -399,6 +399,10 @@ export function extractDocumentText(content: any) {
     }
   });
 
-  // eslint-disable-next-line prettier/prettier, quotes
-  return text.join("").slice(0, 246).replaceAll('"', "'").concat("...");
+  const finalText = text.join("");
+  if (finalText.length >= 250) {
+    // eslint-disable-next-line prettier/prettier, quotes
+    return finalText.slice(0, 246).replaceAll('"', "'").concat("...");
+  }
+  return finalText;
 }
