@@ -52,17 +52,27 @@ export function project_router(app: Elysia) {
       )
       .post(
         "/",
-        async ({ body }) => {
+        async ({ body, permissions }) => {
           const data = await db
             .selectFrom("projects")
-            .select(["projects.id", "projects.title", "projects.image_id"])
             .leftJoin("users", "users.id", "projects.owner_id")
+            .leftJoin("user_project_feature_flags", (join) =>
+              join
+                .on("user_project_feature_flags.user_id", "=", permissions.user_id)
+                .onRef("user_project_feature_flags.project_id", "=", "projects.id"),
+            )
+            .select(["projects.id", "projects.title", "projects.image_id", "user_project_feature_flags.feature_flags"])
             .where("users.auth_id", "=", body.data.auth_id)
             .union(
               db
                 .selectFrom("projects")
                 .leftJoin("_project_members", "projects.id", "_project_members.A")
-                .select(["projects.id", "projects.title", "projects.image_id"])
+                .leftJoin("user_project_feature_flags", (join) =>
+                  join
+                    .on("user_project_feature_flags.user_id", "=", permissions.user_id)
+                    .onRef("user_project_feature_flags.project_id", "=", "projects.id"),
+                )
+                .select(["projects.id", "projects.title", "projects.image_id", "user_project_feature_flags.feature_flags"])
                 .where("_project_members.B", "=", (eb) =>
                   eb.selectFrom("users").select("id").where("users.auth_id", "=", body.data.auth_id),
                 ),
