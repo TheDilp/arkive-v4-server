@@ -10,6 +10,7 @@ import {
   ReadProjectSchema,
   UpdateProjectSchema,
 } from "../database/validation/projects";
+import { DefaultFeatureFlags } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeProjectOwnerHandler, beforeRoleHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
@@ -27,13 +28,26 @@ export function project_router(app: Elysia) {
       } as PermissionDecorationType)
       .post(
         "/create",
-        async ({ body }) => {
-          await db.insertInto("projects").values(body.data).execute();
+        async ({ body, permissions }) => {
+          await db.transaction().execute(async (tx) => {
+            const project = await tx.insertInto("projects").values(body.data).returning("id").executeTakeFirst();
+            if (project) {
+              await tx
+                .insertInto("user_project_feature_flags")
+                .values({
+                  project_id: project?.id,
+                  user_id: permissions.user_id,
+                  feature_flags: JSON.stringify(DefaultFeatureFlags),
+                })
+                .execute();
+            }
+          });
           return { message: `Project ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
           body: InsertProjectSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, undefined, true),
         },
       )
       .post(
@@ -65,75 +79,79 @@ export function project_router(app: Elysia) {
       .post(
         "/:id",
         async ({ params, body }) => {
-          const data = await db
+          let query = db
             .selectFrom("projects")
-            .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "projects">[]))
-
-            .$if(!!body?.relations?.character_relationship_types, (qb) =>
-              qb.select((eb) =>
-                jsonArrayFrom(
-                  eb
-                    .selectFrom("character_relationship_types")
-                    .select([
-                      "character_relationship_types.id",
-                      "character_relationship_types.title",
-                      "character_relationship_types.ascendant_title",
-                      "character_relationship_types.descendant_title",
-                    ])
-                    .where("project_id", "=", params.id),
-                ).as("character_relationship_types"),
-              ),
-            )
-            .$if(!!body?.relations?.map_pin_types, (qb) =>
-              qb.select((eb) =>
-                jsonArrayFrom(
-                  eb
-                    .selectFrom("map_pin_types")
-                    .select([
-                      "map_pin_types.id",
-                      "map_pin_types.title",
-                      "map_pin_types.default_icon",
-                      "map_pin_types.default_icon_color",
-                    ])
-                    .where("project_id", "=", params.id),
-                ).as("map_pin_types"),
-              ),
-            )
-            .$if(!!body?.relations?.members, (qb) =>
-              qb.select((eb) =>
-                jsonArrayFrom(
-                  eb
-                    .selectFrom("users")
-                    .leftJoin("_project_members", "_project_members.B", "users.id")
-                    .where("_project_members.A", "=", params.id)
-                    .whereRef("_project_members.B", "!=", "projects.owner_id")
-                    .select([
-                      "users.id",
-                      "users.email",
-                      (eb) =>
-                        jsonObjectFrom(
-                          eb
-                            .selectFrom("user_roles")
-                            .whereRef("user_roles.user_id", "=", "users.id")
-                            .where("user_roles.project_id", "=", params.id)
-                            .leftJoin("roles", "roles.id", "user_roles.role_id")
-                            .select(["roles.id", "roles.title", "roles.icon"]),
-                        ).as("role"),
-                    ])
-                    .orderBy("email", "asc"),
-                ).as("members"),
-              ),
-            )
-            .$if(!!body?.relations?.roles, (qb) =>
-              qb.select((eb) =>
-                jsonArrayFrom(
-                  eb.selectFrom("roles").select(["roles.id", "roles.title", "roles.icon"]).where("project_id", "=", params.id),
-                ).as("roles"),
-              ),
-            )
             .where("id", "=", params.id)
-            .executeTakeFirstOrThrow();
+            .select(body.fields as SelectExpression<DB, "projects">[]);
+          if (body?.relations?.character_relationship_types) {
+            query = query.select((eb) =>
+              jsonArrayFrom(
+                eb
+                  .selectFrom("character_relationship_types")
+                  .select([
+                    "character_relationship_types.id",
+                    "character_relationship_types.title",
+                    "character_relationship_types.ascendant_title",
+                    "character_relationship_types.descendant_title",
+                  ])
+                  .where("project_id", "=", params.id),
+              ).as("character_relationship_types"),
+            );
+          }
+
+          if (body?.relations?.map_pin_types) {
+            query = query.select((eb) =>
+              jsonArrayFrom(
+                eb
+                  .selectFrom("map_pin_types")
+                  .select([
+                    "map_pin_types.id",
+                    "map_pin_types.title",
+                    "map_pin_types.default_icon",
+                    "map_pin_types.default_icon_color",
+                  ])
+                  .where("project_id", "=", params.id),
+              ).as("map_pin_types"),
+            );
+          }
+
+          if (body?.relations?.members) {
+            query = query.select((eb) =>
+              jsonArrayFrom(
+                eb
+                  .selectFrom("users")
+                  .leftJoin("_project_members", "_project_members.B", "users.id")
+                  .where("_project_members.A", "=", params.id)
+                  .whereRef("_project_members.B", "!=", "projects.owner_id")
+                  .select([
+                    "users.id",
+                    "users.email",
+                    (eb) =>
+                      jsonObjectFrom(
+                        eb
+                          .selectFrom("user_roles")
+                          .whereRef("user_roles.user_id", "=", "users.id")
+                          .where("user_roles.project_id", "=", params.id)
+                          .leftJoin("roles", "roles.id", "user_roles.role_id")
+                          .select(["roles.id", "roles.title", "roles.icon"]),
+                      ).as("role"),
+                  ])
+                  .orderBy("email", "asc"),
+              ).as("members"),
+            );
+          }
+
+          if (body?.relations?.roles) {
+            query = query.select((eb) =>
+              jsonArrayFrom(
+                eb.selectFrom("roles").select(["roles.id", "roles.title", "roles.icon"]).where("project_id", "=", params.id),
+              ).as("roles"),
+            );
+          }
+          if (body?.relations?.feature_flags) {
+            query = query.leftJoin("user_project_feature_flags", "project_id", "projects.id").select(["feature_flags"]);
+          }
+          const data = await query.executeTakeFirstOrThrow();
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
@@ -143,8 +161,24 @@ export function project_router(app: Elysia) {
       )
       .post(
         "/update/:id",
-        async ({ params, body }) => {
-          await db.updateTable("projects").where("projects.id", "=", params.id).set(body.data).execute();
+        async ({ params, body, permissions }) => {
+          await db.transaction().execute(async (tx) => {
+            tx.updateTable("projects").where("projects.id", "=", params.id).set(body.data).execute();
+
+            if (body.relations?.feature_flags) {
+              await tx
+                .insertInto("user_project_feature_flags")
+                .values({
+                  feature_flags: body.relations.feature_flags,
+                  project_id: params.id,
+                  user_id: permissions.user_id,
+                })
+                .onConflict((oc) =>
+                  oc.columns(["project_id", "user_id"]).doUpdateSet({ feature_flags: body.relations?.feature_flags }),
+                )
+                .execute();
+            }
+          });
           return { message: `Project ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
         {

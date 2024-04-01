@@ -13,7 +13,6 @@ import {
   UpdateUserSchema,
 } from "../database/validation";
 import { EmailInvite } from "../emails/EmailInvite";
-import { DefaultFeatureFlags } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeProjectOwnerHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
@@ -119,11 +118,7 @@ export function user_router(app: Elysia) {
           if (user) {
             await db.insertInto("_project_members").values({ A: body.data.project_id, B: user.id }).execute();
           } else {
-            const newUser = await db
-              .insertInto("users")
-              .values({ email: body.data.email, feature_flags: JSON.stringify(DefaultFeatureFlags) })
-              .returning("id")
-              .executeTakeFirst();
+            const newUser = await db.insertInto("users").values({ email: body.data.email }).returning("id").executeTakeFirst();
             if (newUser) await db.insertInto("_project_members").values({ A: body.data.project_id, B: newUser.id }).execute();
           }
           const { title, image_id } = await db

@@ -12,6 +12,7 @@ export const ReadProjectSchema = t.Intersect([
           map_pin_types: t.Optional(t.Boolean()),
           character_relationship_types: t.Optional(t.Boolean()),
           members: t.Optional(t.Boolean()),
+          feature_flags: t.Optional(t.Boolean()),
         }),
       ),
     }),
@@ -31,6 +32,11 @@ export const UpdateProjectSchema = t.Object({
     show_image_folder_view: t.Optional(t.Union([t.Boolean(), t.Null()])),
     show_image_table_view: t.Optional(t.Union([t.Boolean(), t.Null()])),
   }),
+  relations: t.Optional(
+    t.Object({
+      feature_flags: t.Optional(t.Union([t.Any(), t.Null()])),
+    }),
+  ),
 });
 
 export const ProjectListSchema = t.Intersect([
