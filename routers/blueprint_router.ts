@@ -345,7 +345,7 @@ export function blueprint_router(app: Elysia) {
         .delete(
           "/:id",
           async ({ params, permissions }) => {
-            const permissionCheck = await getHasEntityPermission("characters", params.id, permissions);
+            const permissionCheck = await getHasEntityPermission("blueprints", params.id, permissions);
             if (permissionCheck) {
               const data = await db
                 .deleteFrom("blueprints")
@@ -354,7 +354,12 @@ export function blueprint_router(app: Elysia) {
                 .returning(["id", "title", "project_id"])
                 .executeTakeFirstOrThrow();
 
-              return { data, message: `Blueprint ${MessageEnum.successfully_deleted}.`, ok: true, role_access: true };
+              return {
+                data: { ...data, is_folder: false },
+                message: `Blueprint ${MessageEnum.successfully_deleted}.`,
+                ok: true,
+                role_access: true,
+              };
             } else {
               noRoleAccessErrorHandler();
               return { data: {}, message: "", ok: false, role_access: false };
