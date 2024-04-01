@@ -1366,6 +1366,17 @@ CREATE TABLE public.timelines (
 
 
 --
+-- Name: user_project_feature_flags; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_project_feature_flags (
+    user_id uuid NOT NULL,
+    project_id uuid NOT NULL,
+    feature_flags jsonb
+);
+
+
+--
 -- Name: user_roles; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2193,6 +2204,14 @@ ALTER TABLE ONLY public.tag_permissions
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT unique_user_email UNIQUE (email);
+
+
+--
+-- Name: user_project_feature_flags user_project_feature_flags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_project_feature_flags
+    ADD CONSTRAINT user_project_feature_flags_pkey PRIMARY KEY (user_id, project_id);
 
 
 --
@@ -4310,6 +4329,22 @@ ALTER TABLE ONLY public.timelines
 
 
 --
+-- Name: user_project_feature_flags user_project_ff_project_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_project_feature_flags
+    ADD CONSTRAINT user_project_ff_project_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_project_feature_flags user_project_ff_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_project_feature_flags
+    ADD CONSTRAINT user_project_ff_user_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: user_roles user_roles_project_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4406,4 +4441,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240328111345'),
     ('20240328173310'),
     ('20240330101909'),
-    ('20240331085133');
+    ('20240331085133'),
+    ('20240401103430');
