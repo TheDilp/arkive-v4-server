@@ -14,6 +14,7 @@ import { DefaultFeatureFlags } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeProjectOwnerHandler, beforeRoleHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { decodeUserJwt } from "../utils/requestUtils";
 import { deleteFolder } from "../utils/s3Utils";
 
 export function project_router(app: Elysia) {
@@ -84,6 +85,14 @@ export function project_router(app: Elysia) {
         {
           body: ProjectListSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => {
+            const jwt = context?.headers?.["authorization"]?.replace("Bearer ", "");
+            if (jwt) {
+              const { user_id } = decodeUserJwt(jwt);
+              // @ts-ignore
+              context.permissions.user_id = user_id;
+            }
+          },
         },
       )
       .post(
