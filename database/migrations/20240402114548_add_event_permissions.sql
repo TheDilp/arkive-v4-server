@@ -2,7 +2,7 @@
 INSERT INTO
     public."permissions" (title, code)
 VALUES
-    ('Create evetnts', 'create_events'),
+    ('Create events', 'create_events'),
     ('View events', 'read_events'),
     ('Edit events', 'update_events'),
     ('Delete events', 'delete_events')
