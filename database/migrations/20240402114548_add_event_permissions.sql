@@ -55,4 +55,4 @@ CREATE TABLE event_permissions (
 -- migrate:down
 DROP TABLE event_permissions;
 ALTER TABLE events DROP COLUMN owner_id;
-DELETE FROM permissions WHERE code LIKE "%_events";
+DELETE FROM permissions WHERE code LIKE '%_events';
