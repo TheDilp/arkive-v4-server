@@ -504,8 +504,6 @@ export function document_router(app: Elysia) {
               query = checkEntityLevelPermission(query, permissions, body.data.type as EntitiesWithPermissionCheck);
             }
 
-            console.log(query.compile().sql);
-
             const res = await query
               .where(`${body.data.type}.ts`, "@@", sql<string>`to_tsquery(${sql.lit("english")}, ${formattedString})`)
               .execute();
