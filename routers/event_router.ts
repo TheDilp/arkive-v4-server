@@ -12,6 +12,7 @@ import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from
 import { constructFilter, eventRelationFilters } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import {
+  CreateEntityPermissions,
   GetRelatedEntityPermissionsAndRoles,
   GetRelationsForUpdating,
   TagQuery,
@@ -61,6 +62,9 @@ export function event_router(app: Elysia) {
                   .insertInto("event_map_pins")
                   .values(map_pins.map((map_pin) => ({ event_id: id, related_id: map_pin.id })))
                   .execute();
+              }
+              if (body.permissions?.length) {
+                await CreateEntityPermissions(tx, id, "event_permissions", body.permissions);
               }
             });
           }
