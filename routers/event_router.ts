@@ -167,12 +167,12 @@ export function event_router(app: Elysia) {
       )
       .post(
         "/:id",
-        async ({ params, body }) => {
+        async ({ params, body, permissions }) => {
           let query = db
             .selectFrom("events")
             .where("events.id", "=", params.id)
             .clearSelect()
-            .select(body.fields as SelectExpression<DB, "events">[]);
+            .select(body.fields.map((f) => `events.${f}`) as SelectExpression<DB, "events">[]);
 
           if (body?.relations) {
             if (body?.relations?.tags) {
@@ -224,6 +224,14 @@ export function event_router(app: Elysia) {
                 ).as("map_pins"),
               );
             }
+          }
+          if (permissions.is_project_owner) {
+            query = query.leftJoin("event_permissions", (join) => join.on("event_permissions.related_id", "=", params.id));
+          } else {
+            query = checkEntityLevelPermission(query, permissions, "events", params.id);
+          }
+          if (body.permissions) {
+            query = GetRelatedEntityPermissionsAndRoles(query, permissions, "events", params.id);
           }
 
           const data = await query.executeTakeFirstOrThrow();

@@ -332,6 +332,7 @@ export function GetRelatedEntityPermissionsAndRoles(
   id?: string,
 ) {
   const permissionTable = getPermissionTableFromEntity(entity);
+
   if (permissionTable) {
     qb = qb.select([
       (eb: ExpressionBuilder<any, any>) => {
@@ -368,6 +369,8 @@ export function GetRelatedEntityPermissionsAndRoles(
         return jsonArrayFrom(expression).as("permissions");
       },
     ]);
+  } else {
+    console.error("NO PERMISSION TABLE", entity);
   }
   return qb;
 }

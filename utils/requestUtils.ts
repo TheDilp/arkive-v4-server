@@ -143,9 +143,12 @@ export function getPermissionTableFromEntity(entity: EntitiesWithPermissionCheck
   if (entity === "blueprint_instances") return "blueprint_instance_permissions";
   if (entity === "documents") return "document_permissions";
   if (entity === "maps") return "map_permissions";
+  if (entity === "map_pins") return "map_pin_permissions";
   if (entity === "graphs") return "graph_permissions";
   if (entity === "calendars") return "calendar_permissions";
+  if (entity === "events") return "event_permissions";
   if (entity === "dictionaries") return "dictionary_permissions";
+  if (entity === "words") return "word_permissions";
   if (entity === "random_tables") return "random_table_permissions";
   if (entity === "tags") return "tag_permissions";
   if (entity === "character_fields_templates") return "character_fields_template_permissions";
