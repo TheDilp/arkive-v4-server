@@ -2,6 +2,7 @@ import { ExpressionBuilder, Kysely, SelectQueryBuilder, Transaction } from "kyse
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
+import { getNestedReadPermission } from "../database/queries";
 import { EntitiesWithChildren, EntitiesWithTags, EntityPermissionTables, TagsRelationTables } from "../database/types";
 import {
   EntitiesWithFolders,
@@ -12,14 +13,24 @@ import {
 import { PermissionDecorationType } from "../types/requestTypes";
 import { getPermissionTableFromEntity } from "./requestUtils";
 
-export function TagQuery(eb: ExpressionBuilder<any, any>, relationalTable: TagsRelationTables, table: EntitiesWithTags) {
-  return jsonArrayFrom(
-    eb
-      .selectFrom(relationalTable)
-      .whereRef(`${table}.id`, "=", `${relationalTable}.A`)
-      .leftJoin("tags", "tags.id", `${relationalTable}.B`)
-      .select(["tags.id", "tags.title", "tags.color"]),
-  ).as("tags");
+export function TagQuery(
+  eb: ExpressionBuilder<any, any>,
+  relationalTable: TagsRelationTables,
+  table: EntitiesWithTags,
+  is_project_owner: boolean,
+  user_id: string,
+  relation_table: EntityPermissionTables,
+) {
+  let tag_query = eb
+    .selectFrom(relationalTable)
+    .whereRef(`${table}.id`, "=", `${relationalTable}.A`)
+    .leftJoin("tags", "tags.id", `${relationalTable}.B`)
+    .select(["tags.id", "tags.title", "tags.color"]);
+
+  // @ts-ignore
+  tag_query = getNestedReadPermission(tag_query, is_project_owner, user_id, relation_table, "tags.id", "read_tags");
+
+  return jsonArrayFrom(tag_query).as("tags");
 }
 
 export async function CreateTagRelations({

@@ -1,9 +1,13 @@
+import { Context } from "elysia";
 import { SelectQueryBuilder, sql } from "kysely";
+import { DB } from "kysely-codegen";
 
-import { EntitiesWithPermissionCheck } from "../../types/entityTypes";
+import { beforeRoleHandler } from "../../handlers";
+import { AvailablePermissions, EntitiesWithPermissionCheck } from "../../types/entityTypes";
 import { PermissionDecorationType } from "../../types/requestTypes";
 import { getPermissionTableFromEntity } from "../../utils/requestUtils";
 import { db } from "../db";
+import { DBKeys, EntityPermissionTables } from "../types";
 
 export function checkEntityLevelPermission(
   qb: SelectQueryBuilder<any, any, any>,
@@ -47,4 +51,23 @@ export async function getHasEntityPermission(
     .executeTakeFirst();
 
   return !!permissionCheck?.hasPermission;
+}
+
+export function getNestedReadPermission(
+  subquery: SelectQueryBuilder<DB, any, any>,
+  is_project_owner: boolean,
+  user_id: string,
+  permission_table: EntityPermissionTables,
+  related_table_with_field: string,
+  permission_code: AvailablePermissions,
+) {
+  if (!is_project_owner) {
+    // @ts-ignore
+    subquery = subquery
+      .leftJoin(permission_table, `${permission_table}.related_id`, related_table_with_field)
+      .leftJoin("permissions", `${permission_table}.permission_id`, "permissions.id")
+      .where(`${permission_table}.user_id`, "=", user_id)
+      .where("permissions.code", "=", permission_code);
+  }
+  return subquery;
 }
