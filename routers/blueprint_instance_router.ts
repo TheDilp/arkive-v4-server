@@ -491,7 +491,10 @@ export function blueprint_instance_router(app: Elysia) {
             query = constructOrdering(body.orderBy, query);
           }
           if (!permissions.is_project_owner) {
-            checkEntityLevelPermission(query, permissions, "blueprint_instances");
+            query = checkEntityLevelPermission(query, permissions, "blueprint_instances");
+          }
+          if (!!body.permissions && !permissions.is_project_owner) {
+            GetRelatedEntityPermissionsAndRoles(query, permissions, "blueprint_instances");
           }
           if (body?.relations?.tags) {
             query = query.select((eb) =>
