@@ -35,8 +35,7 @@ export function public_router(app: Elysia) {
   return app.group("/public", (server) => {
     return (
       server
-        .post("/test", async ({ body }) => {
-          console.log(body);
+        .post("/test", async () => {
           return true;
         })
         .post(

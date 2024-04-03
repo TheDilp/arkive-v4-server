@@ -231,7 +231,7 @@ export function document_router(app: Elysia) {
               query = checkEntityLevelPermission(query, permissions, "documents");
             }
             if (!!body.permissions && !permissions.is_project_owner) {
-              GetRelatedEntityPermissionsAndRoles(query, permissions, "documents");
+              query = GetRelatedEntityPermissionsAndRoles(query, permissions, "documents");
             }
 
             const data = await query.execute();

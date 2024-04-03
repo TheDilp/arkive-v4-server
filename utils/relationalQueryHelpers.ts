@@ -345,7 +345,6 @@ export function GetRelatedEntityPermissionsAndRoles(
   id?: string,
 ) {
   const permissionTable = getPermissionTableFromEntity(entity);
-
   if (permissionTable) {
     qb = qb.select([
       (eb: ExpressionBuilder<any, any>) => {

@@ -92,7 +92,7 @@ export function map_router(app: Elysia) {
               query = checkEntityLevelPermission(query, permissions, "maps");
             }
             if (!!body.permissions && !permissions.is_project_owner) {
-              GetRelatedEntityPermissionsAndRoles(query, permissions, "maps");
+              query = GetRelatedEntityPermissionsAndRoles(query, permissions, "maps");
             }
 
             const data = await query.execute();

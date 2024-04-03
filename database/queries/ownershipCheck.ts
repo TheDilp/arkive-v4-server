@@ -29,6 +29,7 @@ export function checkEntityLevelPermission(
         ]),
       );
   } else {
+    console.error("NO ENTITY RELATION TABLE", entity);
     qb = qb.clearLimit().limit(0);
   }
   return qb;

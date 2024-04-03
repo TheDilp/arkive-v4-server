@@ -80,36 +80,37 @@ export function calendar_router(app: Elysia) {
       .post(
         "/",
         async ({ body, permissions }) => {
-          const data = await db
+          let query = db
             .selectFrom("calendars")
             .where("calendars.project_id", "=", body?.data?.project_id)
             .where("calendars.deleted_at", body.arkived ? "is not" : "is", null)
             .limit(body?.pagination?.limit || 10)
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
-            .select(body.fields.map((f) => `calendars.${f}`) as SelectExpression<DB, "calendars">[])
-            .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
-              qb = constructFilter("calendars", qb, body.filters);
-              return qb;
-            })
-            .$if(!!body.relations?.tags, (qb) => {
-              if (body?.relations?.tags && permissions?.all_permissions?.read_tags) {
-                return qb.select((eb) =>
-                  TagQuery(
-                    eb,
-                    "_calendarsTotags",
-                    "calendars",
-                    permissions.is_project_owner,
-                    permissions.user_id,
-                    "calendar_permissions",
-                  ),
-                );
-              }
-              return qb;
-            })
-            .$if(!permissions.is_project_owner, (qb) => {
-              return checkEntityLevelPermission(qb, permissions, "calendars");
-            })
-            .execute();
+            .select(body.fields.map((f) => `calendars.${f}`) as SelectExpression<DB, "calendars">[]);
+          if (!!body?.filters?.and?.length || !!body?.filters?.or?.length) {
+            query = constructFilter("calendars", query, body.filters);
+          }
+          if (body?.relations?.tags && permissions?.all_permissions?.read_tags) {
+            query = query.select((eb) =>
+              TagQuery(
+                eb,
+                "_calendarsTotags",
+                "calendars",
+                permissions.is_project_owner,
+                permissions.user_id,
+                "calendar_permissions",
+              ),
+            );
+          }
+          if (!permissions.is_project_owner) {
+            query = checkEntityLevelPermission(query, permissions, "calendars");
+          }
+
+          if (!!body.permissions && !permissions.is_project_owner) {
+            query = GetRelatedEntityPermissionsAndRoles(query, permissions, "calendars");
+          }
+
+          const data = await query.execute();
 
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
@@ -196,7 +197,7 @@ export function calendar_router(app: Elysia) {
               return checkEntityLevelPermission(qb, permissions, "calendars");
             });
 
-          if (body.permissions) {
+          if (!!body.permissions && !permissions.is_project_owner) {
             query = GetRelatedEntityPermissionsAndRoles(query, permissions, "calendars", params.id);
           }
 

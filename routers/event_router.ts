@@ -168,7 +168,7 @@ export function event_router(app: Elysia) {
             query = checkEntityLevelPermission(query, permissions, "events");
           }
           if (!!body.permissions && !permissions.is_project_owner) {
-            GetRelatedEntityPermissionsAndRoles(query, permissions, "events");
+            query = GetRelatedEntityPermissionsAndRoles(query, permissions, "events");
           }
 
           query = query
@@ -222,7 +222,7 @@ export function event_router(app: Elysia) {
             if (body?.relations?.image) {
               query = query.select((eb) =>
                 jsonObjectFrom(
-                  eb.selectFrom("images").whereRef("images.id", "=", "events.image_id").select(["id", "title"]),
+                  eb.selectFrom("images").whereRef("images.id", "=", "events.image_id").select(["images.id", "images.title"]),
                 ).as("image"),
               );
             }
@@ -232,7 +232,7 @@ export function event_router(app: Elysia) {
                   .selectFrom("event_characters")
                   .leftJoin("characters", "characters.id", "event_characters.related_id")
                   .where("event_characters.event_id", "=", params.id)
-                  .select(["id", "full_name", "portrait_id"]);
+                  .select(["characters.id", "characters.full_name", "characters.portrait_id"]);
 
                 // @ts-ignore
                 character_query = getNestedReadPermission(
@@ -258,7 +258,7 @@ export function event_router(app: Elysia) {
                       "map_pins.id",
                       "map_pins.title",
                       "map_pins.image_id",
-                      "icon",
+                      "map_pins.icon",
                       "border_color",
                       "map_pins.background_color",
                     ]),
