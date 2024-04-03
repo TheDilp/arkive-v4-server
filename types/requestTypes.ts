@@ -148,5 +148,5 @@ export type PermissionDecorationType = {
   user_id: string;
   role_id: string | null;
   permission_id: string | null;
-  all_permissions: AvailablePermissions[];
+  all_permissions: Record<AvailablePermissions, boolean>;
 };

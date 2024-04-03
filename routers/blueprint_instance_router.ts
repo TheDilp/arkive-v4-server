@@ -40,7 +40,7 @@ export function blueprint_instance_router(app: Elysia) {
         user_id: "",
         role_id: null,
         permission_id: null,
-        all_permissions: [],
+        all_permissions: {},
       } as PermissionDecorationType)
       .post(
         "/create",
@@ -233,7 +233,7 @@ export function blueprint_instance_router(app: Elysia) {
                       .as("value"),
                 ];
 
-                if (permissions.all_permissions.includes("read_random_tables"))
+                if (permissions.all_permissions?.read_random_tables)
                   bp_fields_select.push((ebb: ExpressionBuilder<DB, any>) => {
                     let random_table_query = ebb
                       .selectFrom("random_tables")
@@ -252,7 +252,7 @@ export function blueprint_instance_router(app: Elysia) {
                     return jsonObjectFrom(random_table_query).as("random_table_data");
                   });
 
-                if (permissions.all_permissions.includes("read_characters"))
+                if (permissions.all_permissions?.read_characters)
                   bp_fields_select.push((ebb: ExpressionBuilder<DB, any>) => {
                     let character_subquery = ebb
                       .selectFrom("blueprint_instance_characters")
@@ -280,7 +280,7 @@ export function blueprint_instance_router(app: Elysia) {
 
                     return jsonArrayFrom(character_subquery).as("characters");
                   });
-                if (permissions.all_permissions.includes("read_blueprint_instances"))
+                if (permissions.all_permissions?.read_blueprint_instances)
                   bp_fields_select.push((ebb: ExpressionBuilder<DB, any>) => {
                     let bpi_query = ebb
                       .selectFrom("blueprint_instance_blueprint_instances")
@@ -308,7 +308,7 @@ export function blueprint_instance_router(app: Elysia) {
 
                     return jsonArrayFrom(bpi_query).as("blueprint_instances");
                   });
-                if (permissions.all_permissions.includes("read_documents"))
+                if (permissions.all_permissions?.read_documents)
                   bp_fields_select.push((ebb: ExpressionBuilder<DB, any>) => {
                     let document_query = ebb
                       .selectFrom("blueprint_instance_documents")
@@ -338,7 +338,7 @@ export function blueprint_instance_router(app: Elysia) {
                   });
 
                 // ! Temp until map pin permissions are introduced
-                if (permissions.all_permissions.length)
+                if (permissions.all_permissions)
                   bp_fields_select.push((ebb: ExpressionBuilder<DB, any>) => {
                     let map_pin_query = ebb
                       .selectFrom("blueprint_instance_map_pins")
@@ -366,7 +366,7 @@ export function blueprint_instance_router(app: Elysia) {
 
                     return jsonArrayFrom(map_pin_query).as("map_pins");
                   });
-                if (permissions.all_permissions.includes("read_events"))
+                if (permissions.all_permissions?.read_events)
                   bp_fields_select.push((ebb: ExpressionBuilder<DB, any>) => {
                     let event_query = ebb
                       .selectFrom("blueprint_instance_events")
@@ -394,7 +394,7 @@ export function blueprint_instance_router(app: Elysia) {
 
                     return jsonArrayFrom(event_query).as("events");
                   });
-                if (permissions.all_permissions.includes("read_random_tables"))
+                if (permissions.all_permissions?.read_random_tables)
                   bp_fields_select.push((ebb: ExpressionBuilder<DB, any>) => {
                     let random_table_query = ebb
                       .selectFrom("blueprint_instance_random_tables")
@@ -413,7 +413,7 @@ export function blueprint_instance_router(app: Elysia) {
 
                     return jsonObjectFrom(random_table_query).as("random_table");
                   });
-                if (permissions.all_permissions.includes("read_calendars"))
+                if (permissions.all_permissions?.read_calendars)
                   bp_fields_select.push((ebb: ExpressionBuilder<DB, any>) => {
                     let calendar_query = ebb
                       .selectFrom("blueprint_instance_calendars")
@@ -440,7 +440,7 @@ export function blueprint_instance_router(app: Elysia) {
 
                     return jsonObjectFrom(calendar_query).as("calendar");
                   });
-                if (permissions.all_permissions.includes("read_assets"))
+                if (permissions.all_permissions?.read_assets)
                   bp_fields_select.push((ebb) => {
                     let image_query = ebb
                       .selectFrom("blueprint_instance_images")
@@ -509,7 +509,7 @@ export function blueprint_instance_router(app: Elysia) {
           if (!!body.permissions && !permissions.is_project_owner) {
             GetRelatedEntityPermissionsAndRoles(query, permissions, "blueprint_instances");
           }
-          if (body?.relations?.tags && permissions.all_permissions.includes("read_tags")) {
+          if (body?.relations?.tags && permissions.all_permissions?.read_tags) {
             query = query.select((eb) =>
               TagQuery(
                 eb,
@@ -571,7 +571,7 @@ export function blueprint_instance_router(app: Elysia) {
                       .as("value"),
                 ];
 
-                if (permissions.all_permissions.includes("read_random_tables")) {
+                if (permissions.all_permissions?.read_random_tables) {
                   bp_fields_select.push(
                     (ebb) => {
                       let random_table_query = ebb
@@ -610,7 +610,7 @@ export function blueprint_instance_router(app: Elysia) {
                   );
                 }
 
-                if (permissions.all_permissions.includes("read_characters")) {
+                if (permissions.all_permissions?.read_characters) {
                   bp_fields_select.push((ebb) => {
                     let character_query = ebb
                       .selectFrom("blueprint_instance_characters")
@@ -640,7 +640,7 @@ export function blueprint_instance_router(app: Elysia) {
                   });
                 }
 
-                if (permissions.all_permissions.includes("read_blueprint_instances")) {
+                if (permissions.all_permissions?.read_blueprint_instances) {
                   bp_fields_select.push((ebb) => {
                     let bpi_query = ebb
                       .selectFrom("blueprint_instance_blueprint_instances")
@@ -676,7 +676,7 @@ export function blueprint_instance_router(app: Elysia) {
                   });
                 }
 
-                if (permissions.all_permissions.includes("read_documents")) {
+                if (permissions.all_permissions?.read_documents) {
                   bp_fields_select.push((ebb) => {
                     let document_query = ebb
                       .selectFrom("blueprint_instance_documents")
@@ -707,7 +707,7 @@ export function blueprint_instance_router(app: Elysia) {
                 }
 
                 // ! Needs to be changed when map_pin permissions are implemented
-                if (permissions.all_permissions.length) {
+                if (permissions.all_permissions) {
                   bp_fields_select.push((ebb) => {
                     let map_pin_query = ebb
                       .selectFrom("blueprint_instance_map_pins")
@@ -727,7 +727,7 @@ export function blueprint_instance_router(app: Elysia) {
                   });
                 }
 
-                if (permissions.all_permissions.includes("read_calendars")) {
+                if (permissions.all_permissions?.read_calendars) {
                   bp_fields_select.push((ebb) => {
                     let calendar_query = ebb
                       .selectFrom("blueprint_instance_calendars")
@@ -756,7 +756,7 @@ export function blueprint_instance_router(app: Elysia) {
                   });
                 }
 
-                if (permissions.all_permissions.includes("read_events")) {
+                if (permissions.all_permissions?.read_events) {
                   bp_fields_select.push((ebb) => {
                     let event_query = ebb
                       .selectFrom("blueprint_instance_events")
@@ -786,7 +786,7 @@ export function blueprint_instance_router(app: Elysia) {
                   });
                 }
 
-                if (permissions.all_permissions.includes("read_assets")) {
+                if (permissions.all_permissions?.read_assets) {
                   bp_fields_select.push((ebb) => {
                     let image_query = ebb
                       .selectFrom("blueprint_instance_images")
@@ -824,7 +824,7 @@ export function blueprint_instance_router(app: Elysia) {
               },
             ]);
 
-          if (body?.relations?.tags && permissions.all_permissions.includes("read_tags")) {
+          if (body?.relations?.tags && permissions.all_permissions?.read_tags) {
             query = query.select((eb) =>
               TagQuery(
                 eb,

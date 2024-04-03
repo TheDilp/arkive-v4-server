@@ -89,7 +89,7 @@ export type MentionType = {
   };
 };
 
-export type AvailablePermissions = (typeof RolePermissionsEnum)[keyof typeof RolePermissionsEnum];
+export type AvailablePermissions = (typeof RolePermissionsEnum)[number];
 
 export type InsertPermissionType =
   | ({

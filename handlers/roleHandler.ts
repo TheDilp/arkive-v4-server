@@ -22,8 +22,12 @@ export async function checkRole(
     .where("user_id", "=", user_id)
     .select(["permission_slug", "owner_id", "role_id", "permission_id"])
     .execute();
-  const item = data?.find((perm) => perm.permission_slug === required_permission);
+  const item = data?.find((perm) => (perm.permission_slug as AvailablePermissions) === required_permission);
   if (data && item) {
+    const all_permissions: Partial<Record<AvailablePermissions, boolean>> = {};
+    for (let index = 0; index < data.length; index++) {
+      all_permissions[data[index].permission_slug as AvailablePermissions] = true;
+    }
     return {
       user_id,
       is_project_owner: item.owner_id === user_id,
