@@ -232,7 +232,11 @@ export function search_router(app: Elysia) {
         {
           response: ResponseWithDataSchema,
           body: BasicSearchSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, `read_${context.params.type}` as AvailablePermissions),
+          beforeHandle: async (context) =>
+            beforeRoleHandler(
+              context,
+              `read_${context.params.type === "images" ? "assets" : context.params.type}` as AvailablePermissions,
+            ),
         },
       )
       .post(
