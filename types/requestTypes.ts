@@ -1,6 +1,7 @@
 import { t } from "elysia";
 
 import { FilterEnum } from "../enums/requestEnums";
+import { AvailablePermissions } from "./entityTypes";
 
 export type AfterHandlerActionType = "create" | "update" | "delete";
 
@@ -147,4 +148,5 @@ export type PermissionDecorationType = {
   user_id: string;
   role_id: string | null;
   permission_id: string | null;
+  all_permissions: AvailablePermissions[];
 };

@@ -1,13 +1,11 @@
-import { Context } from "elysia";
 import { SelectQueryBuilder, sql } from "kysely";
 import { DB } from "kysely-codegen";
 
-import { beforeRoleHandler } from "../../handlers";
 import { AvailablePermissions, EntitiesWithPermissionCheck } from "../../types/entityTypes";
 import { PermissionDecorationType } from "../../types/requestTypes";
 import { getPermissionTableFromEntity } from "../../utils/requestUtils";
 import { db } from "../db";
-import { DBKeys, EntityPermissionTables } from "../types";
+import { EntityPermissionTables } from "../types";
 
 export function checkEntityLevelPermission(
   qb: SelectQueryBuilder<any, any, any>,
