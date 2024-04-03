@@ -23,7 +23,6 @@ export async function checkRole(
     .select(["permission_slug", "owner_id", "role_id", "permission_id"])
     .execute();
   const item = data?.find((perm) => perm.permission_slug === required_permission);
-  console.log(data);
   if (data && item) {
     return {
       user_id,
