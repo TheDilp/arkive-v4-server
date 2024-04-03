@@ -529,20 +529,16 @@ export function blueprint_instance_router(app: Elysia) {
                 ? (["blueprint_instances.id", ...body.orderBy.map((order) => order.field)] as any)
                 : "blueprint_instances.id",
             )
-            .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) =>
-              qb
-                .clearSelect()
-                .select(body.fields.map((f) => `blueprint_instances.${f}`) as SelectExpression<DB, "blueprint_instances">[]),
-            )
             .where("blueprint_instances.id", "=", params.id)
+            .select(body.fields.map((f) => `blueprint_instances.${f}`) as SelectExpression<DB, "blueprint_instances">[])
+
             .select([
               (eb) =>
                 jsonObjectFrom(
                   eb
                     .selectFrom("blueprints")
                     .whereRef("blueprints.id", "=", "blueprint_instances.parent_id")
-                    .select(["title", "title_name"]),
+                    .select(["blueprints.title", "blueprints.title_name"]),
                 ).as("blueprint"),
 
               (eb) =>
@@ -551,146 +547,225 @@ export function blueprint_instance_router(app: Elysia) {
                     .selectFrom("blueprint_fields")
                     .whereRef("blueprint_fields.parent_id", "=", "blueprint_instances.parent_id")
                     .select([
-                      "id",
-                      "field_type",
-                      "sort",
-                      (ebb) =>
-                        jsonObjectFrom(
-                          ebb
-                            .selectFrom("random_tables")
-                            .whereRef("random_tables.id", "=", "blueprint_fields.random_table_id")
-                            .select(["id", "title"]),
-                        ).as("random_table_data"),
-                      (ebb) =>
-                        jsonArrayFrom(
-                          ebb
-                            .selectFrom("blueprint_instance_characters")
-                            .whereRef("blueprint_instance_characters.blueprint_field_id", "=", "blueprint_fields.id")
-                            .where("blueprint_instance_characters.blueprint_instance_id", "=", params.id)
-                            .select([
-                              "related_id",
-                              (ebbb) =>
-                                jsonObjectFrom(
-                                  ebbb
-                                    .selectFrom("characters")
-                                    .whereRef("related_id", "=", "characters.id")
-                                    .select(["id", "full_name", "portrait_id"]),
-                                ).as("character"),
-                            ]),
-                        ).as("characters"),
-                      (ebb) =>
-                        jsonArrayFrom(
-                          ebb
-                            .selectFrom("blueprint_instance_blueprint_instances")
-                            .whereRef("blueprint_instance_blueprint_instances.blueprint_field_id", "=", "blueprint_fields.id")
-                            .where("blueprint_instance_blueprint_instances.blueprint_instance_id", "=", params.id)
-                            .select([
-                              "related_id",
-                              (ebbb) =>
-                                jsonObjectFrom(
-                                  ebbb
-                                    .selectFrom("blueprint_instances")
-                                    .whereRef("related_id", "=", "blueprint_instances.id")
-                                    .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
-                                    .select([
-                                      "blueprint_instances.id",
-                                      "blueprint_instances.title",
-                                      "blueprints.icon as icon",
-                                      "blueprint_instances.parent_id",
-                                    ]),
-                                ).as("blueprint_instance"),
-                            ]),
-                        ).as("blueprint_instances"),
-                      (ebb) =>
-                        jsonArrayFrom(
-                          ebb
-                            .selectFrom("blueprint_instance_documents")
-                            .whereRef("blueprint_instance_documents.blueprint_field_id", "=", "blueprint_fields.id")
-                            .where("blueprint_instance_documents.blueprint_instance_id", "=", params.id)
+                      "blueprint_fields.id",
+                      "blueprint_fields.field_type",
+                      "blueprint_fields.sort",
+                      (ebb) => {
+                        let random_table_query = ebb
+                          .selectFrom("random_tables")
+                          .whereRef("random_tables.id", "=", "blueprint_fields.random_table_id")
+                          .select(["random_tables.id", "random_tables.title"]);
 
-                            .select([
-                              "related_id",
-                              (ebbb) =>
-                                jsonObjectFrom(
-                                  ebbb
-                                    .selectFrom("documents")
-                                    .whereRef("related_id", "=", "documents.id")
-                                    .select(["id", "title", "icon"]),
-                                ).as("document"),
-                            ]),
-                        ).as("documents"),
-                      (ebb) =>
-                        jsonArrayFrom(
-                          ebb
-                            .selectFrom("blueprint_instance_map_pins")
-                            .whereRef("blueprint_instance_map_pins.blueprint_field_id", "=", "blueprint_fields.id")
-                            .where("blueprint_instance_map_pins.blueprint_instance_id", "=", params.id)
-                            .select([
-                              "related_id",
-                              (ebbb) =>
-                                jsonObjectFrom(
-                                  ebbb
-                                    .selectFrom("map_pins")
-                                    .whereRef("related_id", "=", "map_pins.id")
-                                    .select(["id", "title", "icon", "parent_id"]),
-                                ).as("map_pin"),
-                            ]),
-                        ).as("map_pins"),
-                      (ebb) =>
-                        jsonArrayFrom(
-                          ebb
-                            .selectFrom("blueprint_instance_events")
-                            .whereRef("blueprint_instance_events.blueprint_field_id", "=", "blueprint_fields.id")
-                            .where("blueprint_instance_events.blueprint_instance_id", "=", params.id)
-                            .select([
-                              "related_id",
-                              (ebbb) =>
-                                jsonObjectFrom(
-                                  ebbb
-                                    .selectFrom("events")
-                                    .whereRef("related_id", "=", "events.id")
-                                    .select(["id", "title", "parent_id"]),
-                                ).as("event"),
-                            ]),
-                        ).as("events"),
-                      (ebb) =>
-                        jsonObjectFrom(
-                          ebb
-                            .selectFrom("blueprint_instance_random_tables")
-                            .whereRef("blueprint_instance_random_tables.blueprint_field_id", "=", "blueprint_fields.id")
-                            .where("blueprint_instance_random_tables.blueprint_instance_id", "=", params.id)
-                            .select(["related_id", "option_id", "suboption_id"]),
-                        ).as("random_table"),
-                      (ebb) =>
-                        jsonObjectFrom(
-                          ebb
-                            .selectFrom("blueprint_instance_calendars")
-                            .whereRef("blueprint_instance_calendars.blueprint_field_id", "=", "blueprint_fields.id")
-                            .where("blueprint_instance_calendars.blueprint_instance_id", "=", params.id)
-                            .select([
-                              "related_id",
-                              "start_day",
-                              "start_month_id",
-                              "start_year",
-                              "end_day",
-                              "end_month_id",
-                              "end_year",
-                            ]),
-                        ).as("calendar"),
-                      (ebb) =>
-                        jsonArrayFrom(
-                          ebb
-                            .selectFrom("blueprint_instance_images")
-                            .whereRef("blueprint_instance_images.blueprint_field_id", "=", "blueprint_fields.id")
-                            .where("blueprint_instance_images.blueprint_instance_id", "=", params.id)
-                            .select([
-                              "related_id",
-                              (ebbb) =>
-                                jsonObjectFrom(
-                                  ebbb.selectFrom("images").whereRef("related_id", "=", "images.id").select(["id", "title"]),
-                                ).as("image"),
-                            ]),
-                        ).as("images"),
+                        random_table_query = getNestedReadPermission(
+                          random_table_query,
+                          permissions.is_project_owner,
+                          permissions.user_id,
+                          "random_table_permissions",
+                          "blueprint_fields.random_table_id",
+                          "read_random_tables",
+                        );
+
+                        return jsonObjectFrom(random_table_query).as("random_table_data");
+                      },
+                      (ebb) => {
+                        let character_query = ebb
+                          .selectFrom("blueprint_instance_characters")
+                          .whereRef("blueprint_instance_characters.blueprint_field_id", "=", "blueprint_fields.id")
+                          .where("blueprint_instance_characters.blueprint_instance_id", "=", params.id)
+                          .select([
+                            "blueprint_instance_characters.related_id",
+                            (ebbb) =>
+                              jsonObjectFrom(
+                                ebbb
+                                  .selectFrom("characters")
+                                  .whereRef("blueprint_instance_characters.related_id", "=", "characters.id")
+                                  .select(["characters.id", "characters.full_name", "characters.portrait_id"]),
+                              ).as("character"),
+                          ]);
+
+                        character_query = getNestedReadPermission(
+                          character_query,
+                          permissions.is_project_owner,
+                          permissions.user_id,
+                          "character_permissions",
+                          "blueprint_instance_characters.related_id",
+                          "read_characters",
+                        );
+
+                        return jsonArrayFrom(character_query).as("characters");
+                      },
+                      (ebb) => {
+                        let bpi_query = ebb
+                          .selectFrom("blueprint_instance_blueprint_instances")
+                          .whereRef("blueprint_instance_blueprint_instances.blueprint_field_id", "=", "blueprint_fields.id")
+                          .where("blueprint_instance_blueprint_instances.blueprint_instance_id", "=", params.id)
+                          .select([
+                            "blueprint_instance_blueprint_instances.related_id",
+                            (ebbb) =>
+                              jsonObjectFrom(
+                                ebbb
+                                  .selectFrom("blueprint_instances")
+                                  .whereRef("blueprint_instance_blueprint_instances.related_id", "=", "blueprint_instances.id")
+                                  .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+                                  .select([
+                                    "blueprint_instances.id",
+                                    "blueprint_instances.title",
+                                    "blueprints.icon as icon",
+                                    "blueprint_instances.parent_id",
+                                  ]),
+                              ).as("blueprint_instance"),
+                          ]);
+
+                        bpi_query = getNestedReadPermission(
+                          bpi_query,
+                          permissions.is_project_owner,
+                          permissions.user_id,
+                          "blueprint_instance_permissions",
+                          "blueprint_instance_blueprint_instances.related_id",
+                          "read_blueprint_instances",
+                        );
+
+                        return jsonArrayFrom(bpi_query).as("blueprint_instances");
+                      },
+                      (ebb) => {
+                        let document_query = ebb
+                          .selectFrom("blueprint_instance_documents")
+                          .whereRef("blueprint_instance_documents.blueprint_field_id", "=", "blueprint_fields.id")
+                          .where("blueprint_instance_documents.blueprint_instance_id", "=", params.id)
+                          .select([
+                            "blueprint_instance_documents.related_id",
+                            (ebbb) =>
+                              jsonObjectFrom(
+                                ebbb
+                                  .selectFrom("documents")
+                                  .whereRef("blueprint_instance_documents.related_id", "=", "documents.id")
+                                  .select(["documents.id", "documents.title", "documents.icon"]),
+                              ).as("document"),
+                          ]);
+
+                        document_query = getNestedReadPermission(
+                          document_query,
+                          permissions.is_project_owner,
+                          permissions.user_id,
+                          "document_permissions",
+                          "blueprint_instance_documents.related_id",
+                          "read_documents",
+                        );
+
+                        return jsonArrayFrom(document_query).as("documents");
+                      },
+                      (ebb) => {
+                        let map_pin_query = ebb
+                          .selectFrom("blueprint_instance_map_pins")
+                          .whereRef("blueprint_instance_map_pins.blueprint_field_id", "=", "blueprint_fields.id")
+                          .where("blueprint_instance_map_pins.blueprint_instance_id", "=", params.id)
+                          .select([
+                            "blueprint_instance_map_pins.related_id",
+                            (ebbb) =>
+                              jsonObjectFrom(
+                                ebbb
+                                  .selectFrom("map_pins")
+                                  .whereRef("blueprint_instance_map_pins.related_id", "=", "map_pins.id")
+                                  .select(["map_pins.id", "map_pins.title", "map_pins.icon", "map_pins.parent_id"]),
+                              ).as("map_pin"),
+                          ]);
+                        return jsonArrayFrom(map_pin_query).as("map_pins");
+                      },
+                      (ebb) => {
+                        let event_query = ebb
+                          .selectFrom("blueprint_instance_events")
+                          .whereRef("blueprint_instance_events.blueprint_field_id", "=", "blueprint_fields.id")
+                          .where("blueprint_instance_events.blueprint_instance_id", "=", params.id)
+                          .select([
+                            "blueprint_instance_events.related_id",
+                            (ebbb) =>
+                              jsonObjectFrom(
+                                ebbb
+                                  .selectFrom("events")
+                                  .whereRef("blueprint_instance_events.related_id", "=", "events.id")
+                                  .select(["events.id", "events.title", "events.parent_id"]),
+                              ).as("event"),
+                          ]);
+
+                        event_query = getNestedReadPermission(
+                          event_query,
+                          permissions.is_project_owner,
+                          permissions.user_id,
+                          "event_permissions",
+                          "blueprint_instance_events.related_id",
+                          "read_events",
+                        );
+
+                        return jsonArrayFrom(event_query).as("events");
+                      },
+                      (ebb) => {
+                        let random_table_query = ebb
+                          .selectFrom("blueprint_instance_random_tables")
+                          .whereRef("blueprint_instance_random_tables.blueprint_field_id", "=", "blueprint_fields.id")
+                          .where("blueprint_instance_random_tables.blueprint_instance_id", "=", params.id)
+                          .select(["blueprint_instance_random_tables.related_id", "option_id", "suboption_id"]);
+                        random_table_query = getNestedReadPermission(
+                          random_table_query,
+                          permissions.is_project_owner,
+                          permissions.user_id,
+                          "random_table_permissions",
+                          "blueprint_fields.random_table_id",
+                          "read_random_tables",
+                        );
+
+                        return jsonObjectFrom(random_table_query).as("random_table");
+                      },
+                      (ebb) => {
+                        let calendar_query = ebb
+                          .selectFrom("blueprint_instance_calendars")
+                          .whereRef("blueprint_instance_calendars.blueprint_field_id", "=", "blueprint_fields.id")
+                          .where("blueprint_instance_calendars.blueprint_instance_id", "=", params.id)
+                          .select([
+                            "blueprint_instance_calendars.related_id",
+                            "start_day",
+                            "start_month_id",
+                            "start_year",
+                            "end_day",
+                            "end_month_id",
+                            "end_year",
+                          ]);
+
+                        calendar_query = getNestedReadPermission(
+                          calendar_query,
+                          permissions.is_project_owner,
+                          permissions.user_id,
+                          "calendar_permissions",
+                          "blueprint_instance_calendars.related_id",
+                          "read_calendars",
+                        );
+
+                        return jsonObjectFrom(calendar_query).as("calendar");
+                      },
+                      (ebb) => {
+                        let image_query = ebb
+                          .selectFrom("blueprint_instance_images")
+                          .whereRef("blueprint_instance_images.blueprint_field_id", "=", "blueprint_fields.id")
+                          .where("blueprint_instance_images.blueprint_instance_id", "=", params.id)
+                          .select([
+                            "blueprint_instance_images.related_id",
+                            (ebbb) =>
+                              jsonObjectFrom(
+                                ebbb
+                                  .selectFrom("images")
+                                  .whereRef("blueprint_instance_images.related_id", "=", "images.id")
+                                  .select(["id", "title"]),
+                              ).as("image"),
+                          ]);
+                        image_query = getNestedReadPermission(
+                          image_query,
+                          permissions.is_project_owner,
+                          permissions.user_id,
+                          "image_permissions",
+                          "blueprint_instance_images.related_id",
+                          "read_assets",
+                        );
+                        return jsonArrayFrom(image_query).as("images");
+                      },
                       (ebb) =>
                         ebb
                           .selectFrom("blueprint_instance_value")
@@ -700,16 +775,20 @@ export function blueprint_instance_router(app: Elysia) {
                           .as("value"),
                     ]),
                 ).as("blueprint_fields"),
-
-              (eb) =>
-                jsonArrayFrom(
-                  eb
-                    .selectFrom("tags")
-                    .leftJoin("_blueprint_instancesTotags", "_blueprint_instancesTotags.B", "tags.id")
-                    .select(["tags.id", "tags.title", "tags.color"])
-                    .where("_blueprint_instancesTotags.A", "=", params.id),
-                ).as("tags"),
             ]);
+
+          if (body?.relations?.tags) {
+            query = query.select((eb) =>
+              TagQuery(
+                eb,
+                "_blueprint_instancesTotags",
+                "blueprint_instances",
+                permissions.is_project_owner,
+                permissions.user_id,
+                "blueprint_instance_permissions",
+              ),
+            );
+          }
 
           if (permissions.is_project_owner) {
             query = query.leftJoin("blueprint_instance_permissions", (join) =>
