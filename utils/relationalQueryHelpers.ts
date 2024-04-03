@@ -27,7 +27,7 @@ export function TagQuery(
     .leftJoin("tags", "tags.id", `${relationalTable}.B`)
     .select(["tags.id", "tags.title", "tags.color"]);
 
-  if (is_project_owner && relation_table) {
+  if (!is_project_owner && relation_table) {
     // @ts-ignore
     tag_query = getNestedReadPermission(tag_query, is_project_owner, user_id, relation_table, "tags.id", "read_tags");
   }
