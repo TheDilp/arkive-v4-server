@@ -19,7 +19,7 @@ export function TagQuery(
   table: EntitiesWithTags,
   is_project_owner: boolean,
   user_id: string,
-  relation_table: EntityPermissionTables,
+  relation_table: EntityPermissionTables | null,
 ) {
   let tag_query = eb
     .selectFrom(relationalTable)
@@ -27,8 +27,10 @@ export function TagQuery(
     .leftJoin("tags", "tags.id", `${relationalTable}.B`)
     .select(["tags.id", "tags.title", "tags.color"]);
 
-  // @ts-ignore
-  tag_query = getNestedReadPermission(tag_query, is_project_owner, user_id, relation_table, "tags.id", "read_tags");
+  if (is_project_owner && relation_table) {
+    // @ts-ignore
+    tag_query = getNestedReadPermission(tag_query, is_project_owner, user_id, relation_table, "tags.id", "read_tags");
+  }
 
   return jsonArrayFrom(tag_query).as("tags");
 }

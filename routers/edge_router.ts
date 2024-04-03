@@ -70,7 +70,7 @@ export function edge_router(app: Elysia) {
             .selectFrom("edges")
             .selectAll()
             .where("edges.id", "=", params.id)
-            .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_edgesTotags", "edges")))
+            .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_edgesTotags", "edges", false, "", null)))
             .executeTakeFirstOrThrow();
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },

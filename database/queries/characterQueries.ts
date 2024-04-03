@@ -314,7 +314,16 @@ export async function readCharacter(
         );
       }
       if (body?.relations?.tags) {
-        qb = qb.select((eb) => TagQuery(eb, "_charactersTotags", "characters"));
+        qb = qb.select((eb) =>
+          TagQuery(
+            eb,
+            "_charactersTotags",
+            "characters",
+            permissions.is_project_owner,
+            permissions.user_id,
+            "character_permissions",
+          ),
+        );
       }
       if (body?.relations?.portrait) {
         qb = qb.select((eb) =>

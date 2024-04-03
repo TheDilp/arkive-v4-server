@@ -213,7 +213,16 @@ export function document_router(app: Elysia) {
               query = constructFilter("documents", query, body.filters);
             }
             if (body?.relations?.tags) {
-              query = query.select((eb) => TagQuery(eb, "_documentsTotags", "documents"));
+              query = query.select((eb) =>
+                TagQuery(
+                  eb,
+                  "_documentsTotags",
+                  "documents",
+                  permissions.is_project_owner,
+                  permissions.user_id,
+                  "document_permissions",
+                ),
+              );
             }
             if (body.orderBy) {
               query = constructOrdering(body.orderBy, query);
@@ -240,13 +249,19 @@ export function document_router(app: Elysia) {
             let query = db
               .selectFrom("documents")
               .where("documents.id", "=", params.id)
-              .$if(!body.fields?.length, (qb) => qb.selectAll())
-              .$if(!!body.fields?.length, (qb) =>
-                qb.clearSelect().select(body.fields.map((f) => `documents.${f}`) as SelectExpression<DB, "documents">[]),
-              )
+              .select(body.fields.map((f) => `documents.${f}`) as SelectExpression<DB, "documents">[])
               .$if(!!body?.relations, (qb) => {
                 if (body?.relations?.tags) {
-                  qb = qb.select((eb) => TagQuery(eb, "_documentsTotags", "documents"));
+                  qb = qb.select((eb) =>
+                    TagQuery(
+                      eb,
+                      "_documentsTotags",
+                      "documents",
+                      permissions.is_project_owner,
+                      permissions.user_id,
+                      "document_permissions",
+                    ),
+                  );
                 }
                 if (body?.relations?.alter_names) {
                   qb = qb.select((eb) => {

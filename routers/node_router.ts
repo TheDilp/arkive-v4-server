@@ -64,7 +64,7 @@ export function node_router(app: Elysia) {
             .selectFrom("nodes")
             .selectAll()
             .where("nodes.id", "=", params.id)
-            .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_nodesTotags", "nodes")))
+            .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_nodesTotags", "nodes", false, "", null)))
             .$if(!!body?.relations?.image, (qb) =>
               qb.select((eb) =>
                 jsonObjectFrom(eb.selectFrom("images").whereRef("images.id", "=", "nodes.image_id").select(["id", "title"])).as(

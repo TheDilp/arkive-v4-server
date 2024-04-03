@@ -81,7 +81,9 @@ export function map_router(app: Elysia) {
               query = constructOrdering(body.orderBy, query);
             }
             if (body?.relations?.tags) {
-              query = query.select((eb) => TagQuery(eb, "_mapsTotags", "maps"));
+              query = query.select((eb) =>
+                TagQuery(eb, "_mapsTotags", "maps", permissions.is_project_owner, permissions.user_id, "map_permissions"),
+              );
             }
             if (!!body?.filters?.and?.length || !!body?.filters?.or?.length) {
               query = constructFilter("maps", query, body.filters);
@@ -178,7 +180,11 @@ export function map_router(app: Elysia) {
                 ),
               )
 
-              .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_mapsTotags", "maps")));
+              .$if(!!body?.relations?.tags, (qb) =>
+                qb.select((eb) =>
+                  TagQuery(eb, "_mapsTotags", "maps", permissions.is_project_owner, permissions.user_id, "map_permissions"),
+                ),
+              );
 
             if (permissions.is_project_owner) {
               query = query.leftJoin("map_permissions", (join) => join.on("map_permissions.related_id", "=", params.id));

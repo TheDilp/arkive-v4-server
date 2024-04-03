@@ -282,7 +282,16 @@ export function character_router(app: Elysia) {
                   );
                 }
                 if (body?.relations?.tags) {
-                  qb = qb.select((eb) => TagQuery(eb, "_charactersTotags", "characters"));
+                  qb = qb.select((eb) =>
+                    TagQuery(
+                      eb,
+                      "_charactersTotags",
+                      "characters",
+                      permissions.is_project_owner,
+                      permissions.user_id,
+                      "character_permissions",
+                    ),
+                  );
                 }
                 return qb;
               });

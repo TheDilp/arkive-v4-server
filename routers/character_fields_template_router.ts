@@ -184,7 +184,16 @@ export function character_fields_templates_router(app: Elysia) {
                 );
               }
               if (body?.relations?.tags) {
-                qb = qb.select((eb) => TagQuery(eb, "_character_fields_templatesTotags", "character_fields_templates"));
+                qb = qb.select((eb) =>
+                  TagQuery(
+                    eb,
+                    "_character_fields_templatesTotags",
+                    "character_fields_templates",
+                    permissions.is_project_owner,
+                    permissions.user_id,
+                    "character_fields_template_permissions",
+                  ),
+                );
               }
               return qb;
             })
@@ -261,7 +270,16 @@ export function character_fields_templates_router(app: Elysia) {
               ),
             )
             .$if(!!body?.relations?.tags, (qb) =>
-              qb.select((eb) => TagQuery(eb, "_character_fields_templatesTotags", "character_fields_templates")),
+              qb.select((eb) =>
+                TagQuery(
+                  eb,
+                  "_character_fields_templatesTotags",
+                  "character_fields_templates",
+                  permissions.is_project_owner,
+                  permissions.user_id,
+                  "character_fields_template_permissions",
+                ),
+              ),
             )
             .$if(!permissions.is_project_owner, (qb) => {
               return checkEntityLevelPermission(qb, permissions, "character_fields_templates");

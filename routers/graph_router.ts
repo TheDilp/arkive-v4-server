@@ -89,7 +89,18 @@ export function graph_router(app: Elysia) {
               .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
                 GetRelatedEntityPermissionsAndRoles(qb, permissions, "graphs"),
               )
-              .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_graphsTotags", "graphs")))
+              .$if(!!body?.relations?.tags, (qb) =>
+                qb.select((eb) =>
+                  TagQuery(
+                    eb,
+                    "_graphsTotags",
+                    "graphs",
+                    permissions.is_project_owner,
+                    permissions.user_id,
+                    "graph_permissions",
+                  ),
+                ),
+              )
               .$if(!!body.orderBy?.length, (qb) => {
                 qb = constructOrdering(body.orderBy, qb);
                 return qb;
@@ -153,7 +164,18 @@ export function graph_router(app: Elysia) {
                   jsonArrayFrom(eb.selectFrom("edges").where("edges.parent_id", "=", params.id).selectAll()).as("edges"),
                 ),
               )
-              .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_graphsTotags", "graphs")))
+              .$if(!!body?.relations?.tags, (qb) =>
+                qb.select((eb) =>
+                  TagQuery(
+                    eb,
+                    "_graphsTotags",
+                    "graphs",
+                    permissions.is_project_owner,
+                    permissions.user_id,
+                    "graph_permissions",
+                  ),
+                ),
+              )
               .select([
                 "graphs.id",
                 "graphs.title",
