@@ -1,4 +1,3 @@
-export * from "./alter_names";
 export * from "./assets";
 export * from "./auth";
 export * from "./blueprint_fields";

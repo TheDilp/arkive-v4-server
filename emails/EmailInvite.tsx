@@ -78,5 +78,3 @@ export const EmailInvite = ({ project_name, image, isRemoved }: VercelInviteUser
     </Html>
   );
 };
-
-export default EmailInvite;
