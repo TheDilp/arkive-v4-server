@@ -100,7 +100,7 @@ export function tag_router(app: Elysia) {
             query = checkEntityLevelPermission(query, permissions, "tags", params.id);
           }
 
-          if (!!body.permissions && !permissions.is_project_owner) {
+          if (body.permissions) {
             query = GetRelatedEntityPermissionsAndRoles(query, permissions, "tags", params.id);
           }
 

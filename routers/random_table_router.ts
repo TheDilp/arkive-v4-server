@@ -143,8 +143,8 @@ export function random_table_router(app: Elysia) {
               .$if(!permissions.is_project_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "random_tables");
               })
-              .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
-                GetRelatedEntityPermissionsAndRoles(qb, permissions, "random_tables"),
+              .$if(!!body.permissions, (qb) =>
+                GetRelatedEntityPermissionsAndRoles(qb, permissions, "random_tables", params.id),
               );
 
             if (body.permissions) {

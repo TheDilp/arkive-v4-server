@@ -189,9 +189,7 @@ export function graph_router(app: Elysia) {
               .$if(!permissions.is_project_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "graphs");
               })
-              .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
-                GetRelatedEntityPermissionsAndRoles(qb, permissions, "graphs"),
-              )
+              .$if(!!body.permissions, (qb) => GetRelatedEntityPermissionsAndRoles(qb, permissions, "graphs", params.id))
               .executeTakeFirstOrThrow();
 
             const parents = body?.relations?.parents ? await GetParents({ db, id: params.id, table_name: "graphs" }) : [];

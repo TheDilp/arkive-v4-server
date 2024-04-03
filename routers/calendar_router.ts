@@ -197,7 +197,7 @@ export function calendar_router(app: Elysia) {
               return checkEntityLevelPermission(qb, permissions, "calendars");
             });
 
-          if (!!body.permissions && !permissions.is_project_owner) {
+          if (body.permissions) {
             query = GetRelatedEntityPermissionsAndRoles(query, permissions, "calendars", params.id);
           }
 
