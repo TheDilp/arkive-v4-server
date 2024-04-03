@@ -4,7 +4,7 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
+import { checkEntityLevelPermission, getHasEntityPermission, getNestedReadPermission } from "../database/queries";
 import { InsertEventSchema, ListEventSchema, ReadEventSchema, UpdateEventSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
@@ -107,31 +107,50 @@ export function event_router(app: Elysia) {
             query = constructOrdering(body.orderBy, query);
           }
           if (body.relations) {
-            if (body?.relations?.tags) {
+            if (body?.relations?.tags && permissions?.all_permissions?.read_tags) {
               query = query.select((eb) =>
                 TagQuery(eb, "_eventsTotags", "events", permissions.is_project_owner, permissions.user_id, "event_permissions"),
               );
             }
-            if (body?.relations?.document) {
-              query = query.select((eb) =>
-                jsonObjectFrom(
-                  eb
-                    .selectFrom("documents")
-                    .whereRef("documents.id", "=", "events.document_id")
-                    .select(["id", "title", "icon"]),
-                ).as("document"),
-              );
+            if (body?.relations?.document && permissions?.all_permissions?.read_documents) {
+              query = query.select((eb) => {
+                let document_query = eb
+                  .selectFrom("documents")
+                  .whereRef("documents.id", "=", "events.document_id")
+                  .select(["documents.id", "documents.title", "documents.icon"]);
+
+                document_query = getNestedReadPermission(
+                  document_query,
+                  permissions.is_project_owner,
+                  permissions.user_id,
+                  "document_permissions",
+                  "events.document_id",
+                  "read_documents",
+                );
+
+                return jsonObjectFrom(document_query).as("document");
+              });
             }
-            if (body?.relations?.characters) {
-              query = query.select((eb) =>
-                jsonArrayFrom(
-                  eb
-                    .selectFrom("event_characters")
-                    .leftJoin("characters", "characters.id", "event_characters.related_id")
-                    .whereRef("event_characters.event_id", "=", "events.id")
-                    .select(["id", "full_name", "portrait_id"]),
-                ).as("characters"),
-              );
+            if (body?.relations?.characters && permissions?.all_permissions?.read_characters) {
+              query = query.select((eb) => {
+                let character_query = eb
+                  .selectFrom("event_characters")
+                  .whereRef("event_characters.event_id", "=", "events.id")
+                  .leftJoin("characters", "characters.id", "event_characters.related_id")
+                  .select(["characters.id", "characters.full_name", "characters.portrait_id"]);
+
+                // @ts-ignore
+                character_query = getNestedReadPermission(
+                  character_query,
+                  permissions.is_project_owner,
+                  permissions.user_id,
+                  "character_permissions",
+                  "characters.id",
+                  "read_characters",
+                );
+
+                return jsonArrayFrom(character_query).as("characters");
+              });
             }
             if (body?.relations?.map_pins) {
               query = query.select((eb) =>
@@ -177,20 +196,28 @@ export function event_router(app: Elysia) {
             .select(body.fields.map((f) => `events.${f}`) as SelectExpression<DB, "events">[]);
 
           if (body?.relations) {
-            if (body?.relations?.tags) {
+            if (body?.relations?.tags && permissions.all_permissions?.read_tags) {
               query = query.select((eb) =>
                 TagQuery(eb, "_eventsTotags", "events", permissions.is_project_owner, permissions.user_id, "event_permissions"),
               );
             }
             if (body?.relations?.document) {
-              query = query.select((eb) =>
-                jsonObjectFrom(
-                  eb
-                    .selectFrom("documents")
-                    .whereRef("documents.id", "=", "events.document_id")
-                    .select(["id", "title", "icon"]),
-                ).as("document"),
-              );
+              query = query.select((eb) => {
+                let document_query = eb
+                  .selectFrom("documents")
+                  .whereRef("documents.id", "=", "events.document_id")
+                  .select(["documents.id", "documents.title", "documents.icon"]);
+
+                document_query = getNestedReadPermission(
+                  document_query,
+                  permissions.is_project_owner,
+                  permissions.user_id,
+                  "document_permissions",
+                  "events.document_id",
+                  "read_documents",
+                );
+                return jsonObjectFrom(document_query).as("document");
+              });
             }
             if (body?.relations?.image) {
               query = query.select((eb) =>
@@ -200,15 +227,25 @@ export function event_router(app: Elysia) {
               );
             }
             if (body?.relations?.characters) {
-              query = query.select((eb) =>
-                jsonArrayFrom(
-                  eb
-                    .selectFrom("event_characters")
-                    .leftJoin("characters", "characters.id", "event_characters.related_id")
-                    .where("event_characters.event_id", "=", params.id)
-                    .select(["id", "full_name", "portrait_id"]),
-                ).as("characters"),
-              );
+              query = query.select((eb) => {
+                let character_query = eb
+                  .selectFrom("event_characters")
+                  .leftJoin("characters", "characters.id", "event_characters.related_id")
+                  .where("event_characters.event_id", "=", params.id)
+                  .select(["id", "full_name", "portrait_id"]);
+
+                // @ts-ignore
+                character_query = getNestedReadPermission(
+                  character_query,
+                  permissions.is_project_owner,
+                  permissions.user_id,
+                  "character_permissions",
+                  "characters.id",
+                  "read_characters",
+                );
+
+                return jsonArrayFrom(character_query).as("characters");
+              });
             }
             if (body?.relations?.map_pins) {
               query = query.select((eb) =>

@@ -212,7 +212,7 @@ export function document_router(app: Elysia) {
             if (!!body?.filters?.and?.length || !!body?.filters?.or?.length) {
               query = constructFilter("documents", query, body.filters);
             }
-            if (body?.relations?.tags) {
+            if (body?.relations?.tags && permissions.all_permissions?.read_tags) {
               query = query.select((eb) =>
                 TagQuery(
                   eb,
@@ -251,7 +251,7 @@ export function document_router(app: Elysia) {
               .where("documents.id", "=", params.id)
               .select(body.fields.map((f) => `documents.${f}`) as SelectExpression<DB, "documents">[])
               .$if(!!body?.relations, (qb) => {
-                if (body?.relations?.tags) {
+                if (body?.relations?.tags && permissions.all_permissions?.read_tags) {
                   qb = qb.select((eb) =>
                     TagQuery(
                       eb,

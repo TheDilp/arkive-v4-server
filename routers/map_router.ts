@@ -80,7 +80,7 @@ export function map_router(app: Elysia) {
             if (body.orderBy) {
               query = constructOrdering(body.orderBy, query);
             }
-            if (body?.relations?.tags) {
+            if (body?.relations?.tags && permissions.all_permissions?.read_tags) {
               query = query.select((eb) =>
                 TagQuery(eb, "_mapsTotags", "maps", permissions.is_project_owner, permissions.user_id, "map_permissions"),
               );
@@ -110,10 +110,7 @@ export function map_router(app: Elysia) {
           async ({ params, body, permissions }) => {
             let query = db
               .selectFrom("maps")
-              .$if(!body.fields?.length, (qb) => qb.selectAll())
-              .$if(!!body.fields?.length, (qb) =>
-                qb.clearSelect().select(body.fields.map((f) => `maps.${f}`) as SelectExpression<DB, "maps">[]),
-              )
+              .select(body.fields.map((f) => `maps.${f}`) as SelectExpression<DB, "maps">[])
               .where("maps.id", "=", params.id)
               .$if(!!body?.relations?.map_pins, (qb) =>
                 qb.select((eb) =>
@@ -179,7 +176,6 @@ export function map_router(app: Elysia) {
                   ),
                 ),
               )
-
               .$if(!!body?.relations?.tags, (qb) =>
                 qb.select((eb) =>
                   TagQuery(eb, "_mapsTotags", "maps", permissions.is_project_owner, permissions.user_id, "map_permissions"),

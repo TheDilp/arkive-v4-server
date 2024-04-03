@@ -35,6 +35,7 @@ export function graph_router(app: Elysia) {
       user_id: "",
       role_id: null,
       permission_id: null,
+      all_permissions: {},
     } as PermissionDecorationType)
     .group("/graphs", (server) =>
       server
@@ -73,10 +74,8 @@ export function graph_router(app: Elysia) {
               )
               .where("project_id", "=", body.data.project_id)
               .where("graphs.deleted_at", body.arkived ? "is not" : "is", null)
-              .$if(!body.fields?.length, (qb) => qb.selectAll())
-              .$if(!!body.fields?.length, (qb) =>
-                qb.clearSelect().select(body.fields.map((f) => `graphs.${f}`) as SelectExpression<DB, "graphs">[]),
-              )
+
+              .select(body.fields.map((f) => `graphs.${f}`) as SelectExpression<DB, "graphs">[])
               .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
                 qb = constructFilter("graphs", qb, body.filters);
                 return qb;
@@ -89,7 +88,7 @@ export function graph_router(app: Elysia) {
               .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
                 GetRelatedEntityPermissionsAndRoles(qb, permissions, "graphs"),
               )
-              .$if(!!body?.relations?.tags, (qb) =>
+              .$if(!!body?.relations?.tags && !!permissions.all_permissions?.read_tags, (qb) =>
                 qb.select((eb) =>
                   TagQuery(
                     eb,
@@ -164,7 +163,7 @@ export function graph_router(app: Elysia) {
                   jsonArrayFrom(eb.selectFrom("edges").where("edges.parent_id", "=", params.id).selectAll()).as("edges"),
                 ),
               )
-              .$if(!!body?.relations?.tags, (qb) =>
+              .$if(!!body?.relations?.tags && !!permissions.all_permissions?.read_tags, (qb) =>
                 qb.select((eb) =>
                   TagQuery(
                     eb,

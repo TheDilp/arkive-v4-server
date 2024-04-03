@@ -86,16 +86,13 @@ export function calendar_router(app: Elysia) {
             .where("calendars.deleted_at", body.arkived ? "is not" : "is", null)
             .limit(body?.pagination?.limit || 10)
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
-            .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) =>
-              qb.clearSelect().select(body.fields.map((f) => `calendars.${f}`) as SelectExpression<DB, "calendars">[]),
-            )
+            .select(body.fields.map((f) => `calendars.${f}`) as SelectExpression<DB, "calendars">[])
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
               qb = constructFilter("calendars", qb, body.filters);
               return qb;
             })
             .$if(!!body.relations?.tags, (qb) => {
-              if (body?.relations?.tags) {
+              if (body?.relations?.tags && permissions?.all_permissions?.read_tags) {
                 return qb.select((eb) =>
                   TagQuery(
                     eb,
@@ -178,7 +175,7 @@ export function calendar_router(app: Elysia) {
                   ).as("eras"),
                 );
               }
-              if (body?.relations?.tags) {
+              if (body?.relations?.tags && permissions?.all_permissions?.read_tags) {
                 qb = qb.select((eb) =>
                   TagQuery(
                     eb,

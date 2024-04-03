@@ -11,7 +11,7 @@ import {
   UpdateEdgeSchema,
 } from "../database/validation/edges";
 import { MessageEnum } from "../enums/requestEnums";
-import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { CreateTagRelations, TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
@@ -19,6 +19,14 @@ import { CreateTagRelations, TagQuery, UpdateTagRelations } from "../utils/relat
 export function edge_router(app: Elysia) {
   return app.group("/edges", (server) =>
     server
+      .decorate("permissions", {
+        is_project_owner: false,
+        role_access: false,
+        user_id: "",
+        role_id: null,
+        permission_id: null,
+        all_permissions: {},
+      } as PermissionDecorationType)
       .post(
         "/create",
         async ({ body }) => {
@@ -44,13 +52,11 @@ export function edge_router(app: Elysia) {
           const data = await db
             .selectFrom("edges")
             .where("parent_id", "=", body.data.parent_id)
-            .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "edges">[]))
+            .select(body.fields as SelectExpression<DB, "edges">[])
             .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
               qb = constructFilter("edges", qb, body.filters);
               return qb;
             })
-            .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
             .$if(!!body.orderBy?.length, (qb) => {
               qb = constructOrdering(body.orderBy, qb);
               return qb;
@@ -65,12 +71,14 @@ export function edge_router(app: Elysia) {
       )
       .post(
         "/:id",
-        async ({ params, body }) => {
+        async ({ params, body, permissions }) => {
           const data = await db
             .selectFrom("edges")
             .selectAll()
             .where("edges.id", "=", params.id)
-            .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_edgesTotags", "edges", false, "", null)))
+            .$if(!!body?.relations?.tags && !!permissions?.all_permissions?.read_tags, (qb) =>
+              qb.select((eb) => TagQuery(eb, "_edgesTotags", "edges", false, "", null)),
+            )
             .executeTakeFirstOrThrow();
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },

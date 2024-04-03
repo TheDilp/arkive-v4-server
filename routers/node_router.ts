@@ -4,6 +4,7 @@ import { jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
+import { getNestedReadPermission } from "../database/queries";
 import {
   DeleteManyNodesSchema,
   InsertNodeSchema,
@@ -12,7 +13,7 @@ import {
   UpdateNodeSchema,
 } from "../database/validation/nodes";
 import { MessageEnum } from "../enums/requestEnums";
-import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
@@ -20,6 +21,14 @@ import { TagQuery, UpdateTagRelations } from "../utils/relationalQueryHelpers";
 export function node_router(app: Elysia) {
   return app.group("/nodes", (server) =>
     server
+      .decorate("permissions", {
+        is_project_owner: false,
+        role_access: false,
+        user_id: "",
+        role_id: null,
+        permission_id: null,
+        all_permissions: {},
+      } as PermissionDecorationType)
       .post(
         "/create",
         async ({ body }) => {
@@ -44,7 +53,6 @@ export function node_router(app: Elysia) {
               qb = constructFilter("nodes", qb, body.filters);
               return qb;
             })
-            .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
             .$if(!!body.orderBy?.length, (qb) => {
               qb = constructOrdering(body.orderBy, qb);
               return qb;
@@ -59,54 +67,95 @@ export function node_router(app: Elysia) {
       )
       .post(
         "/:id",
-        async ({ params, body }) => {
-          const data = await db
-            .selectFrom("nodes")
-            .selectAll()
-            .where("nodes.id", "=", params.id)
-            .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_nodesTotags", "nodes", false, "", null)))
-            .$if(!!body?.relations?.image, (qb) =>
-              qb.select((eb) =>
-                jsonObjectFrom(eb.selectFrom("images").whereRef("images.id", "=", "nodes.image_id").select(["id", "title"])).as(
-                  "image",
-                ),
-              ),
-            )
-            .$if(!!body?.relations?.character, (qb) =>
-              qb.select((eb) =>
-                jsonObjectFrom(
-                  eb
-                    .selectFrom("characters")
-                    .whereRef("characters.id", "=", "nodes.character_id")
-                    .select(["id", "first_name", "last_name", "portrait_id"]),
-                ).as("character"),
-              ),
-            )
-            .$if(!!body?.relations?.document, (qb) =>
-              qb.select((eb) =>
-                jsonObjectFrom(
-                  eb.selectFrom("documents").whereRef("documents.id", "=", "nodes.doc_id").select(["id", "title", "image_id"]),
-                ).as("document"),
-              ),
-            )
-            .$if(!!body?.relations?.map_pin, (qb) =>
-              qb.select((eb) =>
-                jsonObjectFrom(
-                  eb
-                    .selectFrom("map_pins")
-                    .whereRef("map_pins.id", "=", "nodes.map_pin_id")
-                    .select(["id", "title", "parent_id", "icon"]),
-                ).as("map_pin"),
-              ),
-            )
-            .$if(!!body?.relations?.event, (qb) =>
-              qb.select((eb) =>
-                jsonObjectFrom(
-                  eb.selectFrom("events").whereRef("events.id", "=", "nodes.event_id").select(["id", "title", "parent_id"]),
-                ).as("event"),
-              ),
-            )
-            .executeTakeFirstOrThrow();
+        async ({ params, body, permissions }) => {
+          let query = db.selectFrom("nodes").selectAll().where("nodes.id", "=", params.id);
+          if (body?.relations?.tags && permissions.all_permissions?.read_tags) {
+            query = query.select((eb) => TagQuery(eb, "_nodesTotags", "nodes", false, "", null));
+          }
+          if (body?.relations?.image && permissions.all_permissions?.read_assets) {
+            query = query.select((eb) => {
+              let image_query = eb
+                .selectFrom("images")
+                .whereRef("images.id", "=", "nodes.image_id")
+                .select(["images.id", "images.title"]);
+
+              image_query = getNestedReadPermission(
+                image_query,
+                permissions.is_project_owner,
+                permissions.user_id,
+                "image_permissions",
+                "nodes.image_id",
+                "read_assets",
+              );
+
+              return jsonObjectFrom(image_query).as("image");
+            });
+          }
+          if (body?.relations?.character && permissions.all_permissions?.read_characters) {
+            query = query.select((eb) => {
+              let character_query = eb
+                .selectFrom("characters")
+                .whereRef("characters.id", "=", "nodes.character_id")
+                .select(["characters.id", "characters.first_name", "characters.last_name", "characters.portrait_id"]);
+
+              character_query = getNestedReadPermission(
+                character_query,
+                permissions.is_project_owner,
+                permissions.user_id,
+                "character_permissions",
+                "nodes.character_id",
+                "read_characters",
+              );
+
+              return jsonObjectFrom(character_query).as("character");
+            });
+          }
+          if (body?.relations?.document && permissions.all_permissions?.read_documents) {
+            query = query.select((eb) => {
+              let document_query = eb
+                .selectFrom("documents")
+                .whereRef("documents.id", "=", "nodes.doc_id")
+                .select(["documents.id", "documents.title", "documents.image_id"]);
+
+              document_query = getNestedReadPermission(
+                document_query,
+                permissions.is_project_owner,
+                permissions.user_id,
+                "document_permissions",
+                "nodes.document_id",
+                "read_documents",
+              );
+
+              return jsonObjectFrom(document_query).as("document");
+            });
+          }
+          if (body?.relations?.map_pin) {
+            query = query.select((eb) => {
+              let map_pin_query = eb
+                .selectFrom("map_pins")
+                .whereRef("map_pins.id", "=", "nodes.map_pin_id")
+                .select(["id", "title", "parent_id", "icon"]);
+              return jsonObjectFrom(map_pin_query).as("map_pin");
+            });
+          }
+          if (body?.relations?.event && permissions.all_permissions?.read_events) {
+            query = query.select((eb) => {
+              let event_query = eb
+                .selectFrom("events")
+                .whereRef("events.id", "=", "nodes.event_id")
+                .select(["events.id", "events.title", "events.parent_id"]);
+              event_query = getNestedReadPermission(
+                event_query,
+                permissions.is_project_owner,
+                permissions.user_id,
+                "event_permissions",
+                "nodes.event_id",
+                "read_events",
+              );
+              return jsonObjectFrom(event_query).as("event");
+            });
+          }
+          const data = await query.executeTakeFirstOrThrow();
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
