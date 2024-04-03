@@ -97,7 +97,7 @@ export function project_router(app: Elysia) {
       )
       .post(
         "/:id",
-        async ({ params, body }) => {
+        async ({ params, body, permissions }) => {
           let query = db
             .selectFrom("projects")
             .where("id", "=", params.id)
@@ -168,7 +168,13 @@ export function project_router(app: Elysia) {
             );
           }
           if (body?.relations?.feature_flags) {
-            query = query.leftJoin("user_project_feature_flags", "project_id", "projects.id").select(["feature_flags"]);
+            query = query
+              .leftJoin("user_project_feature_flags", (join) =>
+                join
+                  .on("user_project_feature_flags.user_id", "=", permissions.user_id)
+                  .onRef("user_project_feature_flags.project_id", "=", "projects.id"),
+              )
+              .select(["feature_flags"]);
           }
           const data = await query.executeTakeFirstOrThrow();
           return { data, message: MessageEnum.success, ok: true, role_access: true };
@@ -176,28 +182,21 @@ export function project_router(app: Elysia) {
         {
           body: ReadProjectSchema,
           response: ResponseWithDataSchema,
+          beforeHandle: async (context) => {
+            const jwt = context?.headers?.["authorization"]?.replace("Bearer ", "");
+            if (jwt) {
+              const { user_id } = decodeUserJwt(jwt);
+              // @ts-ignore
+              context.permissions.user_id = user_id;
+            }
+          },
         },
       )
       .post(
         "/update/:id",
-        async ({ params, body, permissions }) => {
-          await db.transaction().execute(async (tx) => {
-            tx.updateTable("projects").where("projects.id", "=", params.id).set(body.data).execute();
+        async ({ params, body }) => {
+          await db.updateTable("projects").where("projects.id", "=", params.id).set(body.data).execute();
 
-            if (body.relations?.feature_flags) {
-              await tx
-                .insertInto("user_project_feature_flags")
-                .values({
-                  feature_flags: body.relations.feature_flags,
-                  project_id: params.id,
-                  user_id: permissions.user_id,
-                })
-                .onConflict((oc) =>
-                  oc.columns(["project_id", "user_id"]).doUpdateSet({ feature_flags: body.relations?.feature_flags }),
-                )
-                .execute();
-            }
-          });
           return { message: `Project ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
         {

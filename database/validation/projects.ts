@@ -32,11 +32,6 @@ export const UpdateProjectSchema = t.Object({
     show_image_folder_view: t.Optional(t.Union([t.Boolean(), t.Null()])),
     show_image_table_view: t.Optional(t.Union([t.Boolean(), t.Null()])),
   }),
-  relations: t.Optional(
-    t.Object({
-      feature_flags: t.Optional(t.Union([t.Any(), t.Null()])),
-    }),
-  ),
 });
 
 export const ProjectListSchema = t.Intersect([

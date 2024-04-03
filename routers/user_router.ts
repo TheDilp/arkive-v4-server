@@ -15,13 +15,20 @@ import {
 import { EmailInvite } from "../emails/EmailInvite";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeProjectOwnerHandler } from "../handlers";
-import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { resend } from "../utils/emailClient";
 import { decodeUserJwt } from "../utils/requestUtils";
 
 export function user_router(app: Elysia) {
   return app.group("/users", (server) =>
     server
+      .decorate("permissions", {
+        is_project_owner: false,
+        role_access: false,
+        user_id: "",
+        role_id: null,
+        permission_id: null,
+      } as PermissionDecorationType)
       .post(
         "/create",
         async () => {
@@ -79,10 +86,32 @@ export function user_router(app: Elysia) {
       .post(
         "/update/:id",
         async ({ params, body }) => {
-          await db.updateTable("users").where("id", "=", params.id).set(body.data).execute();
+          await db.transaction().execute(async (tx) => {
+            if (body.data) {
+              tx.updateTable("users").where("id", "=", params.id).set(body.data).execute();
+            }
+            if (body.relations?.feature_flags) {
+              await tx
+                .insertInto("user_project_feature_flags")
+                .values({
+                  feature_flags: body.relations.feature_flags.feature_flags,
+                  project_id: body.relations.feature_flags.project_id,
+                  user_id: params.id,
+                })
+                .onConflict((oc) =>
+                  oc
+                    .columns(["project_id", "user_id"])
+                    .doUpdateSet({ feature_flags: body.relations?.feature_flags?.feature_flags }),
+                )
+                .execute();
+            }
+          });
           return { message: `User ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
-        { body: UpdateUserSchema, response: ResponseSchema },
+        {
+          body: UpdateUserSchema,
+          response: ResponseSchema,
+        },
       )
       .post(
         "/assign_role",

@@ -25,12 +25,15 @@ export const ReadUserSchema = t.Intersect([
 
 export const InsertUserSchema = t.Object({});
 export const UpdateUserSchema = t.Object({
-  data: t.Object({
-    feature_flags: t.Optional(t.Union([t.Any(), t.Null()])),
-  }),
+  data: t.Optional(
+    t.Object({
+      feature_flags: t.Optional(t.Union([t.Any(), t.Null()])),
+    }),
+  ),
   relations: t.Optional(
     t.Object({
       role: t.Optional(t.String()),
+      feature_flags: t.Optional(t.Object({ project_id: t.String(), feature_flags: t.Union([t.Any(), t.Null()]) })),
     }),
   ),
 });
