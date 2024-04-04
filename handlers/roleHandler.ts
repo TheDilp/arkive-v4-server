@@ -1,5 +1,5 @@
 import { db } from "../database/db";
-import { NoRoleAccess, UnauthorizedError } from "../enums";
+import { NoRoleAccess, ProjectOwnerAllPermissionsEnum, UnauthorizedError } from "../enums";
 import { AvailablePermissions } from "../types/entityTypes";
 import { PermissionDecorationType } from "../types/requestTypes";
 import { decodeUserJwt } from "../utils/requestUtils";
@@ -25,6 +25,7 @@ export async function checkRole(
   const item = data?.find((perm) => (perm.permission_slug as AvailablePermissions) === required_permission);
   if (data && item) {
     const all_permissions: Partial<Record<AvailablePermissions, boolean>> = {};
+
     for (let index = 0; index < data.length; index++) {
       all_permissions[data[index].permission_slug as AvailablePermissions] = true;
     }
@@ -63,7 +64,12 @@ export async function beforeRoleHandler(context: any, permission: AvailablePermi
       // Required as the permissions table won't retrieve the project owner's role as there will be none
       const isProjectOwner = await checkOwner(project_id as string, user_id as string);
       if (isProjectOwner) {
-        context.permissions = { is_project_owner: isProjectOwner, role_access: false, user_id };
+        context.permissions = {
+          is_project_owner: isProjectOwner,
+          role_access: false,
+          user_id,
+          all_permissions: ProjectOwnerAllPermissionsEnum,
+        };
         return;
       }
       const { is_project_owner, role_access, role_id, permission_id, all_permissions } = await checkRole(

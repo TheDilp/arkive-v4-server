@@ -110,7 +110,13 @@ export function bulk_router(app: Elysia) {
         {
           body: t.Object({ data: t.Array(t.Union([UpdateEventSchema, UpdateNodeSchema, UpdateEdgeSchema])) }),
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, `update_${context.params.type}` as AvailablePermissions),
+          beforeHandle: async (context) =>
+            beforeRoleHandler(
+              context,
+              `update_${
+                context.params.type === "nodes" || context.params.type === "edges" ? "graphs" : context.params.type
+              }` as AvailablePermissions,
+            ),
         },
       )
       .post(
