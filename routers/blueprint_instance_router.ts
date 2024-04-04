@@ -886,13 +886,8 @@ export function blueprint_instance_router(app: Elysia) {
                             .doUpdateSet({ value: JSON.stringify(field.value) }),
                         )
                         .execute();
-                    } else if (field.id && !field?.value) {
-                      return tx
-                        .deleteFrom("blueprint_instance_value")
-                        .where("blueprint_field_id", "=", field.id)
-                        .where("blueprint_instance_id", "=", params.id)
-                        .execute();
                     }
+
                     if (field.characters) {
                       await tx
                         .deleteFrom("blueprint_instance_characters")
@@ -931,13 +926,14 @@ export function blueprint_instance_router(app: Elysia) {
                         );
                       }
                     }
+
                     if (field.documents) {
+                      await tx
+                        .deleteFrom("blueprint_instance_documents")
+                        .where("blueprint_instance_id", "=", params.id)
+                        .where("blueprint_field_id", "=", field.id)
+                        .execute();
                       if (field.documents.length) {
-                        await tx
-                          .deleteFrom("blueprint_instance_documents")
-                          .where("blueprint_instance_id", "=", params.id)
-                          .where("blueprint_field_id", "=", field.id)
-                          .execute();
                         return field.documents.map((char) =>
                           tx
                             .insertInto("blueprint_instance_documents")
@@ -950,6 +946,7 @@ export function blueprint_instance_router(app: Elysia) {
                         );
                       }
                     }
+
                     if (field.map_pins) {
                       await tx
                         .deleteFrom("blueprint_instance_map_pins")
@@ -969,6 +966,7 @@ export function blueprint_instance_router(app: Elysia) {
                         );
                       }
                     }
+
                     if (field.events) {
                       await tx
                         .deleteFrom("blueprint_instance_events")
@@ -1043,6 +1041,13 @@ export function blueprint_instance_router(app: Elysia) {
                           end_month_id: field.calendar.end_month_id,
                           end_year: field.calendar.end_year,
                         })
+                        .execute();
+                    }
+                    if (field.id && !field?.value) {
+                      return tx
+                        .deleteFrom("blueprint_instance_value")
+                        .where("blueprint_field_id", "=", field.id)
+                        .where("blueprint_instance_id", "=", params.id)
                         .execute();
                     }
                   }),
