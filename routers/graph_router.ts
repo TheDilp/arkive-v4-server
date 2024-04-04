@@ -6,7 +6,7 @@ import { DB } from "kysely-codegen";
 import uniqBy from "lodash.uniqby";
 
 import { db } from "../database/db";
-import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
+import { checkEntityLevelPermission, getHasEntityPermission, getNestedReadPermission } from "../database/queries";
 import { EntitiesWithChildren } from "../database/types";
 import { EntityListSchema } from "../database/validation";
 import { GenerateGraphSchema, InsertGraphSchema, ReadGraphSchema, UpdateGraphSchema } from "../database/validation/graphs";
@@ -128,8 +128,7 @@ export function graph_router(app: Elysia) {
                     eb
                       .selectFrom("nodes")
                       .where("nodes.parent_id", "=", params.id)
-                      .leftJoin("characters", (join) => join.onRef("characters.id", "=", "nodes.character_id"))
-                      .select((sb) => [
+                      .select([
                         "nodes.id",
                         "nodes.label",
                         "nodes.icon",
@@ -139,7 +138,6 @@ export function graph_router(app: Elysia) {
                         "nodes.font_family",
                         "nodes.font_size",
                         "nodes.type",
-                        "nodes.image_id",
                         "nodes.text_h_align",
                         "nodes.text_v_align",
                         "nodes.x",
@@ -148,12 +146,40 @@ export function graph_router(app: Elysia) {
                         "nodes.width",
                         "nodes.height",
                         "nodes.is_locked",
-                        jsonObjectFrom(
-                          sb
+                        (ebb) => {
+                          let character_subquery = ebb
                             .selectFrom("characters")
                             .select(["characters.first_name", "characters.last_name", "characters.portrait_id"])
-                            .whereRef("characters.id", "=", "nodes.character_id"),
-                        ).as("character"),
+                            .whereRef("characters.id", "=", "nodes.character_id");
+
+                          character_subquery = getNestedReadPermission(
+                            character_subquery,
+                            permissions.is_project_owner,
+                            permissions.user_id,
+                            "character_permissions",
+                            "nodes.character_id",
+                            "read_characters",
+                          );
+
+                          return jsonObjectFrom(character_subquery).as("character");
+                        },
+                        (ebb) => {
+                          let image_subquery = ebb
+                            .selectFrom("images")
+                            .select(["images.id"])
+                            .whereRef("images.id", "=", "nodes.image_id");
+
+                          image_subquery = getNestedReadPermission(
+                            image_subquery,
+                            permissions.is_project_owner,
+                            permissions.user_id,
+                            "image_permissions",
+                            "nodes.image_id",
+                            "read_assets",
+                          );
+
+                          return jsonObjectFrom(image_subquery).as("image");
+                        },
                       ]),
                   ).as("nodes"),
                 ),
