@@ -11,6 +11,7 @@ import {
   UpdateEdgeSchema,
 } from "../database/validation/edges";
 import { MessageEnum } from "../enums/requestEnums";
+import { beforeRoleHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -89,7 +90,7 @@ export function edge_router(app: Elysia) {
       )
       .post(
         "/update/:id",
-        async ({ params, body }) => {
+        async ({ params, body, permissions }) => {
           await db.transaction().execute(async (tx) => {
             if (body.data) {
               await tx.updateTable("edges").where("id", "=", params.id).set(body.data).executeTakeFirstOrThrow();
@@ -101,6 +102,7 @@ export function edge_router(app: Elysia) {
                   id: params.id,
                   newTags: body.relations.tags,
                   tx,
+                  is_project_owner: permissions.is_project_owner,
                 });
             }
           });
@@ -110,6 +112,7 @@ export function edge_router(app: Elysia) {
         {
           body: UpdateEdgeSchema,
           response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_graphs"),
         },
       )
       .delete(

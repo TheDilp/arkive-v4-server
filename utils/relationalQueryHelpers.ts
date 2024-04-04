@@ -1,10 +1,11 @@
-import { ExpressionBuilder, Kysely, SelectQueryBuilder, Transaction } from "kysely";
+import { DeleteQueryBuilder, DeleteResult, ExpressionBuilder, Kysely, SelectQueryBuilder, Transaction } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { getNestedReadPermission } from "../database/queries";
 import { EntitiesWithChildren, EntitiesWithTags, EntityPermissionTables, TagsRelationTables } from "../database/types";
 import {
+  AvailablePermissions,
   EntitiesWithFolders,
   EntitiesWithPermissionCheck,
   InsertPermissionType,
@@ -57,11 +58,13 @@ export async function UpdateTagRelations({
   newTags,
   id,
   tx,
+  is_project_owner,
 }: {
   relationalTable: TagsRelationTables;
   newTags: { id: string }[];
   tx: Transaction<any>;
   id: string;
+  is_project_owner: boolean;
 }) {
   const existingTags = await tx
     .selectFrom(relationalTable)
@@ -75,12 +78,18 @@ export async function UpdateTagRelations({
   const tagsToDelete = existingTagIds.filter((tag) => !newTagIds.includes(tag));
   const tagsToInsert = newTagIds.filter((tag) => !existingTagIds.includes(tag));
 
-  if (tagsToDelete.length)
-    await tx
+  if (tagsToDelete.length) {
+    let delete_query = tx
       .deleteFrom(relationalTable)
       .where(`${relationalTable}.A`, "=", id)
-      .where(`${relationalTable}.B`, "in", tagsToDelete)
-      .execute();
+      .where(`${relationalTable}.B`, "in", tagsToDelete);
+
+    if (!is_project_owner) {
+      delete_query = checkDeletePermissions(delete_query, "tag_permissions", `${relationalTable}.B`, "read_tags");
+    }
+
+    await delete_query.execute();
+  }
 
   if (tagsToInsert.length)
     await tx
@@ -385,4 +394,20 @@ export function GetRelatedEntityPermissionsAndRoles(
     console.error("NO PERMISSION TABLE", entity);
   }
   return qb;
+}
+
+export function checkDeletePermissions(
+  query: DeleteQueryBuilder<DB, any, DeleteResult>,
+  permission_table: EntityPermissionTables,
+  reference_table_with_column: string,
+  required_permission: AvailablePermissions,
+) {
+  // @ts-ignore
+  query = query
+    .using(permission_table)
+    .leftJoin("permissions", "permission_id", `${permission_table}.permission_id`)
+    .whereRef(`${permission_table}.related_id`, "=", reference_table_with_column)
+    .where("permissions.code", "=", required_permission);
+
+  return query;
 }

@@ -320,6 +320,7 @@ export function document_router(app: Elysia) {
                     id: params.id,
                     newTags: body.relations.tags,
                     tx,
+                    is_project_owner: permissions.is_project_owner,
                   });
                 }
                 if (body.relations?.alter_names) {

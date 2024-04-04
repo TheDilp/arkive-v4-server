@@ -22,7 +22,7 @@ import {
   EntitiesWithPermissionCheck,
   PublicEntities,
 } from "../types/entityTypes";
-import { ResponseSchema } from "../types/requestTypes";
+import { PermissionDecorationType, ResponseSchema } from "../types/requestTypes";
 import { UpdateTagRelations } from "../utils/relationalQueryHelpers";
 import { getEntityTagTable, getPermissionTableFromEntity } from "../utils/requestUtils";
 import { s3Client } from "../utils/s3Utils";
@@ -30,6 +30,14 @@ import { s3Client } from "../utils/s3Utils";
 export function bulk_router(app: Elysia) {
   return app.group("/bulk", (server) =>
     server
+      .decorate("permissions", {
+        is_project_owner: false,
+        role_access: false,
+        user_id: "",
+        role_id: null,
+        permission_id: null,
+        all_permissions: {},
+      } as PermissionDecorationType)
       .post(
         "/create/:type",
         async ({ params, body }) => {
@@ -64,7 +72,7 @@ export function bulk_router(app: Elysia) {
       )
       .post(
         "/update/:type",
-        async ({ params, body }) => {
+        async ({ params, body, permissions }) => {
           db.transaction().execute(async (tx) => {
             await Promise.all(
               body.data.map((item) =>
@@ -86,6 +94,7 @@ export function bulk_router(app: Elysia) {
                       id: n.data.id,
                       newTags: n.relations?.tags as { id: string }[],
                       tx,
+                      is_project_owner: permissions.is_project_owner,
                     }),
                   ),
                 );
@@ -99,6 +108,7 @@ export function bulk_router(app: Elysia) {
                       id: e.data.id,
                       newTags: e.relations?.tags as { id: string }[],
                       tx,
+                      is_project_owner: permissions.is_project_owner,
                     }),
                   ),
                 );

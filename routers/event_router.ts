@@ -298,6 +298,7 @@ export function event_router(app: Elysia) {
                   id: params.id,
                   newTags: body.relations?.tags,
                   tx,
+                  is_project_owner: permissions.is_project_owner,
                 });
               } else await tx.deleteFrom("_eventsTotags").where("A", "=", params.id).execute();
 

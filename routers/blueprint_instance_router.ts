@@ -22,6 +22,7 @@ import {
 } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import {
+  checkDeletePermissions,
   CreateEntityPermissions,
   CreateTagRelations,
   GetRelatedEntityPermissionsAndRoles,
@@ -889,11 +890,17 @@ export function blueprint_instance_router(app: Elysia) {
                     }
 
                     if (field.characters) {
-                      await tx
-                        .deleteFrom("blueprint_instance_characters")
-                        .where("blueprint_instance_id", "=", params.id)
-                        .where("blueprint_field_id", "=", field.id)
-                        .execute();
+                      let query = tx.deleteFrom("blueprint_instance_characters");
+                      if (!permissions.is_project_owner) {
+                        query = checkDeletePermissions(
+                          query,
+                          "character_permissions",
+                          "blueprint_instance_characters.related_id",
+                          "read_characters",
+                        );
+                      }
+
+                      query.where("blueprint_instance_id", "=", params.id).where("blueprint_field_id", "=", field.id).execute();
                       if (field.characters.length) {
                         return field.characters.map((char) =>
                           tx
@@ -908,11 +915,22 @@ export function blueprint_instance_router(app: Elysia) {
                       }
                     }
                     if (field.blueprint_instances) {
-                      await tx
-                        .deleteFrom("blueprint_instance_blueprint_instances")
+                      let query = tx.deleteFrom("blueprint_instance_blueprint_instances");
+
+                      if (!permissions.is_project_owner) {
+                        query = checkDeletePermissions(
+                          query,
+                          "blueprint_instance_permissions",
+                          "blueprint_instance_blueprint_instances.related_id",
+                          "read_blueprint_instances",
+                        );
+                      }
+
+                      await query
                         .where("blueprint_instance_id", "=", params.id)
                         .where("blueprint_field_id", "=", field.id)
                         .execute();
+
                       if (field.blueprint_instances.length) {
                         return field.blueprint_instances.map((char) =>
                           tx
@@ -928,11 +946,22 @@ export function blueprint_instance_router(app: Elysia) {
                     }
 
                     if (field.documents) {
-                      await tx
-                        .deleteFrom("blueprint_instance_documents")
+                      let query = tx.deleteFrom("blueprint_instance_documents");
+
+                      if (!permissions.is_project_owner) {
+                        query = checkDeletePermissions(
+                          query,
+                          "document_permissions",
+                          "blueprint_instance_document.related_id",
+                          "read_documents",
+                        );
+                      }
+
+                      await query
                         .where("blueprint_instance_id", "=", params.id)
                         .where("blueprint_field_id", "=", field.id)
                         .execute();
+
                       if (field.documents.length) {
                         return field.documents.map((char) =>
                           tx
@@ -947,6 +976,7 @@ export function blueprint_instance_router(app: Elysia) {
                       }
                     }
 
+                    // ! PERMISSIONS
                     if (field.map_pins) {
                       await tx
                         .deleteFrom("blueprint_instance_map_pins")
@@ -968,8 +998,18 @@ export function blueprint_instance_router(app: Elysia) {
                     }
 
                     if (field.events) {
-                      await tx
-                        .deleteFrom("blueprint_instance_events")
+                      let query = tx.deleteFrom("blueprint_instance_events");
+
+                      if (!permissions.is_project_owner) {
+                        query = checkDeletePermissions(
+                          query,
+                          "event_permissions",
+                          "blueprint_instance_events.related_id",
+                          "read_events",
+                        );
+                      }
+
+                      await query
                         .where("blueprint_instance_id", "=", params.id)
                         .where("blueprint_field_id", "=", field.id)
                         .execute();
@@ -987,11 +1027,22 @@ export function blueprint_instance_router(app: Elysia) {
                       }
                     }
                     if (field.images) {
-                      await tx
-                        .deleteFrom("blueprint_instance_images")
+                      let query = tx.deleteFrom("blueprint_instance_images");
+
+                      if (!permissions.is_project_owner) {
+                        query = checkDeletePermissions(
+                          query,
+                          "image_permissions",
+                          "blueprint_instance_images.related_id",
+                          "read_assets",
+                        );
+                      }
+
+                      await query
                         .where("blueprint_instance_id", "=", params.id)
                         .where("blueprint_field_id", "=", field.id)
                         .execute();
+
                       if (field.images.length) {
                         return field.images.map((char) =>
                           tx
@@ -1006,11 +1057,20 @@ export function blueprint_instance_router(app: Elysia) {
                       }
                     }
                     if (field.random_table) {
-                      await tx
+                      let query = tx
                         .deleteFrom("blueprint_instance_random_tables")
                         .where("blueprint_instance_id", "=", params.id)
-                        .where("blueprint_field_id", "=", field.id)
-                        .execute();
+                        .where("blueprint_field_id", "=", field.id);
+                      if (!permissions.is_project_owner) {
+                        query = checkDeletePermissions(
+                          query,
+                          "random_table_permissions",
+                          "random_table_permissions.related_id",
+                          "read_random_tables",
+                        );
+                        await query.execute();
+                      }
+
                       return tx
                         .insertInto("blueprint_instance_random_tables")
                         .values({
@@ -1020,14 +1080,26 @@ export function blueprint_instance_router(app: Elysia) {
                           option_id: field.random_table.option_id,
                           suboption_id: field.random_table.suboption_id,
                         })
+                        .onConflict((oc) => oc.doNothing())
                         .execute();
                     }
                     if (field.calendar) {
-                      await tx
+                      let query = tx
                         .deleteFrom("blueprint_instance_calendars")
                         .where("blueprint_instance_id", "=", params.id)
-                        .where("blueprint_field_id", "=", field.id)
-                        .execute();
+                        .where("blueprint_field_id", "=", field.id);
+
+                      if (!permissions?.is_project_owner) {
+                        query = checkDeletePermissions(
+                          query,
+                          "calendar_permissions",
+                          "blueprint_instance_calendars.related_id",
+                          "read_calendars",
+                        );
+                      }
+
+                      await query.execute();
+
                       return tx
                         .insertInto("blueprint_instance_calendars")
                         .values({
@@ -1041,6 +1113,7 @@ export function blueprint_instance_router(app: Elysia) {
                           end_month_id: field.calendar.end_month_id,
                           end_year: field.calendar.end_year,
                         })
+                        .onConflict((oc) => oc.doNothing())
                         .execute();
                     }
                     if (field.id && !field?.value) {
@@ -1053,12 +1126,14 @@ export function blueprint_instance_router(app: Elysia) {
                   }),
                 );
               }
+
               if (body.relations?.tags) {
                 await UpdateTagRelations({
                   relationalTable: "_blueprint_instancesTotags",
                   id: params.id,
                   newTags: body.relations.tags,
                   tx,
+                  is_project_owner: permissions.is_project_owner,
                 });
               }
               if (body.permissions) {

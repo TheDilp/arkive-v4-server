@@ -214,7 +214,13 @@ export function map_router(app: Elysia) {
               await db.transaction().execute(async (tx) => {
                 if (body?.relations) {
                   if (body.relations?.tags)
-                    UpdateTagRelations({ relationalTable: "_mapsTotags", id: params.id, newTags: body.relations.tags, tx });
+                    UpdateTagRelations({
+                      relationalTable: "_mapsTotags",
+                      id: params.id,
+                      newTags: body.relations.tags,
+                      tx,
+                      is_project_owner: permissions.is_project_owner,
+                    });
 
                   if (body.relations?.map_layers) {
                     const existingMapLayers = await tx

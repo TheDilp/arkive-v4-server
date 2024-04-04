@@ -167,7 +167,7 @@ export function node_router(app: Elysia) {
       )
       .post(
         "/update/:id",
-        async ({ params, body }) => {
+        async ({ params, body, permissions }) => {
           await db.transaction().execute(async (tx) => {
             if (body.data) {
               await tx.updateTable("nodes").set(body.data).where("nodes.id", "=", params.id).executeTakeFirstOrThrow();
@@ -179,12 +179,17 @@ export function node_router(app: Elysia) {
                   id: params.id,
                   newTags: body.relations.tags,
                   tx,
+                  is_project_owner: permissions.is_project_owner,
                 });
             }
           });
           return { message: MessageEnum.success, ok: true, role_access: true };
         },
-        { body: UpdateNodeSchema, response: ResponseSchema },
+        {
+          body: UpdateNodeSchema,
+          response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, "read_graphs"),
+        },
       )
 
       .delete(
