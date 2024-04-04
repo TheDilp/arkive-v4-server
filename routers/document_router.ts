@@ -1,13 +1,13 @@
 import Elysia from "elysia";
 import { SelectExpression, SelectQueryBuilder, sql } from "kysely";
-import { jsonArrayFrom } from "kysely/helpers/postgres";
+import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 import merge from "lodash.merge";
 import uniq from "lodash.uniq";
 import uniqBy from "lodash.uniqby";
 
 import { db } from "../database/db";
-import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
+import { checkEntityLevelPermission, getHasEntityPermission, getNestedReadPermission } from "../database/queries";
 import { EntitiesWithChildren } from "../database/types";
 import {
   AutolinkerSchema,
@@ -227,6 +227,24 @@ export function document_router(app: Elysia) {
             if (body.orderBy) {
               query = constructOrdering(body.orderBy, query);
             }
+            if (body?.relations?.image) {
+              query = query.select((eb) => {
+                let image_query = eb
+                  .selectFrom("images")
+                  .select(["images.id", "images.title"])
+                  .whereRef("images.id", "=", "documents.image_id");
+                image_query = getNestedReadPermission(
+                  image_query,
+                  permissions.is_project_owner,
+                  permissions.user_id,
+                  "image_permissions",
+                  "documents.image_id",
+                  "read_assets",
+                );
+
+                return jsonObjectFrom(image_query).as("image");
+              });
+            }
             if (!permissions.is_project_owner) {
               query = checkEntityLevelPermission(query, permissions, "documents");
             }
@@ -249,33 +267,49 @@ export function document_router(app: Elysia) {
             let query = db
               .selectFrom("documents")
               .where("documents.id", "=", params.id)
-              .select(body.fields.map((f) => `documents.${f}`) as SelectExpression<DB, "documents">[])
-              .$if(!!body?.relations, (qb) => {
-                if (body?.relations?.tags && permissions.all_permissions?.read_tags) {
-                  qb = qb.select((eb) =>
-                    TagQuery(
-                      eb,
-                      "_documentsTotags",
-                      "documents",
-                      permissions.is_project_owner,
-                      permissions.user_id,
-                      "document_permissions",
-                    ),
+              .select(body.fields.map((f) => `documents.${f}`) as SelectExpression<DB, "documents">[]);
+            if (body?.relations) {
+              if (body?.relations?.tags && permissions.all_permissions?.read_tags) {
+                query = query.select((eb) =>
+                  TagQuery(
+                    eb,
+                    "_documentsTotags",
+                    "documents",
+                    permissions.is_project_owner,
+                    permissions.user_id,
+                    "document_permissions",
+                  ),
+                );
+              }
+              if (body?.relations?.alter_names) {
+                query = query.select((eb) => {
+                  return jsonArrayFrom(
+                    eb
+                      .selectFrom("alter_names")
+                      .select(["alter_names.id", "alter_names.title"])
+                      .where("parent_id", "=", params.id),
+                  ).as("alter_names");
+                });
+              }
+              if (body?.relations?.image) {
+                query = query.select((eb) => {
+                  let image_query = eb
+                    .selectFrom("images")
+                    .select(["images.id", "images.title"])
+                    .whereRef("images.id", "=", "documents.image_id");
+                  image_query = getNestedReadPermission(
+                    image_query,
+                    permissions.is_project_owner,
+                    permissions.user_id,
+                    "image_permissions",
+                    "documents.image_id",
+                    "read_assets",
                   );
-                }
-                if (body?.relations?.alter_names) {
-                  qb = qb.select((eb) => {
-                    return jsonArrayFrom(
-                      eb
-                        .selectFrom("alter_names")
-                        .select(["alter_names.id", "alter_names.title"])
-                        .where("parent_id", "=", params.id),
-                    ).as("alter_names");
-                  });
-                }
 
-                return qb;
-              });
+                  return jsonObjectFrom(image_query).as("image");
+                });
+              }
+            }
 
             if (body?.relations?.children) {
               GetEntityChildren(query as SelectQueryBuilder<DB, EntitiesWithChildren, {}>, "documents");
