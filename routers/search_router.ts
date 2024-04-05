@@ -290,7 +290,7 @@ export function search_router(app: Elysia) {
           }
 
           if (type === "documents") {
-            let document_query = await db
+            let document_query = db
               .selectFrom("documents")
               .select(["documents.id", "documents.title"])
               .where("title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
