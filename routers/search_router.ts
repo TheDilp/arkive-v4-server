@@ -1,10 +1,10 @@
 import Elysia from "elysia";
-import { ExpressionBuilder, SelectExpression, sql } from "kysely";
+import { ExpressionBuilder, ReferenceExpression, SelectExpression, sql } from "kysely";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
 import { checkEntityLevelPermission } from "../database/queries";
-import { EntitiesWithTags } from "../database/types";
+import { DBKeys, EntitiesWithTags } from "../database/types";
 import { BasicSearchSchema, CategorySearchSchema, TagSearchSchema } from "../database/validation/search";
 import { EntitiesWithPermissionsEnum, EntitiesWithTagsTablesEnum, SubEntityEnum } from "../enums/entityEnums";
 import { MessageEnum } from "../enums/requestEnums";
@@ -192,7 +192,7 @@ export function search_router(app: Elysia) {
           }
 
           if (body.data.parent_id) {
-            query = query.where(`${type}.parent_id`, "=", body.data.parent_id || "");
+            query = query.where(`${type}.parent_id` as ReferenceExpression<DB, DBKeys>, "=", body.data.parent_id || "");
           }
 
           query = query.where((eb) => getSearchWhere(eb, type as SearchableEntities, body.data.search_term, params.project_id));
