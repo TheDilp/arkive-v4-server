@@ -326,9 +326,9 @@ export function document_router(app: Elysia) {
               query = GetRelatedEntityPermissionsAndRoles(query, permissions, "documents", params.id);
             }
 
-            const data = await query.executeTakeFirstOrThrow();
+            const data = await query.executeTakeFirst();
 
-            if (body?.relations?.parents) {
+            if (body?.relations?.parents && !!data) {
               const parents = await GetParents({ db, id: params.id, table_name: "documents" });
               data.parents = parents;
               return { data, message: MessageEnum.success, ok: true, role_access: true };
