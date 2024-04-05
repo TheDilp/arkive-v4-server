@@ -1,3 +1,4 @@
+import { MentionTypeEnum } from "../enums";
 import { baseURLS } from "../enums/baseEnums";
 import { HeadingType, MentionAtomType, ParagraphType } from "../types/documentContentTypes";
 import { AssetType, AvailableEntityType, AvailableSubEntityType, MentionType } from "../types/entityTypes";
@@ -123,7 +124,7 @@ export function findObjectsByType(obj: Record<string, any>, targetType: string):
       const value = obj[key];
 
       if (typeof value === "object" && value !== null) {
-        if (value.type === targetType) {
+        if (value.type === targetType && value?.attrs?.name && MentionTypeEnum.includes(value?.attrs?.name)) {
           foundObjects.push(value);
         } else {
           foundObjects = foundObjects.concat(findObjectsByType(value, targetType));

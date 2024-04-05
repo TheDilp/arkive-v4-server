@@ -31,6 +31,17 @@ export const SubEntityEnum = [
   "words",
 ];
 
+export const MentionTypeEnum = [
+  "characters",
+  "documents",
+  "maps",
+  "graphs",
+  "blueprint_instances",
+  "words",
+  "events",
+  "map_pins",
+];
+
 export const EntitiesWithTagsTablesEnum: TagsRelationTables[] = [
   "_charactersTotags",
   "_documentsTotags",
