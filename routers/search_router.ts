@@ -187,10 +187,12 @@ export function search_router(app: Elysia) {
             query = query
               .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
               .select(["blueprints.icon as icon"]);
-          } else if (body.data.parent_id) {
-            query = query.where("blueprint_instances.parent_id", "=", body.data.parent_id || "");
           } else if (type === "images") {
             query = query.where("type", "=", "images");
+          }
+
+          if (body.data.parent_id) {
+            query = query.where(`${type}.parent_id`, "=", body.data.parent_id || "");
           }
 
           query = query.where((eb) => getSearchWhere(eb, type as SearchableEntities, body.data.search_term, params.project_id));
