@@ -75,8 +75,8 @@ export function map_pin_router(app: Elysia) {
               .leftJoin("characters", "characters.id", "map_pins.character_id")
               .where((wb) => {
                 return wb.or([
-                  wb("map_pins.character_id", "=", null),
                   wb.or([
+                    wb("map_pins.character_id", "is", null),
                     wb("characters.owner_id", "=", permissions.user_id),
                     wb.and([
                       wb("character_permissions.user_id", "=", permissions.user_id),

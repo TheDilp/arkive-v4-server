@@ -113,66 +113,78 @@ export function map_router(app: Elysia) {
               .select(body.fields.map((f) => `maps.${f}`) as SelectExpression<DB, "maps">[])
               .where("maps.id", "=", params.id);
             if (body?.relations?.map_pins) {
-              query = query.select((eb) =>
-                jsonArrayFrom(
-                  eb
-                    .selectFrom("map_pins")
-                    .distinctOn("map_pins.id")
-                    .leftJoin("character_permissions", "character_permissions.related_id", "map_pins.character_id")
-                    .leftJoin("characters", "characters.id", "map_pins.character_id")
-                    .select([
-                      "map_pins.id",
-                      "map_pins.background_color",
-                      "map_pins.border_color",
-                      "map_pins.color",
-                      "map_pins.character_id",
-                      "map_pins.doc_id",
-                      "map_pins.icon",
-                      "map_pins.title",
-                      "map_pins.parent_id",
-                      "map_pins.is_public",
-                      "map_pins.lat",
-                      "map_pins.lng",
-                      "map_pins.map_link",
-                      "map_pins.show_background",
-                      "map_pins.show_border",
-                      "map_pins.map_pin_type_id",
-                      (eb) => {
-                        let character_query = eb
-                          .selectFrom("characters")
-                          .whereRef("characters.id", "=", "map_pins.character_id")
-                          .select(["id", "full_name", "portrait_id"]);
+              query = query.select((eb) => {
+                let map_pins_query = eb
+                  .selectFrom("map_pins")
+                  .distinctOn("map_pins.id")
+                  .leftJoin("character_permissions", "character_permissions.related_id", "map_pins.character_id")
+                  .leftJoin("permissions as char_perm_codes", "char_perm_codes.id", "character_permissions.permission_id")
+                  .leftJoin("map_pin_permissions", "map_pin_permissions.related_id", "map_pins.id")
+                  .leftJoin("permissions as map_pin_perm_codes", "map_pin_perm_codes.id", "map_pin_permissions.permission_id")
+                  .leftJoin("characters", "characters.id", "map_pins.character_id")
+                  .select([
+                    "map_pins.id",
+                    "map_pins.background_color",
+                    "map_pins.border_color",
+                    "map_pins.color",
+                    "map_pins.character_id",
+                    "map_pins.doc_id",
+                    "map_pins.icon",
+                    "map_pins.title",
+                    "map_pins.parent_id",
+                    "map_pins.is_public",
+                    "map_pins.lat",
+                    "map_pins.lng",
+                    "map_pins.map_link",
+                    "map_pins.show_background",
+                    "map_pins.show_border",
+                    "map_pins.map_pin_type_id",
+                    (eb) => {
+                      let character_query = eb
+                        .selectFrom("characters")
+                        .whereRef("characters.id", "=", "map_pins.character_id")
+                        .select(["characters.id", "characters.full_name", "characters.portrait_id"]);
 
-                        // @ts-ignore
-                        character_query = getNestedReadPermission(
-                          character_query,
-                          permissions.is_project_owner,
-                          permissions.user_id,
-                          "character_permissions",
-                          "characters.id",
-                          "read_characters",
-                        );
+                      // @ts-ignore
+                      character_query = getNestedReadPermission(
+                        character_query,
+                        permissions.is_project_owner,
+                        permissions.user_id,
+                        "character_permissions",
+                        "characters.id",
+                        "read_characters",
+                      );
 
-                        return jsonObjectFrom(character_query).as("character");
-                      },
-                    ])
-                    .whereRef("map_pins.parent_id", "=", "maps.id")
-                    .where((wb) => {
-                      return wb.or([
-                        wb("map_pins.character_id", "=", null),
-                        wb.or([
-                          wb("characters.owner_id", "=", permissions.user_id),
-                          wb.and([
-                            wb("character_permissions.user_id", "=", permissions.user_id),
-                            wb("character_permissions.permission_id", "=", permissions.permission_id),
-                            wb("character_permissions.related_id", "=", wb.ref("characters.id")),
-                          ]),
-                          wb("character_permissions.role_id", "=", permissions.role_id),
-                        ]),
-                      ]);
-                    }),
-                ).as("map_pins"),
-              );
+                      return jsonObjectFrom(character_query).as("character");
+                    },
+                  ])
+                  .whereRef("map_pins.parent_id", "=", "maps.id")
+                  .where((wb) =>
+                    wb.or([
+                      wb("map_pins.character_id", "is", null),
+                      wb("characters.owner_id", "=", permissions.user_id),
+                      wb.and([
+                        wb("character_permissions.user_id", "=", permissions.user_id),
+                        wb("char_perm_codes.code", "=", "read_characters"),
+                        wb("character_permissions.related_id", "=", wb.ref("characters.id")),
+                      ]),
+                      wb("character_permissions.role_id", "=", permissions.role_id),
+                    ]),
+                  )
+                  .where((wb) => {
+                    return wb.or([
+                      wb("map_pins.owner_id", "=", permissions.user_id),
+                      wb.and([
+                        wb("map_pin_permissions.user_id", "=", permissions.user_id),
+                        wb("map_pin_perm_codes.code", "=", "read_map_pins"),
+                        wb("map_pin_permissions.related_id", "=", wb.ref("map_pins.id")),
+                      ]),
+                      wb("map_pin_permissions.role_id", "=", permissions.role_id),
+                    ]);
+                  });
+
+                return jsonArrayFrom(map_pins_query).as("map_pins");
+              });
             }
             if (body?.relations?.map_layers) {
               query = query.select((eb) =>
@@ -212,9 +224,9 @@ export function map_router(app: Elysia) {
             }
             if (body?.relations?.images) {
               query = query.select((eb) =>
-                jsonArrayFrom(eb.selectFrom("images").select(["id", "title"]).whereRef("maps.image_id", "=", "images.id")).as(
-                  "images",
-                ),
+                jsonArrayFrom(
+                  eb.selectFrom("images").select(["images.id", "images.title"]).whereRef("maps.image_id", "=", "images.id"),
+                ).as("images"),
               );
             }
             if (body?.relations?.tags) {
