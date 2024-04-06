@@ -334,7 +334,7 @@ export function getEntitiesWithOwnerId<T>(entities: T[], owner_id: string): (T &
 }
 
 export function buildTSQueryString(searchTerms: string[]): string {
-  const sanitizedSearchTerms = searchTerms.map((term) => term.replace(/[^\w\s]/g, ""));
+  const sanitizedSearchTerms = searchTerms.map((term) => term.replace(/[^\w\s_"]+/g, ""));
 
   const tsQuery = sanitizedSearchTerms.join(" | ");
 
