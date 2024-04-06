@@ -66,11 +66,15 @@ export function word_router(app: Elysia) {
           async ({ body, permissions }) => {
             let query = db
               .selectFrom("words")
-              .distinctOn("words.id")
+              .distinctOn(
+                body.orderBy?.length
+                  ? (["words.id", ...body.orderBy.map((order) => `words.${order.field}`)] as any)
+                  : "words.id",
+              )
               .select(body.fields.map((f) => `words.${f}`) as SelectExpression<DB, "words">[])
               .limit(body?.pagination?.limit || 10)
               .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
-              .where("parent_id", "=", body.data.parent_id);
+              .where("words.parent_id", "=", body.data.parent_id);
 
             if (body.orderBy?.length) {
               query = constructOrdering(body.orderBy, query);
@@ -100,8 +104,8 @@ export function word_router(app: Elysia) {
           async ({ params, body, permissions }) => {
             let query = db
               .selectFrom("words")
-              .where("id", "=", params.id)
-              .select(body.fields as SelectExpression<DB, "words">[]);
+              .where("words.id", "=", params.id)
+              .select(body.fields.map((f) => `words.${f}`) as SelectExpression<DB, "words">[]);
 
             if (permissions.is_project_owner) {
               query = query.leftJoin("word_permissions", (join) => join.on("word_permissions.related_id", "=", params.id));
@@ -112,7 +116,7 @@ export function word_router(app: Elysia) {
               query = GetRelatedEntityPermissionsAndRoles(query, permissions, "words", params.id);
             }
 
-            const data = await query.execute();
+            const data = await query.executeTakeFirst();
             return { data, ok: true, role_access: true, message: MessageEnum.success };
           },
           {

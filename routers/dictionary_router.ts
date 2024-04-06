@@ -50,7 +50,7 @@ export function dictionary_router(app: Elysia) {
             .selectFrom("dictionaries")
             .limit(body?.pagination?.limit || 10)
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
-            .select(body.fields as SelectExpression<DB, "dictionaries">[])
+            .select(body.fields.map((f) => `dictionaries.${f}`) as SelectExpression<DB, "dictionaries">[])
             .$if(!!body.orderBy?.length, (qb) => {
               qb = constructOrdering(body.orderBy, qb);
               return qb;
@@ -82,12 +82,11 @@ export function dictionary_router(app: Elysia) {
         async ({ params, body, permissions }) => {
           let query = db
             .selectFrom("dictionaries")
-            .where("id", "=", params.id)
+            .where("dictionaries.id", "=", params.id)
             .$if(!!body?.relations?.children, (qb) =>
               GetEntityChildren(qb as SelectQueryBuilder<DB, EntitiesWithChildren, {}>, "dictionaries"),
             )
-            .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "dictionaries">[]))
+            .select(body.fields.map((f) => `dictionaries.${f}`) as SelectExpression<DB, "dictionaries">[])
             .$if(!!body.relations?.words, (qb) =>
               qb.select((eb) => {
                 let word_query = eb
