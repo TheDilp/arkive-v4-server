@@ -11,7 +11,7 @@ import { GetRelatedEntityPermissionsAndRoles, TagQuery } from "../../utils/relat
 import { groupCharacterFields } from "../../utils/transform";
 import { db } from "../db";
 import { ReadCharacterSchema } from "../validation";
-import { checkEntityLevelPermission } from ".";
+import { checkEntityLevelPermission, getNestedReadPermission } from ".";
 
 type bodyTp = (typeof ReadCharacterSchema)["static"];
 
@@ -28,144 +28,213 @@ export async function readCharacter(
     .$if(!!body.relations, (qb) => {
       if (body?.relations?.character_fields) {
         qb = qb.select([
-          (eb) =>
-            jsonArrayFrom(
-              eb
-                .selectFrom("character_documents_fields")
-                .where("character_documents_fields.character_id", "=", params.id)
-                .select([
-                  "character_field_id as id",
-                  "related_id",
-                  (ebb) =>
-                    jsonArrayFrom(
-                      ebb
-                        .selectFrom("documents")
-                        .whereRef("documents.id", "=", "character_documents_fields.related_id")
-                        .select(["documents.id", "documents.title", "documents.icon"])
-                        .$if(isPublic, (eb) => {
-                          eb = eb.where("documents.is_public", "=", true);
-                          return eb;
-                        })
-                        .$if(!permissions?.is_project_owner && !isPublic, (qb) => {
-                          return checkEntityLevelPermission(qb, permissions, "documents", params.id);
-                        }),
-                    ).as("documents"),
-                ]),
-            ).as("field_documents"),
-          (eb) =>
-            jsonArrayFrom(
-              eb
-                .selectFrom("character_images_fields")
-                .where("character_images_fields.character_id", "=", params.id)
+          (eb) => {
+            let documents_query = eb
+              .selectFrom("character_documents_fields")
+              .where("character_documents_fields.character_id", "=", params.id)
+              .select([
+                "character_field_id as id",
+                "character_documents_fields.related_id",
+                (ebb) =>
+                  jsonArrayFrom(
+                    ebb
+                      .selectFrom("documents")
+                      .whereRef("documents.id", "=", "character_documents_fields.related_id")
+                      .select(["documents.id", "documents.title", "documents.icon"])
+                      .$if(isPublic, (eb) => {
+                        eb = eb.where("documents.is_public", "=", true);
+                        return eb;
+                      })
+                      .$if(!permissions?.is_project_owner && !isPublic, (qb) => {
+                        return checkEntityLevelPermission(qb, permissions, "documents", params.id);
+                      }),
+                  ).as("documents"),
+              ]);
 
-                .select([
-                  "character_field_id as id",
-                  "related_id",
-                  (ebb) =>
-                    jsonArrayFrom(
-                      ebb
-                        .selectFrom("images")
-                        .whereRef("images.id", "=", "character_images_fields.related_id")
-                        .select(["id", "title"])
-                        .$if(isPublic, (eb) => {
-                          eb = eb.where("is_public", "=", true);
-                          return eb;
-                        }),
-                    ).as("images"),
-                ]),
-            ).as("field_images"),
-          (eb) =>
-            jsonArrayFrom(
-              eb
-                .selectFrom("character_events_fields")
-                .where("character_events_fields.character_id", "=", params.id)
-                .select([
-                  "character_field_id as id",
-                  "related_id",
-                  (ebb) =>
-                    jsonArrayFrom(
-                      ebb
-                        .selectFrom("events")
-                        .whereRef("events.id", "=", "character_events_fields.related_id")
-                        .select(["id", "title", "parent_id"])
-                        .$if(isPublic, (eb) => {
-                          eb = eb.where("is_public", "=", true);
-                          return eb;
-                        }),
-                    ).as("events"),
-                ]),
-            ).as("field_events"),
-          (eb) =>
-            jsonArrayFrom(
-              eb
-                .selectFrom("character_locations_fields")
-                .where("character_locations_fields.character_id", "=", params.id)
-                .select([
-                  "character_field_id as id",
-                  "related_id",
-                  (ebb) =>
-                    jsonArrayFrom(
-                      ebb
-                        .selectFrom("map_pins")
-                        .whereRef("map_pins.id", "=", "character_locations_fields.related_id")
-                        .select(["id", "title", "icon", "parent_id"])
-                        .$if(isPublic, (eb) => {
-                          eb = eb.where("is_public", "=", true);
-                          return eb;
-                        }),
-                    ).as("map_pins"),
-                ]),
-            ).as("field_locations"),
-          (eb) =>
-            jsonArrayFrom(
-              eb
-                .selectFrom("character_blueprint_instance_fields")
-                .where("character_blueprint_instance_fields.character_id", "=", params.id)
-                .select([
-                  "character_field_id as id",
-                  "related_id",
-                  (ebb) =>
-                    jsonArrayFrom(
-                      ebb
-                        .selectFrom("blueprint_instances")
-                        .whereRef("blueprint_instances.id", "=", "character_blueprint_instance_fields.related_id")
-                        .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
-                        .select([
-                          "blueprint_instances.id",
-                          "blueprint_instances.title",
-                          "blueprint_instances.parent_id",
-                          "blueprints.icon",
-                        ])
-                        .$if(isPublic, (eb) => {
-                          eb = eb.where("is_public", "=", true);
-                          return eb;
-                        }),
-                    ).as("blueprint_instances"),
-                ]),
-            ).as("field_blueprint_instances"),
-          (ebb) =>
-            jsonArrayFrom(
-              ebb
-                .selectFrom("character_random_table_fields")
-                .where("character_random_table_fields.character_id", "=", params.id)
-                .select(["character_field_id as id", "related_id", "option_id", "suboption_id"]),
-            ).as("field_random_tables"),
-          (ebb) =>
-            jsonArrayFrom(
-              ebb
-                .selectFrom("character_calendar_fields")
-                .where("character_calendar_fields.character_id", "=", params.id)
-                .select([
-                  "character_field_id as id",
-                  "related_id",
-                  "start_day",
-                  "start_month_id",
-                  "start_year",
-                  "end_day",
-                  "end_month_id",
-                  "end_year",
-                ]),
-            ).as("field_calendars"),
+            documents_query = getNestedReadPermission(
+              documents_query,
+              permissions.is_project_owner,
+              permissions.user_id,
+              "document_permissions",
+              "character_documents_fields.related_id",
+              "read_documents",
+            );
+
+            return jsonArrayFrom(documents_query).as("field_documents");
+          },
+          (eb) => {
+            let image_query = eb
+              .selectFrom("character_images_fields")
+              .where("character_images_fields.character_id", "=", params.id)
+              .select([
+                "character_field_id as id",
+                "character_images_fields.related_id",
+                (ebb) =>
+                  jsonArrayFrom(
+                    ebb
+                      .selectFrom("images")
+                      .whereRef("images.id", "=", "character_images_fields.related_id")
+                      .select(["id", "title"])
+                      .$if(isPublic, (eb) => {
+                        eb = eb.where("is_public", "=", true);
+                        return eb;
+                      }),
+                  ).as("images"),
+              ]);
+
+            image_query = getNestedReadPermission(
+              image_query,
+              permissions.is_project_owner,
+              permissions.user_id,
+              "image_permissions",
+              "character_images_fields.related_id",
+              "read_assets",
+            );
+
+            return jsonArrayFrom(image_query).as("field_images");
+          },
+          (eb) => {
+            let event_query = eb
+              .selectFrom("character_events_fields")
+              .where("character_events_fields.character_id", "=", params.id)
+              .select([
+                "character_field_id as id",
+                "character_events_fields.related_id",
+                (ebb) =>
+                  jsonArrayFrom(
+                    ebb
+                      .selectFrom("events")
+                      .whereRef("events.id", "=", "character_events_fields.related_id")
+                      .select(["id", "title", "parent_id"])
+                      .$if(isPublic, (eb) => {
+                        eb = eb.where("is_public", "=", true);
+                        return eb;
+                      }),
+                  ).as("events"),
+              ]);
+
+            event_query = getNestedReadPermission(
+              event_query,
+              permissions.is_project_owner,
+              permissions.user_id,
+              "event_permissions",
+              "character_events_fields.related_id",
+              "read_events",
+            );
+
+            return jsonArrayFrom(event_query).as("field_events");
+          },
+          (eb) => {
+            let map_pin_query = eb
+              .selectFrom("character_locations_fields")
+              .where("character_locations_fields.character_id", "=", params.id)
+              .select([
+                "character_field_id as id",
+                "character_locations_fields.related_id",
+                (ebb) =>
+                  jsonArrayFrom(
+                    ebb
+                      .selectFrom("map_pins")
+                      .whereRef("map_pins.id", "=", "character_locations_fields.related_id")
+                      .select(["id", "title", "icon", "parent_id"])
+                      .$if(isPublic, (eb) => {
+                        eb = eb.where("is_public", "=", true);
+                        return eb;
+                      }),
+                  ).as("map_pins"),
+              ]);
+
+            map_pin_query = getNestedReadPermission(
+              map_pin_query,
+              permissions.is_project_owner,
+              permissions.user_id,
+              "map_pin_permissions",
+              "character_locations_fields.related_id",
+              "read_map_pins",
+            );
+
+            return jsonArrayFrom(map_pin_query).as("field_locations");
+          },
+          (eb) => {
+            let bpi_query = eb
+              .selectFrom("character_blueprint_instance_fields")
+              .where("character_blueprint_instance_fields.character_id", "=", params.id)
+              .select([
+                "character_field_id as id",
+                "character_blueprint_instance_fields.related_id",
+                (ebb) =>
+                  jsonArrayFrom(
+                    ebb
+                      .selectFrom("blueprint_instances")
+                      .whereRef("blueprint_instances.id", "=", "character_blueprint_instance_fields.related_id")
+                      .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+                      .select([
+                        "blueprint_instances.id",
+                        "blueprint_instances.title",
+                        "blueprint_instances.parent_id",
+                        "blueprints.icon",
+                      ])
+                      .$if(isPublic, (eb) => {
+                        eb = eb.where("is_public", "=", true);
+                        return eb;
+                      }),
+                  ).as("blueprint_instances"),
+              ]);
+
+            bpi_query = getNestedReadPermission(
+              bpi_query,
+              permissions.is_project_owner,
+              permissions.user_id,
+              "blueprint_instance_permissions",
+              "character_blueprint_instance_fields.related_id",
+              "read_blueprint_instances",
+            );
+
+            return jsonArrayFrom(bpi_query).as("field_blueprint_instances");
+          },
+          (ebb) => {
+            let random_table_query = ebb
+              .selectFrom("character_random_table_fields")
+              .where("character_random_table_fields.character_id", "=", params.id)
+              .select(["character_field_id as id", "character_random_table_fields.related_id", "option_id", "suboption_id"]);
+
+            random_table_query = getNestedReadPermission(
+              random_table_query,
+              permissions.is_project_owner,
+              permissions.user_id,
+              "random_table_permissions",
+              "character_random_table_fields.related_id",
+              "read_random_tables",
+            );
+
+            return jsonArrayFrom(random_table_query).as("field_random_tables");
+          },
+          (ebb) => {
+            let calendar_query = ebb
+              .selectFrom("character_calendar_fields")
+              .where("character_calendar_fields.character_id", "=", params.id)
+              .select([
+                "character_field_id as id",
+                "character_calendar_fields.related_id",
+                "start_day",
+                "start_month_id",
+                "start_year",
+                "end_day",
+                "end_month_id",
+                "end_year",
+              ]);
+
+            calendar_query = getNestedReadPermission(
+              calendar_query,
+              permissions.is_project_owner,
+              permissions.user_id,
+              "calendar_permissions",
+              "character_calendar_fields.related_id",
+              "read_calendars",
+            );
+
+            return jsonArrayFrom(calendar_query).as("field_calendars");
+          },
           (eb) =>
             jsonArrayFrom(
               eb
@@ -189,10 +258,6 @@ export async function readCharacter(
                 "characters_relationships.relation_type_id",
               )
               .where("character_relationship_types.ascendant_title", "is not", null)
-              .$if(isPublic, (eb) => eb.where("characters.is_public", "=", true))
-              .$if(!permissions?.is_project_owner && !isPublic, (qb) => {
-                return checkEntityLevelPermission(qb, permissions, "characters", params.id);
-              })
               .select([
                 "character_b_id as id",
                 "characters.full_name",
@@ -201,7 +266,11 @@ export async function readCharacter(
                 "characters_relationships.id as character_relationship_id",
                 "character_relationship_types.ascendant_title as relation_title",
                 "character_relationship_types.title as relation_type_title",
-              ]),
+              ])
+              .$if(isPublic, (eb) => eb.where("characters.is_public", "=", true))
+              .$if(!permissions?.is_project_owner && !isPublic, (qb) => {
+                return checkEntityLevelPermission(qb, permissions, "characters", params.id);
+              }),
           ).as("related_to"),
         );
         qb = qb.select((eb) =>
@@ -326,81 +395,133 @@ export async function readCharacter(
         );
       }
       if (body?.relations?.portrait) {
-        qb = qb.select((eb) =>
-          jsonObjectFrom(
-            eb.selectFrom("images").whereRef("images.id", "=", "characters.portrait_id").select(["images.id", "images.title"]),
-          ).as("portrait"),
-        );
+        qb = qb.select((eb) => {
+          let portrait_query = eb
+            .selectFrom("images")
+            .whereRef("images.id", "=", "characters.portrait_id")
+            .select(["images.id", "images.title"]);
+
+          portrait_query = getNestedReadPermission(
+            portrait_query,
+            permissions.is_project_owner,
+            permissions.user_id,
+            "image_permissions",
+            "characters.portrait_id",
+            "read_assets",
+          );
+
+          return jsonObjectFrom(portrait_query).as("portrait");
+        });
       }
       if (body?.relations?.images) {
-        qb = qb.select((eb) =>
-          jsonArrayFrom(
-            eb
-              .selectFrom("_charactersToimages")
-              .where("_charactersToimages.A", "=", params.id)
-              .leftJoin("images", "images.id", "_charactersToimages.B")
-              .select(["images.id", "images.title", "images.is_public"])
-              .orderBy("title")
-              .$if(isPublic, (eb) => {
-                eb = eb.where("images.is_public", "=", true);
-                return eb;
-              }),
-          ).as("images"),
-        );
+        qb = qb.select((eb) => {
+          let image_query = eb
+            .selectFrom("_charactersToimages")
+            .where("_charactersToimages.A", "=", params.id)
+            .leftJoin("images", "images.id", "_charactersToimages.B")
+            .select(["images.id", "images.title", "images.is_public"])
+            .orderBy("title")
+            .$if(isPublic, (eb) => {
+              eb = eb.where("images.is_public", "=", true);
+              return eb;
+            });
+
+          // @ts-ignore
+          image_query = getNestedReadPermission(
+            image_query,
+            permissions.is_project_owner,
+            permissions.user_id,
+            "image_permissions",
+            "images.id",
+            "read_assets",
+          );
+
+          return jsonArrayFrom(image_query).as("images");
+        });
       }
       if (body?.relations?.locations) {
-        qb = qb.select((eb) =>
-          jsonArrayFrom(
-            eb
-              .selectFrom("map_pins")
-              .select(["map_pins.id as map_pin_id"])
-              .whereRef("map_pins.character_id", "=", "characters.id")
-              .$if(isPublic, (eb) => {
-                eb = eb.where("map_pins.is_public", "=", true);
+        qb = qb.select((eb) => {
+          let map_pin_query = eb
+            .selectFrom("map_pins")
+            .select(["map_pins.id as map_pin_id"])
+            .whereRef("map_pins.character_id", "=", "characters.id")
+            .$if(isPublic, (eb) => {
+              eb = eb.where("map_pins.is_public", "=", true);
 
-                return eb;
-              })
-              .leftJoin("maps", "maps.id", "map_pins.parent_id")
-              .select(["maps.id", "maps.title", "maps.image_id"]),
-          ).as("locations"),
-        );
+              return eb;
+            })
+            .leftJoin("maps", "maps.id", "map_pins.parent_id")
+            .select(["maps.id", "maps.title", "maps.image_id"]);
+
+          // @ts-ignore
+          map_pin_query = getNestedReadPermission(
+            map_pin_query,
+            permissions.is_project_owner,
+            permissions.user_id,
+            "map_pin_permissions",
+            "map_pins.id",
+            "read_map_pins",
+          );
+
+          return jsonArrayFrom(map_pin_query).as("locations");
+        });
       }
       if (body?.relations?.documents) {
-        qb = qb.select((eb) =>
-          jsonArrayFrom(
-            eb
-              .selectFrom("_charactersTodocuments")
-              .where("_charactersTodocuments.A", "=", params.id)
-              .leftJoin("documents", "_charactersTodocuments.B", "documents.id")
-              .where("documents.is_folder", "is not", true)
-              .where("documents.is_template", "is not", true)
-              .$if(!permissions?.is_project_owner && !isPublic, (qb) => {
-                return checkEntityLevelPermission(qb, permissions, "documents", params.id);
-              })
-              .$if(isPublic, (eb) => {
-                eb = eb.where("documents.is_public", "=", true);
-                return eb;
-              })
-              .select(["documents.id", "documents.icon", "documents.is_public", "documents.title", "documents.image_id"])
-              .orderBy("title"),
-          ).as("documents"),
-        );
+        qb = qb.select((eb) => {
+          let document_query = eb
+            .selectFrom("_charactersTodocuments")
+            .where("_charactersTodocuments.A", "=", params.id)
+            .leftJoin("documents", "_charactersTodocuments.B", "documents.id")
+            .where("documents.is_folder", "is not", true)
+            .where("documents.is_template", "is not", true)
+            .$if(!permissions?.is_project_owner && !isPublic, (qb) => {
+              return checkEntityLevelPermission(qb, permissions, "documents", params.id);
+            })
+            .$if(isPublic, (eb) => {
+              eb = eb.where("documents.is_public", "=", true);
+              return eb;
+            })
+            .select(["documents.id", "documents.icon", "documents.is_public", "documents.title", "documents.image_id"])
+            .orderBy("title");
+
+          // @ts-ignore
+          document_query = getNestedReadPermission(
+            document_query,
+            permissions.is_project_owner,
+            permissions.user_id,
+            "document_permissions",
+            "documents.id",
+            "read_documents",
+          );
+
+          return jsonArrayFrom(document_query).as("documents");
+        });
       }
       if (body?.relations?.events) {
-        qb = qb.select((eb) =>
-          jsonArrayFrom(
-            eb
-              .selectFrom("event_characters")
-              .where("event_characters.related_id", "=", params.id)
-              .leftJoin("events", "events.id", "event_characters.event_id")
-              .$if(isPublic, (eb) => {
-                eb = eb.where("events.is_public", "=", true);
-                return eb;
-              })
-              .select(["events.id", "events.is_public", "events.title", "events.image_id", "events.parent_id"])
-              .orderBy("start_year"),
-          ).as("events"),
-        );
+        qb = qb.select((eb) => {
+          let event_query = eb
+            .selectFrom("event_characters")
+            .where("event_characters.related_id", "=", params.id)
+            .leftJoin("events", "events.id", "event_characters.event_id")
+            .$if(isPublic, (eb) => {
+              eb = eb.where("events.is_public", "=", true);
+              return eb;
+            })
+            .select(["events.id", "events.is_public", "events.title", "events.image_id", "events.parent_id"])
+            .orderBy("start_year");
+
+          // @ts-ignore
+          event_query = getNestedReadPermission(
+            event_query,
+            permissions.is_project_owner,
+            permissions.user_id,
+            "event_permissions",
+            "events.id",
+            "read_events",
+          );
+
+          return jsonArrayFrom(event_query).as("events");
+        });
       }
 
       return qb;
