@@ -17,6 +17,34 @@ COMMENT ON SCHEMA public IS '';
 
 
 --
+-- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
+
+
+--
+-- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
+
+
+--
 -- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -200,7 +228,8 @@ CREATE TABLE public."_charactersToconversations" (
 
 CREATE TABLE public."_charactersTodocuments" (
     "A" uuid NOT NULL,
-    "B" uuid NOT NULL
+    "B" uuid NOT NULL,
+    is_main_page boolean
 );
 
 
@@ -936,6 +965,20 @@ CREATE TABLE public.event_map_pins (
 
 
 --
+-- Name: event_permissions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.event_permissions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    permission_id uuid,
+    role_id uuid,
+    user_id uuid,
+    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
+);
+
+
+--
 -- Name: events; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -962,7 +1005,8 @@ CREATE TABLE public.events (
     start_minutes integer,
     end_hours integer,
     end_minutes integer,
-    deleted_at timestamp(3) without time zone
+    deleted_at timestamp(3) without time zone,
+    owner_id uuid NOT NULL
 );
 
 
@@ -1074,6 +1118,20 @@ CREATE TABLE public.map_permissions (
 
 
 --
+-- Name: map_pin_permissions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.map_pin_permissions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    permission_id uuid,
+    role_id uuid,
+    user_id uuid,
+    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
+);
+
+
+--
 -- Name: map_pin_types; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1109,7 +1167,8 @@ CREATE TABLE public.map_pins (
     character_id uuid,
     map_pin_type_id uuid,
     ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
-    deleted_at timestamp(3) without time zone
+    deleted_at timestamp(3) without time zone,
+    owner_id uuid NOT NULL
 );
 
 
@@ -1432,6 +1491,20 @@ CREATE TABLE public.webhooks (
 
 
 --
+-- Name: word_permissions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.word_permissions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    permission_id uuid,
+    role_id uuid,
+    user_id uuid,
+    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
+);
+
+
+--
 -- Name: words; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1442,7 +1515,8 @@ CREATE TABLE public.words (
     translation text NOT NULL,
     parent_id uuid NOT NULL,
     ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
-    deleted_at timestamp(3) without time zone
+    deleted_at timestamp(3) without time zone,
+    owner_id uuid NOT NULL
 );
 
 
@@ -1711,6 +1785,14 @@ ALTER TABLE ONLY public.eras
 
 
 --
+-- Name: event_permissions event_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_permissions
+    ADD CONSTRAINT event_permissions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: events events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1772,6 +1854,14 @@ ALTER TABLE ONLY public.map_layers
 
 ALTER TABLE ONLY public.map_permissions
     ADD CONSTRAINT map_permissions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: map_pin_permissions map_pin_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.map_pin_permissions
+    ADD CONSTRAINT map_pin_permissions_pkey PRIMARY KEY (id);
 
 
 --
@@ -2023,11 +2113,11 @@ ALTER TABLE ONLY public.character_permissions
 
 
 --
--- Name: character_blueprint_instance_fields unique_combination_bpi_constraint; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: character_blueprint_instance_fields unique_combination_constraint; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.character_blueprint_instance_fields
-    ADD CONSTRAINT unique_combination_bpi_constraint UNIQUE (character_id, character_field_id, related_id);
+    ADD CONSTRAINT unique_combination_constraint UNIQUE (character_id, character_field_id, related_id);
 
 
 --
@@ -2095,6 +2185,22 @@ ALTER TABLE ONLY public.document_permissions
 
 
 --
+-- Name: event_permissions unique_event_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_permissions
+    ADD CONSTRAINT unique_event_role_combination UNIQUE (related_id, role_id);
+
+
+--
+-- Name: event_permissions unique_event_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_permissions
+    ADD CONSTRAINT unique_event_user_permission_combination UNIQUE (related_id, user_id, permission_id);
+
+
+--
 -- Name: graph_permissions unique_graph_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2124,6 +2230,22 @@ ALTER TABLE ONLY public.image_permissions
 
 ALTER TABLE ONLY public.image_permissions
     ADD CONSTRAINT unique_image_user_permission_combination UNIQUE (related_id, user_id, permission_id);
+
+
+--
+-- Name: map_pin_permissions unique_map_pin_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.map_pin_permissions
+    ADD CONSTRAINT unique_map_pin_role_combination UNIQUE (related_id, role_id);
+
+
+--
+-- Name: map_pin_permissions unique_map_pin_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.map_pin_permissions
+    ADD CONSTRAINT unique_map_pin_user_permission_combination UNIQUE (related_id, user_id, permission_id);
 
 
 --
@@ -2207,6 +2329,22 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: word_permissions unique_word_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.word_permissions
+    ADD CONSTRAINT unique_word_role_combination UNIQUE (related_id, role_id);
+
+
+--
+-- Name: word_permissions unique_word_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.word_permissions
+    ADD CONSTRAINT unique_word_user_permission_combination UNIQUE (related_id, user_id, permission_id);
+
+
+--
 -- Name: user_project_feature_flags user_project_feature_flags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2228,6 +2366,14 @@ ALTER TABLE ONLY public.users
 
 ALTER TABLE ONLY public.webhooks
     ADD CONSTRAINT webhooks_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: word_permissions word_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.word_permissions
+    ADD CONSTRAINT word_permissions_pkey PRIMARY KEY (id);
 
 
 --
@@ -3889,6 +4035,30 @@ ALTER TABLE ONLY public.event_map_pins
 
 
 --
+-- Name: event_permissions event_permissions_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_permissions
+    ADD CONSTRAINT event_permissions_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.events(id) ON DELETE CASCADE;
+
+
+--
+-- Name: event_permissions event_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_permissions
+    ADD CONSTRAINT event_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
+
+
+--
+-- Name: event_permissions event_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_permissions
+    ADD CONSTRAINT event_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: events events_document_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4046,6 +4216,30 @@ ALTER TABLE ONLY public.map_permissions
 
 ALTER TABLE ONLY public.map_permissions
     ADD CONSTRAINT map_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: map_pin_permissions map_pin_permissions_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.map_pin_permissions
+    ADD CONSTRAINT map_pin_permissions_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.map_pins(id) ON DELETE CASCADE;
+
+
+--
+-- Name: map_pin_permissions map_pin_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.map_pin_permissions
+    ADD CONSTRAINT map_pin_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
+
+
+--
+-- Name: map_pin_permissions map_pin_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.map_pin_permissions
+    ADD CONSTRAINT map_pin_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -4377,6 +4571,30 @@ ALTER TABLE ONLY public.webhooks
 
 
 --
+-- Name: word_permissions word_permissions_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.word_permissions
+    ADD CONSTRAINT word_permissions_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.words(id) ON DELETE CASCADE;
+
+
+--
+-- Name: word_permissions word_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.word_permissions
+    ADD CONSTRAINT word_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
+
+
+--
+-- Name: word_permissions word_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.word_permissions
+    ADD CONSTRAINT word_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: words words_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4406,6 +4624,7 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240114105525'),
     ('20240114120905'),
     ('20240115150007'),
+    ('20240118101925'),
     ('20240120105425'),
     ('20240120110543'),
     ('20240121100632'),
@@ -4419,8 +4638,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240221121726'),
     ('20240224101433'),
     ('20240225102446'),
-    ('20240227104339'),
-    ('20240227112959'),
     ('20240227113312'),
     ('20240305085322'),
     ('20240306105236'),
@@ -4442,4 +4659,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240328173310'),
     ('20240330101909'),
     ('20240331085133'),
-    ('20240401103430');
+    ('20240401103430'),
+    ('20240402114548'),
+    ('20240406082834');
