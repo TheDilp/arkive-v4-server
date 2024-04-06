@@ -4,7 +4,7 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
+import { checkEntityLevelPermission, getHasEntityPermission, getNestedReadPermission } from "../database/queries";
 import { EntitiesWithChildren } from "../database/types";
 import { EntityListSchema } from "../database/validation";
 import { InsertDictionarySchema, ReadDictionarySchema, UpdateDictionarySchema } from "../database/validation/dictionaries";
@@ -50,8 +50,7 @@ export function dictionary_router(app: Elysia) {
             .selectFrom("dictionaries")
             .limit(body?.pagination?.limit || 10)
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
-            .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "dictionaries">[]))
+            .select(body.fields as SelectExpression<DB, "dictionaries">[])
             .$if(!!body.orderBy?.length, (qb) => {
               qb = constructOrdering(body.orderBy, qb);
               return qb;
@@ -90,14 +89,23 @@ export function dictionary_router(app: Elysia) {
             .$if(!body.fields?.length, (qb) => qb.selectAll())
             .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "dictionaries">[]))
             .$if(!!body.relations?.words, (qb) =>
-              qb.select((eb) =>
-                jsonArrayFrom(
-                  eb
-                    .selectFrom("words")
-                    .select(["words.id", "words.title", "words.translation"])
-                    .where("words.parent_id", "=", params.id),
-                ).as("words"),
-              ),
+              qb.select((eb) => {
+                let word_query = eb
+                  .selectFrom("words")
+                  .select(["words.id", "words.title", "words.translation"])
+                  .where("words.parent_id", "=", params.id);
+
+                word_query = getNestedReadPermission(
+                  word_query,
+                  permissions.is_project_owner,
+                  permissions.user_id,
+                  "word_permissions",
+                  "words.id",
+                  "read_words",
+                );
+
+                return jsonArrayFrom(word_query).as("words");
+              }),
             )
             .$if(!permissions.is_project_owner, (qb) => {
               return checkEntityLevelPermission(qb, permissions, "dictionaries");
@@ -107,7 +115,7 @@ export function dictionary_router(app: Elysia) {
             query = GetRelatedEntityPermissionsAndRoles(query, permissions, "dictionaries", params.id);
           }
 
-          const data = await query.executeTakeFirstOrThrow();
+          const data = await query.executeTakeFirst();
           if (body?.relations?.parents) {
             const parents = await GetParents({ db, id: params.id, table_name: "dictionaries" });
             return { data: { ...data, parents }, message: MessageEnum.success, ok: true, role_access: true };
