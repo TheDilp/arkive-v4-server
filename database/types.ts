@@ -8,6 +8,7 @@ export type TagsRelationTables =
   | "_documentsTotags"
   | "_graphsTotags"
   | "_mapsTotags"
+  | "_map_pinsTotags"
   | "_calendarsTotags"
   | "_eventsTotags"
   | "_dictionariesTotags"

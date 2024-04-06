@@ -112,6 +112,10 @@ export const RolePermissionsEnum = [
   "read_maps" as const,
   "update_maps" as const,
   "delete_maps" as const,
+  "create_map_pins" as const,
+  "read_map_pins" as const,
+  "update_map_pins" as const,
+  "delete_map_pins" as const,
   "create_graphs" as const,
   "read_graphs" as const,
   "update_graphs" as const,
@@ -144,6 +148,10 @@ export const RolePermissionsEnum = [
   "read_assets" as const,
   "update_assets" as const,
   "delete_assets" as const,
+  "create_words" as const,
+  "read_words" as const,
+  "update_words" as const,
+  "delete_words" as const,
 ];
 
 export const EntitiesWithPermissionsEnum: EntitiesWithPermissionCheck[] = [
