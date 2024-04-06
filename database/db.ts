@@ -1,4 +1,4 @@
-import { Kysely, PostgresDialect } from "kysely";
+import { DeduplicateJoinsPlugin, Kysely, PostgresDialect } from "kysely";
 import { DB } from "kysely-codegen";
 import { Pool } from "pg";
 
@@ -12,4 +12,5 @@ const dialect = new PostgresDialect({
 
 export const db = new Kysely<DB>({
   dialect,
+  plugins: [new DeduplicateJoinsPlugin()],
 });
