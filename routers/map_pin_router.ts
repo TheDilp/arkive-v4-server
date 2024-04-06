@@ -187,28 +187,28 @@ export function map_pin_router(app: Elysia) {
                   return jsonObjectFrom(map_query).as("linked_map");
                 },
               ])
-              .$if(!!body.relations?.events, (qb) => {
-                qb = qb.leftJoin("event_map_pins", "event_map_pins.related_id", "map_pins.id").select((eb) => {
-                  let event_query = eb
-                    .selectFrom("events")
-                    .whereRef("event_map_pins.event_id", "=", "events.id")
-                    .select(["events.id", "events.title", "events.image_id", "events.parent_id"]);
-
-                  // @ts-ignore
-                  event_query = getNestedReadPermission(
-                    event_query,
-                    permissions.is_project_owner,
-                    permissions.user_id,
-                    "event_permissions",
-                    "events.id",
-                    "read_events",
-                  );
-
-                  return jsonArrayFrom(event_query).as("events");
-                });
-                return qb;
-              })
               .where("map_pins.id", "=", params.id);
+
+            if (body.relations?.events) {
+              query = query.leftJoin("event_map_pins", "event_map_pins.related_id", "map_pins.id").select((eb) => {
+                let event_query = eb
+                  .selectFrom("events")
+                  .whereRef("event_map_pins.event_id", "=", "events.id")
+                  .select(["events.id", "events.title", "events.image_id", "events.parent_id"]);
+
+                // @ts-ignore
+                event_query = getNestedReadPermission(
+                  event_query,
+                  permissions.is_project_owner,
+                  permissions.user_id,
+                  "event_permissions",
+                  "events.id",
+                  "read_events",
+                );
+
+                return jsonArrayFrom(event_query).as("events");
+              });
+            }
 
             if (permissions.is_project_owner) {
               query = query.leftJoin("map_pin_permissions", (join) =>
@@ -221,7 +221,7 @@ export function map_pin_router(app: Elysia) {
               query = GetRelatedEntityPermissionsAndRoles(query, permissions, "map_pins", params.id);
             }
 
-            const data = await query.execute();
+            const data = await query.executeTakeFirst();
 
             return { data, message: MessageEnum.success, ok: true, role_access: true };
           },

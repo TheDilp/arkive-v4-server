@@ -117,6 +117,7 @@ export function map_router(app: Elysia) {
                 jsonArrayFrom(
                   eb
                     .selectFrom("map_pins")
+                    .distinctOn("map_pins.id")
                     .leftJoin("character_permissions", "character_permissions.related_id", "map_pins.character_id")
                     .leftJoin("characters", "characters.id", "map_pins.character_id")
                     .select([
