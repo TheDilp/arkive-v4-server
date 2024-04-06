@@ -119,23 +119,8 @@ export function map_pin_router(app: Elysia) {
           async ({ params, body, permissions }) => {
             let query = db
               .selectFrom("map_pins")
+              .select(body.fields.map((f) => `map_pins.${f}`) as SelectExpression<DB, "map_pins">[])
               .select([
-                "map_pins.id",
-                "map_pins.background_color",
-                "map_pins.border_color",
-                "map_pins.color",
-                "map_pins.character_id",
-                "map_pins.doc_id",
-                "map_pins.icon",
-                "map_pins.title",
-                "map_pins.parent_id",
-                "map_pins.is_public",
-                "map_pins.lat",
-                "map_pins.lng",
-                "map_pins.map_link",
-                "map_pins.show_background",
-                "map_pins.show_border",
-                "map_pins.map_pin_type_id",
                 (eb) => {
                   let character_query = eb
                     .selectFrom("characters")
