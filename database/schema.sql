@@ -1265,7 +1265,8 @@ CREATE TABLE public.permissions (
     title text NOT NULL,
     code text NOT NULL,
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    parent_category integer
 );
 
 
@@ -4661,4 +4662,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240331085133'),
     ('20240401103430'),
     ('20240402114548'),
-    ('20240406082834');
+    ('20240406082834'),
+    ('20240406100205');
