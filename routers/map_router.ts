@@ -4,7 +4,7 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
+import { checkEntityLevelPermission, getHasEntityPermission, getNestedReadPermission } from "../database/queries";
 import { EntityListSchema } from "../database/validation";
 import { InsertMapSchema, ReadMapSchema, UpdateMapSchema } from "../database/validation/maps";
 import { MessageEnum } from "../enums/requestEnums";
@@ -111,77 +111,116 @@ export function map_router(app: Elysia) {
             let query = db
               .selectFrom("maps")
               .select(body.fields.map((f) => `maps.${f}`) as SelectExpression<DB, "maps">[])
-              .where("maps.id", "=", params.id)
-              .$if(!!body?.relations?.map_pins, (qb) =>
-                qb.select((eb) =>
-                  jsonArrayFrom(
-                    eb
-                      .selectFrom("map_pins")
-                      .select([
-                        "map_pins.id",
-                        "map_pins.background_color",
-                        "map_pins.border_color",
-                        "map_pins.color",
-                        "map_pins.character_id",
-                        "map_pins.doc_id",
-                        "map_pins.icon",
-                        "map_pins.title",
-                        "map_pins.parent_id",
-                        "map_pins.is_public",
-                        "map_pins.lat",
-                        "map_pins.lng",
-                        "map_pins.map_link",
-                        "map_pins.show_background",
-                        "map_pins.show_border",
-                        "map_pins.map_pin_type_id",
-                        (eb) =>
-                          jsonObjectFrom(
-                            eb
-                              .selectFrom("characters")
-                              .whereRef("characters.id", "=", "map_pins.character_id")
-                              .select(["id", "full_name", "portrait_id"]),
-                          ).as("character"),
-                      ])
-                      .whereRef("map_pins.parent_id", "=", "maps.id"),
-                  ).as("map_pins"),
-                ),
-              )
-              .$if(!!body?.relations?.map_layers, (qb) =>
-                qb.select((eb) =>
-                  jsonArrayFrom(
-                    eb
-                      .selectFrom("map_layers")
-                      .select([
-                        "map_layers.id",
-                        "map_layers.title",
-                        "map_layers.image_id",
-                        "map_layers.is_public",
-                        "map_layers.parent_id",
-                        (eb) =>
-                          jsonObjectFrom(
-                            eb
-                              .selectFrom("images")
-                              .whereRef("images.id", "=", "map_layers.image_id")
-                              .select(["images.id", "images.title"]),
-                          ).as("image"),
-                      ])
-                      .whereRef("map_layers.parent_id", "=", "maps.id"),
-                  ).as("map_layers"),
-                ),
-              )
-              .$if(!!body?.relations?.images, (qb) =>
-                qb.select((eb) =>
-                  jsonArrayFrom(eb.selectFrom("images").select(["id", "title"]).whereRef("maps.image_id", "=", "images.id")).as(
-                    "images",
-                  ),
-                ),
-              )
-              .$if(!!body?.relations?.tags, (qb) =>
-                qb.select((eb) =>
-                  TagQuery(eb, "_mapsTotags", "maps", permissions.is_project_owner, permissions.user_id, "map_permissions"),
+              .where("maps.id", "=", params.id);
+            if (body?.relations?.map_pins) {
+              query = query.select((eb) =>
+                jsonArrayFrom(
+                  eb
+                    .selectFrom("map_pins")
+                    .leftJoin("character_permissions", "character_permissions.related_id", "map_pins.character_id")
+                    .leftJoin("characters", "characters.id", "map_pins.character_id")
+                    .select([
+                      "map_pins.id",
+                      "map_pins.background_color",
+                      "map_pins.border_color",
+                      "map_pins.color",
+                      "map_pins.character_id",
+                      "map_pins.doc_id",
+                      "map_pins.icon",
+                      "map_pins.title",
+                      "map_pins.parent_id",
+                      "map_pins.is_public",
+                      "map_pins.lat",
+                      "map_pins.lng",
+                      "map_pins.map_link",
+                      "map_pins.show_background",
+                      "map_pins.show_border",
+                      "map_pins.map_pin_type_id",
+                      (eb) => {
+                        let character_query = eb
+                          .selectFrom("characters")
+                          .whereRef("characters.id", "=", "map_pins.character_id")
+                          .select(["id", "full_name", "portrait_id"]);
+
+                        // @ts-ignore
+                        character_query = getNestedReadPermission(
+                          character_query,
+                          permissions.is_project_owner,
+                          permissions.user_id,
+                          "character_permissions",
+                          "characters.id",
+                          "read_characters",
+                        );
+
+                        return jsonObjectFrom(character_query).as("character");
+                      },
+                    ])
+                    .whereRef("map_pins.parent_id", "=", "maps.id")
+                    .where((wb) => {
+                      return wb.or([
+                        wb("map_pins.character_id", "=", null),
+                        wb.or([
+                          wb("characters.owner_id", "=", permissions.user_id),
+                          wb.and([
+                            wb("character_permissions.user_id", "=", permissions.user_id),
+                            wb("character_permissions.permission_id", "=", permissions.permission_id),
+                            wb("character_permissions.related_id", "=", wb.ref("characters.id")),
+                          ]),
+                          wb("character_permissions.role_id", "=", permissions.role_id),
+                        ]),
+                      ]);
+                    }),
+                ).as("map_pins"),
+              );
+            }
+            if (body?.relations?.map_layers) {
+              query = query.select((eb) =>
+                jsonArrayFrom(
+                  eb
+                    .selectFrom("map_layers")
+                    .leftJoin("image_permissions", "image_permissions.related_id", "map_layers.image_id")
+                    .leftJoin("images", "images.id", "map_layers.image_id")
+                    .select([
+                      "map_layers.id",
+                      "map_layers.title",
+                      "map_layers.image_id",
+                      "map_layers.is_public",
+                      "map_layers.parent_id",
+                      (eb) =>
+                        jsonObjectFrom(
+                          eb
+                            .selectFrom("images")
+                            .whereRef("images.id", "=", "map_layers.image_id")
+                            .select(["images.id", "images.title"]),
+                        ).as("image"),
+                    ])
+                    .whereRef("map_layers.parent_id", "=", "maps.id")
+                    .where((wb) =>
+                      wb.or([
+                        wb("images.owner_id", "=", permissions.user_id),
+                        wb.and([
+                          wb("image_permissions.user_id", "=", permissions.user_id),
+                          wb("image_permissions.permission_id", "=", permissions.permission_id),
+                          wb("image_permissions.related_id", "=", wb.ref("images.id")),
+                        ]),
+                        wb("image_permissions.role_id", "=", permissions.role_id),
+                      ]),
+                    ),
+                ).as("map_layers"),
+              );
+            }
+            if (body?.relations?.images) {
+              query = query.select((eb) =>
+                jsonArrayFrom(eb.selectFrom("images").select(["id", "title"]).whereRef("maps.image_id", "=", "images.id")).as(
+                  "images",
                 ),
               );
-
+            }
+            if (body?.relations?.tags) {
+              query = query.select((eb) =>
+                TagQuery(eb, "_mapsTotags", "maps", permissions.is_project_owner, permissions.user_id, "map_permissions"),
+              );
+            }
             if (permissions.is_project_owner) {
               query = query.leftJoin("map_permissions", (join) => join.on("map_permissions.related_id", "=", params.id));
             } else {

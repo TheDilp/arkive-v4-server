@@ -1,5 +1,5 @@
 import { Elysia } from "elysia";
-import { SelectExpression } from "kysely";
+import { SelectExpression, sql } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
@@ -92,7 +92,9 @@ export function map_pin_router(app: Elysia) {
             }
 
             if (body?.relations?.character) {
-              query = query.select(["characters.id", "characters.full_name", "characters.portrait_id"]);
+              query = query.select([
+                jsonObjectFrom(sql`SELECT (characters.id, characters.full_name, characters.portrait_id)`).as("character"),
+              ]);
             }
 
             if (!permissions.is_project_owner) {
@@ -144,7 +146,7 @@ export function map_pin_router(app: Elysia) {
                     permissions.is_project_owner,
                     permissions.user_id,
                     "character_permissions",
-                    "characters.image_id",
+                    "characters.id",
                     "read_characters",
                   );
 
@@ -161,7 +163,7 @@ export function map_pin_router(app: Elysia) {
                     permissions.is_project_owner,
                     permissions.user_id,
                     "document_permissions",
-                    "documents.image_id",
+                    "documents.id",
                     "read_documents",
                   );
 
@@ -178,7 +180,7 @@ export function map_pin_router(app: Elysia) {
                     permissions.is_project_owner,
                     permissions.user_id,
                     "map_permissions",
-                    "maps.image_id",
+                    "maps.id",
                     "read_maps",
                   );
 
@@ -198,7 +200,7 @@ export function map_pin_router(app: Elysia) {
                     permissions.is_project_owner,
                     permissions.user_id,
                     "event_permissions",
-                    "events.image_id",
+                    "events.id",
                     "read_events",
                   );
 
