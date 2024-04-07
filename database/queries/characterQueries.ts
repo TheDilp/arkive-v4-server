@@ -812,10 +812,34 @@ export async function getCharacterFamily(
       1
     FROM
       characters_relationships
-    WHERE
-     ( character_a_id = ${id}
-      OR character_b_id = ${id})
-      AND relation_type_id = ${relation_type_id}
+      LEFT JOIN character_permissions a_permissions ON a_permissions.related_id = character_a_id
+      LEFT JOIN character_permissions b_permissions ON b_permissions.related_id = character_b_id
+      LEFT JOIN characters a_chars ON a_chars.id = a_permissions.related_id
+      LEFT JOIN characters b_chars ON b_chars.id = b_permissions.related_id
+      WHERE
+    (character_a_id = ${id} OR character_b_id = ${id})
+    AND relation_type_id = ${relation_type_id}
+    AND (
+        (a_chars.owner_id = ${permissions.user_id}
+            OR (
+                a_permissions.user_id = ${permissions.user_id}
+                AND
+                a_permissions.permission_id = ${permissions.permission_id}
+            )
+            OR a_permissions.role_id = ${permissions.role_id}
+        )
+        AND
+        (
+            b_chars.owner_id = ${permissions.user_id}
+            OR (
+                b_permissions.user_id = ${permissions.user_id}
+                AND
+                b_permissions.permission_id = ${permissions.permission_id}
+            )
+            OR b_permissions.role_id = ${permissions.role_id}
+        )
+    )
+
     UNION
     SELECT
       cr.character_a_id,
@@ -825,9 +849,39 @@ export async function getCharacterFamily(
       characters_relationships cr
       INNER JOIN related_characters rc ON cr.character_a_id = rc.character_b_id
       OR cr.character_b_id = rc.character_a_id
+
+      LEFT JOIN character_permissions a_permissions ON a_permissions.related_id = rc.character_a_id
+      LEFT JOIN character_permissions b_permissions ON b_permissions.related_id = rc.character_b_id
+      LEFT JOIN characters a_chars ON a_chars.id = a_permissions.related_id
+      LEFT JOIN characters b_chars ON b_chars.id = b_permissions.related_id
+
+
     WHERE
       cr.relation_type_id = ${relation_type_id} AND
       depth < ${Number(count || 1) - (Number(count) <= 2 ? 0 : 1)}
+
+      AND (
+        (a_chars.owner_id = ${permissions.user_id}
+            OR (
+                a_permissions.user_id = ${permissions.user_id}
+                AND
+                a_permissions.permission_id = ${permissions.permission_id}
+            )
+            OR a_permissions.role_id = ${permissions.role_id}
+        )
+        AND
+        (
+            b_chars.owner_id = ${permissions.user_id}
+            OR (
+                b_permissions.user_id = ${permissions.user_id}
+                AND
+                b_permissions.permission_id = ${permissions.permission_id}
+            )
+            OR b_permissions.role_id = ${permissions.role_id}
+        )
+    )
+
+
   )
 SELECT
   *
@@ -836,6 +890,9 @@ FROM
   `.execute(db);
   const ids = uniq(baseCharacterRelationships.rows.flatMap((r) => [r.character_a_id, r.character_b_id]));
 
+  if (ids.length === 0) {
+    return { data: { nodes: [], edges: [] }, ok: true, message: MessageEnum.success, role_access: true };
+  }
   const mainCharacters = await db
     .selectFrom("characters")
     .select(["characters.id", "characters.portrait_id", "characters.full_name", "characters.is_public"])
@@ -934,6 +991,8 @@ FROM
     });
   const uniqueChars = uniqBy(withParents, "id");
 
+  const presentNodeIds = uniqueChars.map((c) => c.id);
+
   const nodes = uniqueChars.map((c) => ({
     id: c.id,
     character_id: c.id,
@@ -952,14 +1011,15 @@ FROM
         : c.parents;
       if (filteredParents.length) {
         for (let index = 0; index < filteredParents.length; index++) {
-          base.push({
-            id: randomUUID(),
-            source_id: c.parents[index],
-            target_id: c.id,
-            target_arrow_shape: targetArrow,
-            curve_style: curveStyle,
-            taxi_direction: "downward",
-          });
+          if (presentNodeIds.includes(c.parents[index]) && presentNodeIds.includes(c.id))
+            base.push({
+              id: randomUUID(),
+              source_id: c.parents[index],
+              target_id: c.id,
+              target_arrow_shape: targetArrow,
+              curve_style: curveStyle,
+              taxi_direction: "downward",
+            });
         }
       }
     }
@@ -970,14 +1030,15 @@ FROM
         : c.children;
 
       for (let index = 0; index < filteredChildren.length; index++) {
-        base.push({
-          id: randomUUID(),
-          source_id: c.id,
-          target_id: c.children[index],
-          target_arrow_shape: targetArrow,
-          curve_style: curveStyle,
-          taxi_direction: "downward",
-        });
+        if (presentNodeIds.includes(c.children[index]) && presentNodeIds.includes(c.id))
+          base.push({
+            id: randomUUID(),
+            source_id: c.id,
+            target_id: c.children[index],
+            target_arrow_shape: targetArrow,
+            curve_style: curveStyle,
+            taxi_direction: "downward",
+          });
       }
     }
     return base;
