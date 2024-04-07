@@ -315,10 +315,14 @@ export function character_router(app: Elysia) {
           response: ResponseWithDataSchema,
           beforeHandle: async (context) => beforeRoleHandler(context, "read_characters"),
         })
-        .get("/family/:relation_type_id/:id/:count", async ({ params }) => getCharacterFamily(params, false), {
-          response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "read_characters"),
-        })
+        .get(
+          "/family/:relation_type_id/:id/:count",
+          async ({ params, permissions }) => getCharacterFamily(params, permissions, false),
+          {
+            response: ResponseWithDataSchema,
+            beforeHandle: async (context) => beforeRoleHandler(context, "read_characters"),
+          },
+        )
         .post(
           "/update/:id",
           async ({ params, body, permissions }) => {

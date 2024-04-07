@@ -673,7 +673,11 @@ export async function readCharacter(
   return { data: rest, message: MessageEnum.success, ok: true, role_access: true };
 }
 
-export async function getCharacterFamily(params: { id: string; relation_type_id: string; count: string }, isPublic: boolean) {
+export async function getCharacterFamily(
+  params: { id: string; relation_type_id: string; count: string },
+  permissions: PermissionDecorationType,
+  isPublic: boolean,
+) {
   const { id, relation_type_id, count } = params;
 
   const relationType = await db
@@ -693,16 +697,10 @@ export async function getCharacterFamily(params: { id: string; relation_type_id:
 
   // If it is not a hierarchical relationship
   if (isDirect) {
-    const targets = await db
+    let a_query = db
       .selectFrom("characters_relationships")
-
-      .where((eb) => eb.and([eb("character_a_id", "=", id), eb("relation_type_id", "=", relation_type_id)]))
       .leftJoin("characters", "characters.id", "characters_relationships.character_b_id")
-      .$if(isPublic, (qb) => {
-        if (isPublic) qb = qb.where("characters.is_public", "=", isPublic);
-
-        return qb;
-      })
+      .leftJoin("character_permissions", "character_permissions.related_id", "character_a_id")
       .select([
         "characters.id",
         "characters.full_name",
@@ -710,30 +708,72 @@ export async function getCharacterFamily(params: { id: string; relation_type_id:
         "characters.project_id",
         "characters.is_public",
       ])
-      .union(
-        db
-          .selectFrom("characters_relationships")
-          .where((eb) => eb.and([eb("character_b_id", "=", id), eb("relation_type_id", "=", relation_type_id)]))
-          .leftJoin("characters", "characters.id", "characters_relationships.character_a_id")
-          .$if(isPublic, (qb) => {
-            if (isPublic) qb = qb.where("characters.is_public", "=", isPublic);
-
-            return qb;
-          })
-          .select(["characters.id", "characters.full_name", "portrait_id", "project_id", "characters.is_public"]),
+      .where((wb) =>
+        wb.and([
+          wb("character_a_id", "=", id),
+          wb("relation_type_id", "=", relation_type_id),
+          wb.or([
+            wb("characters.owner_id", "=", permissions.user_id),
+            wb.and([
+              wb("character_permissions.user_id", "=", permissions.user_id),
+              wb("character_permissions.permission_id", "=", permissions.permission_id),
+              wb("character_permissions.related_id", "=", wb.ref("character_b_id")),
+            ]),
+            wb("character_permissions.role_id", "=", permissions.role_id),
+          ]),
+        ]),
       )
-      .union(
-        db
-          .selectFrom("characters")
-          .where("characters.id", "=", id)
-          .$if(isPublic, (qb) => {
-            if (isPublic) qb = qb.where("characters.is_public", "=", isPublic);
+      .$if(isPublic, (qb) => {
+        if (isPublic) qb = qb.where("characters.is_public", "=", isPublic);
 
-            return qb;
-          })
-          .select(["characters.id", "characters.full_name", "portrait_id", "project_id", "characters.is_public"]),
+        return qb;
+      });
+    let b_query = db
+      .selectFrom("characters_relationships")
+      .leftJoin("characters", "characters.id", "characters_relationships.character_a_id")
+      .leftJoin("character_permissions", "character_permissions.related_id", "character_b_id")
+      .select(["characters.id", "characters.full_name", "portrait_id", "project_id", "characters.is_public"])
+      .where((wb) =>
+        wb.and([
+          wb("character_b_id", "=", id),
+          wb("relation_type_id", "=", relation_type_id),
+          wb.or([
+            wb("characters.owner_id", "=", permissions.permission_id),
+            wb.and([
+              wb("character_permissions.user_id", "=", permissions.user_id),
+              wb("character_permissions.permission_id", "=", permissions.permission_id),
+              wb("character_permissions.related_id", "=", wb.ref("character_a_id")),
+            ]),
+            wb("character_permissions.role_id", "=", permissions.role_id),
+          ]),
+        ]),
       )
-      .execute();
+      .$if(isPublic, (qb) => {
+        if (isPublic) qb = qb.where("characters.is_public", "=", isPublic);
+
+        return qb;
+      });
+
+    let char_query = db
+      .selectFrom("characters")
+      .where("characters.id", "=", id)
+      .$if(isPublic, (qb) => {
+        if (isPublic) qb = qb.where("characters.is_public", "=", isPublic);
+
+        return qb;
+      })
+      .select(["characters.id", "characters.full_name", "portrait_id", "project_id", "characters.is_public"]);
+
+    char_query = getNestedReadPermission(
+      char_query,
+      permissions.is_project_owner,
+      permissions.user_id,
+      "character_permissions",
+      "characters.id",
+      "read_characters",
+    );
+
+    const targets = await a_query.union(b_query).union(char_query).execute();
 
     const nodes = targets.map((target) => ({
       id: target.id,
@@ -757,7 +797,6 @@ export async function getCharacterFamily(params: { id: string; relation_type_id:
           taxi_direction: "downward",
         };
       });
-
     return { data: { edges, nodes }, ok: true, message: MessageEnum.success, role_access: true };
   }
 
@@ -795,13 +834,26 @@ SELECT
 FROM
   related_characters;
   `.execute(db);
-
   const ids = uniq(baseCharacterRelationships.rows.flatMap((r) => [r.character_a_id, r.character_b_id]));
 
   const mainCharacters = await db
     .selectFrom("characters")
-    .select(["id", "portrait_id", "full_name", "is_public"])
-    .where("id", "in", ids)
+    .select(["characters.id", "characters.portrait_id", "characters.full_name", "characters.is_public"])
+    .leftJoin("character_permissions", "character_permissions.related_id", "characters.id")
+    .where((wb) =>
+      wb.and([
+        wb("characters.id", "in", ids),
+        wb.or([
+          wb("characters.owner_id", "=", permissions.user_id),
+          wb.and([
+            wb("character_permissions.user_id", "=", permissions.user_id),
+            wb("character_permissions.permission_id", "=", permissions.permission_id),
+            wb("character_permissions.related_id", "=", wb.ref("characters.id")),
+          ]),
+          wb("character_permissions.role_id", "=", permissions.role_id),
+        ]),
+      ]),
+    )
     .$if(isPublic, (qb) => {
       if (isPublic) qb.where("characters.is_public", "=", isPublic);
 
@@ -814,10 +866,24 @@ FROM
       ? []
       : await db
           .selectFrom("characters")
+          .leftJoin("character_permissions", "character_permissions.related_id", "characters.id")
           .leftJoin("characters_relationships", "character_b_id", "characters.id")
-          .where("character_a_id", "in", ids)
-          .where("characters.id", "not in", ids)
-          .where("relation_type_id", "=", relation_type_id)
+          .where((wb) =>
+            wb.and([
+              wb("character_a_id", "in", ids),
+              wb("characters.id", "not in", ids),
+              wb("relation_type_id", "=", relation_type_id),
+              wb.or([
+                wb("characters.owner_id", "=", permissions.user_id),
+                wb.and([
+                  wb("character_permissions.user_id", "=", permissions.user_id),
+                  wb("character_permissions.permission_id", "=", permissions.permission_id),
+                  wb("character_permissions.related_id", "=", wb.ref("character_a_id")),
+                ]),
+                wb("character_permissions.role_id", "=", permissions.role_id),
+              ]),
+            ]),
+          )
           .$if(isPublic, (qb) => {
             if (isPublic) qb.where("characters.is_public", "=", isPublic);
 
@@ -828,16 +894,29 @@ FROM
   const additionalCharsChildren = await db
     .selectFrom("characters")
     .leftJoin("characters_relationships", "character_a_id", "characters.id")
-    .where("character_b_id", "in", ids)
-    .where("characters.id", "not in", ids)
-    .where("relation_type_id", "=", relation_type_id)
+    .leftJoin("character_permissions", "character_permissions.related_id", "characters.id")
+    .where((wb) =>
+      wb.and([
+        wb("character_b_id", "in", ids),
+        wb("characters.id", "not in", ids),
+        wb("relation_type_id", "=", relation_type_id),
+        wb.or([
+          wb("characters.owner_id", "=", permissions.user_id),
+          wb.and([
+            wb("character_permissions.user_id", "=", permissions.user_id),
+            wb("character_permissions.permission_id", "=", permissions.permission_id),
+            wb("character_permissions.related_id", "=", wb.ref("character_b_id")),
+          ]),
+          wb("character_permissions.role_id", "=", permissions.role_id),
+        ]),
+      ]),
+    )
     .$if(isPublic, (qb) => {
       if (isPublic) qb.where("characters.is_public", "=", isPublic);
 
       return qb;
     })
-    .select(["characters.id", "portrait_id", "full_name", "character_b_id", "characters.is_public"])
-
+    .select(["characters.id", "characters.portrait_id", "characters.full_name", "character_b_id", "characters.is_public"])
     .execute();
 
   const withParents = [...mainCharacters, ...additionalChars, ...additionalCharsChildren]
