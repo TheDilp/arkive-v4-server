@@ -50,6 +50,7 @@ export async function CreateTagRelations({
   await tx
     .insertInto(relationalTable)
     .values(tags.map((tag) => ({ A: id, B: tag.id })))
+    .onConflict((oc) => oc.columns(["A", "B"]).doNothing())
     .execute();
 }
 
@@ -95,6 +96,7 @@ export async function UpdateTagRelations({
     await tx
       .insertInto(relationalTable)
       .values(tagsToInsert.map((tag) => ({ A: id, B: tag })))
+      .onConflict((oc) => oc.columns(["A", "B"]).doNothing())
       .execute();
 
   return tagsToDelete;
