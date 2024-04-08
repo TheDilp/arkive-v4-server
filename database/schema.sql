@@ -1378,21 +1378,7 @@ CREATE TABLE public.tags (
 );
 
 
---
--- Name: timelines; Type: TABLE; Schema: public; Owner: -
---
 
-CREATE TABLE public.timelines (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    title text NOT NULL,
-    project_id uuid NOT NULL,
-    parent_id uuid,
-    icon text,
-    is_folder boolean,
-    is_public boolean
-);
 
 
 --
@@ -1978,13 +1964,6 @@ ALTER TABLE ONLY public.tag_permissions
 ALTER TABLE ONLY public.tags
     ADD CONSTRAINT tags_pkey PRIMARY KEY (id);
 
-
---
--- Name: timelines timelines_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.timelines
-    ADD CONSTRAINT timelines_pkey PRIMARY KEY (id);
 
 
 --
@@ -2883,14 +2862,6 @@ ALTER TABLE ONLY public."_calendarsTotags"
 
 ALTER TABLE ONLY public."_calendarsTotimelines"
     ADD CONSTRAINT "_calendarsTotimelines_A_fkey" FOREIGN KEY ("A") REFERENCES public.calendars(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: _calendarsTotimelines _calendarsTotimelines_B_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public."_calendarsTotimelines"
-    ADD CONSTRAINT "_calendarsTotimelines_B_fkey" FOREIGN KEY ("B") REFERENCES public.timelines(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -4475,22 +4446,6 @@ ALTER TABLE ONLY public.tag_permissions
 
 ALTER TABLE ONLY public.tags
     ADD CONSTRAINT tags_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: timelines timelines_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.timelines
-    ADD CONSTRAINT timelines_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.timelines(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: timelines timelines_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.timelines
-    ADD CONSTRAINT timelines_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
