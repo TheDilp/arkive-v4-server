@@ -11,25 +11,20 @@ export function checkEntityLevelPermission(
   entity: EntitiesWithPermissionCheck,
   related_id?: string,
 ) {
-  const entityRelationTable = "entity_permissions";
-  if (entityRelationTable) {
-    qb = qb
-      .leftJoin(entityRelationTable, `${entityRelationTable}.related_id`, `${entity}.id`)
-      .where((wb: any) =>
-        wb.or([
-          wb(`${entity}.owner_id`, "=", permissions.user_id),
-          wb.and([
-            wb(`${entityRelationTable}.user_id`, "=", permissions.user_id),
-            wb(`${entityRelationTable}.permission_id`, "=", permissions.permission_id),
-            wb(`${entityRelationTable}.related_id`, "=", related_id || wb.ref(`${entity}.id`)),
-          ]),
-          wb(`${entityRelationTable}.role_id`, "=", permissions.role_id),
+  qb = qb
+    .leftJoin("entity_permissions", "entity_permissions.related_id", `${entity}.id`)
+    .where((wb: any) =>
+      wb.or([
+        wb(`${entity}.owner_id`, "=", permissions.user_id),
+        wb.and([
+          wb("entity_permissions.user_id", "=", permissions.user_id),
+          wb("entity_permissions.permission_id", "=", permissions.permission_id),
+          wb("entity_permissions.related_id", "=", related_id || wb.ref(`${entity}.id`)),
         ]),
-      );
-  } else {
-    console.error("NO ENTITY RELATION TABLE", entity);
-    qb = qb.clearLimit().limit(0);
-  }
+        wb("entity_permissions.role_id", "=", permissions.role_id),
+      ]),
+    );
+
   return qb;
 }
 

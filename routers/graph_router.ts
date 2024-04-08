@@ -181,17 +181,7 @@ export function graph_router(app: Elysia) {
               .$if(!!body?.relations?.tags && !!permissions.all_permissions?.read_tags, (qb) =>
                 qb.select((eb) => TagQuery(eb, "_graphsTotags", "graphs", permissions.is_project_owner, permissions.user_id)),
               )
-              .select([
-                "graphs.id",
-                "graphs.title",
-                "graphs.icon",
-                "graphs.is_folder",
-                "graphs.is_public",
-                "graphs.parent_id",
-                "graphs.default_node_shape",
-                "graphs.default_node_color",
-                "graphs.default_edge_color",
-              ])
+              .select(body.fields.map((f) => `graphs.${f}`) as SelectExpression<DB, "graphs">[])
               .$if(!permissions.is_project_owner, (qb) => {
                 return checkEntityLevelPermission(qb, permissions, "graphs");
               })
