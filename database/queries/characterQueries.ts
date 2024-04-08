@@ -812,34 +812,10 @@ export async function getCharacterFamily(
       1
     FROM
       characters_relationships
-      LEFT JOIN character_permissions a_permissions ON a_permissions.related_id = character_a_id
-      LEFT JOIN character_permissions b_permissions ON b_permissions.related_id = character_b_id
-      LEFT JOIN characters a_chars ON a_chars.id = a_permissions.related_id
-      LEFT JOIN characters b_chars ON b_chars.id = b_permissions.related_id
-      WHERE
-    (character_a_id = ${id} OR character_b_id = ${id})
-    AND relation_type_id = ${relation_type_id}
-    AND (
-        (a_chars.owner_id = ${permissions.user_id}
-            OR (
-                a_permissions.user_id = ${permissions.user_id}
-                AND
-                a_permissions.permission_id = ${permissions.permission_id}
-            )
-            OR a_permissions.role_id = ${permissions.role_id}
-        )
-        AND
-        (
-            b_chars.owner_id = ${permissions.user_id}
-            OR (
-                b_permissions.user_id = ${permissions.user_id}
-                AND
-                b_permissions.permission_id = ${permissions.permission_id}
-            )
-            OR b_permissions.role_id = ${permissions.role_id}
-        )
-    )
-
+    WHERE
+     ( character_a_id = ${id}
+      OR character_b_id = ${id})
+      AND relation_type_id = ${relation_type_id}
     UNION
     SELECT
       cr.character_a_id,
@@ -849,39 +825,9 @@ export async function getCharacterFamily(
       characters_relationships cr
       INNER JOIN related_characters rc ON cr.character_a_id = rc.character_b_id
       OR cr.character_b_id = rc.character_a_id
-
-      LEFT JOIN character_permissions a_permissions ON a_permissions.related_id = rc.character_a_id
-      LEFT JOIN character_permissions b_permissions ON b_permissions.related_id = rc.character_b_id
-      LEFT JOIN characters a_chars ON a_chars.id = a_permissions.related_id
-      LEFT JOIN characters b_chars ON b_chars.id = b_permissions.related_id
-
-
     WHERE
       cr.relation_type_id = ${relation_type_id} AND
       depth < ${Number(count || 1) - (Number(count) <= 2 ? 0 : 1)}
-
-      AND (
-        (a_chars.owner_id = ${permissions.user_id}
-            OR (
-                a_permissions.user_id = ${permissions.user_id}
-                AND
-                a_permissions.permission_id = ${permissions.permission_id}
-            )
-            OR a_permissions.role_id = ${permissions.role_id}
-        )
-        AND
-        (
-            b_chars.owner_id = ${permissions.user_id}
-            OR (
-                b_permissions.user_id = ${permissions.user_id}
-                AND
-                b_permissions.permission_id = ${permissions.permission_id}
-            )
-            OR b_permissions.role_id = ${permissions.role_id}
-        )
-    )
-
-
   )
 SELECT
   *
@@ -889,7 +835,6 @@ FROM
   related_characters;
   `.execute(db);
   const ids = uniq(baseCharacterRelationships.rows.flatMap((r) => [r.character_a_id, r.character_b_id]));
-
   if (ids.length === 0) {
     return { data: { nodes: [], edges: [] }, ok: true, message: MessageEnum.success, role_access: true };
   }
@@ -976,7 +921,10 @@ FROM
     .select(["characters.id", "characters.portrait_id", "characters.full_name", "character_b_id", "characters.is_public"])
     .execute();
 
-  const withParents = [...mainCharacters, ...additionalChars, ...additionalCharsChildren]
+  const permittedCharacters = [...mainCharacters, ...additionalChars, ...additionalCharsChildren];
+  const permittedIds = permittedCharacters.map((c) => c.id);
+
+  const withParents = permittedCharacters
     .filter((char) => (isPublic ? char.is_public : true))
     .map((char) => {
       const parents = baseCharacterRelationships.rows
@@ -990,8 +938,6 @@ FROM
       return { ...char, parents, children };
     });
   const uniqueChars = uniqBy(withParents, "id");
-
-  const presentNodeIds = uniqueChars.map((c) => c.id);
 
   const nodes = uniqueChars.map((c) => ({
     id: c.id,
@@ -1011,7 +957,7 @@ FROM
         : c.parents;
       if (filteredParents.length) {
         for (let index = 0; index < filteredParents.length; index++) {
-          if (presentNodeIds.includes(c.parents[index]) && presentNodeIds.includes(c.id))
+          if (permittedIds.includes(c.parents[index]) && permittedIds.includes(c.id))
             base.push({
               id: randomUUID(),
               source_id: c.parents[index],
@@ -1030,7 +976,7 @@ FROM
         : c.children;
 
       for (let index = 0; index < filteredChildren.length; index++) {
-        if (presentNodeIds.includes(c.children[index]) && presentNodeIds.includes(c.id))
+        if (permittedIds.includes(c.children[index]) && permittedIds.includes(c.id))
           base.push({
             id: randomUUID(),
             source_id: c.id,

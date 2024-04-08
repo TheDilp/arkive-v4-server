@@ -317,7 +317,9 @@ export function character_router(app: Elysia) {
         })
         .get(
           "/family/:relation_type_id/:id/:count",
-          async ({ params, permissions }) => getCharacterFamily(params, permissions, false),
+          async ({ params, permissions }) => {
+            return getCharacterFamily(params, permissions, false);
+          },
           {
             response: ResponseWithDataSchema,
             beforeHandle: async (context) => beforeRoleHandler(context, "read_characters"),
