@@ -52,7 +52,7 @@ export function random_table_router(app: Elysia) {
                 }
               }
               if (body.permissions?.length) {
-                await CreateEntityPermissions(tx, id, "random_table_permissions", body.permissions);
+                await CreateEntityPermissions(tx, id, body.permissions);
               }
             });
             return { message: `Random table ${MessageEnum.successfully_created}`, ok: true, role_access: true };
@@ -216,7 +216,7 @@ export function random_table_router(app: Elysia) {
                   }
                 }
                 if (body?.permissions) {
-                  await UpdateEntityPermissions(tx, params.id, "random_table_permissions", body.permissions);
+                  await UpdateEntityPermissions(tx, params.id, body.permissions);
                 }
               });
             } else {

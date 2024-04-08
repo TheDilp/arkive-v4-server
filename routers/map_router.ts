@@ -53,7 +53,7 @@ export function map_router(app: Elysia) {
                 await tx.insertInto("map_layers").values(formattedLayers).execute();
               }
               if (body?.permissions) {
-                await CreateEntityPermissions(tx, map.id, "map_permissions", body.permissions);
+                await CreateEntityPermissions(tx, map.id, body.permissions);
               }
             });
 
@@ -117,9 +117,13 @@ export function map_router(app: Elysia) {
                 let map_pins_query = eb
                   .selectFrom("map_pins")
                   .distinctOn("map_pins.id")
-                  .leftJoin("character_permissions", "character_permissions.related_id", "map_pins.character_id")
+                  .leftJoin(
+                    "entity_permissions as character_permissions",
+                    "character_permissions.related_id",
+                    "map_pins.character_id",
+                  )
                   .leftJoin("permissions as char_perm_codes", "char_perm_codes.id", "character_permissions.permission_id")
-                  .leftJoin("map_pin_permissions", "map_pin_permissions.related_id", "map_pins.id")
+                  .leftJoin("entity_permissions as map_pin_permissions", "map_pin_permissions.related_id", "map_pins.id")
                   .leftJoin("permissions as map_pin_perm_codes", "map_pin_perm_codes.id", "map_pin_permissions.permission_id")
                   .leftJoin("characters", "characters.id", "map_pins.character_id")
                   .select([
@@ -150,7 +154,6 @@ export function map_router(app: Elysia) {
                         character_query,
                         permissions.is_project_owner,
                         permissions.user_id,
-                        "character_permissions",
                         "characters.id",
                         "read_characters",
                       );
@@ -191,7 +194,7 @@ export function map_router(app: Elysia) {
                 jsonArrayFrom(
                   eb
                     .selectFrom("map_layers")
-                    .leftJoin("image_permissions", "image_permissions.related_id", "map_layers.image_id")
+                    .leftJoin("entity_permissions", "entity_permissions.related_id", "map_layers.image_id")
                     .leftJoin("images", "images.id", "map_layers.image_id")
                     .select([
                       "map_layers.id",
@@ -312,7 +315,7 @@ export function map_router(app: Elysia) {
                   }
                 }
                 if (body.permissions) {
-                  await UpdateEntityPermissions(tx, params.id, "map_permissions", body.permissions);
+                  await UpdateEntityPermissions(tx, params.id, body.permissions);
                 }
                 if (body.data) await tx.updateTable("maps").where("maps.id", "=", params.id).set(body.data).execute();
               });

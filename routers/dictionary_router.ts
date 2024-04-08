@@ -98,7 +98,6 @@ export function dictionary_router(app: Elysia) {
                   word_query,
                   permissions.is_project_owner,
                   permissions.user_id,
-                  "word_permissions",
                   "words.id",
                   "read_words",
                 );
@@ -135,7 +134,7 @@ export function dictionary_router(app: Elysia) {
             await db.transaction().execute(async (tx) => {
               await tx.updateTable("dictionaries").where("id", "=", params.id).set(body.data).execute();
               if (body?.permissions) {
-                await UpdateEntityPermissions(tx, params.id, "dictionary_permissions", body.permissions);
+                await UpdateEntityPermissions(tx, params.id, body.permissions);
               }
             });
             return { message: MessageEnum.success, ok: true, role_access: true };

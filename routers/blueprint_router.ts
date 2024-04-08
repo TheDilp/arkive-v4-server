@@ -59,7 +59,7 @@ export function blueprint_router(app: Elysia) {
               }
 
               if (body.permissions?.length) {
-                await CreateEntityPermissions(tx, newBlueprint.id, "blueprint_permissions", body.permissions);
+                await CreateEntityPermissions(tx, newBlueprint.id, body.permissions);
               }
             });
             return { message: `Blueprint ${MessageEnum.successfully_created}`, ok: true, role_access: true };
@@ -302,7 +302,7 @@ export function blueprint_router(app: Elysia) {
                     }
                   }
                   if (body.permissions) {
-                    await UpdateEntityPermissions(tx, params.id, "blueprint_permissions", body.permissions);
+                    await UpdateEntityPermissions(tx, params.id, body.permissions);
                   }
                 });
               }

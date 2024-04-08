@@ -5,7 +5,6 @@ import { AvailablePermissions, EntitiesWithPermissionCheck } from "../../types/e
 import { PermissionDecorationType } from "../../types/requestTypes";
 import { getPermissionTableFromEntity } from "../../utils/requestUtils";
 import { db } from "../db";
-import { EntityPermissionTables } from "../types";
 
 export function checkEntityLevelPermission(
   qb: SelectQueryBuilder<any, any, any>,
@@ -56,17 +55,16 @@ export function getNestedReadPermission(
   subquery: SelectQueryBuilder<DB, any, any>,
   is_project_owner: boolean,
   user_id: string,
-  permission_table: EntityPermissionTables,
   related_table_with_field: string,
   permission_code: AvailablePermissions,
 ) {
   if (!is_project_owner) {
     // @ts-ignore
     subquery = subquery
-      .leftJoin(permission_table, `${permission_table}.related_id`, related_table_with_field)
+      .leftJoin("entity_permissions", "entity_permissions.related_id", related_table_with_field)
       // @ts-ignore
-      .leftJoin("permissions", `${permission_table}.permission_id`, "permissions.id")
-      .where(`${permission_table}.user_id`, "=", user_id)
+      .leftJoin("permissions", "entity_permissions.permission_id", "permissions.id")
+      .where("entity_permissions.user_id", "=", user_id)
       .where("permissions.code", "=", permission_code);
   }
   return subquery;

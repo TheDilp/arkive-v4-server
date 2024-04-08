@@ -53,7 +53,7 @@ export function graph_router(app: Elysia) {
                 await CreateTagRelations({ tx, relationalTable: "_graphsTotags", id: graph.id, tags: body.relations.tags });
 
               if (body.permissions?.length) {
-                await CreateEntityPermissions(tx, graph.id, "graph_permissions", body.permissions);
+                await CreateEntityPermissions(tx, graph.id, body.permissions);
               }
             });
             return { message: `Graph ${MessageEnum.successfully_created}`, ok: true, role_access: true };
@@ -147,7 +147,6 @@ export function graph_router(app: Elysia) {
                             character_subquery,
                             permissions.is_project_owner,
                             permissions.user_id,
-                            "character_permissions",
                             "nodes.character_id",
                             "read_characters",
                           );
@@ -164,7 +163,6 @@ export function graph_router(app: Elysia) {
                             image_subquery,
                             permissions.is_project_owner,
                             permissions.user_id,
-                            "image_permissions",
                             "nodes.image_id",
                             "read_assets",
                           );
@@ -240,7 +238,7 @@ export function graph_router(app: Elysia) {
                     });
                 }
                 if (body?.permissions) {
-                  await UpdateEntityPermissions(tx, params.id, "graph_permissions", body.permissions);
+                  await UpdateEntityPermissions(tx, params.id, body.permissions);
                 }
               });
 

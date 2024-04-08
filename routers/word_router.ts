@@ -44,7 +44,7 @@ export function word_router(app: Elysia) {
                 .executeTakeFirstOrThrow();
 
               if (body.permissions?.length) {
-                await CreateEntityPermissions(tx, word.id, "word_permissions", body.permissions);
+                await CreateEntityPermissions(tx, word.id, body.permissions);
               }
             });
 
@@ -108,7 +108,7 @@ export function word_router(app: Elysia) {
               .select(body.fields.map((f) => `words.${f}`) as SelectExpression<DB, "words">[]);
 
             if (permissions.is_project_owner) {
-              query = query.leftJoin("word_permissions", (join) => join.on("word_permissions.related_id", "=", params.id));
+              query = query.leftJoin("entity_permissions", (join) => join.on("entity_permissions.related_id", "=", params.id));
             } else {
               query = checkEntityLevelPermission(query, permissions, "words", params.id);
             }
@@ -134,7 +134,7 @@ export function word_router(app: Elysia) {
                 await tx.updateTable("words").where("words.id", "=", params.id).set(body.data).execute();
 
                 if (body?.permissions) {
-                  await UpdateEntityPermissions(tx, params.id, "word_permissions", body.permissions);
+                  await UpdateEntityPermissions(tx, params.id, body.permissions);
                 }
               });
               return { message: `Word ${MessageEnum.successfully_updated}`, ok: true, role_access: true };

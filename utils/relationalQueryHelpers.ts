@@ -3,7 +3,7 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { getNestedReadPermission } from "../database/queries";
-import { EntitiesWithChildren, EntitiesWithTags, EntityPermissionTables, TagsRelationTables } from "../database/types";
+import { EntitiesWithChildren, EntitiesWithTags, TagsRelationTables } from "../database/types";
 import {
   AvailablePermissions,
   EntitiesWithFolders,
@@ -28,14 +28,7 @@ export function TagQuery(
     .select(["tags.id", "tags.title", "tags.color"]);
 
   // @ts-ignore
-  tag_query = getNestedReadPermission(
-    tag_query,
-    is_project_owner,
-    user_id,
-    "tag_permissions",
-    `${relationalTable}.B`,
-    "read_tags",
-  );
+  tag_query = getNestedReadPermission(tag_query, is_project_owner, user_id, `${relationalTable}.B`, "read_tags");
 
   return jsonArrayFrom(tag_query).as("tags");
 }
@@ -90,7 +83,7 @@ export async function UpdateTagRelations({
       .where(`${relationalTable}.B`, "in", tagsToDelete);
 
     if (!is_project_owner) {
-      delete_query = checkDeletePermissions(delete_query, "tag_permissions", `${relationalTable}.B`, "read_tags");
+      delete_query = checkDeletePermissions(delete_query, `${relationalTable}.B`, "read_tags");
     }
 
     await delete_query.execute();
@@ -310,15 +303,10 @@ export async function UpdateCharacterRelationships({
   }
 }
 
-export async function CreateEntityPermissions(
-  tx: Transaction<DB>,
-  id: string,
-  relationalTable: EntityPermissionTables,
-  permissions: InsertPermissionType,
-) {
+export async function CreateEntityPermissions(tx: Transaction<DB>, id: string, permissions: InsertPermissionType) {
   if (permissions?.length)
     await tx
-      .insertInto(relationalTable)
+      .insertInto("entity_permissions")
       .values(
         permissions.map((p) => ({
           related_id: id,
@@ -329,16 +317,11 @@ export async function CreateEntityPermissions(
       )
       .execute();
 }
-export async function UpdateEntityPermissions(
-  tx: Transaction<DB>,
-  id: string,
-  relationalTable: EntityPermissionTables,
-  permissions: UpdatePermissionType,
-) {
-  await tx.deleteFrom(relationalTable).where("related_id", "=", id).execute();
+export async function UpdateEntityPermissions(tx: Transaction<DB>, id: string, permissions: UpdatePermissionType) {
+  await tx.deleteFrom("entity_permissions").where("related_id", "=", id).execute();
   if (permissions?.length) {
     await tx
-      .insertInto(relationalTable)
+      .insertInto("entity_permissions")
       .values(
         permissions.map((perm) => ({
           related_id: id,
@@ -404,15 +387,14 @@ export function GetRelatedEntityPermissionsAndRoles(
 
 export function checkDeletePermissions(
   query: DeleteQueryBuilder<DB, any, DeleteResult>,
-  permission_table: EntityPermissionTables,
   reference_table_with_column: string,
   required_permission: AvailablePermissions,
 ) {
   // @ts-ignore
   query = query
-    .using(permission_table)
-    .leftJoin("permissions", "permission_id", `${permission_table}.permission_id`)
-    .whereRef(`${permission_table}.related_id`, "=", reference_table_with_column)
+    .using("entity_permissions")
+    .leftJoin("permissions", "permission_id", "entity_permissions.permission_id")
+    .whereRef("entity_permissions.related_id", "=", reference_table_with_column)
     .where("permissions.code", "=", required_permission);
 
   return query;

@@ -44,7 +44,7 @@ export function map_pin_router(app: Elysia) {
                 await CreateTagRelations({ tx, relationalTable: "_map_pinsTotags", id: map_pin.id, tags });
               }
               if (body.permissions?.length) {
-                await CreateEntityPermissions(tx, map_pin.id, "map_pin_permissions", body.permissions);
+                await CreateEntityPermissions(tx, map_pin.id, body.permissions);
               }
             });
             const data = await db
@@ -71,7 +71,7 @@ export function map_pin_router(app: Elysia) {
             let query = db
               .selectFrom("map_pins")
               .select(body.fields.map((f) => `map_pins.${f}`) as SelectExpression<DB, "map_pins">[])
-              .leftJoin("character_permissions", "character_permissions.related_id", "map_pins.character_id")
+              .leftJoin("entity_permissions", "entity_permissions.related_id", "map_pins.character_id")
               .leftJoin("characters", "characters.id", "map_pins.character_id")
               .where((wb) => {
                 return wb.or([
@@ -79,11 +79,11 @@ export function map_pin_router(app: Elysia) {
                     wb("map_pins.character_id", "is", null),
                     wb("characters.owner_id", "=", permissions.user_id),
                     wb.and([
-                      wb("character_permissions.user_id", "=", permissions.user_id),
-                      wb("character_permissions.permission_id", "=", permissions.permission_id),
-                      wb("character_permissions.related_id", "=", wb.ref("characters.id")),
+                      wb("entity_permissions.user_id", "=", permissions.user_id),
+                      wb("entity_permissions.permission_id", "=", permissions.permission_id),
+                      wb("entity_permissions.related_id", "=", wb.ref("characters.id")),
                     ]),
-                    wb("character_permissions.role_id", "=", permissions.role_id),
+                    wb("entity_permissions.role_id", "=", permissions.role_id),
                   ]),
                 ]);
               });
@@ -130,7 +130,6 @@ export function map_pin_router(app: Elysia) {
                     character_query,
                     permissions.is_project_owner,
                     permissions.user_id,
-                    "character_permissions",
                     "characters.id",
                     "read_characters",
                   );
@@ -147,7 +146,6 @@ export function map_pin_router(app: Elysia) {
                     document_query,
                     permissions.is_project_owner,
                     permissions.user_id,
-                    "document_permissions",
                     "documents.id",
                     "read_documents",
                   );
@@ -164,7 +162,6 @@ export function map_pin_router(app: Elysia) {
                     map_query,
                     permissions.is_project_owner,
                     permissions.user_id,
-                    "map_permissions",
                     "maps.id",
                     "read_maps",
                   );
@@ -186,7 +183,6 @@ export function map_pin_router(app: Elysia) {
                   event_query,
                   permissions.is_project_owner,
                   permissions.user_id,
-                  "event_permissions",
                   "events.id",
                   "read_events",
                 );
@@ -196,9 +192,7 @@ export function map_pin_router(app: Elysia) {
             }
 
             if (permissions.is_project_owner) {
-              query = query.leftJoin("map_pin_permissions", (join) =>
-                join.on("map_pin_permissions.related_id", "=", params.id),
-              );
+              query = query.leftJoin("entity_permissions", (join) => join.on("entity_permissions.related_id", "=", params.id));
             } else {
               query = checkEntityLevelPermission(query, permissions, "map_pins", params.id);
             }
@@ -225,7 +219,7 @@ export function map_pin_router(app: Elysia) {
                 tx.updateTable("map_pins").set(body.data).where("map_pins.id", "=", params.id).execute();
 
                 if (body?.permissions) {
-                  await UpdateEntityPermissions(tx, params.id, "map_pin_permissions", body.permissions);
+                  await UpdateEntityPermissions(tx, params.id, body.permissions);
                 }
               });
               return { message: `Map pin ${MessageEnum.successfully_updated}`, ok: true, role_access: true };

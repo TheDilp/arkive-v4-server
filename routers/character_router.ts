@@ -198,7 +198,7 @@ export function character_router(app: Elysia) {
                     .execute();
                 }
                 if (body.permissions?.length) {
-                  await CreateEntityPermissions(tx, character.id, "character_permissions", body.permissions);
+                  await CreateEntityPermissions(tx, character.id, body.permissions);
                 }
               }
             });
@@ -695,7 +695,7 @@ export function character_router(app: Elysia) {
                   }
                 }
                 if (body?.permissions) {
-                  await UpdateEntityPermissions(tx, params.id, "character_permissions", body.permissions);
+                  await UpdateEntityPermissions(tx, params.id, body.permissions);
                 }
                 if (body.data)
                   await tx.updateTable("characters").where("characters.id", "=", params.id).set(body.data).execute();

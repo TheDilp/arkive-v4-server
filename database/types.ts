@@ -52,19 +52,4 @@ export type CharacterResourceTables = "_charactersTodocuments" | "_charactersToi
 
 export type EventRelationTables = "event_characters" | "event_map_pins";
 
-export type EntityPermissionTables =
-  | "image_permissions"
-  | "character_permissions"
-  | "blueprint_permissions"
-  | "blueprint_instance_permissions"
-  | "document_permissions"
-  | "map_permissions"
-  | "map_pin_permissions"
-  | "graph_permissions"
-  | "calendar_permissions"
-  | "event_permissions"
-  | "dictionary_permissions"
-  | "word_permissions"
-  | "random_table_permissions"
-  | "tag_permissions"
-  | "character_fields_template_permissions";
+export type EntityPermissionTables = "entity_permissions";

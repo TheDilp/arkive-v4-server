@@ -64,7 +64,7 @@ export function event_router(app: Elysia) {
                   .execute();
               }
               if (body.permissions?.length) {
-                await CreateEntityPermissions(tx, id, "event_permissions", body.permissions);
+                await CreateEntityPermissions(tx, id, body.permissions);
               }
             });
           }
@@ -123,7 +123,6 @@ export function event_router(app: Elysia) {
                   document_query,
                   permissions.is_project_owner,
                   permissions.user_id,
-                  "document_permissions",
                   "events.document_id",
                   "read_documents",
                 );
@@ -144,7 +143,6 @@ export function event_router(app: Elysia) {
                   character_query,
                   permissions.is_project_owner,
                   permissions.user_id,
-                  "character_permissions",
                   "characters.id",
                   "read_characters",
                 );
@@ -212,7 +210,6 @@ export function event_router(app: Elysia) {
                   document_query,
                   permissions.is_project_owner,
                   permissions.user_id,
-                  "document_permissions",
                   "events.document_id",
                   "read_documents",
                 );
@@ -239,7 +236,6 @@ export function event_router(app: Elysia) {
                   character_query,
                   permissions.is_project_owner,
                   permissions.user_id,
-                  "character_permissions",
                   "characters.id",
                   "read_characters",
                 );
@@ -267,7 +263,7 @@ export function event_router(app: Elysia) {
             }
           }
           if (permissions.is_project_owner) {
-            query = query.leftJoin("event_permissions", (join) => join.on("event_permissions.related_id", "=", params.id));
+            query = query.leftJoin("entity_permissions", (join) => join.on("entity_permissions.related_id", "=", params.id));
           } else {
             query = checkEntityLevelPermission(query, permissions, "events", params.id);
           }
@@ -357,7 +353,7 @@ export function event_router(app: Elysia) {
                 }
               }
               if (body?.permissions) {
-                await UpdateEntityPermissions(tx, params.id, "event_permissions", body.permissions);
+                await UpdateEntityPermissions(tx, params.id, body.permissions);
               }
             });
             return { message: `Event ${MessageEnum.successfully_updated}`, ok: true, role_access: true };

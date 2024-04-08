@@ -42,7 +42,7 @@ export function tag_router(app: Elysia) {
               .execute();
 
             if (body.permissions?.length) {
-              await Promise.all(tag.map((t) => CreateEntityPermissions(tx, t.id, "tag_permissions", body.permissions)));
+              await Promise.all(tag.map((t) => CreateEntityPermissions(tx, t.id, body.permissions)));
             }
           });
           return { message: `Tags ${MessageEnum.successfully_created}`, ok: true, role_access: true };
@@ -94,7 +94,7 @@ export function tag_router(app: Elysia) {
 
           if (permissions.is_project_owner) {
             query = query
-              .leftJoin("tag_permissions", (join) => join.on("tag_permissions.related_id", "=", params.id))
+              .leftJoin("entity_permissions", (join) => join.on("entity_permissions.related_id", "=", params.id))
               .select(["tags.id", "tags.title", "tags.color"]);
           } else {
             query = checkEntityLevelPermission(query, permissions, "tags", params.id);
@@ -121,7 +121,7 @@ export function tag_router(app: Elysia) {
             await tx.updateTable("tags").where("id", "=", params.id).set(body.data).execute();
 
             if (body?.permissions) {
-              await UpdateEntityPermissions(tx, params.id, "tag_permissions", body.permissions);
+              await UpdateEntityPermissions(tx, params.id, body.permissions);
             }
           });
 

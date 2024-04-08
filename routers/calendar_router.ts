@@ -65,7 +65,7 @@ export function calendar_router(app: Elysia) {
               await CreateTagRelations({ tx, relationalTable: "_calendarsTotags", id, tags });
             }
             if (body.permissions?.length) {
-              await CreateEntityPermissions(tx, id, "calendar_permissions", body.permissions);
+              await CreateEntityPermissions(tx, id, body.permissions);
             }
           });
 
@@ -334,7 +334,7 @@ export function calendar_router(app: Elysia) {
                 });
               }
               if (body?.permissions) {
-                await UpdateEntityPermissions(tx, params.id, "calendar_permissions", body.permissions);
+                await UpdateEntityPermissions(tx, params.id, body.permissions);
               }
             });
 

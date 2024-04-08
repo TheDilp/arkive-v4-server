@@ -179,7 +179,7 @@ export function blueprint_instance_router(app: Elysia) {
                 });
               }
               if (body.permissions?.length) {
-                await CreateEntityPermissions(tx, newInstance.id, "blueprint_instance_permissions", body.permissions);
+                await CreateEntityPermissions(tx, newInstance.id, body.permissions);
               }
             });
             const data = await db
@@ -249,7 +249,6 @@ export function blueprint_instance_router(app: Elysia) {
                         random_table_query,
                         permissions.is_project_owner,
                         permissions.user_id,
-                        "random_table_permissions",
                         "blueprint_fields.random_table_id",
                         "read_random_tables",
                       );
@@ -278,7 +277,6 @@ export function blueprint_instance_router(app: Elysia) {
                         character_subquery,
                         permissions.is_project_owner,
                         permissions.user_id,
-                        "character_permissions",
                         "blueprint_instance_characters.related_id",
                         "read_characters",
                       );
@@ -310,7 +308,6 @@ export function blueprint_instance_router(app: Elysia) {
                         bpi_query,
                         permissions.is_project_owner,
                         permissions.user_id,
-                        "blueprint_instance_permissions",
                         "blueprint_instance_blueprint_instances.related_id",
                         "read_blueprint_instances",
                       );
@@ -338,7 +335,6 @@ export function blueprint_instance_router(app: Elysia) {
                         document_query,
                         permissions.is_project_owner,
                         permissions.user_id,
-                        "document_permissions",
                         "blueprint_instance_documents.related_id",
                         "read_documents",
                       );
@@ -369,7 +365,6 @@ export function blueprint_instance_router(app: Elysia) {
                         map_pin_query,
                         permissions.is_project_owner,
                         permissions.user_id,
-                        "map_pin_permissions",
                         "blueprint_instance_map_pins.related_id",
                         "read_map_pins",
                       );
@@ -397,7 +392,6 @@ export function blueprint_instance_router(app: Elysia) {
                         event_query,
                         permissions.is_project_owner,
                         permissions.user_id,
-                        "event_permissions",
                         "blueprint_instance_events.related_id",
                         "read_events",
                       );
@@ -416,7 +410,6 @@ export function blueprint_instance_router(app: Elysia) {
                         random_table_query,
                         permissions.is_project_owner,
                         permissions.user_id,
-                        "random_table_permissions",
                         "blueprint_instance_random_tables.related_id",
                         "read_random_tables",
                       );
@@ -443,7 +436,6 @@ export function blueprint_instance_router(app: Elysia) {
                         calendar_query,
                         permissions.is_project_owner,
                         permissions.user_id,
-                        "calendar_permissions",
                         "blueprint_instance_calendars.related_id",
                         "read_calendars",
                       );
@@ -471,7 +463,6 @@ export function blueprint_instance_router(app: Elysia) {
                         image_query,
                         permissions.is_project_owner,
                         permissions.user_id,
-                        "image_permissions",
                         "blueprint_instance_images.related_id",
                         "read_assets",
                       );
@@ -591,7 +582,6 @@ export function blueprint_instance_router(app: Elysia) {
                           random_table_query,
                           permissions.is_project_owner,
                           permissions.user_id,
-                          "random_table_permissions",
                           "blueprint_fields.random_table_id",
                           "read_random_tables",
                         );
@@ -608,7 +598,6 @@ export function blueprint_instance_router(app: Elysia) {
                           random_table_query,
                           permissions.is_project_owner,
                           permissions.user_id,
-                          "random_table_permissions",
                           "blueprint_fields.random_table_id",
                           "read_random_tables",
                         );
@@ -639,7 +628,6 @@ export function blueprint_instance_router(app: Elysia) {
                         character_query,
                         permissions.is_project_owner,
                         permissions.user_id,
-                        "character_permissions",
                         "blueprint_instance_characters.related_id",
                         "read_characters",
                       );
@@ -674,7 +662,6 @@ export function blueprint_instance_router(app: Elysia) {
                         bpi_query,
                         permissions.is_project_owner,
                         permissions.user_id,
-                        "blueprint_instance_permissions",
                         "blueprint_instance_blueprint_instances.related_id",
                         "read_blueprint_instances",
                       );
@@ -703,7 +690,6 @@ export function blueprint_instance_router(app: Elysia) {
                         document_query,
                         permissions.is_project_owner,
                         permissions.user_id,
-                        "document_permissions",
                         "blueprint_instance_documents.related_id",
                         "read_documents",
                       );
@@ -733,7 +719,6 @@ export function blueprint_instance_router(app: Elysia) {
                         map_pin_query,
                         permissions.is_project_owner,
                         permissions.user_id,
-                        "map_pin_permissions",
                         "blueprint_instance_map_pins.related_id",
                         "read_map_pins",
                       );
@@ -762,7 +747,6 @@ export function blueprint_instance_router(app: Elysia) {
                         calendar_query,
                         permissions.is_project_owner,
                         permissions.user_id,
-                        "calendar_permissions",
                         "blueprint_instance_calendars.related_id",
                         "read_calendars",
                       );
@@ -792,7 +776,6 @@ export function blueprint_instance_router(app: Elysia) {
                         event_query,
                         permissions.is_project_owner,
                         permissions.user_id,
-                        "event_permissions",
                         "blueprint_instance_events.related_id",
                         "read_events",
                       );
@@ -821,7 +804,6 @@ export function blueprint_instance_router(app: Elysia) {
                         image_query,
                         permissions.is_project_owner,
                         permissions.user_id,
-                        "image_permissions",
                         "blueprint_instance_images.related_id",
                         "read_assets",
                       );
@@ -852,9 +834,7 @@ export function blueprint_instance_router(app: Elysia) {
             }
 
             if (permissions.is_project_owner) {
-              query = query.leftJoin("blueprint_instance_permissions", (join) =>
-                join.on("blueprint_instance_permissions.related_id", "=", params.id),
-              );
+              query = query.leftJoin("entity_permissions", (join) => join.on("entity_permissions.related_id", "=", params.id));
             } else {
               query = checkEntityLevelPermission(query, permissions, "blueprint_instances", params.id);
             }
@@ -905,12 +885,7 @@ export function blueprint_instance_router(app: Elysia) {
                       if (field.characters) {
                         let query = tx.deleteFrom("blueprint_instance_characters");
                         if (!permissions.is_project_owner) {
-                          query = checkDeletePermissions(
-                            query,
-                            "character_permissions",
-                            "blueprint_instance_characters.related_id",
-                            "read_characters",
-                          );
+                          query = checkDeletePermissions(query, "blueprint_instance_characters.related_id", "read_characters");
                         }
 
                         query
@@ -936,7 +911,6 @@ export function blueprint_instance_router(app: Elysia) {
                         if (!permissions.is_project_owner) {
                           query = checkDeletePermissions(
                             query,
-                            "blueprint_instance_permissions",
                             "blueprint_instance_blueprint_instances.related_id",
                             "read_blueprint_instances",
                           );
@@ -965,12 +939,7 @@ export function blueprint_instance_router(app: Elysia) {
                         let query = tx.deleteFrom("blueprint_instance_documents");
 
                         if (!permissions.is_project_owner) {
-                          query = checkDeletePermissions(
-                            query,
-                            "document_permissions",
-                            "blueprint_instance_document.related_id",
-                            "read_documents",
-                          );
+                          query = checkDeletePermissions(query, "blueprint_instance_document.related_id", "read_documents");
                         }
 
                         await query
@@ -1017,12 +986,7 @@ export function blueprint_instance_router(app: Elysia) {
                         let query = tx.deleteFrom("blueprint_instance_events");
 
                         if (!permissions.is_project_owner) {
-                          query = checkDeletePermissions(
-                            query,
-                            "event_permissions",
-                            "blueprint_instance_events.related_id",
-                            "read_events",
-                          );
+                          query = checkDeletePermissions(query, "blueprint_instance_events.related_id", "read_events");
                         }
 
                         await query
@@ -1046,12 +1010,7 @@ export function blueprint_instance_router(app: Elysia) {
                         let query = tx.deleteFrom("blueprint_instance_images");
 
                         if (!permissions.is_project_owner) {
-                          query = checkDeletePermissions(
-                            query,
-                            "image_permissions",
-                            "blueprint_instance_images.related_id",
-                            "read_assets",
-                          );
+                          query = checkDeletePermissions(query, "blueprint_instance_images.related_id", "read_assets");
                         }
 
                         await query
@@ -1078,12 +1037,7 @@ export function blueprint_instance_router(app: Elysia) {
                           .where("blueprint_instance_id", "=", params.id)
                           .where("blueprint_field_id", "=", field.id);
                         if (!permissions.is_project_owner) {
-                          query = checkDeletePermissions(
-                            query,
-                            "random_table_permissions",
-                            "random_table_permissions.related_id",
-                            "read_random_tables",
-                          );
+                          query = checkDeletePermissions(query, "random_table_permissions.related_id", "read_random_tables");
                           await query.execute();
                         }
 
@@ -1106,12 +1060,7 @@ export function blueprint_instance_router(app: Elysia) {
                           .where("blueprint_field_id", "=", field.id);
 
                         if (!permissions?.is_project_owner) {
-                          query = checkDeletePermissions(
-                            query,
-                            "calendar_permissions",
-                            "blueprint_instance_calendars.related_id",
-                            "read_calendars",
-                          );
+                          query = checkDeletePermissions(query, "blueprint_instance_calendars.related_id", "read_calendars");
                         }
 
                         await query.execute();
@@ -1153,7 +1102,7 @@ export function blueprint_instance_router(app: Elysia) {
                   });
                 }
                 if (body.permissions) {
-                  await UpdateEntityPermissions(tx, params.id, "blueprint_instance_permissions", body.permissions);
+                  await UpdateEntityPermissions(tx, params.id, body.permissions);
                 }
               });
 

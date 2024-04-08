@@ -55,7 +55,6 @@ export async function readCharacter(
               documents_query,
               permissions.is_project_owner,
               permissions.user_id,
-              "document_permissions",
               "character_documents_fields.related_id",
               "read_documents",
             );
@@ -86,7 +85,6 @@ export async function readCharacter(
               image_query,
               permissions.is_project_owner,
               permissions.user_id,
-              "image_permissions",
               "character_images_fields.related_id",
               "read_assets",
             );
@@ -117,7 +115,6 @@ export async function readCharacter(
               event_query,
               permissions.is_project_owner,
               permissions.user_id,
-              "event_permissions",
               "character_events_fields.related_id",
               "read_events",
             );
@@ -148,7 +145,6 @@ export async function readCharacter(
               map_pin_query,
               permissions.is_project_owner,
               permissions.user_id,
-              "map_pin_permissions",
               "character_locations_fields.related_id",
               "read_map_pins",
             );
@@ -185,7 +181,6 @@ export async function readCharacter(
               bpi_query,
               permissions.is_project_owner,
               permissions.user_id,
-              "blueprint_instance_permissions",
               "character_blueprint_instance_fields.related_id",
               "read_blueprint_instances",
             );
@@ -202,7 +197,6 @@ export async function readCharacter(
               random_table_query,
               permissions.is_project_owner,
               permissions.user_id,
-              "random_table_permissions",
               "character_random_table_fields.related_id",
               "read_random_tables",
             );
@@ -228,7 +222,6 @@ export async function readCharacter(
               calendar_query,
               permissions.is_project_owner,
               permissions.user_id,
-              "calendar_permissions",
               "character_calendar_fields.related_id",
               "read_calendars",
             );
@@ -398,7 +391,6 @@ export async function readCharacter(
             portrait_query,
             permissions.is_project_owner,
             permissions.user_id,
-            "image_permissions",
             "characters.portrait_id",
             "read_assets",
           );
@@ -424,7 +416,6 @@ export async function readCharacter(
             image_query,
             permissions.is_project_owner,
             permissions.user_id,
-            "image_permissions",
             "images.id",
             "read_assets",
           );
@@ -451,7 +442,6 @@ export async function readCharacter(
             map_pin_query,
             permissions.is_project_owner,
             permissions.user_id,
-            "map_pin_permissions",
             "map_pins.id",
             "read_map_pins",
           );
@@ -482,7 +472,6 @@ export async function readCharacter(
             document_query,
             permissions.is_project_owner,
             permissions.user_id,
-            "document_permissions",
             "documents.id",
             "read_documents",
           );
@@ -508,7 +497,6 @@ export async function readCharacter(
             event_query,
             permissions.is_project_owner,
             permissions.user_id,
-            "event_permissions",
             "events.id",
             "read_events",
           );
@@ -522,7 +510,7 @@ export async function readCharacter(
 
   if (!isPublic) {
     if (permissions?.is_project_owner) {
-      query = query.leftJoin("character_permissions", (join) => join.on("character_permissions.related_id", "=", params.id));
+      query = query.leftJoin("entity_permissions", (join) => join.on("entity_permissions.related_id", "=", params.id));
     } else {
       query = checkEntityLevelPermission(query, permissions, "characters", params.id);
     }
@@ -693,7 +681,7 @@ export async function getCharacterFamily(
     let a_query = db
       .selectFrom("characters_relationships")
       .leftJoin("characters", "characters.id", "characters_relationships.character_b_id")
-      .leftJoin("character_permissions", "character_permissions.related_id", "character_a_id")
+      .leftJoin("entity_permissions", "entity_permissions.related_id", "character_a_id")
       .select([
         "characters.id",
         "characters.full_name",
@@ -708,11 +696,11 @@ export async function getCharacterFamily(
           wb.or([
             wb("characters.owner_id", "=", permissions.user_id),
             wb.and([
-              wb("character_permissions.user_id", "=", permissions.user_id),
-              wb("character_permissions.permission_id", "=", permissions.permission_id),
-              wb("character_permissions.related_id", "=", wb.ref("character_b_id")),
+              wb("entity_permissions.user_id", "=", permissions.user_id),
+              wb("entity_permissions.permission_id", "=", permissions.permission_id),
+              wb("entity_permissions.related_id", "=", wb.ref("character_b_id")),
             ]),
-            wb("character_permissions.role_id", "=", permissions.role_id),
+            wb("entity_permissions.role_id", "=", permissions.role_id),
           ]),
         ]),
       )
@@ -724,7 +712,7 @@ export async function getCharacterFamily(
     let b_query = db
       .selectFrom("characters_relationships")
       .leftJoin("characters", "characters.id", "characters_relationships.character_a_id")
-      .leftJoin("character_permissions", "character_permissions.related_id", "character_b_id")
+      .leftJoin("entity_permissions", "entity_permissions.related_id", "character_b_id")
       .select(["characters.id", "characters.full_name", "portrait_id", "project_id", "characters.is_public"])
       .where((wb) =>
         wb.and([
@@ -733,11 +721,11 @@ export async function getCharacterFamily(
           wb.or([
             wb("characters.owner_id", "=", permissions.permission_id),
             wb.and([
-              wb("character_permissions.user_id", "=", permissions.user_id),
-              wb("character_permissions.permission_id", "=", permissions.permission_id),
-              wb("character_permissions.related_id", "=", wb.ref("character_a_id")),
+              wb("entity_permissions.user_id", "=", permissions.user_id),
+              wb("entity_permissions.permission_id", "=", permissions.permission_id),
+              wb("entity_permissions.related_id", "=", wb.ref("character_a_id")),
             ]),
-            wb("character_permissions.role_id", "=", permissions.role_id),
+            wb("entity_permissions.role_id", "=", permissions.role_id),
           ]),
         ]),
       )
@@ -761,7 +749,6 @@ export async function getCharacterFamily(
       char_query,
       permissions.is_project_owner,
       permissions.user_id,
-      "character_permissions",
       "characters.id",
       "read_characters",
     );
@@ -834,18 +821,18 @@ FROM
   const mainCharacters = await db
     .selectFrom("characters")
     .select(["characters.id", "characters.portrait_id", "characters.full_name", "characters.is_public"])
-    .leftJoin("character_permissions", "character_permissions.related_id", "characters.id")
+    .leftJoin("entity_permissions", "entity_permissions.related_id", "characters.id")
     .where((wb) =>
       wb.and([
         wb("characters.id", "in", ids),
         wb.or([
           wb("characters.owner_id", "=", permissions.user_id),
           wb.and([
-            wb("character_permissions.user_id", "=", permissions.user_id),
-            wb("character_permissions.permission_id", "=", permissions.permission_id),
-            wb("character_permissions.related_id", "=", wb.ref("characters.id")),
+            wb("entity_permissions.user_id", "=", permissions.user_id),
+            wb("entity_permissions.permission_id", "=", permissions.permission_id),
+            wb("entity_permissions.related_id", "=", wb.ref("characters.id")),
           ]),
-          wb("character_permissions.role_id", "=", permissions.role_id),
+          wb("entity_permissions.role_id", "=", permissions.role_id),
         ]),
       ]),
     )
@@ -861,7 +848,7 @@ FROM
       ? []
       : await db
           .selectFrom("characters")
-          .leftJoin("character_permissions", "character_permissions.related_id", "characters.id")
+          .leftJoin("entity_permissions", "entity_permissions.related_id", "characters.id")
           .leftJoin("characters_relationships", "character_b_id", "characters.id")
           .where((wb) =>
             wb.and([
@@ -871,11 +858,11 @@ FROM
               wb.or([
                 wb("characters.owner_id", "=", permissions.user_id),
                 wb.and([
-                  wb("character_permissions.user_id", "=", permissions.user_id),
-                  wb("character_permissions.permission_id", "=", permissions.permission_id),
-                  wb("character_permissions.related_id", "=", wb.ref("character_a_id")),
+                  wb("entity_permissions.user_id", "=", permissions.user_id),
+                  wb("entity_permissions.permission_id", "=", permissions.permission_id),
+                  wb("entity_permissions.related_id", "=", wb.ref("character_a_id")),
                 ]),
-                wb("character_permissions.role_id", "=", permissions.role_id),
+                wb("entity_permissions.role_id", "=", permissions.role_id),
               ]),
             ]),
           )
@@ -889,7 +876,7 @@ FROM
   const additionalCharsChildren = await db
     .selectFrom("characters")
     .leftJoin("characters_relationships", "character_a_id", "characters.id")
-    .leftJoin("character_permissions", "character_permissions.related_id", "characters.id")
+    .leftJoin("entity_permissions", "entity_permissions.related_id", "characters.id")
     .where((wb) =>
       wb.and([
         wb("character_b_id", "in", ids),
@@ -898,11 +885,11 @@ FROM
         wb.or([
           wb("characters.owner_id", "=", permissions.user_id),
           wb.and([
-            wb("character_permissions.user_id", "=", permissions.user_id),
-            wb("character_permissions.permission_id", "=", permissions.permission_id),
-            wb("character_permissions.related_id", "=", wb.ref("character_b_id")),
+            wb("entity_permissions.user_id", "=", permissions.user_id),
+            wb("entity_permissions.permission_id", "=", permissions.permission_id),
+            wb("entity_permissions.related_id", "=", wb.ref("character_b_id")),
           ]),
-          wb("character_permissions.role_id", "=", permissions.role_id),
+          wb("entity_permissions.role_id", "=", permissions.role_id),
         ]),
       ]),
     )

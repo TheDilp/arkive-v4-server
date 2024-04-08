@@ -69,7 +69,7 @@ export function character_fields_templates_router(app: Elysia) {
               });
             }
             if (body.permissions?.length) {
-              await CreateEntityPermissions(tx, newTemplate.id, "character_fields_template_permissions", body.permissions);
+              await CreateEntityPermissions(tx, newTemplate.id, body.permissions);
             }
           });
           return { message: `Template ${MessageEnum.successfully_created}`, ok: true, role_access: true };
@@ -362,7 +362,7 @@ export function character_fields_templates_router(app: Elysia) {
                   else await tx.deleteFrom("_character_fields_templatesTotags").where("A", "=", params.id).execute();
                 }
                 if (body.permissions) {
-                  await UpdateEntityPermissions(tx, params.id, "character_fields_template_permissions", body.permissions);
+                  await UpdateEntityPermissions(tx, params.id, body.permissions);
                 }
               });
             }
