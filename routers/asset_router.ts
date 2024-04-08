@@ -90,7 +90,7 @@ export function asset_router(app: Elysia) {
             );
 
           if (permissions.is_project_owner) {
-            query = query.leftJoin("image_permissions", (join) => join.on("image_permissions.related_id", "=", params.id));
+            query = query.leftJoin("entity_permissions", (join) => join.on("entity_permissions.related_id", "=", params.id));
           } else {
             query = checkEntityLevelPermission(query, permissions, "images", params.id);
           }
@@ -161,7 +161,7 @@ export function asset_router(app: Elysia) {
             await db.transaction().execute(async (tx) => {
               await tx.updateTable("images").where("id", "=", params.id).set(body.data).execute();
               if (body?.permissions) {
-                await UpdateEntityPermissions(tx, params.id, "image_permissions", body.permissions);
+                await UpdateEntityPermissions(tx, params.id, body.permissions);
               }
             });
             return { message: `Image ${MessageEnum.successfully_updated}`, ok: true, role_access: true };

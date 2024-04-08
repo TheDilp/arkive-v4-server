@@ -215,11 +215,11 @@ export function map_router(app: Elysia) {
                       wb.or([
                         wb("images.owner_id", "=", permissions.user_id),
                         wb.and([
-                          wb("image_permissions.user_id", "=", permissions.user_id),
-                          wb("image_permissions.permission_id", "=", permissions.permission_id),
-                          wb("image_permissions.related_id", "=", wb.ref("images.id")),
+                          wb("entity_permissions.user_id", "=", permissions.user_id),
+                          wb("entity_permissions.permission_id", "=", permissions.permission_id),
+                          wb("entity_permissions.related_id", "=", wb.ref("images.id")),
                         ]),
-                        wb("image_permissions.role_id", "=", permissions.role_id),
+                        wb("entity_permissions.role_id", "=", permissions.role_id),
                       ]),
                     ),
                 ).as("map_layers"),
@@ -238,7 +238,7 @@ export function map_router(app: Elysia) {
               );
             }
             if (permissions.is_project_owner) {
-              query = query.leftJoin("map_permissions", (join) => join.on("map_permissions.related_id", "=", params.id));
+              query = query.leftJoin("entity_permissions", (join) => join.on("entity_permissions.related_id", "=", params.id));
             } else {
               query = checkEntityLevelPermission(query, permissions, "maps", params.id);
             }

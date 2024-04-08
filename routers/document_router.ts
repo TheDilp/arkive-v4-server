@@ -90,7 +90,7 @@ export function document_router(app: Elysia) {
                 await CreateTagRelations({ tx, relationalTable: "_documentsTotags", id: document.id, tags });
               }
               if (body.permissions?.length) {
-                await CreateEntityPermissions(tx, document.id, "document_permissions", body.permissions);
+                await CreateEntityPermissions(tx, document.id, body.permissions);
               }
             });
 
@@ -230,7 +230,6 @@ export function document_router(app: Elysia) {
                   image_query,
                   permissions.is_project_owner,
                   permissions.user_id,
-                  "image_permissions",
                   "documents.image_id",
                   "read_assets",
                 );
@@ -287,7 +286,6 @@ export function document_router(app: Elysia) {
                     image_query,
                     permissions.is_project_owner,
                     permissions.user_id,
-                    "image_permissions",
                     "documents.image_id",
                     "read_assets",
                   );
@@ -302,9 +300,7 @@ export function document_router(app: Elysia) {
             }
 
             if (permissions.is_project_owner) {
-              query = query.leftJoin("document_permissions", (join) =>
-                join.on("document_permissions.related_id", "=", params.id),
-              );
+              query = query.leftJoin("entity_permissions", (join) => join.on("entity_permissions.related_id", "=", params.id));
             } else {
               query = checkEntityLevelPermission(query, permissions, "documents", params.id);
             }
@@ -429,7 +425,7 @@ export function document_router(app: Elysia) {
                   }
                 }
                 if (body?.permissions) {
-                  await UpdateEntityPermissions(tx, params.id, "document_permissions", body.permissions);
+                  await UpdateEntityPermissions(tx, params.id, body.permissions);
                 }
               });
               return { message: `Document ${MessageEnum.successfully_updated}`, ok: true, role_access: true };

@@ -1037,7 +1037,11 @@ export function blueprint_instance_router(app: Elysia) {
                           .where("blueprint_instance_id", "=", params.id)
                           .where("blueprint_field_id", "=", field.id);
                         if (!permissions.is_project_owner) {
-                          query = checkDeletePermissions(query, "random_table_permissions.related_id", "read_random_tables");
+                          query = checkDeletePermissions(
+                            query,
+                            "blueprint_instance_random_tables.related_id",
+                            "read_random_tables",
+                          );
                           await query.execute();
                         }
 

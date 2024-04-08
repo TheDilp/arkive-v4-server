@@ -84,7 +84,6 @@ export function node_router(app: Elysia) {
                 image_query,
                 permissions.is_project_owner,
                 permissions.user_id,
-                "image_permissions",
                 "nodes.image_id",
                 "read_assets",
               );
@@ -103,7 +102,6 @@ export function node_router(app: Elysia) {
                 character_query,
                 permissions.is_project_owner,
                 permissions.user_id,
-                "character_permissions",
                 "nodes.character_id",
                 "read_characters",
               );
@@ -122,7 +120,6 @@ export function node_router(app: Elysia) {
                 document_query,
                 permissions.is_project_owner,
                 permissions.user_id,
-                "document_permissions",
                 "nodes.document_id",
                 "read_documents",
               );
@@ -149,7 +146,6 @@ export function node_router(app: Elysia) {
                 event_query,
                 permissions.is_project_owner,
                 permissions.user_id,
-                "event_permissions",
                 "nodes.event_id",
                 "read_events",
               );

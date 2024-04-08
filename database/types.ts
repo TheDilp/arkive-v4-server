@@ -51,5 +51,3 @@ export type CharacterRelationTables =
 export type CharacterResourceTables = "_charactersTodocuments" | "_charactersToimages" | "event_characters" | "maps";
 
 export type EventRelationTables = "event_characters" | "event_map_pins";
-
-export type EntityPermissionTables = "entity_permissions";
