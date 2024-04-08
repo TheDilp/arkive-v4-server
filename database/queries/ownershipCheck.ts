@@ -3,7 +3,6 @@ import { DB } from "kysely-codegen";
 
 import { AvailablePermissions, EntitiesWithPermissionCheck } from "../../types/entityTypes";
 import { PermissionDecorationType } from "../../types/requestTypes";
-import { getPermissionTableFromEntity } from "../../utils/requestUtils";
 import { db } from "../db";
 
 export function checkEntityLevelPermission(
@@ -12,7 +11,7 @@ export function checkEntityLevelPermission(
   entity: EntitiesWithPermissionCheck,
   related_id?: string,
 ) {
-  const entityRelationTable = getPermissionTableFromEntity(entity);
+  const entityRelationTable = "entity_permissions";
   if (entityRelationTable) {
     qb = qb
       .leftJoin(entityRelationTable, `${entityRelationTable}.related_id`, `${entity}.id`)

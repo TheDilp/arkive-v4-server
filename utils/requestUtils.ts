@@ -9,17 +9,12 @@ import {
   CharacterRelationTables,
   CharacterResourceEntities,
   CharacterResourceTables,
-  EntityPermissionTables,
+  DBKeys,
   EventRelationEntities,
   EventRelationTables,
   TagsRelationTables,
 } from "../database/types";
-import {
-  AvailableEntityType,
-  AvailablePermissions,
-  AvailableSubEntityType,
-  EntitiesWithPermissionCheck,
-} from "../types/entityTypes";
+import { AvailableEntityType, AvailablePermissions, AvailableSubEntityType } from "../types/entityTypes";
 import { AfterHandlerActionType, JWTPayloadType, SearchableEntities } from "../types/requestTypes";
 
 export function getSearchTableFromType(type: SearchableEntities | keyof DB): keyof DB {
@@ -53,7 +48,7 @@ export function getEntityFromPath(path: string): string {
   return entity;
 }
 
-export function getParentEntity(sub_entity: string): TableExpression<DB, AvailableEntityType | AvailableSubEntityType> | null {
+export function getParentEntity(sub_entity: string): TableExpression<DB, DBKeys> | null {
   if (sub_entity === "blueprint_instances") return "blueprints";
   if (sub_entity === "events") return "calendars";
   if (sub_entity === "words") return "dictionaries";
@@ -134,25 +129,6 @@ export function getPermissionFromAction(
     if (type === "character_fields_templates") return "update_character_fields_templates";
     if (type === "assets") return "update_assets";
   }
-  return null;
-}
-
-export function getPermissionTableFromEntity(entity: EntitiesWithPermissionCheck): EntityPermissionTables | null {
-  if (entity === "characters") return "character_permissions";
-  if (entity === "blueprints") return "blueprint_permissions";
-  if (entity === "blueprint_instances") return "blueprint_instance_permissions";
-  if (entity === "documents") return "document_permissions";
-  if (entity === "maps") return "map_permissions";
-  if (entity === "map_pins") return "map_pin_permissions";
-  if (entity === "graphs") return "graph_permissions";
-  if (entity === "calendars") return "calendar_permissions";
-  if (entity === "events") return "event_permissions";
-  if (entity === "dictionaries") return "dictionary_permissions";
-  if (entity === "words") return "word_permissions";
-  if (entity === "random_tables") return "random_table_permissions";
-  if (entity === "tags") return "tag_permissions";
-  if (entity === "character_fields_templates") return "character_fields_template_permissions";
-  if (entity === "images") return "image_permissions";
   return null;
 }
 

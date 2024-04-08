@@ -228,9 +228,7 @@ export function blueprint_router(app: Elysia) {
               );
 
             if (permissions.is_project_owner) {
-              query = query.leftJoin("blueprint_permissions", (join) =>
-                join.on("blueprint_permissions.related_id", "=", params.id),
-              );
+              query = query.leftJoin("entity_permissions", (join) => join.on("entity_permissions.related_id", "=", params.id));
             } else {
               query = checkEntityLevelPermission(query, permissions, "blueprints", params.id);
             }

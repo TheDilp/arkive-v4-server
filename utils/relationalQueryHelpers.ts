@@ -12,7 +12,6 @@ import {
   UpdatePermissionType,
 } from "../types/entityTypes";
 import { PermissionDecorationType } from "../types/requestTypes";
-import { getPermissionTableFromEntity } from "./requestUtils";
 
 export function TagQuery(
   eb: ExpressionBuilder<any, any>,
@@ -342,7 +341,7 @@ export function GetRelatedEntityPermissionsAndRoles(
   entity: EntitiesWithPermissionCheck,
   id?: string,
 ) {
-  const permissionTable = getPermissionTableFromEntity(entity);
+  const permissionTable = "entity_permissions";
   if (permissionTable) {
     qb = qb.select([
       (eb: ExpressionBuilder<any, any>) => {

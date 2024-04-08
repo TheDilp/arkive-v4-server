@@ -3,6 +3,7 @@ import Elysia, { t } from "elysia";
 import uniq from "lodash.uniq";
 
 import { db } from "../database/db";
+import { DBKeys } from "../database/types";
 import {
   InsertNodeSchema,
   InsertRandomTableOptionItemSchema,
@@ -20,12 +21,11 @@ import {
   AvailableSubEntityType,
   BulkArkiveEntitiesType,
   BulkDeleteEntitiesType,
-  EntitiesWithPermissionCheck,
   PublicEntities,
 } from "../types/entityTypes";
 import { PermissionDecorationType, ResponseSchema } from "../types/requestTypes";
 import { UpdateTagRelations } from "../utils/relationalQueryHelpers";
-import { getEntityTagTable, getPermissionTableFromEntity } from "../utils/requestUtils";
+import { getEntityTagTable } from "../utils/requestUtils";
 import { s3Client } from "../utils/s3Utils";
 
 export function bulk_router(app: Elysia) {
@@ -42,7 +42,7 @@ export function bulk_router(app: Elysia) {
       .post(
         "/create/:type",
         async ({ params, body }) => {
-          db.insertInto(params.type as AvailableEntityType | AvailableSubEntityType)
+          db.insertInto(params.type as DBKeys)
             .values(body.data.map((item) => item.data))
             .execute();
 
@@ -78,7 +78,7 @@ export function bulk_router(app: Elysia) {
             await Promise.all(
               body.data.map((item) =>
                 tx
-                  .updateTable(params.type as AvailableEntityType | AvailableSubEntityType)
+                  .updateTable(params.type as DBKeys)
                   .set(item.data)
                   .where("id", "=", item.data.id)
                   .execute(),
@@ -132,52 +132,48 @@ export function bulk_router(app: Elysia) {
       )
       .post(
         "/update/access/:type",
-        async ({ params, body }) => {
-          const permissionsTable = getPermissionTableFromEntity(params.type as EntitiesWithPermissionCheck);
+        async ({ body }) => {
+          const relatedIds = uniq(body.data.permissions.map((p) => p.related_id));
 
-          if (permissionsTable) {
-            const relatedIds = uniq(body.data.permissions.map((p) => p.related_id));
+          // If there is an entry with actual permission changes
+          if (body.data.permissions.some((p) => !!p.permission_id || !!p.role_id || !!p.permission_id)) {
+            await db.transaction().execute(async (tx) => {
+              const userPermissions = body.data.permissions.filter((perm) => !!perm.user_id) as {
+                related_id: string;
+                user_id: string;
+                permission_id: string;
+              }[];
+              const rolePermissions = body.data.permissions.filter((perm) => !!perm.role_id) as {
+                related_id: string;
+                role_id: string;
+              }[];
 
-            // If there is an entry with actual permission changes
-            if (body.data.permissions.some((p) => !!p.permission_id || !!p.role_id || !!p.permission_id)) {
-              await db.transaction().execute(async (tx) => {
-                const userPermissions = body.data.permissions.filter((perm) => !!perm.user_id) as {
-                  related_id: string;
-                  user_id: string;
-                  permission_id: string;
-                }[];
-                const rolePermissions = body.data.permissions.filter((perm) => !!perm.role_id) as {
-                  related_id: string;
-                  role_id: string;
-                }[];
-
-                // @ts-ignore
-                tx.deleteFrom(permissionsTable).where("related_id", "in", relatedIds).execute();
-
-                if (userPermissions.length) {
-                  // @ts-ignore
-                  tx.insertInto(permissionsTable)
-                    .values(userPermissions)
-                    .onConflict((oc) => oc.doNothing())
-                    .execute();
-                }
-                if (rolePermissions.length) {
-                  // @ts-ignore
-                  tx.insertInto(permissionsTable)
-                    .values(rolePermissions)
-                    .onConflict((oc) => oc.doNothing())
-                    .execute();
-                }
-              });
-            }
-            // Everything is empty for the related enteties
-            // !Do not remove and place before IF statement
-            // !The other delete needs to be within a transaction
-            // !in case of failure
-            else {
               // @ts-ignore
-              await db.deleteFrom(permissionsTable).where("related_id", "in", relatedIds).execute();
-            }
+              tx.deleteFrom("entity_permissions").where("related_id", "in", relatedIds).execute();
+
+              if (userPermissions.length) {
+                // @ts-ignore
+                tx.insertInto("entity_permissions")
+                  .values(userPermissions)
+                  .onConflict((oc) => oc.doNothing())
+                  .execute();
+              }
+              if (rolePermissions.length) {
+                // @ts-ignore
+                tx.insertInto("entity_permissions")
+                  .values(rolePermissions)
+                  .onConflict((oc) => oc.doNothing())
+                  .execute();
+              }
+            });
+          }
+          // Everything is empty for the related enteties
+          // !Do not remove and place before IF statement
+          // !The other delete needs to be within a transaction
+          // !in case of failure
+          else {
+            // @ts-ignore
+            await db.deleteFrom("entity_permissions").where("related_id", "in", relatedIds).execute();
           }
 
           return { message: MessageEnum.success, ok: true, role_access: true };
