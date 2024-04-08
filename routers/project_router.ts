@@ -216,7 +216,7 @@ export function project_router(app: Elysia) {
                 .select(["characters.id", "characters.full_name as title", "characters.portrait_id"])
                 .where("project_id", "=", params.id)
                 .where("characters.owner_id", "=", permissions.user_id)
-                .where("characters.deleted_at", "is not", null)
+                .where("characters.deleted_at", "is", null)
                 .limit(5)
                 .orderBy("updated_at desc")
                 .execute(),
@@ -228,7 +228,7 @@ export function project_router(app: Elysia) {
                 .select(["documents.id", "documents.title", "documents.icon"])
                 .where("project_id", "=", params.id)
                 .where("documents.owner_id", "=", permissions.user_id)
-                .where("documents.deleted_at", "is not", null)
+                .where("documents.deleted_at", "is", null)
                 .orderBy("updated_at desc")
                 .limit(5)
                 .execute(),
@@ -242,7 +242,7 @@ export function project_router(app: Elysia) {
                 .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
                 .where("blueprints.project_id", "=", params.id)
                 .where("blueprint_instances.owner_id", "=", permissions.user_id)
-                .where("blueprint_instances.deleted_at", "is not", null)
+                .where("blueprint_instances.deleted_at", "is", null)
                 .orderBy("blueprint_instances.updated_at desc")
                 .limit(5)
                 .execute(),
@@ -255,7 +255,7 @@ export function project_router(app: Elysia) {
                 .orderBy("updated_at desc")
                 .where("project_id", "=", params.id)
                 .where("owner_id", "=", permissions.user_id)
-                .where("maps.deleted_at", "is not", null)
+                .where("maps.deleted_at", "is", null)
                 .limit(5)
                 .execute(),
             },
@@ -266,7 +266,7 @@ export function project_router(app: Elysia) {
                 .select(["id", "title"])
                 .where("graphs.project_id", "=", params.id)
                 .where("owner_id", "=", permissions.user_id)
-                .where("graphs.deleted_at", "is not", null)
+                .where("graphs.deleted_at", "is", null)
                 .orderBy("updated_at desc")
                 .limit(5)
                 .execute(),
@@ -278,7 +278,7 @@ export function project_router(app: Elysia) {
                 .select(["id", "title"])
                 .where("calendars.project_id", "=", params.id)
                 .where("owner_id", "=", permissions.user_id)
-                .where("calendars.deleted_at", "is not", null)
+                .where("calendars.deleted_at", "is", null)
                 .orderBy("updated_at desc")
                 .limit(5)
                 .execute(),
@@ -302,7 +302,7 @@ export function project_router(app: Elysia) {
                 .select(["id", "title"])
                 .where("dictionaries.project_id", "=", params.id)
                 .where("owner_id", "=", permissions.user_id)
-                .where("dictionaries.deleted_at", "is not", null)
+                .where("dictionaries.deleted_at", "is", null)
                 .orderBy("updated_at desc")
                 .limit(5)
                 .execute(),
