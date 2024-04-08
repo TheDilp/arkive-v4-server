@@ -90,6 +90,19 @@ export const BulkDeleteEntitiesEnum = [
   "tags",
   "images",
 ];
+export const BulkArkiveEntitiesEnum = [
+  "characters",
+  "blueprints",
+  "blueprint_instances",
+  "documents",
+  "maps",
+  "graphs",
+  "calendars",
+  "dictionaries",
+  "random_tables",
+  "tags",
+  "character_fields_templates",
+];
 
 export const RolePermissionsEnum = [
   "create_characters" as const,

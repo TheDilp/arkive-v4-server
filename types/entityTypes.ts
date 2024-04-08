@@ -19,6 +19,19 @@ export type BulkDeleteEntitiesType =
   | "tags"
   | "images";
 
+export type BulkArkiveEntitiesType =
+  | "characters"
+  | "blueprints"
+  | "blueprint_instances"
+  | "documents"
+  | "maps"
+  | "graphs"
+  | "calendars"
+  | "dictionaries"
+  | "random_tables"
+  | "tags"
+  | "character_fields_templates";
+
 export type AvailableEntityType =
   | "projects"
   | "characters"

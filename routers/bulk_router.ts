@@ -11,13 +11,14 @@ import {
   UpdateNodeSchema,
 } from "../database/validation";
 import { BulkUpdateAccess } from "../database/validation/bulk";
-import { BulkDeleteEntitiesEnum } from "../enums";
+import { BulkArkiveEntitiesEnum, BulkDeleteEntitiesEnum } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeProjectOwnerHandler, beforeRoleHandler } from "../handlers";
 import {
   AvailableEntityType,
   AvailablePermissions,
   AvailableSubEntityType,
+  BulkArkiveEntitiesType,
   BulkDeleteEntitiesType,
   EntitiesWithPermissionCheck,
   PublicEntities,
@@ -212,6 +213,48 @@ export function bulk_router(app: Elysia) {
           }),
           response: ResponseSchema,
           beforeHandle: async (context) => beforeRoleHandler(context, `update_${context.params.type}` as AvailablePermissions),
+        },
+      )
+      .delete(
+        "/arkive/:type",
+        async ({ params, body }) => {
+          if (params.type) {
+            if (!BulkArkiveEntitiesEnum.includes(params.type)) {
+              console.error("ATTEMPTED BULK ARKIVE WITH UNALLOWED TYPE", params.type);
+              throw new Error("INTERNAL_SERVER_ERROR");
+            }
+
+            if (BulkArkiveEntitiesEnum.includes(params.type) && params.type !== "images") {
+              await db
+                .updateTable(params.type as BulkArkiveEntitiesType)
+                .set(
+                  params.type === "characteres" ||
+                    params.type === "tags" ||
+                    params.type === "blueprints" ||
+                    params.type === "character_fields_templates"
+                    ? { deleted_at: new Date().toUTCString() }
+                    : // @ts-ignore
+                      { deleted_at: new Date().toUTCString(), is_public: false },
+                )
+                .where("id", "in", body.data.ids)
+                .execute();
+            }
+          }
+          return {
+            message: `Many ${params.type.replaceAll("_", " ")} ${MessageEnum.successfully_deleted}`,
+            ok: true,
+            role_access: true,
+          };
+        },
+        {
+          body: t.Object({
+            data: t.Object({
+              ids: t.Array(t.String(), { minItems: 1, maxItems: 100 }),
+              project_id: t.Optional(t.String()),
+            }),
+          }),
+          response: ResponseSchema,
+          beforeHandle: async (context) => beforeRoleHandler(context, `delete_${context.params.type}` as AvailablePermissions),
         },
       )
       .delete(
