@@ -14,6 +14,8 @@ SET row_security = off;
 --
 
 COMMENT ON SCHEMA public IS '';
+
+
 --
 -- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
 --
@@ -427,20 +429,6 @@ CREATE TABLE public.blueprint_instance_map_pins (
 
 
 --
--- Name: blueprint_instance_permissions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.blueprint_instance_permissions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    permission_id uuid,
-    role_id uuid,
-    user_id uuid,
-    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
-);
-
-
---
 -- Name: blueprint_instance_random_tables; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -482,20 +470,6 @@ CREATE TABLE public.blueprint_instances (
 
 
 --
--- Name: blueprint_permissions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.blueprint_permissions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    permission_id uuid,
-    role_id uuid,
-    user_id uuid,
-    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
-);
-
-
---
 -- Name: blueprints; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -509,20 +483,6 @@ CREATE TABLE public.blueprints (
     icon text,
     owner_id uuid NOT NULL,
     deleted_at timestamp(3) without time zone
-);
-
-
---
--- Name: calendar_permissions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.calendar_permissions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    permission_id uuid,
-    role_id uuid,
-    user_id uuid,
-    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
 );
 
 
@@ -619,20 +579,6 @@ CREATE TABLE public.character_fields (
 
 
 --
--- Name: character_fields_template_permissions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.character_fields_template_permissions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    permission_id uuid,
-    role_id uuid,
-    user_id uuid,
-    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
-);
-
-
---
 -- Name: character_fields_templates; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -665,20 +611,6 @@ CREATE TABLE public.character_locations_fields (
     character_id uuid NOT NULL,
     character_field_id uuid NOT NULL,
     related_id uuid NOT NULL
-);
-
-
---
--- Name: character_permissions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.character_permissions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    permission_id uuid,
-    role_id uuid,
-    user_id uuid,
-    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
 );
 
 
@@ -789,20 +721,6 @@ CREATE TABLE public.dictionaries (
 
 
 --
--- Name: dictionary_permissions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.dictionary_permissions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    permission_id uuid,
-    role_id uuid,
-    user_id uuid,
-    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
-);
-
-
---
 -- Name: document_mentions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -811,20 +729,6 @@ CREATE TABLE public.document_mentions (
     parent_document_id uuid NOT NULL,
     mention_id uuid NOT NULL,
     mention_type public."MentionTypeEnum" NOT NULL
-);
-
-
---
--- Name: document_permissions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.document_permissions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    permission_id uuid,
-    role_id uuid,
-    user_id uuid,
-    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
 );
 
 
@@ -895,6 +799,20 @@ CREATE TABLE public.edges (
 
 
 --
+-- Name: entity_permissions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.entity_permissions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    permission_id uuid,
+    role_id uuid,
+    user_id uuid,
+    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
+);
+
+
+--
 -- Name: eras; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -935,20 +853,6 @@ CREATE TABLE public.event_map_pins (
 
 
 --
--- Name: event_permissions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.event_permissions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    permission_id uuid,
-    role_id uuid,
-    user_id uuid,
-    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
-);
-
-
---
 -- Name: events; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -981,20 +885,6 @@ CREATE TABLE public.events (
 
 
 --
--- Name: graph_permissions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.graph_permissions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    permission_id uuid,
-    role_id uuid,
-    user_id uuid,
-    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
-);
-
-
---
 -- Name: graphs; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1015,20 +905,6 @@ CREATE TABLE public.graphs (
     owner_id uuid NOT NULL,
     deleted_at timestamp(3) without time zone,
     CONSTRAINT id_cannot_equal_parent_id_graphs CHECK ((id <> parent_id))
-);
-
-
---
--- Name: image_permissions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.image_permissions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    permission_id uuid,
-    role_id uuid,
-    user_id uuid,
-    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
 );
 
 
@@ -1070,34 +946,6 @@ CREATE TABLE public.map_layers (
     parent_id uuid NOT NULL,
     is_public boolean,
     image_id uuid NOT NULL
-);
-
-
---
--- Name: map_permissions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.map_permissions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    permission_id uuid,
-    role_id uuid,
-    user_id uuid,
-    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
-);
-
-
---
--- Name: map_pin_permissions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.map_pin_permissions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    permission_id uuid,
-    role_id uuid,
-    user_id uuid,
-    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
 );
 
 
@@ -1269,20 +1117,6 @@ CREATE TABLE public.random_table_options (
 
 
 --
--- Name: random_table_permissions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.random_table_permissions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    permission_id uuid,
-    role_id uuid,
-    user_id uuid,
-    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
-);
-
-
---
 -- Name: random_table_suboptions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1351,20 +1185,6 @@ CREATE TABLE public.schema_migrations (
 
 
 --
--- Name: tag_permissions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.tag_permissions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    permission_id uuid,
-    role_id uuid,
-    user_id uuid,
-    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
-);
-
-
---
 -- Name: tags; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1376,9 +1196,6 @@ CREATE TABLE public.tags (
     owner_id uuid NOT NULL,
     deleted_at timestamp(3) without time zone
 );
-
-
-
 
 
 --
@@ -1448,20 +1265,6 @@ CREATE TABLE public.webhooks (
 
 
 --
--- Name: word_permissions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.word_permissions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    permission_id uuid,
-    role_id uuid,
-    user_id uuid,
-    CONSTRAINT check_role_user_presence CHECK ((((role_id IS NOT NULL) AND (user_id IS NULL) AND (permission_id IS NULL)) OR ((role_id IS NULL) AND (user_id IS NOT NULL) AND (permission_id IS NOT NULL))))
-);
-
-
---
 -- Name: words; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1491,14 +1294,6 @@ ALTER TABLE ONLY public.alter_names
 
 ALTER TABLE ONLY public.blueprint_fields
     ADD CONSTRAINT blueprint_fields_pkey PRIMARY KEY (id);
-
-
---
--- Name: blueprint_instance_permissions blueprint_instance_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.blueprint_instance_permissions
-    ADD CONSTRAINT blueprint_instance_permissions_pkey PRIMARY KEY (id);
 
 
 --
@@ -1574,27 +1369,11 @@ ALTER TABLE ONLY public.blueprint_instances
 
 
 --
--- Name: blueprint_permissions blueprint_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.blueprint_permissions
-    ADD CONSTRAINT blueprint_permissions_pkey PRIMARY KEY (id);
-
-
---
 -- Name: blueprints blueprints_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.blueprints
     ADD CONSTRAINT blueprints_pkey PRIMARY KEY (id);
-
-
---
--- Name: calendar_permissions calendar_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.calendar_permissions
-    ADD CONSTRAINT calendar_permissions_pkey PRIMARY KEY (id);
 
 
 --
@@ -1611,14 +1390,6 @@ ALTER TABLE ONLY public.calendars
 
 ALTER TABLE ONLY public.character_fields
     ADD CONSTRAINT character_fields_pkey PRIMARY KEY (id);
-
-
---
--- Name: character_fields_template_permissions character_fields_template_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.character_fields_template_permissions
-    ADD CONSTRAINT character_fields_template_permissions_pkey PRIMARY KEY (id);
 
 
 --
@@ -1643,14 +1414,6 @@ ALTER TABLE ONLY public.character_images_fields
 
 ALTER TABLE ONLY public.character_locations_fields
     ADD CONSTRAINT character_locations_fields_pkey PRIMARY KEY (character_id, character_field_id, related_id);
-
-
---
--- Name: character_permissions character_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.character_permissions
-    ADD CONSTRAINT character_permissions_pkey PRIMARY KEY (id);
 
 
 --
@@ -1694,27 +1457,11 @@ ALTER TABLE ONLY public.dictionaries
 
 
 --
--- Name: dictionary_permissions dictionary_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.dictionary_permissions
-    ADD CONSTRAINT dictionary_permissions_pkey PRIMARY KEY (id);
-
-
---
 -- Name: document_mentions document_mentions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.document_mentions
     ADD CONSTRAINT document_mentions_pkey PRIMARY KEY (id);
-
-
---
--- Name: document_permissions document_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.document_permissions
-    ADD CONSTRAINT document_permissions_pkey PRIMARY KEY (id);
 
 
 --
@@ -1734,19 +1481,19 @@ ALTER TABLE ONLY public.edges
 
 
 --
+-- Name: entity_permissions entity_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.entity_permissions
+    ADD CONSTRAINT entity_permissions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: eras eras_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.eras
     ADD CONSTRAINT eras_pkey PRIMARY KEY (id);
-
-
---
--- Name: event_permissions event_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.event_permissions
-    ADD CONSTRAINT event_permissions_pkey PRIMARY KEY (id);
 
 
 --
@@ -1758,27 +1505,11 @@ ALTER TABLE ONLY public.events
 
 
 --
--- Name: graph_permissions graph_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.graph_permissions
-    ADD CONSTRAINT graph_permissions_pkey PRIMARY KEY (id);
-
-
---
 -- Name: graphs graphs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.graphs
     ADD CONSTRAINT graphs_pkey PRIMARY KEY (id);
-
-
---
--- Name: image_permissions image_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.image_permissions
-    ADD CONSTRAINT image_permissions_pkey PRIMARY KEY (id);
 
 
 --
@@ -1803,22 +1534,6 @@ ALTER TABLE ONLY public.leap_days
 
 ALTER TABLE ONLY public.map_layers
     ADD CONSTRAINT map_layers_pkey PRIMARY KEY (id);
-
-
---
--- Name: map_permissions map_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.map_permissions
-    ADD CONSTRAINT map_permissions_pkey PRIMARY KEY (id);
-
-
---
--- Name: map_pin_permissions map_pin_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.map_pin_permissions
-    ADD CONSTRAINT map_pin_permissions_pkey PRIMARY KEY (id);
 
 
 --
@@ -1910,14 +1625,6 @@ ALTER TABLE ONLY public.random_table_options
 
 
 --
--- Name: random_table_permissions random_table_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.random_table_permissions
-    ADD CONSTRAINT random_table_permissions_pkey PRIMARY KEY (id);
-
-
---
 -- Name: random_table_suboptions random_table_suboptions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1950,52 +1657,11 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
--- Name: tag_permissions tag_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.tag_permissions
-    ADD CONSTRAINT tag_permissions_pkey PRIMARY KEY (id);
-
-
---
 -- Name: tags tags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.tags
     ADD CONSTRAINT tags_pkey PRIMARY KEY (id);
-
-
-
---
--- Name: blueprint_instance_permissions unique_blueprint_instance_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.blueprint_instance_permissions
-    ADD CONSTRAINT unique_blueprint_instance_role_combination UNIQUE (related_id, role_id);
-
-
---
--- Name: blueprint_instance_permissions unique_blueprint_instance_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.blueprint_instance_permissions
-    ADD CONSTRAINT unique_blueprint_instance_user_permission_combination UNIQUE (related_id, user_id, permission_id);
-
-
---
--- Name: blueprint_permissions unique_blueprint_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.blueprint_permissions
-    ADD CONSTRAINT unique_blueprint_role_combination UNIQUE (related_id, role_id);
-
-
---
--- Name: blueprint_permissions unique_blueprint_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.blueprint_permissions
-    ADD CONSTRAINT unique_blueprint_user_permission_combination UNIQUE (related_id, user_id, permission_id);
 
 
 --
@@ -2007,59 +1673,11 @@ ALTER TABLE ONLY public.blueprint_instance_value
 
 
 --
--- Name: calendar_permissions unique_calendar_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.calendar_permissions
-    ADD CONSTRAINT unique_calendar_role_combination UNIQUE (related_id, role_id);
-
-
---
--- Name: calendar_permissions unique_calendar_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.calendar_permissions
-    ADD CONSTRAINT unique_calendar_user_permission_combination UNIQUE (related_id, user_id, permission_id);
-
-
---
 -- Name: character_value_fields unique_char_value_fields_constraint; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.character_value_fields
     ADD CONSTRAINT unique_char_value_fields_constraint UNIQUE (character_field_id, character_id);
-
-
---
--- Name: character_fields_template_permissions unique_character_fields_template_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.character_fields_template_permissions
-    ADD CONSTRAINT unique_character_fields_template_role_combination UNIQUE (related_id, role_id);
-
-
---
--- Name: character_fields_template_permissions unique_character_fields_template_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.character_fields_template_permissions
-    ADD CONSTRAINT unique_character_fields_template_user_permission_combination UNIQUE (related_id, user_id, permission_id);
-
-
---
--- Name: character_permissions unique_character_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.character_permissions
-    ADD CONSTRAINT unique_character_role_combination UNIQUE (related_id, role_id);
-
-
---
--- Name: character_permissions unique_character_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.character_permissions
-    ADD CONSTRAINT unique_character_user_permission_combination UNIQUE (related_id, user_id, permission_id);
 
 
 --
@@ -2103,115 +1721,19 @@ ALTER TABLE ONLY public.character_random_table_fields
 
 
 --
--- Name: dictionary_permissions unique_dictionary_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: entity_permissions unique_entity_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.dictionary_permissions
-    ADD CONSTRAINT unique_dictionary_role_combination UNIQUE (related_id, role_id);
-
-
---
--- Name: dictionary_permissions unique_dictionary_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.dictionary_permissions
-    ADD CONSTRAINT unique_dictionary_user_permission_combination UNIQUE (related_id, user_id, permission_id);
+ALTER TABLE ONLY public.entity_permissions
+    ADD CONSTRAINT unique_entity_role_combination UNIQUE (related_id, role_id);
 
 
 --
--- Name: document_permissions unique_document_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: entity_permissions unique_entity_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.document_permissions
-    ADD CONSTRAINT unique_document_role_combination UNIQUE (related_id, role_id);
-
-
---
--- Name: document_permissions unique_document_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.document_permissions
-    ADD CONSTRAINT unique_document_user_permission_combination UNIQUE (related_id, user_id, permission_id);
-
-
---
--- Name: event_permissions unique_event_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.event_permissions
-    ADD CONSTRAINT unique_event_role_combination UNIQUE (related_id, role_id);
-
-
---
--- Name: event_permissions unique_event_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.event_permissions
-    ADD CONSTRAINT unique_event_user_permission_combination UNIQUE (related_id, user_id, permission_id);
-
-
---
--- Name: graph_permissions unique_graph_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.graph_permissions
-    ADD CONSTRAINT unique_graph_role_combination UNIQUE (related_id, role_id);
-
-
---
--- Name: graph_permissions unique_graph_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.graph_permissions
-    ADD CONSTRAINT unique_graph_user_permission_combination UNIQUE (related_id, user_id, permission_id);
-
-
---
--- Name: image_permissions unique_image_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.image_permissions
-    ADD CONSTRAINT unique_image_role_combination UNIQUE (related_id, role_id);
-
-
---
--- Name: image_permissions unique_image_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.image_permissions
-    ADD CONSTRAINT unique_image_user_permission_combination UNIQUE (related_id, user_id, permission_id);
-
-
---
--- Name: map_pin_permissions unique_map_pin_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.map_pin_permissions
-    ADD CONSTRAINT unique_map_pin_role_combination UNIQUE (related_id, role_id);
-
-
---
--- Name: map_pin_permissions unique_map_pin_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.map_pin_permissions
-    ADD CONSTRAINT unique_map_pin_user_permission_combination UNIQUE (related_id, user_id, permission_id);
-
-
---
--- Name: map_permissions unique_map_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.map_permissions
-    ADD CONSTRAINT unique_map_role_combination UNIQUE (related_id, role_id);
-
-
---
--- Name: map_permissions unique_map_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.map_permissions
-    ADD CONSTRAINT unique_map_user_permission_combination UNIQUE (related_id, user_id, permission_id);
+ALTER TABLE ONLY public.entity_permissions
+    ADD CONSTRAINT unique_entity_user_permission_combination UNIQUE (related_id, user_id, permission_id);
 
 
 --
@@ -2231,22 +1753,6 @@ ALTER TABLE ONLY public.permissions
 
 
 --
--- Name: random_table_permissions unique_random_table_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.random_table_permissions
-    ADD CONSTRAINT unique_random_table_role_combination UNIQUE (related_id, role_id);
-
-
---
--- Name: random_table_permissions unique_random_table_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.random_table_permissions
-    ADD CONSTRAINT unique_random_table_user_permission_combination UNIQUE (related_id, user_id, permission_id);
-
-
---
 -- Name: roles unique_roles_constraint; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2255,43 +1761,11 @@ ALTER TABLE ONLY public.roles
 
 
 --
--- Name: tag_permissions unique_tag_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.tag_permissions
-    ADD CONSTRAINT unique_tag_role_combination UNIQUE (related_id, role_id);
-
-
---
--- Name: tag_permissions unique_tag_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.tag_permissions
-    ADD CONSTRAINT unique_tag_user_permission_combination UNIQUE (related_id, user_id, permission_id);
-
-
---
 -- Name: users unique_user_email; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT unique_user_email UNIQUE (email);
-
-
---
--- Name: word_permissions unique_word_role_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.word_permissions
-    ADD CONSTRAINT unique_word_role_combination UNIQUE (related_id, role_id);
-
-
---
--- Name: word_permissions unique_word_user_permission_combination; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.word_permissions
-    ADD CONSTRAINT unique_word_user_permission_combination UNIQUE (related_id, user_id, permission_id);
 
 
 --
@@ -2316,14 +1790,6 @@ ALTER TABLE ONLY public.users
 
 ALTER TABLE ONLY public.webhooks
     ADD CONSTRAINT webhooks_pkey PRIMARY KEY (id);
-
-
---
--- Name: word_permissions word_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.word_permissions
-    ADD CONSTRAINT word_permissions_pkey PRIMARY KEY (id);
 
 
 --
@@ -3321,30 +2787,6 @@ ALTER TABLE ONLY public.blueprint_instance_map_pins
 
 
 --
--- Name: blueprint_instance_permissions blueprint_instance_permissions_bpi_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.blueprint_instance_permissions
-    ADD CONSTRAINT blueprint_instance_permissions_bpi_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.blueprint_instances(id) ON DELETE CASCADE;
-
-
---
--- Name: blueprint_instance_permissions blueprint_instance_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.blueprint_instance_permissions
-    ADD CONSTRAINT blueprint_instance_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
-
-
---
--- Name: blueprint_instance_permissions blueprint_instance_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.blueprint_instance_permissions
-    ADD CONSTRAINT blueprint_instance_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
-
-
---
 -- Name: blueprint_instance_random_tables blueprint_instance_random_tables_blueprint_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3409,59 +2851,11 @@ ALTER TABLE ONLY public.blueprint_instances
 
 
 --
--- Name: blueprint_permissions blueprint_permissions_blueprint_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.blueprint_permissions
-    ADD CONSTRAINT blueprint_permissions_blueprint_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.blueprints(id) ON DELETE CASCADE;
-
-
---
--- Name: blueprint_permissions blueprint_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.blueprint_permissions
-    ADD CONSTRAINT blueprint_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
-
-
---
--- Name: blueprint_permissions blueprint_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.blueprint_permissions
-    ADD CONSTRAINT blueprint_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
-
-
---
 -- Name: blueprints blueprints_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.blueprints
     ADD CONSTRAINT blueprints_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: calendar_permissions calendar_permissions_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.calendar_permissions
-    ADD CONSTRAINT calendar_permissions_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.calendars(id) ON DELETE CASCADE;
-
-
---
--- Name: calendar_permissions calendar_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.calendar_permissions
-    ADD CONSTRAINT calendar_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
-
-
---
--- Name: calendar_permissions calendar_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.calendar_permissions
-    ADD CONSTRAINT calendar_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -3601,30 +2995,6 @@ ALTER TABLE ONLY public.character_fields
 
 
 --
--- Name: character_fields_template_permissions character_fields_template_permissions_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.character_fields_template_permissions
-    ADD CONSTRAINT character_fields_template_permissions_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.character_fields_templates(id) ON DELETE CASCADE;
-
-
---
--- Name: character_fields_template_permissions character_fields_template_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.character_fields_template_permissions
-    ADD CONSTRAINT character_fields_template_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
-
-
---
--- Name: character_fields_template_permissions character_fields_template_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.character_fields_template_permissions
-    ADD CONSTRAINT character_fields_template_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
-
-
---
 -- Name: character_fields_templates character_fields_templates_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3678,30 +3048,6 @@ ALTER TABLE ONLY public.character_locations_fields
 
 ALTER TABLE ONLY public.character_locations_fields
     ADD CONSTRAINT character_locations_fields_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.map_pins(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: character_permissions character_permissions_char_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.character_permissions
-    ADD CONSTRAINT character_permissions_char_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.characters(id) ON DELETE CASCADE;
-
-
---
--- Name: character_permissions character_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.character_permissions
-    ADD CONSTRAINT character_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
-
-
---
--- Name: character_permissions character_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.character_permissions
-    ADD CONSTRAINT character_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -3833,54 +3179,6 @@ ALTER TABLE ONLY public.dictionaries
 
 
 --
--- Name: dictionary_permissions dictionary_permissions_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.dictionary_permissions
-    ADD CONSTRAINT dictionary_permissions_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.dictionaries(id) ON DELETE CASCADE;
-
-
---
--- Name: dictionary_permissions dictionary_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.dictionary_permissions
-    ADD CONSTRAINT dictionary_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
-
-
---
--- Name: dictionary_permissions dictionary_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.dictionary_permissions
-    ADD CONSTRAINT dictionary_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
-
-
---
--- Name: document_permissions document_permissions_document_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.document_permissions
-    ADD CONSTRAINT document_permissions_document_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.documents(id) ON DELETE CASCADE;
-
-
---
--- Name: document_permissions document_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.document_permissions
-    ADD CONSTRAINT document_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
-
-
---
--- Name: document_permissions document_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.document_permissions
-    ADD CONSTRAINT document_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
-
-
---
 -- Name: documents documents_image_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3937,6 +3235,22 @@ ALTER TABLE ONLY public.events
 
 
 --
+-- Name: entity_permissions entity_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.entity_permissions
+    ADD CONSTRAINT entity_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
+
+
+--
+-- Name: entity_permissions entity_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.entity_permissions
+    ADD CONSTRAINT entity_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: eras eras_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3977,30 +3291,6 @@ ALTER TABLE ONLY public.event_map_pins
 
 
 --
--- Name: event_permissions event_permissions_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.event_permissions
-    ADD CONSTRAINT event_permissions_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.events(id) ON DELETE CASCADE;
-
-
---
--- Name: event_permissions event_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.event_permissions
-    ADD CONSTRAINT event_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
-
-
---
--- Name: event_permissions event_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.event_permissions
-    ADD CONSTRAINT event_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
-
-
---
 -- Name: events events_document_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4025,30 +3315,6 @@ ALTER TABLE ONLY public.events
 
 
 --
--- Name: graph_permissions graph_permissions_bpi_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.graph_permissions
-    ADD CONSTRAINT graph_permissions_bpi_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.graphs(id) ON DELETE CASCADE;
-
-
---
--- Name: graph_permissions graph_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.graph_permissions
-    ADD CONSTRAINT graph_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
-
-
---
--- Name: graph_permissions graph_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.graph_permissions
-    ADD CONSTRAINT graph_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
-
-
---
 -- Name: graphs graphs_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4062,30 +3328,6 @@ ALTER TABLE ONLY public.graphs
 
 ALTER TABLE ONLY public.graphs
     ADD CONSTRAINT graphs_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: image_permissions image_permissions_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.image_permissions
-    ADD CONSTRAINT image_permissions_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.images(id) ON DELETE CASCADE;
-
-
---
--- Name: image_permissions image_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.image_permissions
-    ADD CONSTRAINT image_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
-
-
---
--- Name: image_permissions image_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.image_permissions
-    ADD CONSTRAINT image_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -4134,54 +3376,6 @@ ALTER TABLE ONLY public.map_layers
 
 ALTER TABLE ONLY public.map_layers
     ADD CONSTRAINT map_layers_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.maps(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: map_permissions map_permissions_bpi_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.map_permissions
-    ADD CONSTRAINT map_permissions_bpi_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.maps(id) ON DELETE CASCADE;
-
-
---
--- Name: map_permissions map_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.map_permissions
-    ADD CONSTRAINT map_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
-
-
---
--- Name: map_permissions map_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.map_permissions
-    ADD CONSTRAINT map_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
-
-
---
--- Name: map_pin_permissions map_pin_permissions_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.map_pin_permissions
-    ADD CONSTRAINT map_pin_permissions_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.map_pins(id) ON DELETE CASCADE;
-
-
---
--- Name: map_pin_permissions map_pin_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.map_pin_permissions
-    ADD CONSTRAINT map_pin_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
-
-
---
--- Name: map_pin_permissions map_pin_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.map_pin_permissions
-    ADD CONSTRAINT map_pin_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -4337,30 +3531,6 @@ ALTER TABLE ONLY public.random_table_options
 
 
 --
--- Name: random_table_permissions random_table_permissions_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.random_table_permissions
-    ADD CONSTRAINT random_table_permissions_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.random_tables(id) ON DELETE CASCADE;
-
-
---
--- Name: random_table_permissions random_table_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.random_table_permissions
-    ADD CONSTRAINT random_table_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
-
-
---
--- Name: random_table_permissions random_table_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.random_table_permissions
-    ADD CONSTRAINT random_table_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
-
-
---
 -- Name: random_table_suboptions random_table_suboptions_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4414,30 +3584,6 @@ ALTER TABLE ONLY public.roles
 
 ALTER TABLE ONLY public.events
     ADD CONSTRAINT start_month_id_fkey FOREIGN KEY (start_month_id) REFERENCES public.months(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: tag_permissions tag_permissions_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.tag_permissions
-    ADD CONSTRAINT tag_permissions_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.tags(id) ON DELETE CASCADE;
-
-
---
--- Name: tag_permissions tag_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.tag_permissions
-    ADD CONSTRAINT tag_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
-
-
---
--- Name: tag_permissions tag_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.tag_permissions
-    ADD CONSTRAINT tag_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -4497,30 +3643,6 @@ ALTER TABLE ONLY public.webhooks
 
 
 --
--- Name: word_permissions word_permissions_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.word_permissions
-    ADD CONSTRAINT word_permissions_fkey_constraint FOREIGN KEY (related_id) REFERENCES public.words(id) ON DELETE CASCADE;
-
-
---
--- Name: word_permissions word_permissions_role_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.word_permissions
-    ADD CONSTRAINT word_permissions_role_fkey_constraint FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
-
-
---
--- Name: word_permissions word_permissions_user_fkey_constraint; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.word_permissions
-    ADD CONSTRAINT word_permissions_user_fkey_constraint FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
-
-
---
 -- Name: words words_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4538,54 +3660,4 @@ ALTER TABLE ONLY public.words
 --
 
 INSERT INTO public.schema_migrations (version) VALUES
-    ('20231207093813'),
-    ('20231211135552'),
-    ('20231212074504'),
-    ('20231216102520'),
-    ('20231216124629'),
-    ('20231218101511'),
-    ('20231218103101'),
-    ('20231227080417'),
-    ('20240113181603'),
-    ('20240114105525'),
-    ('20240114120905'),
-    ('20240115150007'),
-    ('20240118101925'),
-    ('20240120105425'),
-    ('20240120110543'),
-    ('20240121100632'),
-    ('20240122091229'),
-    ('20240123143420'),
-    ('20240124071626'),
-    ('20240124104752'),
-    ('20240125123531'),
-    ('20240127084345'),
-    ('20240131211018'),
-    ('20240221121726'),
-    ('20240224101433'),
-    ('20240225102446'),
-    ('20240227113312'),
-    ('20240305085322'),
-    ('20240306105236'),
-    ('20240306113048'),
-    ('20240306115226'),
-    ('20240306150622'),
-    ('20240307113544'),
-    ('20240307145300'),
-    ('20240308123748'),
-    ('20240308151021'),
-    ('20240310113906'),
-    ('20240311084151'),
-    ('20240311135335'),
-    ('20240328103025'),
-    ('20240328104529'),
-    ('20240328104825'),
-    ('20240328111135'),
-    ('20240328111345'),
-    ('20240328173310'),
-    ('20240330101909'),
-    ('20240331085133'),
-    ('20240401103430'),
-    ('20240402114548'),
-    ('20240406082834'),
-    ('20240406100205');
+    ('20240408164006');
