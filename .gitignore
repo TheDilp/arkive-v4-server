@@ -4,4 +4,5 @@ node_modules
 .react-email
 schema.prisma
 *.dump
+dumpfile_data.sql
 dist
