@@ -20,6 +20,7 @@ import { constructOrdering } from "../utils/orderByConstructor";
 import {
   CreateEntityPermissions,
   CreateTagRelations,
+  GetRelatedEntityPermissionsAndRoles,
   GetRelationsForUpdating,
   TagQuery,
   UpdateTagRelations,
@@ -81,7 +82,7 @@ export function character_fields_templates_router(app: Elysia) {
       .post(
         "/",
         async ({ body, permissions }) => {
-          const data = await db
+          let query = db
             .selectFrom("character_fields_templates")
             .distinctOn(
               body.orderBy?.length
@@ -95,112 +96,111 @@ export function character_fields_templates_router(app: Elysia) {
                 DB,
                 "character_fields_templates"
               >[],
-            )
-            .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
-              qb = constructFilter("character_fields_templates", qb, body.filters);
-              return qb;
-            })
-            .$if(!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length, (qb) => {
-              const { tags } = groupRelationFiltersByField(body.relationFilters || {});
-              if (tags?.filters?.length)
-                qb = tagsRelationFilter(
-                  "character_fields_templates",
-                  "_character_fields_templatesTotags",
-                  qb,
-                  tags?.filters || [],
-                );
+            );
 
-              return qb;
-            })
-            .$if(!!body.orderBy?.length, (qb) => {
-              qb = constructOrdering(body.orderBy, qb);
-              return qb;
-            })
-            .$if(!!body?.relations, (qb) => {
-              if (body?.relations?.character_fields) {
-                qb = qb.select((eb) =>
-                  jsonArrayFrom(
-                    eb
-                      .selectFrom("character_fields")
-                      .whereRef("character_fields_templates.id", "=", "character_fields.parent_id")
-                      .select([
-                        "character_fields.id",
-                        "character_fields.title",
-                        "character_fields.field_type",
-                        "character_fields.options",
-                        "character_fields.sort",
-                        "character_fields.formula",
-                        "character_fields.random_table_id",
-                        "character_fields.blueprint_id",
-                        (eb) =>
-                          jsonObjectFrom(
-                            eb
-                              .selectFrom("calendars")
-                              .select([
-                                "calendars.id",
-                                "calendars.title",
-                                "calendars.days",
-                                (sb) =>
-                                  jsonArrayFrom(
-                                    sb
-                                      .selectFrom("months")
-                                      .select(["months.id", "months.title", "months.days"])
-                                      .orderBy("months.sort")
-                                      .whereRef("months.parent_id", "=", "calendars.id"),
-                                  ).as("months"),
-                              ])
-                              .whereRef("calendars.id", "=", "character_fields.calendar_id"),
-                          ).as("calendar"),
-                        (eb) =>
-                          jsonObjectFrom(
-                            eb
-                              .selectFrom("random_tables")
-                              .select([
-                                "random_tables.id",
-                                "random_tables.title",
-                                (ebb) =>
-                                  jsonArrayFrom(
-                                    ebb
-                                      .selectFrom("random_table_options")
-                                      .whereRef("random_tables.id", "=", "random_table_options.parent_id")
-                                      .select([
-                                        "id",
-                                        "title",
-                                        (ebbb) =>
-                                          jsonArrayFrom(
-                                            ebbb
-                                              .selectFrom("random_table_suboptions")
-                                              .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id")
-                                              .select(["id", "title"]),
-                                          ).as("random_table_suboptions"),
-                                      ]),
-                                  ).as("random_table_options"),
-                              ])
-                              .whereRef("random_tables.id", "=", "character_fields.random_table_id"),
-                          ).as("random_table"),
-                      ])
-                      .orderBy(["character_fields.sort"]),
-                  ).as("character_fields"),
-                );
-              }
-              if (body?.relations?.tags) {
-                qb = qb.select((eb) =>
-                  TagQuery(
-                    eb,
-                    "_character_fields_templatesTotags",
-                    "character_fields_templates",
-                    permissions.is_project_owner,
-                    permissions.user_id,
-                    "character_fields_template_permissions",
-                  ),
-                );
-              }
-              return qb;
-            })
-            .$if(!permissions.is_project_owner, (qb) => {
-              return checkEntityLevelPermission(qb, permissions, "character_fields_templates");
-            })
-            .execute();
+          if (!!body?.filters?.and?.length || !!body?.filters?.or?.length) {
+            query = constructFilter("character_fields_templates", query, body.filters);
+          }
+          if (!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length) {
+            const { tags } = groupRelationFiltersByField(body.relationFilters || {});
+            if (tags?.filters?.length)
+              query = tagsRelationFilter(
+                "character_fields_templates",
+                "_character_fields_templatesTotags",
+                query,
+                tags?.filters || [],
+              );
+          }
+          if (body.orderBy?.length) {
+            query = constructOrdering(body.orderBy, query);
+          }
+          if (body?.relations) {
+            if (body?.relations?.character_fields) {
+              query = query.select((eb) =>
+                jsonArrayFrom(
+                  eb
+                    .selectFrom("character_fields")
+                    .whereRef("character_fields_templates.id", "=", "character_fields.parent_id")
+                    .select([
+                      "character_fields.id",
+                      "character_fields.title",
+                      "character_fields.field_type",
+                      "character_fields.options",
+                      "character_fields.sort",
+                      "character_fields.formula",
+                      "character_fields.random_table_id",
+                      "character_fields.blueprint_id",
+                      (eb) =>
+                        jsonObjectFrom(
+                          eb
+                            .selectFrom("calendars")
+                            .select([
+                              "calendars.id",
+                              "calendars.title",
+                              "calendars.days",
+                              (sb) =>
+                                jsonArrayFrom(
+                                  sb
+                                    .selectFrom("months")
+                                    .select(["months.id", "months.title", "months.days"])
+                                    .orderBy("months.sort")
+                                    .whereRef("months.parent_id", "=", "calendars.id"),
+                                ).as("months"),
+                            ])
+                            .whereRef("calendars.id", "=", "character_fields.calendar_id"),
+                        ).as("calendar"),
+                      (eb) =>
+                        jsonObjectFrom(
+                          eb
+                            .selectFrom("random_tables")
+                            .select([
+                              "random_tables.id",
+                              "random_tables.title",
+                              (ebb) =>
+                                jsonArrayFrom(
+                                  ebb
+                                    .selectFrom("random_table_options")
+                                    .whereRef("random_tables.id", "=", "random_table_options.parent_id")
+                                    .select([
+                                      "id",
+                                      "title",
+                                      (ebbb) =>
+                                        jsonArrayFrom(
+                                          ebbb
+                                            .selectFrom("random_table_suboptions")
+                                            .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id")
+                                            .select(["id", "title"]),
+                                        ).as("random_table_suboptions"),
+                                    ]),
+                                ).as("random_table_options"),
+                            ])
+                            .whereRef("random_tables.id", "=", "character_fields.random_table_id"),
+                        ).as("random_table"),
+                    ])
+                    .orderBy(["character_fields.sort"]),
+                ).as("character_fields"),
+              );
+            }
+            if (body?.relations?.tags) {
+              query = query.select((eb) =>
+                TagQuery(
+                  eb,
+                  "_character_fields_templatesTotags",
+                  "character_fields_templates",
+                  permissions.is_project_owner,
+                  permissions.user_id,
+                  "character_fields_template_permissions",
+                ),
+              );
+            }
+          }
+          if (!permissions.is_project_owner) {
+            query = checkEntityLevelPermission(query, permissions, "character_fields_templates");
+          }
+          if (!!body.permissions && !permissions.is_project_owner) {
+            query = GetRelatedEntityPermissionsAndRoles(query, permissions, "character_fields_templates");
+          }
+          const data = await query.execute();
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
@@ -212,79 +212,82 @@ export function character_fields_templates_router(app: Elysia) {
       .post(
         "/:id",
         async ({ params, body, permissions }) => {
-          const data = await db
+          let query = db
             .selectFrom("character_fields_templates")
-            .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) =>
-              qb
-                .clearSelect()
-                .select(
-                  body.fields.map((f) => `character_fields_templates.${f}`) as SelectExpression<
-                    DB,
-                    "character_fields_templates"
-                  >[],
-                ),
-            )
-            .where("character_fields_templates.id", "=", params.id)
-            .$if(!!body?.relations?.character_fields, (qb) =>
-              qb.select((eb) =>
-                jsonArrayFrom(
-                  eb
-                    .selectFrom("character_fields")
-                    .whereRef("character_fields.parent_id", "=", "character_fields_templates.id")
-                    .select([
-                      "character_fields.id",
-                      "character_fields.title",
-                      "character_fields.options",
-                      "character_fields.field_type",
-                      "character_fields.sort",
-                      "character_fields.formula",
-                      "character_fields.random_table_id",
-                      "character_fields.calendar_id",
-                      "character_fields.blueprint_id",
-                      (eb) =>
-                        jsonObjectFrom(
-                          eb
-                            .selectFrom("random_tables")
-                            .select(["id", "title"])
-                            .whereRef("random_tables.id", "=", "character_fields.random_table_id"),
-                        ).as("random_table"),
-                      (eb) =>
-                        jsonObjectFrom(
-                          eb
-                            .selectFrom("calendars")
-                            .select(["id", "title"])
-                            .whereRef("calendars.id", "=", "character_fields.calendar_id"),
-                        ).as("calendar"),
-                      (eb) =>
-                        jsonObjectFrom(
-                          eb
-                            .selectFrom("blueprints")
-                            .whereRef("blueprints.id", "=", "character_fields.blueprint_id")
-                            .select(["id", "title", "icon"]),
-                        ).as("blueprint"),
-                    ])
 
-                    .orderBy("sort"),
-                ).as("character_fields"),
-              ),
+            .select(
+              body.fields.map((f) => `character_fields_templates.${f}`) as SelectExpression<DB, "character_fields_templates">[],
             )
-            .$if(!!body?.relations?.tags, (qb) =>
-              qb.select((eb) =>
-                TagQuery(
-                  eb,
-                  "_character_fields_templatesTotags",
-                  "character_fields_templates",
-                  permissions.is_project_owner,
-                  permissions.user_id,
-                  "character_fields_template_permissions",
-                ),
+            .where("character_fields_templates.id", "=", params.id);
+          if (body?.relations?.character_fields) {
+            query = query.select((eb) =>
+              jsonArrayFrom(
+                eb
+                  .selectFrom("character_fields")
+                  .whereRef("character_fields.parent_id", "=", "character_fields_templates.id")
+                  .select([
+                    "character_fields.id",
+                    "character_fields.title",
+                    "character_fields.options",
+                    "character_fields.field_type",
+                    "character_fields.sort",
+                    "character_fields.formula",
+                    "character_fields.random_table_id",
+                    "character_fields.calendar_id",
+                    "character_fields.blueprint_id",
+                    (eb) =>
+                      jsonObjectFrom(
+                        eb
+                          .selectFrom("random_tables")
+                          .select(["id", "title"])
+                          .whereRef("random_tables.id", "=", "character_fields.random_table_id"),
+                      ).as("random_table"),
+                    (eb) =>
+                      jsonObjectFrom(
+                        eb
+                          .selectFrom("calendars")
+                          .select(["id", "title"])
+                          .whereRef("calendars.id", "=", "character_fields.calendar_id"),
+                      ).as("calendar"),
+                    (eb) =>
+                      jsonObjectFrom(
+                        eb
+                          .selectFrom("blueprints")
+                          .whereRef("blueprints.id", "=", "character_fields.blueprint_id")
+                          .select(["id", "title", "icon"]),
+                      ).as("blueprint"),
+                  ])
+
+                  .orderBy("sort"),
+              ).as("character_fields"),
+            );
+          }
+
+          if (body?.relations?.tags) {
+            query = query.select((eb) =>
+              TagQuery(
+                eb,
+                "_character_fields_templatesTotags",
+                "character_fields_templates",
+                permissions.is_project_owner,
+                permissions.user_id,
+                "character_fields_template_permissions",
               ),
-            )
-            .$if(!permissions.is_project_owner, (qb) => {
-              return checkEntityLevelPermission(qb, permissions, "character_fields_templates");
-            })
-            .executeTakeFirstOrThrow();
+            );
+          }
+
+          if (permissions.is_project_owner) {
+            query = query.leftJoin("character_fields_template_permissions", (join) =>
+              join.on("character_fields_template_permissions.related_id", "=", params.id),
+            );
+          } else {
+            query = checkEntityLevelPermission(query, permissions, "character_fields_templates", params.id);
+          }
+          if (body.permissions) {
+            query = GetRelatedEntityPermissionsAndRoles(query, permissions, "character_fields_templates", params.id);
+          }
+
+          const data = await query.executeTakeFirst();
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
