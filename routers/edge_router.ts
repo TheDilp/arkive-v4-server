@@ -78,7 +78,7 @@ export function edge_router(app: Elysia) {
             .selectAll()
             .where("edges.id", "=", params.id)
             .$if(!!body?.relations?.tags && !!permissions?.all_permissions?.read_tags, (qb) =>
-              qb.select((eb) => TagQuery(eb, "_edgesTotags", "edges", false, "", null)),
+              qb.select((eb) => TagQuery(eb, "_edgesTotags", "edges", false, "")),
             )
             .executeTakeFirstOrThrow();
           return { data, message: MessageEnum.success, ok: true, role_access: true };

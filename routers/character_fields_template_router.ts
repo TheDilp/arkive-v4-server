@@ -189,7 +189,6 @@ export function character_fields_templates_router(app: Elysia) {
                   "character_fields_templates",
                   permissions.is_project_owner,
                   permissions.user_id,
-                  "character_fields_template_permissions",
                 ),
               );
             }
@@ -271,7 +270,6 @@ export function character_fields_templates_router(app: Elysia) {
                 "character_fields_templates",
                 permissions.is_project_owner,
                 permissions.user_id,
-                "character_fields_template_permissions",
               ),
             );
           }

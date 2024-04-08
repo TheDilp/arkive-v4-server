@@ -214,14 +214,7 @@ export function document_router(app: Elysia) {
             }
             if (body?.relations?.tags && permissions.all_permissions?.read_tags) {
               query = query.select((eb) =>
-                TagQuery(
-                  eb,
-                  "_documentsTotags",
-                  "documents",
-                  permissions.is_project_owner,
-                  permissions.user_id,
-                  "document_permissions",
-                ),
+                TagQuery(eb, "_documentsTotags", "documents", permissions.is_project_owner, permissions.user_id),
               );
             }
             if (body.orderBy) {
@@ -271,14 +264,7 @@ export function document_router(app: Elysia) {
             if (body?.relations) {
               if (body?.relations?.tags && permissions.all_permissions?.read_tags) {
                 query = query.select((eb) =>
-                  TagQuery(
-                    eb,
-                    "_documentsTotags",
-                    "documents",
-                    permissions.is_project_owner,
-                    permissions.user_id,
-                    "document_permissions",
-                  ),
+                  TagQuery(eb, "_documentsTotags", "documents", permissions.is_project_owner, permissions.user_id),
                 );
               }
               if (body?.relations?.alter_names) {

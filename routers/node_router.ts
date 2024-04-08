@@ -71,7 +71,7 @@ export function node_router(app: Elysia) {
         async ({ params, body, permissions }) => {
           let query = db.selectFrom("nodes").selectAll().where("nodes.id", "=", params.id);
           if (body?.relations?.tags && permissions.all_permissions?.read_tags) {
-            query = query.select((eb) => TagQuery(eb, "_nodesTotags", "nodes", false, "", null));
+            query = query.select((eb) => TagQuery(eb, "_nodesTotags", "nodes", false, ""));
           }
           if (body?.relations?.image && permissions.all_permissions?.read_assets) {
             query = query.select((eb) => {

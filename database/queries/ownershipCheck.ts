@@ -64,6 +64,7 @@ export function getNestedReadPermission(
     // @ts-ignore
     subquery = subquery
       .leftJoin(permission_table, `${permission_table}.related_id`, related_table_with_field)
+      // @ts-ignore
       .leftJoin("permissions", `${permission_table}.permission_id`, "permissions.id")
       .where(`${permission_table}.user_id`, "=", user_id)
       .where("permissions.code", "=", permission_code);

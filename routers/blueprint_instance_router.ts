@@ -527,7 +527,6 @@ export function blueprint_instance_router(app: Elysia) {
                   "blueprint_instances",
                   permissions.is_project_owner,
                   permissions.user_id,
-                  "tag_permissions",
                 ),
               );
             }
@@ -848,7 +847,6 @@ export function blueprint_instance_router(app: Elysia) {
                   "blueprint_instances",
                   permissions.is_project_owner,
                   permissions.user_id,
-                  "tag_permissions",
                 ),
               );
             }

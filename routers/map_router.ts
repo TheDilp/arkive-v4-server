@@ -82,7 +82,7 @@ export function map_router(app: Elysia) {
             }
             if (body?.relations?.tags && permissions.all_permissions?.read_tags) {
               query = query.select((eb) =>
-                TagQuery(eb, "_mapsTotags", "maps", permissions.is_project_owner, permissions.user_id, "map_permissions"),
+                TagQuery(eb, "_mapsTotags", "maps", permissions.is_project_owner, permissions.user_id),
               );
             }
             if (!!body?.filters?.and?.length || !!body?.filters?.or?.length) {
@@ -231,7 +231,7 @@ export function map_router(app: Elysia) {
             }
             if (body?.relations?.tags) {
               query = query.select((eb) =>
-                TagQuery(eb, "_mapsTotags", "maps", permissions.is_project_owner, permissions.user_id, "map_permissions"),
+                TagQuery(eb, "_mapsTotags", "maps", permissions.is_project_owner, permissions.user_id),
               );
             }
             if (permissions.is_project_owner) {

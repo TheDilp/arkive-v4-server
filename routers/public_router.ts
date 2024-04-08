@@ -669,7 +669,9 @@ export function public_router(app: Elysia) {
                   );
                 }
                 if (body?.relations?.tags) {
-                  qb = qb.select((eb) => TagQuery(eb, "_character_fields_templatesTotags", "character_fields_templates"));
+                  qb = qb.select((eb) =>
+                    TagQuery(eb, "_character_fields_templatesTotags", "character_fields_templates", "", false, ""),
+                  );
                 }
                 return qb;
               })

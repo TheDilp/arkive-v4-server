@@ -384,14 +384,7 @@ export async function readCharacter(
       }
       if (body?.relations?.tags) {
         qb = qb.select((eb) =>
-          TagQuery(
-            eb,
-            "_charactersTotags",
-            "characters",
-            permissions.is_project_owner,
-            permissions.user_id,
-            "character_permissions",
-          ),
+          TagQuery(eb, "_charactersTotags", "characters", permissions.is_project_owner, permissions.user_id),
         );
       }
       if (body?.relations?.portrait) {

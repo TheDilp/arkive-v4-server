@@ -109,7 +109,7 @@ export function event_router(app: Elysia) {
           if (body.relations) {
             if (body?.relations?.tags && permissions?.all_permissions?.read_tags) {
               query = query.select((eb) =>
-                TagQuery(eb, "_eventsTotags", "events", permissions.is_project_owner, permissions.user_id, "event_permissions"),
+                TagQuery(eb, "_eventsTotags", "events", permissions.is_project_owner, permissions.user_id),
               );
             }
             if (body?.relations?.document && permissions?.all_permissions?.read_documents) {
@@ -198,7 +198,7 @@ export function event_router(app: Elysia) {
           if (body?.relations) {
             if (body?.relations?.tags && permissions.all_permissions?.read_tags) {
               query = query.select((eb) =>
-                TagQuery(eb, "_eventsTotags", "events", permissions.is_project_owner, permissions.user_id, "event_permissions"),
+                TagQuery(eb, "_eventsTotags", "events", permissions.is_project_owner, permissions.user_id),
               );
             }
             if (body?.relations?.document) {

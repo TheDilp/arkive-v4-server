@@ -289,7 +289,7 @@ export function character_router(app: Elysia) {
                       "characters",
                       permissions.is_project_owner,
                       permissions.user_id,
-                      "character_permissions",
+                      "tag_permissions",
                     ),
                   );
                 }

@@ -92,14 +92,7 @@ export function calendar_router(app: Elysia) {
           }
           if (body?.relations?.tags && permissions?.all_permissions?.read_tags) {
             query = query.select((eb) =>
-              TagQuery(
-                eb,
-                "_calendarsTotags",
-                "calendars",
-                permissions.is_project_owner,
-                permissions.user_id,
-                "calendar_permissions",
-              ),
+              TagQuery(eb, "_calendarsTotags", "calendars", permissions.is_project_owner, permissions.user_id),
             );
           }
           if (!permissions.is_project_owner) {
@@ -178,14 +171,7 @@ export function calendar_router(app: Elysia) {
               }
               if (body?.relations?.tags && permissions?.all_permissions?.read_tags) {
                 qb = qb.select((eb) =>
-                  TagQuery(
-                    eb,
-                    "_calendarsTotags",
-                    "calendars",
-                    permissions.is_project_owner,
-                    permissions.user_id,
-                    "calendar_permissions",
-                  ),
+                  TagQuery(eb, "_calendarsTotags", "calendars", permissions.is_project_owner, permissions.user_id),
                 );
               }
               return qb;

@@ -89,16 +89,7 @@ export function graph_router(app: Elysia) {
                 GetRelatedEntityPermissionsAndRoles(qb, permissions, "graphs"),
               )
               .$if(!!body?.relations?.tags && !!permissions.all_permissions?.read_tags, (qb) =>
-                qb.select((eb) =>
-                  TagQuery(
-                    eb,
-                    "_graphsTotags",
-                    "graphs",
-                    permissions.is_project_owner,
-                    permissions.user_id,
-                    "graph_permissions",
-                  ),
-                ),
+                qb.select((eb) => TagQuery(eb, "_graphsTotags", "graphs", permissions.is_project_owner, permissions.user_id)),
               )
               .$if(!!body.orderBy?.length, (qb) => {
                 qb = constructOrdering(body.orderBy, qb);
@@ -190,16 +181,7 @@ export function graph_router(app: Elysia) {
                 ),
               )
               .$if(!!body?.relations?.tags && !!permissions.all_permissions?.read_tags, (qb) =>
-                qb.select((eb) =>
-                  TagQuery(
-                    eb,
-                    "_graphsTotags",
-                    "graphs",
-                    permissions.is_project_owner,
-                    permissions.user_id,
-                    "graph_permissions",
-                  ),
-                ),
+                qb.select((eb) => TagQuery(eb, "_graphsTotags", "graphs", permissions.is_project_owner, permissions.user_id)),
               )
               .select([
                 "graphs.id",
