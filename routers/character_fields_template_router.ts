@@ -23,6 +23,7 @@ import {
   GetRelatedEntityPermissionsAndRoles,
   GetRelationsForUpdating,
   TagQuery,
+  UpdateEntityPermissions,
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
 import { getEntityWithOwnerId, groupRelationFiltersByField } from "../utils/transform";
@@ -359,6 +360,9 @@ export function character_fields_templates_router(app: Elysia) {
                       is_project_owner: permissions.is_project_owner,
                     });
                   else await tx.deleteFrom("_character_fields_templatesTotags").where("A", "=", params.id).execute();
+                }
+                if (body.permissions) {
+                  await UpdateEntityPermissions(tx, params.id, "blueprint_instance_permissions", body.permissions);
                 }
               });
             }
