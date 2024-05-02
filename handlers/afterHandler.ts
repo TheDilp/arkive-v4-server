@@ -23,7 +23,7 @@ export async function afterHandler(
   token: string,
   action: AfterHandlerActionType,
 ) {
-  const { is_folder, project_id, title, image_id } = data;
+  const { is_folder, project_id, title, image_id } = data || {};
 
   if (token) {
     const jwt = token.replace("Bearer ", "");
