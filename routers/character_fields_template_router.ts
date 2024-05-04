@@ -276,9 +276,7 @@ export function character_fields_templates_router(app: Elysia) {
           }
 
           if (permissions.is_project_owner) {
-            query = query.leftJoin("character_fields_template_permissions", (join) =>
-              join.on("character_fields_template_permissions.related_id", "=", params.id),
-            );
+            query = query.leftJoin("entity_permissions", (join) => join.on("entity_permissions.related_id", "=", params.id));
           } else {
             query = checkEntityLevelPermission(query, permissions, "character_fields_templates", params.id);
           }
