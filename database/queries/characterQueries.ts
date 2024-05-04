@@ -30,6 +30,39 @@ export async function readCharacter(
         qb = qb.select([
           (eb) => {
             let documents_query = eb
+              .selectFrom("character_characters_fields")
+              .where("character_characters_fields.character_id", "=", params.id)
+              .select([
+                "character_field_id as id",
+                "character_characters_fields.related_id",
+                (ebb) =>
+                  jsonArrayFrom(
+                    ebb
+                      .selectFrom("characters")
+                      .whereRef("characters.id", "=", "character_characters_fields.related_id")
+                      .select(["characters.id", "characters.full_name", "characters.portrait_id"])
+                      .$if(isPublic, (eb) => {
+                        eb = eb.where("characters.is_public", "=", true);
+                        return eb;
+                      })
+                      .$if(!permissions?.is_project_owner && !isPublic, (qb) => {
+                        return checkEntityLevelPermission(qb, permissions, "characters", params.id);
+                      }),
+                  ).as("characters"),
+              ]);
+
+            documents_query = getNestedReadPermission(
+              documents_query,
+              permissions.is_project_owner,
+              permissions.user_id,
+              "character_documents_fields.related_id",
+              "read_documents",
+            );
+
+            return jsonArrayFrom(documents_query).as("field_documents");
+          },
+          (eb) => {
+            let documents_query = eb
               .selectFrom("character_documents_fields")
               .where("character_documents_fields.character_id", "=", params.id)
               .select([

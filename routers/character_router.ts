@@ -71,6 +71,20 @@ export function character_router(app: Elysia) {
                           })
                           .execute();
                       }
+                      if (field?.characters?.length) {
+                        const { characters } = field;
+                        await tx
+                          .insertInto("character_characters_fields")
+                          .values(
+                            characters.map((doc) => ({
+                              character_field_id: field.id,
+                              character_id: character.id,
+                              related_id: doc.related_id,
+                            })),
+                          )
+                          .execute();
+                        return;
+                      }
                       if (field?.documents?.length) {
                         const { documents } = field;
                         await tx
@@ -149,6 +163,7 @@ export function character_router(app: Elysia) {
                   const { tags } = body.relations;
                   await CreateTagRelations({ tx, relationalTable: "_charactersTotags", id: character.id, tags });
                 }
+
                 if (body.relations?.documents?.length) {
                   const { documents } = body.relations;
                   await tx
@@ -351,6 +366,27 @@ export function character_router(app: Elysia) {
                         .where("character_field_id", "=", field.id)
                         .where("character_id", "=", params.id)
                         .execute();
+                    }
+
+                    if (field.blueprint_instances) {
+                      await tx
+                        .deleteFrom("character_characters_fields")
+                        .where("character_id", "=", params.id)
+                        .where("character_field_id", "=", field.id)
+                        .execute();
+                      if (field.blueprint_instances.length) {
+                        await tx
+                          .insertInto("character_characters_fields")
+                          .values(
+                            (field.blueprint_instances || [])?.map((char) => ({
+                              character_field_id: field.id,
+                              character_id: params.id,
+                              related_id: char.related_id,
+                            })),
+                          )
+                          .onConflict((oc) => oc.doNothing())
+                          .execute();
+                      }
                     }
 
                     if (field.blueprint_instances) {

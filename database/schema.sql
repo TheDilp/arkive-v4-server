@@ -10,6 +10,13 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: pger; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA pger;
+
+
+--
 -- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
 --
 
@@ -407,6 +414,29 @@ CREATE TABLE public.blueprint_instance_events (
 
 
 --
+-- Name: blueprint_instance_field_values; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.blueprint_instance_field_values (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    blueprint_instance_id uuid NOT NULL,
+    blueprint_field_id uuid NOT NULL,
+    related_id uuid,
+    end_month_id uuid,
+    start_month_id uuid,
+    end_day integer,
+    end_year integer,
+    start_day integer,
+    start_year integer,
+    option_id uuid,
+    suboption_id uuid,
+    value jsonb,
+    type text NOT NULL,
+    CONSTRAINT field_type_constraint CHECK ((type = ANY (ARRAY['characters'::text, 'documents'::text, 'map_pins'::text, 'blueprint_instances'::text, 'images'::text, 'events'::text, 'calendars'::text, 'random_tables'::text, 'values'::text])))
+);
+
+
+--
 -- Name: blueprint_instance_images; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -539,6 +569,17 @@ CREATE TABLE public.character_calendar_fields (
 
 
 --
+-- Name: character_characters_fields; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.character_characters_fields (
+    character_id uuid NOT NULL,
+    character_field_id uuid NOT NULL,
+    related_id uuid NOT NULL
+);
+
+
+--
 -- Name: character_documents_fields; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -557,6 +598,29 @@ CREATE TABLE public.character_events_fields (
     character_id uuid NOT NULL,
     character_field_id uuid NOT NULL,
     related_id uuid NOT NULL
+);
+
+
+--
+-- Name: character_field_values; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.character_field_values (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    character_id uuid NOT NULL,
+    character_field_id uuid NOT NULL,
+    related_id uuid,
+    end_month_id uuid,
+    start_month_id uuid,
+    end_day integer,
+    end_year integer,
+    start_day integer,
+    start_year integer,
+    option_id uuid,
+    suboption_id uuid,
+    value jsonb,
+    type text NOT NULL,
+    CONSTRAINT field_type_constraint CHECK ((type = ANY (ARRAY['documents'::text, 'map_pins'::text, 'blueprint_instances'::text, 'images'::text, 'events'::text, 'calendars'::text, 'random_tables'::text, 'values'::text])))
 );
 
 
@@ -1240,6 +1304,17 @@ CREATE VIEW public.user_project_roles_permissions AS
 
 
 --
+-- Name: user_sessions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_sessions (
+    id text NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    user_id uuid NOT NULL
+);
+
+
+--
 -- Name: users; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1294,6 +1369,14 @@ ALTER TABLE ONLY public.alter_names
 
 ALTER TABLE ONLY public.blueprint_fields
     ADD CONSTRAINT blueprint_fields_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: blueprint_instance_field_values blueprint_instance_field_values_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.blueprint_instance_field_values
+    ADD CONSTRAINT blueprint_instance_field_values_pkey PRIMARY KEY (id);
 
 
 --
@@ -1382,6 +1465,22 @@ ALTER TABLE ONLY public.blueprints
 
 ALTER TABLE ONLY public.calendars
     ADD CONSTRAINT calendars_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: character_characters_fields character_characters_fields_character_id_character_field_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_characters_fields
+    ADD CONSTRAINT character_characters_fields_character_id_character_field_id_key UNIQUE (character_id, character_field_id, related_id);
+
+
+--
+-- Name: character_field_values character_field_values_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_field_values
+    ADD CONSTRAINT character_field_values_pkey PRIMARY KEY (id);
 
 
 --
@@ -1774,6 +1873,14 @@ ALTER TABLE ONLY public.users
 
 ALTER TABLE ONLY public.user_project_feature_flags
     ADD CONSTRAINT user_project_feature_flags_pkey PRIMARY KEY (user_id, project_id);
+
+
+--
+-- Name: user_sessions user_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_sessions
+    ADD CONSTRAINT user_sessions_pkey PRIMARY KEY (id);
 
 
 --
@@ -2939,6 +3046,30 @@ ALTER TABLE ONLY public.character_calendar_fields
 
 
 --
+-- Name: character_characters_fields character_characters_fields_character_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_characters_fields
+    ADD CONSTRAINT character_characters_fields_character_field_id_fkey FOREIGN KEY (character_field_id) REFERENCES public.character_fields(id) ON DELETE CASCADE;
+
+
+--
+-- Name: character_characters_fields character_characters_fields_character_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_characters_fields
+    ADD CONSTRAINT character_characters_fields_character_id_fkey FOREIGN KEY (character_id) REFERENCES public.characters(id) ON DELETE CASCADE;
+
+
+--
+-- Name: character_characters_fields character_characters_fields_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_characters_fields
+    ADD CONSTRAINT character_characters_fields_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.characters(id) ON DELETE CASCADE;
+
+
+--
 -- Name: character_documents_fields character_documents_fields_character_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3635,6 +3766,14 @@ ALTER TABLE ONLY public.user_roles
 
 
 --
+-- Name: user_sessions user_session_user_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_sessions
+    ADD CONSTRAINT user_session_user_id_fk FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: webhooks webhooks_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3660,4 +3799,5 @@ ALTER TABLE ONLY public.words
 --
 
 INSERT INTO public.schema_migrations (version) VALUES
-    ('20240408164006');
+    ('20240408164006'),
+    ('20240504110832');
