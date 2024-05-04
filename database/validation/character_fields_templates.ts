@@ -12,6 +12,8 @@ const FieldTypeSchema = t.Union([
   t.Literal("dice_roll"),
   t.Literal("date"),
   t.Literal("random_table"),
+  t.Literal("characters_single"),
+  t.Literal("characters_multiple"),
   t.Literal("documents_single"),
   t.Literal("documents_multiple"),
   t.Literal("images_single"),
