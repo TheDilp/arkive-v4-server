@@ -27,6 +27,7 @@ function getSearchFields(type: SearchableEntities): string[] {
   if (type === "events") fields.push("events.parent_id");
   if (type === "map_pins") fields.push("map_pins.parent_id", "map_pins.icon", "map_pins.image_id");
   if (type === "words") fields.push("words.parent_id");
+  if (type === "blueprints") fields.push("blueprints.icon");
   if (type === "blueprint_instances") fields.push("blueprint_instances.parent_id");
 
   return fields;
@@ -216,12 +217,11 @@ export function search_router(app: Elysia) {
               label:
                 type === "characters" || (type === "nodes" && item?.first_name)
                   ? item.full_name
-                  : item?.title || item?.label || "",
+                  : `${item?.title || item?.label || ""}${item?.parent_title ? ` (${item?.parent_title})` : ""}`,
               color: type === "tags" ? item.color : "",
               image:
                 type === "characters" || (type === "nodes" && item?.first_name) ? item.portrait_id || "" : item?.image_id || "",
               parent_id: item?.parent_id || null,
-              parent_title: item?.parent_title,
               first_name: item?.first_name,
               last_name: item?.last_name,
               icon: item?.icon,
@@ -526,7 +526,13 @@ export function search_router(app: Elysia) {
             request: db
               .selectFrom("map_pins")
               .leftJoin("maps", "maps.id", "map_pins.parent_id")
-              .select(["map_pins.id", "map_pins.title", "map_pins.icon", "map_pins.parent_id", "maps.title as parent_title"])
+              // @ts-ignore
+              .select([
+                "map_pins.id",
+                sql`map_pins.title || ' (' || maps.title || ')' as title`,
+                "map_pins.icon",
+                "map_pins.parent_id",
+              ])
               .where("map_pins.title", "is not", null)
               .where("map_pins.title", "ilike", `%${search_term}%`)
               .limit(5),
@@ -543,7 +549,6 @@ export function search_router(app: Elysia) {
                 "map_pins.id",
                 "map_pins.icon",
                 "map_pins.parent_id",
-                "maps.title as parent_title",
                 "characters.full_name as title",
                 "characters.portrait_id",
               ])
