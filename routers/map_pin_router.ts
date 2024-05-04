@@ -1,5 +1,5 @@
 import { Elysia } from "elysia";
-import { SelectExpression, sql } from "kysely";
+import { SelectExpression } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
@@ -71,20 +71,36 @@ export function map_pin_router(app: Elysia) {
             let query = db
               .selectFrom("map_pins")
               .select(body.fields.map((f) => `map_pins.${f}`) as SelectExpression<DB, "map_pins">[])
-              .leftJoin("entity_permissions", "entity_permissions.related_id", "map_pins.character_id")
               .leftJoin("characters", "characters.id", "map_pins.character_id")
+              .leftJoin("entity_permissions", (join) =>
+                join.on((jb) =>
+                  jb.or([
+                    jb("map_pins.id", "=", jb.ref("entity_permissions.related_id")),
+                    jb("map_pins.character_id", "=", jb.ref("entity_permissions.related_id")),
+                  ]),
+                ),
+              )
               .where((wb) => {
                 return wb.or([
-                  wb.or([
+                  wb("map_pins.owner_id", "=", permissions.user_id),
+                  wb("characters.owner_id", "=", permissions.user_id),
+                  wb.and([
                     wb("map_pins.character_id", "is", null),
-                    wb("characters.owner_id", "=", permissions.user_id),
                     wb.and([
                       wb("entity_permissions.user_id", "=", permissions.user_id),
                       wb("entity_permissions.permission_id", "=", permissions.permission_id),
-                      wb("entity_permissions.related_id", "=", wb.ref("characters.id")),
+                      wb("entity_permissions.related_id", "=", wb.ref("map_pins.id")),
                     ]),
-                    wb("entity_permissions.role_id", "=", permissions.role_id),
                   ]),
+                  wb.and([
+                    wb.and([
+                      wb("entity_permissions.user_id", "=", permissions.user_id),
+                      wb("entity_permissions.permission_id", "=", permissions.permission_id),
+                      wb("entity_permissions.related_id", "=", wb.ref("characters.id") || ""),
+                    ]),
+                  ]),
+
+                  wb("entity_permissions.role_id", "=", permissions.role_id),
                 ]);
               });
             if (!!body?.filters?.and?.length || !!body?.filters?.or?.length) {
@@ -93,7 +109,13 @@ export function map_pin_router(app: Elysia) {
 
             if (body?.relations?.character) {
               query = query.select([
-                jsonObjectFrom(sql`SELECT (characters.id, characters.full_name, characters.portrait_id)`).as("character"),
+                (eb) =>
+                  jsonObjectFrom(
+                    eb
+                      .selectFrom("characters")
+                      .select(["characters.id", "characters.full_name", "characters.portrait_id"])
+                      .whereRef("map_pins.character_id", "=", "characters.id"),
+                  ).as("character"),
               ]);
             }
 
