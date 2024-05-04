@@ -98,7 +98,9 @@ CREATE TYPE public."FieldType" AS ENUM (
     'textarea',
     'blueprints_single',
     'blueprints_multiple',
-    'boolean'
+    'boolean',
+    'characters_single',
+    'characters_multiple'
 );
 
 
