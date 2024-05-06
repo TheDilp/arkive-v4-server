@@ -303,12 +303,13 @@ export function groupCharacterFields(originalItems: any[]): any[] {
   const groupedItems: Record<string, any> = {};
 
   originalItems.forEach((item) => {
-    const { id, blueprint_instances, events, images, documents, map_pins } = item;
+    const { id, characters, blueprint_instances, events, images, documents, map_pins } = item;
 
     if (!groupedItems[id]) {
-      groupedItems[id] = { id, blueprint_instances: [], events: [], images: [], documents: [], map_pins: [] };
+      groupedItems[id] = { id, characters: [], blueprint_instances: [], events: [], images: [], documents: [], map_pins: [] };
     }
 
+    groupedItems[id].characters.push(...(characters || []));
     groupedItems[id].blueprint_instances.push(...(blueprint_instances || []));
     groupedItems[id].events.push(...(events || []));
     groupedItems[id].documents.push(...(documents || []));

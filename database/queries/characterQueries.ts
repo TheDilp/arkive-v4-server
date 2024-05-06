@@ -29,7 +29,7 @@ export async function readCharacter(
       if (body?.relations?.character_fields) {
         qb = qb.select([
           (eb) => {
-            let documents_query = eb
+            let characters_query = eb
               .selectFrom("character_characters_fields")
               .where("character_characters_fields.character_id", "=", params.id)
               .select([
@@ -51,15 +51,15 @@ export async function readCharacter(
                   ).as("characters"),
               ]);
 
-            documents_query = getNestedReadPermission(
-              documents_query,
+            characters_query = getNestedReadPermission(
+              characters_query,
               permissions.is_project_owner,
               permissions.user_id,
-              "character_documents_fields.related_id",
-              "read_documents",
+              "character_characters_fields.related_id",
+              "read_characters",
             );
 
-            return jsonArrayFrom(documents_query).as("field_documents");
+            return jsonArrayFrom(characters_query).as("field_characters");
           },
           (eb) => {
             let documents_query = eb
@@ -558,6 +558,7 @@ export async function readCharacter(
     data.related_other = uniqBy(data.related_other, "id");
   }
   const {
+    field_characters,
     field_documents,
     field_images,
     field_locations,
@@ -569,6 +570,16 @@ export async function readCharacter(
     ...rest
   } = data;
   rest.character_fields = groupCharacterFields([
+    ...(field_characters || []).map(
+      (d: {
+        id: string;
+        related_id: string;
+        characters: { character: { id: string; full_name: string; portrait_id: string | null } }[];
+      }) => ({
+        id: d.id,
+        characters: (d?.characters || []).map((character) => ({ related_id: d.related_id, character })),
+      }),
+    ),
     ...(field_documents || [])
       .map(
         (d: {
