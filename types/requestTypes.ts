@@ -145,6 +145,7 @@ export type JWTPayloadType = { image_url: string; auth_id: string; name: string 
 export type PermissionDecorationType = {
   is_project_owner: boolean;
   role_access: boolean;
+  project_id: string | null;
   user_id: string;
   role_id: string | null;
   permission_id: string | null;

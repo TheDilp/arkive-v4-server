@@ -11,10 +11,26 @@ export async function checkRole(
   isGlobalSearch?: boolean,
 ): Promise<PermissionDecorationType> {
   if (isGlobalSearch) {
-    return { is_project_owner: false, user_id, role_access: true, role_id: null, permission_id: null, all_permissions: {} };
+    return {
+      is_project_owner: false,
+      project_id: null,
+      user_id,
+      role_access: true,
+      role_id: null,
+      permission_id: null,
+      all_permissions: {},
+    };
   }
   if (!project_id || !required_permission)
-    return { is_project_owner: false, user_id, role_access: false, role_id: null, permission_id: null, all_permissions: {} };
+    return {
+      is_project_owner: false,
+      project_id: null,
+      user_id,
+      role_access: false,
+      role_id: null,
+      permission_id: null,
+      all_permissions: {},
+    };
   const data = await db
     .selectFrom("user_project_roles_permissions")
     // .where("permission_slug", "=", required_permission as string)
@@ -31,6 +47,7 @@ export async function checkRole(
     }
     return {
       user_id,
+      project_id,
       is_project_owner: item.owner_id === user_id,
       role_access: item.permission_slug === required_permission,
       role_id: item.role_id,
@@ -39,9 +56,25 @@ export async function checkRole(
     };
   } else {
     if (!project_id)
-      return { user_id, is_project_owner: false, role_access: false, role_id: null, permission_id: null, all_permissions: {} };
+      return {
+        user_id,
+        project_id: null,
+        is_project_owner: false,
+        role_access: false,
+        role_id: null,
+        permission_id: null,
+        all_permissions: {},
+      };
   }
-  return { user_id, is_project_owner: false, role_access: false, role_id: null, permission_id: null, all_permissions: {} };
+  return {
+    user_id,
+    project_id: null,
+    is_project_owner: false,
+    role_access: false,
+    role_id: null,
+    permission_id: null,
+    all_permissions: {},
+  };
 }
 
 export async function checkOwner(project_id: string | null, user_id: string) {
@@ -65,6 +98,7 @@ export async function beforeRoleHandler(context: any, permission: AvailablePermi
       const isProjectOwner = await checkOwner(project_id as string, user_id as string);
       if (isProjectOwner) {
         context.permissions = {
+          project_id,
           is_project_owner: isProjectOwner,
           role_access: false,
           user_id,
@@ -79,20 +113,20 @@ export async function beforeRoleHandler(context: any, permission: AvailablePermi
         isGlobalSearch,
       );
       if (is_project_owner || role_access) {
-        context.permissions = { is_project_owner, role_access, user_id, role_id, permission_id, all_permissions };
+        context.permissions = { is_project_owner, project_id, role_access, user_id, role_id, permission_id, all_permissions };
         return;
       } else {
-        context.permissions = { is_project_owner: false, role_access: false, user_id, all_permissions: {} };
+        context.permissions = { project_id: null, is_project_owner: false, role_access: false, user_id, all_permissions: {} };
 
         noRoleAccessErrorHandler();
       }
     } else {
-      context.permissions = { is_project_owner: false, role_access: false, user_id, all_permissions: {} };
+      context.permissions = { project_id: null, is_project_owner: false, role_access: false, user_id, all_permissions: {} };
 
       noRoleAccessErrorHandler();
     }
   } else {
-    context.permissions = { is_project_owner: false, role_access: false, user_id: "", all_permissions: {} };
+    context.permissions = { is_project_owner: false, project_id: null, role_access: false, user_id: "", all_permissions: {} };
     console.error("MISSING TOKEN");
     throw new UnauthorizedError("UNAUTHORIZED");
   }
