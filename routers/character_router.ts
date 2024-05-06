@@ -368,17 +368,17 @@ export function character_router(app: Elysia) {
                         .execute();
                     }
 
-                    if (field.blueprint_instances) {
+                    if (field.characters) {
                       await tx
                         .deleteFrom("character_characters_fields")
                         .where("character_id", "=", params.id)
                         .where("character_field_id", "=", field.id)
                         .execute();
-                      if (field.blueprint_instances.length) {
+                      if (field.characters.length) {
                         await tx
                           .insertInto("character_characters_fields")
                           .values(
-                            (field.blueprint_instances || [])?.map((char) => ({
+                            (field.characters || [])?.map((char) => ({
                               character_field_id: field.id,
                               character_id: params.id,
                               related_id: char.related_id,
