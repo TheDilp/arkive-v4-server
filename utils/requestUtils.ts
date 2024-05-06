@@ -36,6 +36,7 @@ export function getAfterHandlerActionFromType(type: AfterHandlerActionType) {
 
 export function getOperationFromPath(path: string | null, method: "GET" | "POST" | "DELETE"): AfterHandlerActionType | null {
   if (!path) return null;
+  if (method === "DELETE" && path.includes("arkive")) return "arkive";
   if (method === "DELETE") return "delete";
   if (path.includes("create")) return "create";
   if (path.includes("update")) return "update";
