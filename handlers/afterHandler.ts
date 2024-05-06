@@ -93,7 +93,7 @@ export async function tempAfterHandle(context: any, response: any) {
             const title = context?.body?.data?.title || context?.response?.data?.title;
             if (project_id && title) afterHandler({ project_id, title }, entity, token, action);
           }
-        } else if (action === "update") {
+        } else if (action === "update" || action === "arkive") {
           // @ts-ignore
           let query = db.selectFrom(entity).where(`${entity}.id`, "=", context.params.id);
 

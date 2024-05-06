@@ -3,7 +3,7 @@ import { t } from "elysia";
 import { FilterEnum } from "../enums/requestEnums";
 import { AvailablePermissions } from "./entityTypes";
 
-export type AfterHandlerActionType = "create" | "update" | "delete";
+export type AfterHandlerActionType = "create" | "update" | "arkive" | "delete";
 
 export type SearchableEntities =
   | "characters"

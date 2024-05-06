@@ -29,6 +29,7 @@ export function decodeUserJwt(jwt: string) {
 export function getAfterHandlerActionFromType(type: AfterHandlerActionType) {
   if (type === "create") return "created";
   if (type === "update") return "updated";
+  if (type === "arkive") return "arkived";
   if (type === "delete") return "deleted";
   return "";
 }
