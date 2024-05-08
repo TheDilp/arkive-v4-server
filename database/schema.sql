@@ -24,6 +24,20 @@ COMMENT ON SCHEMA public IS '';
 
 
 --
+-- Name: pageinspect; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pageinspect WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION pageinspect; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pageinspect IS 'inspect the contents of database pages at a low level';
+
+
+--
 -- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -726,7 +740,6 @@ CREATE TABLE public.characters (
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     project_id uuid NOT NULL,
-    is_favorite boolean,
     first_name text NOT NULL,
     last_name text,
     nickname text,
@@ -947,6 +960,17 @@ CREATE TABLE public.events (
     end_minutes integer,
     deleted_at timestamp(3) without time zone,
     owner_id uuid NOT NULL
+);
+
+
+--
+-- Name: favorite_characters; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.favorite_characters (
+    character_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    is_favorite boolean
 );
 
 
@@ -1603,6 +1627,14 @@ ALTER TABLE ONLY public.eras
 
 ALTER TABLE ONLY public.events
     ADD CONSTRAINT events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: favorite_characters favorite_characters_user_id_character_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.favorite_characters
+    ADD CONSTRAINT favorite_characters_user_id_character_id_key UNIQUE (user_id, character_id);
 
 
 --
@@ -3448,6 +3480,22 @@ ALTER TABLE ONLY public.events
 
 
 --
+-- Name: favorite_characters favorite_characters_character_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.favorite_characters
+    ADD CONSTRAINT favorite_characters_character_id_fkey FOREIGN KEY (character_id) REFERENCES public.characters(id);
+
+
+--
+-- Name: favorite_characters favorite_characters_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.favorite_characters
+    ADD CONSTRAINT favorite_characters_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: graphs graphs_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3802,4 +3850,5 @@ ALTER TABLE ONLY public.words
 
 INSERT INTO public.schema_migrations (version) VALUES
     ('20240408164006'),
-    ('20240504110832');
+    ('20240504110832'),
+    ('20240508081725');

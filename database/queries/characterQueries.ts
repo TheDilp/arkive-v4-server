@@ -26,6 +26,13 @@ export async function readCharacter(
     .select(body.fields.map((f) => `characters.${f}`) as SelectExpression<DB, "characters">[])
     .where("characters.id", "=", params.id)
     .$if(!!body.relations, (qb) => {
+      if (body?.relations?.is_favorite) {
+        qb = qb
+          .leftJoin("favorite_characters", (join) =>
+            join.on((jb) => jb.and([jb("character_id", "=", params.id), jb("user_id", "=", permissions.user_id)])),
+          )
+          .select(["is_favorite"]);
+      }
       if (body?.relations?.character_fields) {
         qb = qb.select([
           (eb) => {

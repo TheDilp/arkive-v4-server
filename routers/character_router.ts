@@ -51,6 +51,20 @@ export function character_router(app: Elysia) {
                 .executeTakeFirstOrThrow();
 
               if (body?.relations) {
+                if (typeof body.relations?.is_favorite === "boolean") {
+                  await tx
+                    .insertInto("favorite_characters")
+                    .values({
+                      user_id: permissions.user_id,
+                      is_favorite: body.relations.is_favorite,
+                      character_id: character.id,
+                    })
+                    .onConflict((oc) =>
+                      oc.columns(["user_id", "character_id"]).doUpdateSet({ is_favorite: body.relations?.is_favorite }),
+                    )
+                    .execute();
+                }
+
                 if (body.relations?.images) {
                   const { images } = body.relations;
                   await tx
@@ -286,6 +300,18 @@ export function character_router(app: Elysia) {
               })
               .$if(!!body.orderBy?.length, (qb) => constructOrdering(body.orderBy, qb))
               .$if(!!body?.relations, (qb) => {
+                if (body?.relations?.is_favorite) {
+                  qb = qb
+                    .leftJoin("favorite_characters", (join) =>
+                      join.on((jb) =>
+                        jb.and([
+                          jb("favorite_characters.user_id", "=", permissions.user_id),
+                          jb("favorite_characters.character_id", "=", jb.ref("characters.id")),
+                        ]),
+                      ),
+                    )
+                    .select(["is_favorite"]);
+                }
                 if (body?.relations?.portrait) {
                   qb = qb.select((eb) =>
                     jsonObjectFrom(
@@ -341,6 +367,16 @@ export function character_router(app: Elysia) {
 
               if (permissionCheck) {
                 let deletedTags: string[] | null = null;
+
+                if (typeof body.relations?.is_favorite === "boolean") {
+                  await tx
+                    .insertInto("favorite_characters")
+                    .values({ user_id: permissions.user_id, is_favorite: body.relations.is_favorite, character_id: params.id })
+                    .onConflict((oc) =>
+                      oc.columns(["user_id", "character_id"]).doUpdateSet({ is_favorite: body.relations?.is_favorite }),
+                    )
+                    .execute();
+                }
 
                 if (body.relations?.character_fields) {
                   body.relations.character_fields.forEach(async (field) => {

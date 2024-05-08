@@ -7,7 +7,13 @@ export const ListCharacterSchema = t.Intersect([
   t.Object({ data: t.Object({ project_id: t.String() }) }),
   t.Optional(
     t.Object({
-      relations: t.Optional(t.Object({ portrait: t.Optional(t.Boolean()), tags: t.Optional(t.Boolean()) })),
+      relations: t.Optional(
+        t.Object({
+          portrait: t.Optional(t.Boolean()),
+          tags: t.Optional(t.Boolean()),
+          is_favorite: t.Optional(t.Union([t.Boolean(), t.Null()])),
+        }),
+      ),
     }),
   ),
 ]);
@@ -26,6 +32,7 @@ export const ReadCharacterSchema = t.Intersect([
           images: t.Optional(t.Boolean()),
           events: t.Optional(t.Boolean()),
           locations: t.Optional(t.Boolean()),
+          is_favorite: t.Optional(t.Union([t.Boolean(), t.Null()])),
         }),
       ),
     }),
@@ -48,7 +55,6 @@ export const InsertCharacterSchema = t.Object({
     age: t.Optional(t.Union([t.Number(), t.Null()])),
     portrait_id: t.Optional(t.Union([t.String(), t.Null()])),
     map_pin_id: t.Optional(t.Union([t.String(), t.Null()])),
-    is_favorite: t.Optional(t.Union([t.Boolean(), t.Null()])),
     is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
   }),
   relations: t.Optional(
@@ -141,6 +147,7 @@ export const InsertCharacterSchema = t.Object({
       tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
       documents: t.Optional(t.Array(t.Object({ id: t.String() }))),
       images: t.Optional(t.Array(t.Object({ id: t.String() }))),
+      is_favorite: t.Optional(t.Union([t.Boolean(), t.Null()])),
     }),
   ),
   permissions: t.Optional(
@@ -173,7 +180,6 @@ export const UpdateCharacterSchema = t.Object({
       age: t.Optional(t.Union([t.Number(), t.Null()])),
       portrait_id: t.Optional(t.Union([t.String(), t.Null()])),
       map_pin_id: t.Optional(t.Union([t.String(), t.Null()])),
-      is_favorite: t.Optional(t.Union([t.Boolean(), t.Null()])),
       is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
     }),
   ),
@@ -293,6 +299,7 @@ export const UpdateCharacterSchema = t.Object({
       tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
       documents: t.Optional(t.Array(t.Object({ id: t.String() }))),
       images: t.Optional(t.Array(t.Object({ id: t.String() }))),
+      is_favorite: t.Optional(t.Union([t.Boolean(), t.Null()])),
     }),
   ),
   permissions: t.Optional(
