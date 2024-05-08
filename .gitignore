@@ -7,3 +7,4 @@ schema.prisma
 dumpfile_data.sql
 backup.dump
 dist
+.vscode
