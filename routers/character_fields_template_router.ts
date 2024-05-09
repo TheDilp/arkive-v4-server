@@ -246,7 +246,7 @@ export function character_fields_templates_router(app: Elysia) {
                       jsonObjectFrom(
                         eb
                           .selectFrom("calendars")
-                          .select(["id", "title"])
+                          .select(["id", "title", "icon"])
                           .whereRef("calendars.id", "=", "character_fields.calendar_id"),
                       ).as("calendar"),
                     (eb) =>
