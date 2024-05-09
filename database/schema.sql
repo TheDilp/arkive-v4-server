@@ -10,13 +10,6 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: pger; Type: SCHEMA; Schema: -; Owner: -
---
-
-CREATE SCHEMA pger;
-
-
---
 -- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
 --
 
@@ -24,17 +17,38 @@ COMMENT ON SCHEMA public IS '';
 
 
 --
--- Name: pageinspect; Type: EXTENSION; Schema: -; Owner: -
+-- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS pageinspect WITH SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
 
 
 --
--- Name: EXTENSION pageinspect; Type: COMMENT; Schema: -; Owner: -
+-- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
 --
 
-COMMENT ON EXTENSION pageinspect IS 'inspect the contents of database pages at a low level';
+COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
+
+
+--
+-- Name: pger; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA pger;
+
+
+--
+-- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
 
 
 --
@@ -3152,11 +3166,27 @@ ALTER TABLE ONLY public.character_events_fields
 
 
 --
+-- Name: character_fields character_fields_calendar_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_fields
+    ADD CONSTRAINT character_fields_calendar_id_fkey FOREIGN KEY (calendar_id) REFERENCES public.calendars(id) ON DELETE SET NULL;
+
+
+--
 -- Name: character_fields character_fields_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.character_fields
     ADD CONSTRAINT character_fields_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.character_fields_templates(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: character_fields character_fields_random_table_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_fields
+    ADD CONSTRAINT character_fields_random_table_id_fkey FOREIGN KEY (random_table_id) REFERENCES public.random_tables(id) ON DELETE SET NULL;
 
 
 --
@@ -3851,4 +3881,5 @@ ALTER TABLE ONLY public.words
 INSERT INTO public.schema_migrations (version) VALUES
     ('20240408164006'),
     ('20240504110832'),
-    ('20240508081725');
+    ('20240508081725'),
+    ('20240509130909');
