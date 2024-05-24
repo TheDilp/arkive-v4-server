@@ -18,8 +18,8 @@ type bodyTp = (typeof ReadCharacterSchema)["static"];
 export async function readCharacter(
   body: bodyTp,
   params: { id: string },
-  isPublic: boolean,
   permissions: PermissionDecorationType,
+  isPublic: boolean,
 ): Promise<(typeof ResponseWithDataSchema)["static"]> {
   let query = db
     .selectFrom("characters")
@@ -29,7 +29,7 @@ export async function readCharacter(
       if (body?.relations?.is_favorite) {
         qb = qb
           .leftJoin("favorite_characters", (join) =>
-            join.on((jb) => jb.and([jb("character_id", "=", params.id), jb("user_id", "=", permissions.user_id)])),
+            join.on((jb) => jb.and([jb("character_id", "=", params.id), jb("user_id", "=", permissions?.user_id)])),
           )
           .select(["is_favorite"]);
       }
@@ -60,10 +60,11 @@ export async function readCharacter(
 
             characters_query = getNestedReadPermission(
               characters_query,
-              permissions.is_project_owner,
-              permissions.user_id,
+              permissions?.is_project_owner,
+              permissions?.user_id,
               "character_characters_fields.related_id",
               "read_characters",
+              isPublic,
             );
 
             return jsonArrayFrom(characters_query).as("field_characters");
@@ -93,10 +94,11 @@ export async function readCharacter(
 
             documents_query = getNestedReadPermission(
               documents_query,
-              permissions.is_project_owner,
-              permissions.user_id,
+              permissions?.is_project_owner,
+              permissions?.user_id,
               "character_documents_fields.related_id",
               "read_documents",
+              isPublic,
             );
 
             return jsonArrayFrom(documents_query).as("field_documents");
@@ -123,10 +125,11 @@ export async function readCharacter(
 
             image_query = getNestedReadPermission(
               image_query,
-              permissions.is_project_owner,
-              permissions.user_id,
+              permissions?.is_project_owner,
+              permissions?.user_id,
               "character_images_fields.related_id",
               "read_assets",
+              isPublic,
             );
 
             return jsonArrayFrom(image_query).as("field_images");
@@ -153,10 +156,11 @@ export async function readCharacter(
 
             event_query = getNestedReadPermission(
               event_query,
-              permissions.is_project_owner,
-              permissions.user_id,
+              permissions?.is_project_owner,
+              permissions?.user_id,
               "character_events_fields.related_id",
               "read_events",
+              isPublic,
             );
 
             return jsonArrayFrom(event_query).as("field_events");
@@ -183,10 +187,11 @@ export async function readCharacter(
 
             map_pin_query = getNestedReadPermission(
               map_pin_query,
-              permissions.is_project_owner,
-              permissions.user_id,
+              permissions?.is_project_owner,
+              permissions?.user_id,
               "character_locations_fields.related_id",
               "read_map_pins",
+              isPublic,
             );
 
             return jsonArrayFrom(map_pin_query).as("field_locations");
@@ -219,10 +224,11 @@ export async function readCharacter(
 
             bpi_query = getNestedReadPermission(
               bpi_query,
-              permissions.is_project_owner,
-              permissions.user_id,
+              permissions?.is_project_owner,
+              permissions?.user_id,
               "character_blueprint_instance_fields.related_id",
               "read_blueprint_instances",
+              isPublic,
             );
 
             return jsonArrayFrom(bpi_query).as("field_blueprint_instances");
@@ -235,10 +241,11 @@ export async function readCharacter(
 
             random_table_query = getNestedReadPermission(
               random_table_query,
-              permissions.is_project_owner,
-              permissions.user_id,
+              permissions?.is_project_owner,
+              permissions?.user_id,
               "character_random_table_fields.related_id",
               "read_random_tables",
+              isPublic,
             );
 
             return jsonArrayFrom(random_table_query).as("field_random_tables");
@@ -260,10 +267,11 @@ export async function readCharacter(
 
             calendar_query = getNestedReadPermission(
               calendar_query,
-              permissions.is_project_owner,
-              permissions.user_id,
+              permissions?.is_project_owner,
+              permissions?.user_id,
               "character_calendar_fields.related_id",
               "read_calendars",
+              isPublic,
             );
 
             return jsonArrayFrom(calendar_query).as("field_calendars");
@@ -417,7 +425,7 @@ export async function readCharacter(
       }
       if (body?.relations?.tags) {
         qb = qb.select((eb) =>
-          TagQuery(eb, "_charactersTotags", "characters", permissions.is_project_owner, permissions.user_id),
+          TagQuery(eb, "_charactersTotags", "characters", permissions?.is_project_owner, permissions?.user_id),
         );
       }
       if (body?.relations?.portrait) {
@@ -429,10 +437,11 @@ export async function readCharacter(
 
           portrait_query = getNestedReadPermission(
             portrait_query,
-            permissions.is_project_owner,
-            permissions.user_id,
+            permissions?.is_project_owner,
+            permissions?.user_id,
             "characters.portrait_id",
             "read_assets",
+            isPublic,
           );
 
           return jsonObjectFrom(portrait_query).as("portrait");
@@ -454,10 +463,11 @@ export async function readCharacter(
           // @ts-ignore
           image_query = getNestedReadPermission(
             image_query,
-            permissions.is_project_owner,
-            permissions.user_id,
+            permissions?.is_project_owner,
+            permissions?.user_id,
             "images.id",
             "read_assets",
+            isPublic,
           );
 
           return jsonArrayFrom(image_query).as("images");
@@ -480,10 +490,11 @@ export async function readCharacter(
           // @ts-ignore
           map_pin_query = getNestedReadPermission(
             map_pin_query,
-            permissions.is_project_owner,
-            permissions.user_id,
+            permissions?.is_project_owner,
+            permissions?.user_id,
             "map_pins.id",
             "read_map_pins",
+            isPublic,
           );
 
           return jsonArrayFrom(map_pin_query).as("locations");
@@ -510,10 +521,11 @@ export async function readCharacter(
           // @ts-ignore
           document_query = getNestedReadPermission(
             document_query,
-            permissions.is_project_owner,
-            permissions.user_id,
+            permissions?.is_project_owner,
+            permissions?.user_id,
             "documents.id",
             "read_documents",
+            isPublic,
           );
 
           return jsonArrayFrom(document_query).as("documents");
@@ -535,10 +547,11 @@ export async function readCharacter(
           // @ts-ignore
           event_query = getNestedReadPermission(
             event_query,
-            permissions.is_project_owner,
-            permissions.user_id,
+            permissions?.is_project_owner,
+            permissions?.user_id,
             "events.id",
             "read_events",
+            isPublic,
           );
 
           return jsonArrayFrom(event_query).as("events");
@@ -708,7 +721,7 @@ export async function readCharacter(
 export async function getCharacterFamily(
   params: { id: string; relation_type_id: string; count: string },
   permissions: PermissionDecorationType,
-  isPublic: boolean,
+  isPublic?: boolean,
 ) {
   const { id, relation_type_id, count } = params;
 
@@ -745,17 +758,17 @@ export async function getCharacterFamily(
           wb("character_a_id", "=", id),
           wb("relation_type_id", "=", relation_type_id),
           wb.or([
-            wb("characters.owner_id", "=", permissions.user_id),
+            wb("characters.owner_id", "=", permissions?.user_id),
             wb.and([
-              wb("entity_permissions.user_id", "=", permissions.user_id),
-              wb("entity_permissions.permission_id", "=", permissions.permission_id),
+              wb("entity_permissions.user_id", "=", permissions?.user_id),
+              wb("entity_permissions.permission_id", "=", permissions?.permission_id),
               wb("entity_permissions.related_id", "=", wb.ref("character_b_id")),
             ]),
-            wb("entity_permissions.role_id", "=", permissions.role_id),
+            wb("entity_permissions.role_id", "=", permissions?.role_id),
           ]),
         ]),
       )
-      .$if(isPublic, (qb) => {
+      .$if(!!isPublic, (qb) => {
         if (isPublic) qb = qb.where("characters.is_public", "=", isPublic);
 
         return qb;
@@ -770,17 +783,17 @@ export async function getCharacterFamily(
           wb("character_b_id", "=", id),
           wb("relation_type_id", "=", relation_type_id),
           wb.or([
-            wb("characters.owner_id", "=", permissions.permission_id),
+            wb("characters.owner_id", "=", permissions?.permission_id),
             wb.and([
-              wb("entity_permissions.user_id", "=", permissions.user_id),
-              wb("entity_permissions.permission_id", "=", permissions.permission_id),
+              wb("entity_permissions.user_id", "=", permissions?.user_id),
+              wb("entity_permissions.permission_id", "=", permissions?.permission_id),
               wb("entity_permissions.related_id", "=", wb.ref("character_a_id")),
             ]),
-            wb("entity_permissions.role_id", "=", permissions.role_id),
+            wb("entity_permissions.role_id", "=", permissions?.role_id),
           ]),
         ]),
       )
-      .$if(isPublic, (qb) => {
+      .$if(!!isPublic, (qb) => {
         if (isPublic) qb = qb.where("characters.is_public", "=", isPublic);
 
         return qb;
@@ -789,7 +802,7 @@ export async function getCharacterFamily(
     let char_query = db
       .selectFrom("characters")
       .where("characters.id", "=", id)
-      .$if(isPublic, (qb) => {
+      .$if(!!isPublic, (qb) => {
         if (isPublic) qb = qb.where("characters.is_public", "=", isPublic);
 
         return qb;
@@ -798,10 +811,11 @@ export async function getCharacterFamily(
 
     char_query = getNestedReadPermission(
       char_query,
-      permissions.is_project_owner,
-      permissions.user_id,
+      permissions?.is_project_owner,
+      permissions?.user_id,
       "characters.id",
       "read_characters",
+      isPublic,
     );
 
     const targets = await a_query.union(b_query).union(char_query).execute();
@@ -877,17 +891,17 @@ FROM
       wb.and([
         wb("characters.id", "in", ids),
         wb.or([
-          wb("characters.owner_id", "=", permissions.user_id),
+          wb("characters.owner_id", "=", permissions?.user_id),
           wb.and([
-            wb("entity_permissions.user_id", "=", permissions.user_id),
-            wb("entity_permissions.permission_id", "=", permissions.permission_id),
+            wb("entity_permissions.user_id", "=", permissions?.user_id),
+            wb("entity_permissions.permission_id", "=", permissions?.permission_id),
             wb("entity_permissions.related_id", "=", wb.ref("characters.id")),
           ]),
-          wb("entity_permissions.role_id", "=", permissions.role_id),
+          wb("entity_permissions.role_id", "=", permissions?.role_id),
         ]),
       ]),
     )
-    .$if(isPublic, (qb) => {
+    .$if(!!isPublic, (qb) => {
       if (isPublic) qb.where("characters.is_public", "=", isPublic);
 
       return qb;
@@ -907,17 +921,17 @@ FROM
               wb("characters.id", "not in", ids),
               wb("relation_type_id", "=", relation_type_id),
               wb.or([
-                wb("characters.owner_id", "=", permissions.user_id),
+                wb("characters.owner_id", "=", permissions?.user_id),
                 wb.and([
-                  wb("entity_permissions.user_id", "=", permissions.user_id),
-                  wb("entity_permissions.permission_id", "=", permissions.permission_id),
+                  wb("entity_permissions.user_id", "=", permissions?.user_id),
+                  wb("entity_permissions.permission_id", "=", permissions?.permission_id),
                   wb("entity_permissions.related_id", "=", wb.ref("character_a_id")),
                 ]),
-                wb("entity_permissions.role_id", "=", permissions.role_id),
+                wb("entity_permissions.role_id", "=", permissions?.role_id),
               ]),
             ]),
           )
-          .$if(isPublic, (qb) => {
+          .$if(!!isPublic, (qb) => {
             if (isPublic) qb.where("characters.is_public", "=", isPublic);
 
             return qb;
@@ -934,17 +948,17 @@ FROM
         wb("characters.id", "not in", ids),
         wb("relation_type_id", "=", relation_type_id),
         wb.or([
-          wb("characters.owner_id", "=", permissions.user_id),
+          wb("characters.owner_id", "=", permissions?.user_id),
           wb.and([
-            wb("entity_permissions.user_id", "=", permissions.user_id),
-            wb("entity_permissions.permission_id", "=", permissions.permission_id),
+            wb("entity_permissions.user_id", "=", permissions?.user_id),
+            wb("entity_permissions.permission_id", "=", permissions?.permission_id),
             wb("entity_permissions.related_id", "=", wb.ref("character_b_id")),
           ]),
-          wb("entity_permissions.role_id", "=", permissions.role_id),
+          wb("entity_permissions.role_id", "=", permissions?.role_id),
         ]),
       ]),
     )
-    .$if(isPublic, (qb) => {
+    .$if(!!isPublic, (qb) => {
       if (isPublic) qb.where("characters.is_public", "=", isPublic);
 
       return qb;

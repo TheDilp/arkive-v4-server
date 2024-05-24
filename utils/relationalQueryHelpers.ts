@@ -26,8 +26,10 @@ export function TagQuery(
     .leftJoin("tags", "tags.id", `${relationalTable}.B`)
     .select(["tags.id", "tags.title", "tags.color"]);
 
-  // @ts-ignore
-  tag_query = getNestedReadPermission(tag_query, is_project_owner, user_id, `${relationalTable}.B`, "read_tags");
+  if (user_id) {
+    // @ts-ignore
+    tag_query = getNestedReadPermission(tag_query, is_project_owner, user_id, `${relationalTable}.B`, "read_tags");
+  }
 
   return jsonArrayFrom(tag_query).as("tags");
 }

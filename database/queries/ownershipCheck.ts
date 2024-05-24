@@ -51,7 +51,9 @@ export function getNestedReadPermission(
   user_id: string,
   related_table_with_field: string,
   permission_code: AvailablePermissions,
+  isPublic?: boolean,
 ) {
+  if (isPublic) return subquery;
   if (!is_project_owner) {
     // @ts-ignore
     subquery = subquery

@@ -344,7 +344,7 @@ export function character_router(app: Elysia) {
             beforeHandle: async (context) => beforeRoleHandler(context, "read_characters"),
           },
         )
-        .post("/:id", async ({ params, body, permissions }) => readCharacter(body, params, false, permissions), {
+        .post("/:id", async ({ params, body, permissions }) => readCharacter(body, params, permissions, false), {
           body: ReadCharacterSchema,
           response: ResponseWithDataSchema,
           beforeHandle: async (context) => beforeRoleHandler(context, "read_characters"),
