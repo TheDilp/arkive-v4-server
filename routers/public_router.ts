@@ -914,6 +914,7 @@ export function public_router(app: Elysia) {
                   return qb;
                 })
                 .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+                .select(["blueprints.icon"])
                 .where("blueprints.project_id", "=", body.data.project_id)
                 .where("blueprint_instances.is_public", "=", true);
 
