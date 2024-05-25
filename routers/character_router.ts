@@ -283,7 +283,7 @@ export function character_router(app: Elysia) {
                   qb = characterResourceFilter("event_characters", qb, resourceEvents?.filters || []);
                 if (resourceMaps?.filters?.length) qb = characterResourceFilter("maps", qb, resourceMaps?.filters || []);
                 if (characters?.filters?.length)
-                  qb = characterRelationFilter("character_character_fields", qb, documents?.filters || []);
+                  qb = characterRelationFilter("character_characters_fields", qb, characters?.filters || []);
                 if (documents?.filters?.length)
                   qb = characterRelationFilter("character_documents_fields", qb, documents?.filters || []);
                 if (map_pins?.filters?.length)

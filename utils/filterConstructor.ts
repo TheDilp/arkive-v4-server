@@ -342,10 +342,10 @@ export function characterRelationFilter(
   const orRequestFilters = (filters || []).filter((filt) => filt.type === "OR");
 
   const relatedEntity = relatedEntityFromCharacterRelationTable(characterRelationTable);
-  if (relatedEntity)
+  if (relatedEntity) {
     return queryBuilder
       .innerJoin(characterRelationTable, "characters.id", `${characterRelationTable}.character_id`)
-      .innerJoin(relatedEntity, `${characterRelationTable}.related_id`, `${relatedEntity}.id`)
+      .innerJoin(`${relatedEntity} as related_entity`, `${characterRelationTable}.related_id`, "related_entity.id")
       .where(({ and, exists, selectFrom }) => {
         const andFilters = [];
         const orFilters = [];
@@ -362,18 +362,18 @@ export function characterRelationFilter(
               whereAndQuery = selectFrom(characterRelationTable)
                 // @ts-ignore
                 .select(sql<number>`1`)
-                .innerJoin(relatedEntity, `${relatedEntity}.id`, `${characterRelationTable}.related_id`)
+                .innerJoin(`${relatedEntity} as related_entity`, "related_entity.id", `${characterRelationTable}.related_id`)
                 .where(`${characterRelationTable}.character_field_id`, "=", character_field_id)
-                .where(`${relatedEntity}.id`, "in", entityIds)
+                .where("related_entity.id", "in", entityIds)
                 .whereRef(`${characterRelationTable}.character_id`, "=", "characters.id");
             } else {
               whereAndQuery = whereAndQuery.intersect(
                 selectFrom(characterRelationTable)
                   // @ts-ignore
                   .select(sql<number>`1`)
-                  .innerJoin(relatedEntity, `${relatedEntity}.id`, `${characterRelationTable}.related_id`)
+                  .innerJoin(`${relatedEntity} as related_entity`, "related_entity.id", `${characterRelationTable}.related_id`)
                   .where(`${characterRelationTable}.character_field_id`, "=", character_field_id)
-                  .where(`${relatedEntity}.id`, "in", entityIds)
+                  .where("related_entity.id", "in", entityIds)
                   .whereRef(`${characterRelationTable}.character_id`, "=", "characters.id"),
               );
             }
@@ -413,6 +413,7 @@ export function characterRelationFilter(
         if (orFilters?.length) finalFilters.push(and(orFilters));
         return and(finalFilters);
       });
+  }
   // .$if(!!andRequestFilters.length || !!orRequestFilters.length, (qb) => {
   //   qb = qb.groupBy(["characters.id"]).having(({ fn }) => fn.count<number>(`${relatedEntity}.id`).distinct(), ">=", count);
 

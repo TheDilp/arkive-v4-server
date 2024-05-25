@@ -69,6 +69,7 @@ export function relatedEntityFromBPIRelationTable(
 }
 
 export function relatedEntityFromCharacterRelationTable(table: CharacterRelationTables): CharacterRelationEntities | null {
+  if (table === "character_characters_fields") return "characters";
   if (table === "character_blueprint_instance_fields") return "blueprint_instances";
   if (table === "character_documents_fields") return "documents";
   if (table === "character_locations_fields") return "map_pins";
