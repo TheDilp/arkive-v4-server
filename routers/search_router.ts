@@ -312,7 +312,8 @@ export function search_router(app: Elysia) {
 
             const alter_names = await db
               .selectFrom("alter_names")
-              .select(["alter_names.id as alterId", "alter_names.title", "alter_names.parent_id"])
+              .leftJoin("documents", "alter_names.parent_id", "documents.id")
+              .select(["documents.id as id", "alter_names.id as alterId", "alter_names.title", "alter_names.parent_id"])
               .where("alter_names.title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
               .where("alter_names.project_id", "=", params.project_id)
               .limit(body.limit || 10)
