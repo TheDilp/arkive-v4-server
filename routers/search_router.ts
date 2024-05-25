@@ -545,6 +545,8 @@ export function search_router(app: Elysia) {
               .selectFrom("map_pins")
               .leftJoin("maps", "maps.id", "map_pins.parent_id")
               .leftJoin("characters", "characters.id", "map_pins.character_id")
+              .leftJoin("entity_permissions", "entity_permissions.related_id", "map_pins.character_id")
+              .leftJoin("permissions", "permissions.id", "entity_permissions.permission_id")
               .where((eb) =>
                 eb.and([
                   eb("map_pins.character_id", "is not", null),
