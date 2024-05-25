@@ -290,7 +290,7 @@ export function project_router(app: Elysia) {
                 .select(["events.id", "events.title", "events.parent_id"])
                 .leftJoin("calendars", "calendars.id", "events.parent_id")
                 .where("calendars.project_id", "=", params.id)
-                .where("owner_id", "=", permissions.user_id)
+                .where("events.owner_id", "=", permissions.user_id)
                 .orderBy("events.updated_at desc")
                 .limit(5)
                 .execute(),
