@@ -544,9 +544,16 @@ export function search_router(app: Elysia) {
             request: db
               .selectFrom("map_pins")
               .leftJoin("maps", "maps.id", "map_pins.parent_id")
-              .where("map_pins.character_id", "is not", null)
               .leftJoin("characters", "characters.id", "map_pins.character_id")
-              .where("characters.full_name", "ilike", `%${search_term}%`)
+              .where((eb) =>
+                eb.and([
+                  eb("map_pins.character_id", "is not", null),
+                  eb("characters.full_name", "ilike", `%${search_term}%`),
+                  eb("entity_permissions.user_id", "=", permissions.user_id),
+                  eb("permissions.code", "=", "read_characters"),
+                ]),
+              )
+              .where("maps.project_id", "=", project_id)
               .select([
                 "map_pins.id",
                 "map_pins.icon",
@@ -571,8 +578,19 @@ export function search_router(app: Elysia) {
               .selectFrom("nodes")
               .leftJoin("graphs", "graphs.id", "nodes.parent_id")
               .leftJoin("characters", "characters.id", "nodes.character_id")
+              .leftJoin("entity_permissions", "entity_permissions.related_id", "characters.id")
+              // @ts-ignore
+              .leftJoin("permissions", "entity_permissions.permission_id", "permissions.id")
+
               .where((eb) =>
-                eb.or([eb("label", "ilike", `%${search_term}%`), eb("characters.first_name", "ilike", `%${search_term}%`)]),
+                eb.or([
+                  eb.and([eb("label", "ilike", `%${search_term}%`), eb("character_id", "is", null)]),
+                  eb.and([
+                    eb("characters.full_name", "ilike", `%${search_term}%`),
+                    eb("entity_permissions.user_id", "=", permissions.user_id),
+                    eb("permissions.code", "=", "read_characters"),
+                  ]),
+                ]),
               )
               .where("graphs.project_id", "=", project_id)
               .select([
@@ -707,7 +725,14 @@ export function search_router(app: Elysia) {
               requests.push(documentSearch, alterNameSearch);
             }
             if (formattedPermissions.maps) {
-              requests.push(mapSearch, mapPinSearch, characterMapPinSearch);
+              requests.push(mapSearch);
+            }
+
+            if (formattedPermissions.map_pins) {
+              requests.push(mapPinSearch);
+            }
+            if (formattedPermissions.map_pins && formattedPermissions.characters) {
+              requests.push(characterMapPinSearch);
             }
             if (formattedPermissions.graphs) {
               requests.push(graphSearch, nodeSearch, edgeSearch);
