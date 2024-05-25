@@ -335,9 +335,9 @@ export function characterRelationFilter(
   queryBuilder: SelectQueryBuilder<any, any, any>,
   filters: GroupedQueryFilter[],
 ) {
-  let count = 0;
+  // let count = 0;
   const andRequestFilters = (filters || []).filter((filt) => filt.type === "AND");
-  count += andRequestFilters.length;
+  // count += andRequestFilters.length;
 
   const orRequestFilters = (filters || []).filter((filt) => filt.type === "OR");
 
@@ -382,7 +382,7 @@ export function characterRelationFilter(
           andFilters.push(exists(whereAndQuery));
         }
         if (orRequestFilters.length) {
-          count += 1;
+          // count += 1;
 
           Object.entries(groupedOrByBPField).forEach(([character_field_id, filters], index) => {
             const entityIds = filters.map((filt) => filt?.value as string);
@@ -412,12 +412,12 @@ export function characterRelationFilter(
         if (andFilters?.length) finalFilters.push(and(andFilters));
         if (orFilters?.length) finalFilters.push(and(orFilters));
         return and(finalFilters);
-      })
-      .$if(!!andRequestFilters.length || !!orRequestFilters.length, (qb) => {
-        qb = qb.groupBy(["characters.id"]).having(({ fn }) => fn.count<number>(`${relatedEntity}.id`).distinct(), ">=", count);
-
-        return qb;
       });
+  // .$if(!!andRequestFilters.length || !!orRequestFilters.length, (qb) => {
+  //   qb = qb.groupBy(["characters.id"]).having(({ fn }) => fn.count<number>(`${relatedEntity}.id`).distinct(), ">=", count);
+
+  //   return qb;
+  // });
   return queryBuilder;
 }
 export function characterValueFilter(queryBuilder: SelectQueryBuilder<any, any, any>, filters: GroupedQueryFilter[]) {
@@ -507,9 +507,9 @@ export function characterResourceFilter(
   queryBuilder: SelectQueryBuilder<any, any, any>,
   filters: GroupedQueryFilter[],
 ) {
-  let count = 0;
+  // let count = 0;
   const andRequestFilters = (filters || []).filter((filt) => filt.type === "AND");
-  count += andRequestFilters.length;
+  // count += andRequestFilters.length;
   const orRequestFilters = (filters || []).filter((filt) => filt.type === "OR");
   const relatedEntity = relatedEntityFromCharacterResourceTable(characterResourceTable);
 
@@ -552,7 +552,7 @@ export function characterResourceFilter(
           andFilters.push(exists(whereAndQuery));
         }
         if (orRequestFilters.length) {
-          count += 1;
+          // count += 1;
 
           Object.entries(groupedOrByResource).forEach(([, filters], index) => {
             const entityIds = filters.map((filt) => filt?.value as string);
@@ -580,12 +580,12 @@ export function characterResourceFilter(
         if (andFilters?.length) finalFilters.push(and(andFilters));
         if (orFilters?.length) finalFilters.push(and(orFilters));
         return and(finalFilters);
-      })
-      .$if(!!andRequestFilters.length || !!orRequestFilters.length, (qb) => {
-        qb = qb.groupBy(["characters.id"]).having(({ fn }) => fn.count<number>(`${relatedEntity}.id`).distinct(), ">=", count);
-
-        return qb;
       });
+    // .$if(!!andRequestFilters.length || !!orRequestFilters.length, (qb) => {
+    //   qb = qb.groupBy(["characters.id"]).having(({ fn }) => fn.count<number>(`${relatedEntity}.id`).distinct(), ">=", count);
+
+    //   return qb;
+    // });
   } else if (characterResourceTable === "event_characters" && relatedEntity) {
     return queryBuilder
       .innerJoin(characterResourceTable, "characters.id", `${characterResourceTable}.related_id`)
@@ -622,7 +622,7 @@ export function characterResourceFilter(
           andFilters.push(exists(whereAndQuery));
         }
         if (orRequestFilters.length) {
-          count += 1;
+          // count += 1;
 
           Object.entries(groupedOrByResource).forEach(([, filters], index) => {
             const entityIds = filters.map((filt) => filt?.value as string);
@@ -650,12 +650,12 @@ export function characterResourceFilter(
         if (andFilters?.length) finalFilters.push(and(andFilters));
         if (orFilters?.length) finalFilters.push(and(orFilters));
         return and(finalFilters);
-      })
-      .$if(!!andRequestFilters.length || !!orRequestFilters.length, (qb) => {
-        qb = qb.groupBy(["characters.id"]).having(({ fn }) => fn.count<number>(`${relatedEntity}.id`).distinct(), ">=", count);
-
-        return qb;
       });
+    // .$if(!!andRequestFilters.length || !!orRequestFilters.length, (qb) => {
+    //   qb = qb.groupBy(["characters.id"]).having(({ fn }) => fn.count<number>(`${relatedEntity}.id`).distinct(), ">=", count);
+
+    //   return qb;
+    // });
   } else if (characterResourceTable === "maps" && relatedEntity) {
     return queryBuilder
       .innerJoin("map_pins", "map_pins.character_id", "characters.id")
@@ -692,7 +692,7 @@ export function characterResourceFilter(
           andFilters.push(exists(whereAndQuery));
         }
         if (orRequestFilters.length) {
-          count += 1;
+          // count += 1;
 
           Object.entries(groupedOrByResource).forEach(([, filters], index) => {
             const entityIds = filters.map((filt) => filt?.value as string);
@@ -720,12 +720,12 @@ export function characterResourceFilter(
         if (andFilters?.length) finalFilters.push(and(andFilters));
         if (orFilters?.length) finalFilters.push(and(orFilters));
         return and(finalFilters);
-      })
-      .$if(!!andRequestFilters.length || !!orRequestFilters.length, (qb) => {
-        qb = qb.groupBy(["characters.id"]).having(({ fn }) => fn.count<number>(`${relatedEntity}.id`).distinct(), ">=", count);
-
-        return qb;
       });
+    // .$if(!!andRequestFilters.length || !!orRequestFilters.length, (qb) => {
+    //   qb = qb.groupBy(["characters.id"]).having(({ fn }) => fn.count<number>(`${relatedEntity}.id`).distinct(), ">=", count);
+
+    //   return qb;
+    // });
   }
 
   return queryBuilder;
@@ -738,9 +738,9 @@ export function eventRelationFilters(
   queryBuilder: SelectQueryBuilder<any, any, any>,
   filters: GroupedQueryFilter[],
 ) {
-  let count = 0;
+  // let count = 0;
   const andRequestFilters = (filters || []).filter((filt) => filt.type === "AND");
-  count += andRequestFilters.length;
+  // count += andRequestFilters.length;
 
   const orRequestFilters = (filters || []).filter((filt) => filt.type === "OR");
 
@@ -782,7 +782,7 @@ export function eventRelationFilters(
           andFilters.push(exists(whereAndQuery));
         }
         if (orRequestFilters.length) {
-          count += 1;
+          // count += 1;
 
           orRequestFilters.forEach((_, index) => {
             const entityIds = filters.map((filt) => filt?.value as string);
@@ -810,14 +810,14 @@ export function eventRelationFilters(
         if (andFilters?.length) finalFilters.push(and(andFilters));
         if (orFilters?.length) finalFilters.push(and(orFilters));
         return and(finalFilters);
-      })
-      .$if(!!andRequestFilters.length || !!orRequestFilters.length, (qb) => {
-        qb = qb
-          .groupBy(["events.id", "sm.sort", "em.sort"])
-          .having(({ fn }) => fn.count<number>(`${relatedEntity}.id`).distinct(), ">=", count);
-
-        return qb;
       });
+  // .$if(!!andRequestFilters.length || !!orRequestFilters.length, (qb) => {
+  //   qb = qb
+  //     .groupBy(["events.id", "sm.sort", "em.sort"])
+  //     .having(({ fn }) => fn.count<number>(`${relatedEntity}.id`).distinct(), ">=", count);
+
+  //   return qb;
+  // });
   return queryBuilder;
 }
 // #endregion eventFilters
