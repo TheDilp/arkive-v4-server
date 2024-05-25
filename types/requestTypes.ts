@@ -20,6 +20,7 @@ export type SearchableEntities =
   | "images"
   | "map_images"
   | "events"
+  | "dictionaries"
   | "words"
   | "tags";
 export type SearchableMentionEntities =
