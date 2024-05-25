@@ -263,9 +263,8 @@ export function character_router(app: Elysia) {
                 GetRelatedEntityPermissionsAndRoles(qb, permissions, "characters"),
               )
               .$if(!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length, (qb) => {
-                const { blueprint_instances, documents, map_pins, events, tags, value } = groupRelationFiltersByField(
-                  body.relationFilters || {},
-                );
+                const { characters, blueprint_instances, documents, map_pins, events, tags, value } =
+                  groupRelationFiltersByField(body.relationFilters || {});
 
                 const {
                   documents: resourceDocuments,
@@ -283,6 +282,8 @@ export function character_router(app: Elysia) {
                 if (resourceEvents?.filters?.length)
                   qb = characterResourceFilter("event_characters", qb, resourceEvents?.filters || []);
                 if (resourceMaps?.filters?.length) qb = characterResourceFilter("maps", qb, resourceMaps?.filters || []);
+                if (characters?.filters?.length)
+                  qb = characterRelationFilter("character_character_fields", qb, documents?.filters || []);
                 if (documents?.filters?.length)
                   qb = characterRelationFilter("character_documents_fields", qb, documents?.filters || []);
                 if (map_pins?.filters?.length)
