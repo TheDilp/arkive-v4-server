@@ -390,18 +390,18 @@ export function characterRelationFilter(
               whereOrQuery = selectFrom(characterRelationTable)
                 // @ts-ignore
                 .select(sql<number>`1`)
-                .innerJoin(relatedEntity, `${relatedEntity}.id`, `${characterRelationTable}.related_id`)
+                .innerJoin(`${relatedEntity} as related_entity`, "related_entity.id", `${characterRelationTable}.related_id`)
                 .where(`${characterRelationTable}.character_field_id`, "=", character_field_id)
-                .where(`${relatedEntity}.id`, "in", entityIds)
+                .where("related_entity.id", "in", entityIds)
                 .whereRef(`${characterRelationTable}.character_id`, "=", "characters.id");
             } else {
               whereOrQuery = whereOrQuery.union(
                 selectFrom(characterRelationTable)
                   // @ts-ignore
                   .select(sql<number>`1`)
-                  .innerJoin(relatedEntity, `${relatedEntity}.id`, `${characterRelationTable}.related_id`)
+                  .innerJoin(`${relatedEntity} as related_entity`, "related_entity.id", `${characterRelationTable}.related_id`)
                   .where(`${characterRelationTable}.character_field_id`, "=", character_field_id)
-                  .where(`${relatedEntity}.id`, "in", entityIds)
+                  .where("related_entity.id", "in", entityIds)
                   .whereRef(`${characterRelationTable}.character_id`, "=", "characters.id"),
               );
             }
