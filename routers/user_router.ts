@@ -13,6 +13,7 @@ import {
   UpdateUserSchema,
 } from "../database/validation";
 import { EmailInvite } from "../emails/EmailInvite";
+import { DefaultFeatureFlags } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeProjectOwnerHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
@@ -146,9 +147,28 @@ export function user_router(app: Elysia) {
           const user = await db.selectFrom("users").select(["id"]).where("email", "=", body.data.email).executeTakeFirst();
           if (user) {
             await db.insertInto("_project_members").values({ A: body.data.project_id, B: user.id }).execute();
+            await db
+              .insertInto("user_project_feature_flags")
+              .values({
+                project_id: body.data.project_id,
+                user_id: user.id,
+                feature_flags: JSON.stringify(DefaultFeatureFlags),
+              })
+              .execute();
           } else {
             const newUser = await db.insertInto("users").values({ email: body.data.email }).returning("id").executeTakeFirst();
-            if (newUser) await db.insertInto("_project_members").values({ A: body.data.project_id, B: newUser.id }).execute();
+            if (newUser) {
+              await db.insertInto("_project_members").values({ A: body.data.project_id, B: newUser.id }).execute();
+
+              await db
+                .insertInto("user_project_feature_flags")
+                .values({
+                  project_id: body.data.project_id,
+                  user_id: newUser.id,
+                  feature_flags: JSON.stringify(DefaultFeatureFlags),
+                })
+                .execute();
+            }
           }
           const { title, image_id } = await db
             .selectFrom("projects")

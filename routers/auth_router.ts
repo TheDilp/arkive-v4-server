@@ -4,7 +4,7 @@ import { Webhook } from "svix";
 
 import { db } from "../database/db";
 import { AuthSchema } from "../database/validation/auth";
-import { DefaultFeatureFlags, MessageEnum } from "../enums";
+import { MessageEnum } from "../enums";
 
 export function auth_router(app: Elysia) {
   return app.group("/auth", (server) =>
@@ -47,10 +47,7 @@ export function auth_router(app: Elysia) {
           if (existingUser && !existingUser.auth_id) {
             await db.updateTable("users").where("email", "=", email).set({ auth_id }).execute();
           } else if (!existingUser) {
-            await db
-              .insertInto("users")
-              .values({ auth_id, email, feature_flags: JSON.stringify(DefaultFeatureFlags) })
-              .execute();
+            await db.insertInto("users").values({ auth_id, email }).execute();
           } else if (existingUser && !!existingUser.auth_id) {
             // do nothing at all
           }
