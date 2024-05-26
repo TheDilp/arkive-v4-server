@@ -21,7 +21,7 @@ export const UpdateWebhookSchema = t.Object({
 
 export const SendWebhookSchema = t.Object({
   data: t.Union([
-    t.Object({ title: t.String(), description: t.String(), type: t.Literal("document_text") }),
+    t.Object({ title: t.Optional(t.String()), description: t.String(), type: t.Literal("document_text") }),
     t.Object({
       title: t.String(),
       description: t.Optional(t.String()),
