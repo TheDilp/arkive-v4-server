@@ -586,7 +586,7 @@ export function search_router(app: Elysia) {
 
               .where((eb) =>
                 eb.or([
-                  eb.and([eb("label", "ilike", `%${search_term}%`), eb("character_id", "is", null)]),
+                  eb("label", "ilike", `%${search_term}%`),
                   eb.and([
                     eb("characters.full_name", "ilike", `%${search_term}%`),
                     eb("entity_permissions.user_id", "=", permissions.user_id),
