@@ -259,7 +259,7 @@ export function map_pin_router(app: Elysia) {
         .delete(
           "/:id",
           async ({ params, permissions }) => {
-            const permissionCheck = await getHasEntityPermission("documents", params.id, permissions);
+            const permissionCheck = await getHasEntityPermission("map_pins", params.id, permissions);
             if (permissionCheck) {
               const res = await db
                 .deleteFrom("map_pins")
@@ -285,7 +285,7 @@ export function map_pin_router(app: Elysia) {
           },
           {
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "delete_documents"),
+            beforeHandle: async (context) => beforeRoleHandler(context, "delete_map_pins"),
           },
         ),
     );
