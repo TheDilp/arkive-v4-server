@@ -71,9 +71,11 @@ export async function tempAfterHandle(context: any, response: any) {
   const token = context.request.headers.get("authorization");
   const jwt = token.replace("Bearer ", "");
   const { auth_id } = decodeUserJwt(jwt);
+  await redis.del(`notification_flags_${auth_id}`);
 
   const redis_flags = await redis.get(`notification_flags_${auth_id}`);
   let flags: Record<string, boolean> = {};
+
   if (redis_flags) {
     flags = JSON.parse(redis_flags || "{}");
   } else {
@@ -84,12 +86,11 @@ export async function tempAfterHandle(context: any, response: any) {
       .where("users.auth_id", "=", auth_id)
       .where("project_id", "=", context.permissions.project_id)
       .executeTakeFirst();
-    if (notification_flags) {
-      await redis.set(`notification_flags_${auth_id}`, JSON.stringify(notification_flags), { EX: 300 });
+    if (notification_flags?.feature_flags) {
+      await redis.set(`notification_flags_${auth_id}`, JSON.stringify(notification_flags.feature_flags), { EX: 300 });
       flags = notification_flags.feature_flags as Record<string, boolean>;
     }
   }
-
   const action = getOperationFromPath(context.path, context.request.method);
   if (action && token) {
     // TODO: CHECK FOR NOTIFICATION SETTINGS

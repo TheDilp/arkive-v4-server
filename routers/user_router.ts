@@ -18,6 +18,7 @@ import { MessageEnum } from "../enums/requestEnums";
 import { beforeProjectOwnerHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { resend } from "../utils/emailClient";
+import { redisClient } from "../utils/redisClient";
 import { decodeUserJwt } from "../utils/requestUtils";
 
 export function user_router(app: Elysia) {
@@ -89,7 +90,17 @@ export function user_router(app: Elysia) {
         async ({ params, body }) => {
           await db.transaction().execute(async (tx) => {
             if (body.data) {
-              tx.updateTable("users").where("id", "=", params.id).set(body.data).execute();
+              const user = await tx
+                .updateTable("users")
+                .where("id", "=", params.id)
+                .set(body.data)
+                .returning("auth_id")
+                .execute();
+              const redis = await redisClient;
+
+              if (user?.[0]) {
+                await redis.del(`notification_flags_${user?.[0]?.auth_id}`);
+              }
             }
             if (body.relations?.feature_flags) {
               await tx
@@ -107,6 +118,7 @@ export function user_router(app: Elysia) {
                 .execute();
             }
           });
+
           return { message: `User ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
         {
