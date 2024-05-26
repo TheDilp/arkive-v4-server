@@ -1,5 +1,6 @@
 import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import Elysia, { t } from "elysia";
+import omit from "lodash.omit";
 import uniq from "lodash.uniq";
 
 import { db } from "../database/db";
@@ -75,15 +76,39 @@ export function bulk_router(app: Elysia) {
         "/update/:type",
         async ({ params, body, permissions }) => {
           db.transaction().execute(async (tx) => {
-            await Promise.all(
-              body.data.map((item) =>
-                tx
-                  .updateTable(params.type as DBKeys)
-                  .set(item.data)
-                  .where("id", "=", item.data.id)
-                  .execute(),
-              ),
-            );
+            const sent_ids = body.data.map((item) => item.data.id);
+
+            const d = await db
+
+              // @ts-ignore
+              .selectFrom(params.type as DBKeys)
+              // @ts-ignore
+              .select([`${params.type}.id`])
+              // @ts-ignore
+              .leftJoin("entity_permissions", "entity_permissions.related_id", `${params.type}.id`)
+              .leftJoin("permissions", "permissions.id", "entity_permissions.permission_id")
+              // @ts-ignore
+              .where(`${params.type}.id`, "in", sent_ids)
+              .where("permissions.code", "like", `update_${params.type}`)
+              .where("entity_permissions.user_id", "=", permissions.user_id)
+              .execute();
+
+            const ids = permissions.is_project_owner ? sent_ids : d.map((item) => item.id);
+
+            if (ids.length)
+              await Promise.all(
+                body.data
+                  .filter((item) => ids.includes(item.data.id))
+                  .map((item) =>
+                    tx
+
+                      .updateTable(params.type as DBKeys)
+                      // @ts-ignore
+                      .set(omit(item.data, "id"))
+                      .where("id", "in", ids)
+                      .execute(),
+                  ),
+              );
 
             if (params.type === "nodes") {
               const nodesWithTagsToUpdate = body.data.filter((n) => !!n?.relations?.tags);
@@ -132,48 +157,73 @@ export function bulk_router(app: Elysia) {
       )
       .post(
         "/update/access/:type",
-        async ({ body }) => {
+        async ({ params, body, permissions }) => {
           const relatedIds = uniq(body.data.permissions.map((p) => p.related_id));
 
-          // If there is an entry with actual permission changes
-          if (body.data.permissions.some((p) => !!p.permission_id || !!p.role_id || !!p.permission_id)) {
-            await db.transaction().execute(async (tx) => {
-              const userPermissions = body.data.permissions.filter((perm) => !!perm.user_id) as {
-                related_id: string;
-                user_id: string;
-                permission_id: string;
-              }[];
-              const rolePermissions = body.data.permissions.filter((perm) => !!perm.role_id) as {
-                related_id: string;
-                role_id: string;
-              }[];
+          const sent_ids = relatedIds;
 
-              // @ts-ignore
-              tx.deleteFrom("entity_permissions").where("related_id", "in", relatedIds).execute();
+          const d = await db
 
-              if (userPermissions.length) {
-                // @ts-ignore
-                tx.insertInto("entity_permissions")
-                  .values(userPermissions)
-                  .onConflict((oc) => oc.doNothing())
-                  .execute();
-              }
-              if (rolePermissions.length) {
-                // @ts-ignore
-                tx.insertInto("entity_permissions")
-                  .values(rolePermissions)
-                  .onConflict((oc) => oc.doNothing())
-                  .execute();
-              }
-            });
-          }
-          // Everything is empty for the related enteties
-          // !Do not remove and place before IF statement
-          // !The other delete needs to be within a transaction
-          // !in case of failure
-          else {
             // @ts-ignore
-            await db.deleteFrom("entity_permissions").where("related_id", "in", relatedIds).execute();
+            .selectFrom(params.type as DBKeys)
+            // @ts-ignore
+            .select([`${params.type}.id`])
+            // @ts-ignore
+            .leftJoin("entity_permissions", "entity_permissions.related_id", `${params.type}.id`)
+            .leftJoin("permissions", "permissions.id", "entity_permissions.permission_id")
+            // @ts-ignore
+            .where(`${params.type}.id`, "in", sent_ids)
+            // @ts-ignore
+            .where((wb) => wb(`${params.type}.owner_id`, "=", permissions.user_id))
+            .execute();
+
+          const ids = permissions.is_project_owner ? sent_ids : d.map((item) => item.id);
+
+          if (ids.length) {
+            // If there is an entry with actual permission changes
+            if (body.data.permissions.some((p) => !!p.permission_id || !!p.role_id || !!p.permission_id)) {
+              await db.transaction().execute(async (tx) => {
+                const userPermissions = body.data.permissions.filter(
+                  (perm) => !!perm.user_id && ids.includes(perm.related_id),
+                ) as {
+                  related_id: string;
+                  user_id: string;
+                  permission_id: string;
+                }[];
+                const rolePermissions = body.data.permissions.filter(
+                  (perm) => !!perm.role_id && ids.includes(perm.related_id),
+                ) as {
+                  related_id: string;
+                  role_id: string;
+                }[];
+
+                // @ts-ignore
+                tx.deleteFrom("entity_permissions").where("related_id", "in", ids).execute();
+
+                if (userPermissions.length) {
+                  // @ts-ignore
+                  tx.insertInto("entity_permissions")
+                    .values(userPermissions)
+                    .onConflict((oc) => oc.doNothing())
+                    .execute();
+                }
+                if (rolePermissions.length) {
+                  // @ts-ignore
+                  tx.insertInto("entity_permissions")
+                    .values(rolePermissions)
+                    .onConflict((oc) => oc.doNothing())
+                    .execute();
+                }
+              });
+            }
+            // Everything is empty for the related enteties
+            // !Do not remove and place before IF statement
+            // !The other delete needs to be within a transaction
+            // !in case of failure
+            else {
+              // @ts-ignore
+              await db.deleteFrom("entity_permissions").where("related_id", "in", ids).execute();
+            }
           }
 
           return { message: MessageEnum.success, ok: true, role_access: true };
@@ -213,7 +263,7 @@ export function bulk_router(app: Elysia) {
       )
       .delete(
         "/arkive/:type",
-        async ({ params, body }) => {
+        async ({ params, body, permissions }) => {
           if (params.type) {
             if (!BulkArkiveEntitiesEnum.includes(params.type)) {
               console.error("ATTEMPTED BULK ARKIVE WITH UNALLOWED TYPE", params.type);
@@ -221,6 +271,25 @@ export function bulk_router(app: Elysia) {
             }
 
             if (BulkArkiveEntitiesEnum.includes(params.type) && params.type !== "images") {
+              const sent_ids = body.data.ids;
+
+              const d = await db
+
+                // @ts-ignore
+                .selectFrom(params.type as DBKeys)
+                // @ts-ignore
+                .select([`${params.type}.id`])
+                // @ts-ignore
+                .leftJoin("entity_permissions", "entity_permissions.related_id", `${params.type}.id`)
+                .leftJoin("permissions", "permissions.id", "entity_permissions.permission_id")
+                // @ts-ignore
+                .where(`${params.type}.id`, "in", sent_ids)
+                .where("permissions.code", "like", `delete_${params.type}`)
+                .where("entity_permissions.user_id", "=", permissions.user_id)
+                .execute();
+
+              const ids = permissions.is_project_owner ? sent_ids : d.map((item) => item.id);
+
               await db
                 .updateTable(params.type as BulkArkiveEntitiesType)
                 .set(
@@ -232,7 +301,7 @@ export function bulk_router(app: Elysia) {
                     : // @ts-ignore
                       { deleted_at: new Date().toUTCString(), is_public: false },
                 )
-                .where("id", "in", body.data.ids)
+                .where("id", "in", ids)
                 .execute();
             }
           }
@@ -255,7 +324,7 @@ export function bulk_router(app: Elysia) {
       )
       .delete(
         "/delete/:type",
-        async ({ params, body }) => {
+        async ({ params, body, permissions }) => {
           if (params.type) {
             if (!BulkDeleteEntitiesEnum.includes(params.type)) {
               console.error("ATTEMPTED BULK DELETE WITH UNALLOWED TYPE", params.type);
@@ -266,19 +335,38 @@ export function bulk_router(app: Elysia) {
               throw new Error("INTERNAL_SERVER_ERROR");
             }
             if (params.type === "images" && body.data.project_id) {
+              const sent_ids = body.data.ids;
+
+              const d = await db
+
+                // @ts-ignore
+                .selectFrom(params.type as DBKeys)
+                // @ts-ignore
+                .select([`${params.type}.id`])
+                // @ts-ignore
+                .leftJoin("entity_permissions", "entity_permissions.related_id", `${params.type}.id`)
+                .leftJoin("permissions", "permissions.id", "entity_permissions.permission_id")
+                // @ts-ignore
+                .where(`${params.type}.id`, "in", sent_ids)
+                .where("permissions.code", "like", `delete_${params.type}`)
+                .where("entity_permissions.user_id", "=", permissions.user_id)
+                .execute();
+
+              const ids = permissions.is_project_owner ? sent_ids : d.map((item) => item.id);
+
               try {
                 const filePath = `assets/${body.data.project_id}/${params.type}`;
                 const deleteCommand = new DeleteObjectsCommand({
                   Bucket: process.env.DO_SPACES_NAME as string,
                   Delete: {
-                    Objects: (body.data.ids || []).map((id) => ({ Key: `${filePath}/${id}.webp` })),
+                    Objects: (ids || []).map((id) => ({ Key: `${filePath}/${id}.webp` })),
                     Quiet: false,
                   },
                 });
                 await s3Client.send(deleteCommand);
                 await db
                   .deleteFrom(params.type as BulkDeleteEntitiesType)
-                  .where("id", "in", body.data.ids)
+                  .where("id", "in", ids)
                   .execute();
               } catch (error) {
                 console.error("ERROR BULK DELETING S3 IMAGES ");
@@ -286,9 +374,28 @@ export function bulk_router(app: Elysia) {
               }
             }
             if (BulkDeleteEntitiesEnum.includes(params.type)) {
+              const sent_ids = body.data.ids;
+
+              const d = await db
+
+                // @ts-ignore
+                .selectFrom(params.type as DBKeys)
+                // @ts-ignore
+                .select([`${params.type}.id`])
+                // @ts-ignore
+                .leftJoin("entity_permissions", "entity_permissions.related_id", `${params.type}.id`)
+                .leftJoin("permissions", "permissions.id", "entity_permissions.permission_id")
+                // @ts-ignore
+                .where(`${params.type}.id`, "in", sent_ids)
+                .where("permissions.code", "like", `delete_${params.type}`)
+                .where("entity_permissions.user_id", "=", permissions.user_id)
+                .execute();
+
+              const ids = permissions.is_project_owner ? sent_ids : d.map((item) => item.id);
+
               await db
                 .deleteFrom(params.type as BulkDeleteEntitiesType)
-                .where("id", "in", body.data.ids)
+                .where("id", "in", ids)
                 .execute();
             }
           }
