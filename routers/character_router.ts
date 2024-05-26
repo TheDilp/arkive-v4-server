@@ -4,7 +4,13 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { checkEntityLevelPermission, getCharacterFamily, getHasEntityPermission, readCharacter } from "../database/queries";
+import {
+  checkEntityLevelPermission,
+  getCharacterFamily,
+  getHasEntityPermission,
+  getNestedReadPermission,
+  readCharacter,
+} from "../database/queries";
 import { InsertCharacterSchema, ListCharacterSchema, ReadCharacterSchema, UpdateCharacterSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers/roleHandler";
@@ -314,15 +320,25 @@ export function character_router(app: Elysia) {
                     .select(["is_favorite"]);
                 }
                 if (body?.relations?.portrait) {
-                  qb = qb.select((eb) =>
-                    jsonObjectFrom(
-                      eb
-                        .selectFrom("images")
-                        .whereRef("images.id", "=", "characters.portrait_id")
-                        .select(["images.id", "images.title"]),
-                    ).as("portrait"),
-                  );
+                  qb = qb.select((eb) => {
+                    let portrait_query = eb
+                      .selectFrom("images")
+                      .whereRef("images.id", "=", "characters.portrait_id")
+                      .select(["images.id", "images.title"]);
+
+                    if (!permissions.is_project_owner) {
+                      portrait_query = getNestedReadPermission(
+                        portrait_query,
+                        permissions.is_project_owner,
+                        permissions.user_id,
+                        "characters.portrait_id",
+                        "read_assets",
+                      );
+                    }
+                    return jsonObjectFrom(portrait_query).as("portrait");
+                  });
                 }
+
                 if (body?.relations?.tags) {
                   qb = qb.select((eb) =>
                     TagQuery(eb, "_charactersTotags", "characters", permissions.is_project_owner, permissions.user_id),
