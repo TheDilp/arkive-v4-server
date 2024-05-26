@@ -105,6 +105,7 @@ export function tagsRelationFilter(
   tagTable: TagsRelationTables,
   queryBuilder: SelectQueryBuilder<any, any, any>,
   filters: GroupedQueryFilter[] | undefined,
+  isUsingFavorite?: boolean,
 ) {
   let count = 0;
   const andInIds =
@@ -143,7 +144,9 @@ export function tagsRelationFilter(
         return and(finalFilters);
       })
       .$if(!!andInIds.length, (qb) => {
-        qb = qb.groupBy([`${table}.id`]).having(({ fn }) => fn.count<number>("tags.id").distinct(), ">=", count);
+        const fields = [`${table}.id`];
+        if (isUsingFavorite) fields.push("favorite_characters.is_favorite");
+        qb = qb.groupBy(fields).having(({ fn }) => fn.count<number>("tags.id").distinct(), ">=", count);
 
         return qb;
       });

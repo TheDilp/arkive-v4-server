@@ -281,7 +281,13 @@ export function character_router(app: Elysia) {
                 } = groupCharacterResourceFiltersByField(body.relationFilters || {});
 
                 if (tags?.filters?.length || resourceTags?.filters?.length)
-                  qb = tagsRelationFilter("characters", "_charactersTotags", qb, tags?.filters || resourceTags?.filters || []);
+                  qb = tagsRelationFilter(
+                    "characters",
+                    "_charactersTotags",
+                    qb,
+                    tags?.filters || resourceTags?.filters || [],
+                    body?.relations?.is_favorite || false,
+                  );
                 if (resourceDocuments?.filters?.length)
                   qb = characterResourceFilter("_charactersTodocuments", qb, resourceDocuments?.filters || []);
                 if (images?.filters?.length) qb = characterResourceFilter("_charactersToimages", qb, images?.filters || []);
