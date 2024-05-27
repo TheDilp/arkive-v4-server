@@ -318,7 +318,6 @@ export function document_router(app: Elysia) {
             }
 
             const data = await query.executeTakeFirst();
-
             if (body?.relations?.parents && !!data) {
               const parents = await GetParents({ db, id: params.id, table_name: "documents" });
               data.parents = parents;
@@ -604,7 +603,7 @@ export function document_router(app: Elysia) {
               })
               .execute();
 
-            const edges = nodes.map((d) => ({ source_id: d.id, target_id: params.id }));
+            const edges = nodes.map((d) => ({ source_id: params.id, target_id: d.id }));
 
             return {
               data: { nodes, edges },
