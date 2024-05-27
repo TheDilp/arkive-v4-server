@@ -10,7 +10,7 @@ import { InsertMapSchema, ReadMapSchema, UpdateMapSchema } from "../database/val
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { constructFilter } from "../utils/filterConstructor";
+import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import {
   CreateEntityPermissions,
@@ -22,7 +22,7 @@ import {
   UpdateEntityPermissions,
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
-import { getEntityWithOwnerId } from "../utils/transform";
+import { getEntityWithOwnerId, groupRelationFiltersByField } from "../utils/transform";
 
 export function map_router(app: Elysia) {
   return app
@@ -88,6 +88,12 @@ export function map_router(app: Elysia) {
             if (!!body?.filters?.and?.length || !!body?.filters?.or?.length) {
               query = constructFilter("maps", query, body.filters);
             }
+            if (!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length) {
+              const { tags } = groupRelationFiltersByField(body.relationFilters || {});
+
+              if (tags?.filters?.length) query = tagsRelationFilter("maps", "_mapsTotags", query, tags?.filters || [], false);
+            }
+
             if (!permissions.is_project_owner) {
               query = checkEntityLevelPermission(query, permissions, "maps");
             }

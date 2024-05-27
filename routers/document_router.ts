@@ -28,7 +28,7 @@ import {
   ResponseWithDataSchema,
   SearchableMentionEntities,
 } from "../types/requestTypes";
-import { constructFilter } from "../utils/filterConstructor";
+import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import {
   CreateEntityPermissions,
@@ -48,6 +48,7 @@ import {
   getCharacterFullName,
   getEntitiesWithOwnerId,
   getEntityWithOwnerId,
+  groupRelationFiltersByField,
   insertSenderToMessage,
 } from "../utils/transform";
 
@@ -212,6 +213,14 @@ export function document_router(app: Elysia) {
             if (!!body?.filters?.and?.length || !!body?.filters?.or?.length) {
               query = constructFilter("documents", query, body.filters);
             }
+
+            if (!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length) {
+              const { tags } = groupRelationFiltersByField(body.relationFilters || {});
+
+              if (tags?.filters?.length)
+                query = tagsRelationFilter("documents", "_documentsTotags", query, tags?.filters || [], false);
+            }
+
             if (body?.relations?.tags && permissions.all_permissions?.read_tags) {
               query = query.select((eb) =>
                 TagQuery(eb, "_documentsTotags", "documents", permissions.is_project_owner, permissions.user_id),

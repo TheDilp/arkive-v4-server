@@ -110,6 +110,7 @@ export function character_fields_templates_router(app: Elysia) {
                 "_character_fields_templatesTotags",
                 query,
                 tags?.filters || [],
+                false,
               );
           }
           if (body.orderBy?.length) {

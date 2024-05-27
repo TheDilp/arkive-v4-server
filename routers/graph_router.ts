@@ -13,7 +13,7 @@ import { GenerateGraphSchema, InsertGraphSchema, ReadGraphSchema, UpdateGraphSch
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { constructFilter } from "../utils/filterConstructor";
+import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import {
   CreateEntityPermissions,
@@ -25,7 +25,7 @@ import {
   UpdateEntityPermissions,
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
-import { getEntityWithOwnerId } from "../utils/transform";
+import { getEntityWithOwnerId, groupRelationFiltersByField } from "../utils/transform";
 
 export function graph_router(app: Elysia) {
   return app
@@ -72,12 +72,18 @@ export function graph_router(app: Elysia) {
               .distinctOn(
                 body.orderBy?.length ? (["graphs.id", ...body.orderBy.map((order) => order.field)] as any) : "graphs.id",
               )
-              .where("project_id", "=", body.data.project_id)
+              .where("graphs.project_id", "=", body.data.project_id)
               .where("graphs.deleted_at", body.arkived ? "is not" : "is", null)
 
               .select(body.fields.map((f) => `graphs.${f}`) as SelectExpression<DB, "graphs">[])
               .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
                 qb = constructFilter("graphs", qb, body.filters);
+                return qb;
+              })
+              .$if(!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length, (qb) => {
+                const { tags } = groupRelationFiltersByField(body.relationFilters || {});
+
+                if (tags?.filters?.length) qb = tagsRelationFilter("graphs", "_graphsTotags", qb, tags?.filters || [], false);
                 return qb;
               })
               .limit(body?.pagination?.limit || 10)

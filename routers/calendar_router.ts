@@ -15,7 +15,7 @@ import {
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { constructFilter } from "../utils/filterConstructor";
+import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import {
   CreateEntityPermissions,
   CreateTagRelations,
@@ -27,7 +27,7 @@ import {
   UpdateEntityPermissions,
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
-import { getEntityWithOwnerId } from "../utils/transform";
+import { getEntityWithOwnerId, groupRelationFiltersByField } from "../utils/transform";
 
 export function calendar_router(app: Elysia) {
   return app.group("/calendars", (server) =>
@@ -95,6 +95,13 @@ export function calendar_router(app: Elysia) {
               TagQuery(eb, "_calendarsTotags", "calendars", permissions.is_project_owner, permissions.user_id),
             );
           }
+          if (!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length) {
+            const { tags } = groupRelationFiltersByField(body.relationFilters || {});
+
+            if (tags?.filters?.length)
+              query = tagsRelationFilter("calendars", "_calendarsTotags", query, tags?.filters || [], false);
+          }
+
           if (!permissions.is_project_owner) {
             query = checkEntityLevelPermission(query, permissions, "calendars");
           }
