@@ -10,7 +10,7 @@ import {
   ReadProjectSchema,
   UpdateProjectSchema,
 } from "../database/validation/projects";
-import { DefaultFeatureFlags } from "../enums";
+import { DefaultProjectFeatureFlags } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeProjectOwnerHandler, beforeRoleHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
@@ -38,7 +38,7 @@ export function project_router(app: Elysia) {
                 .values({
                   project_id: project?.id,
                   user_id: permissions.user_id,
-                  feature_flags: JSON.stringify(DefaultFeatureFlags),
+                  feature_flags: JSON.stringify(DefaultProjectFeatureFlags),
                 })
                 .execute();
             }

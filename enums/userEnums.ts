@@ -1,4 +1,4 @@
-export const DefaultFeatureFlags = {
+export const DefaultProjectFeatureFlags = {
   maps_enabled: true,
   graphs_enabled: true,
   calendars_enabled: true,
@@ -69,4 +69,8 @@ export const DefaultFeatureFlags = {
   character_fields_templates_create_notification: true,
   character_fields_templates_delete_notification: true,
   character_fields_templates_update_notification: true,
+};
+
+export const DefaultUserFeatureFlags = {
+  close_drawer_on_save: false,
 };

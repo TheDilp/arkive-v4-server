@@ -13,7 +13,7 @@ import {
   UpdateUserSchema,
 } from "../database/validation";
 import { EmailInvite } from "../emails/EmailInvite";
-import { DefaultFeatureFlags } from "../enums";
+import { DefaultProjectFeatureFlags } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeProjectOwnerHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
@@ -164,7 +164,7 @@ export function user_router(app: Elysia) {
               .values({
                 project_id: body.data.project_id,
                 user_id: user.id,
-                feature_flags: JSON.stringify(DefaultFeatureFlags),
+                feature_flags: JSON.stringify(DefaultProjectFeatureFlags),
               })
               .execute();
           } else {
@@ -177,7 +177,7 @@ export function user_router(app: Elysia) {
                 .values({
                   project_id: body.data.project_id,
                   user_id: newUser.id,
-                  feature_flags: JSON.stringify(DefaultFeatureFlags),
+                  feature_flags: JSON.stringify(DefaultProjectFeatureFlags),
                 })
                 .execute();
             }
