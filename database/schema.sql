@@ -10,27 +10,6 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON SCHEMA public IS '';
-
-
---
--- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
-
-
---
--- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
-
-
---
 -- Name: pger; Type: SCHEMA; Schema: -; Owner: -
 --
 
@@ -38,17 +17,24 @@ CREATE SCHEMA pger;
 
 
 --
--- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
+COMMENT ON SCHEMA public IS '';
 
 
 --
--- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
+-- Name: pageinspect; Type: EXTENSION; Schema: -; Owner: -
 --
 
-COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
+CREATE EXTENSION IF NOT EXISTS pageinspect WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION pageinspect; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pageinspect IS 'inspect the contents of database pages at a low level';
 
 
 --
@@ -822,6 +808,38 @@ CREATE TABLE public.document_mentions (
     parent_document_id uuid NOT NULL,
     mention_id uuid NOT NULL,
     mention_type public."MentionTypeEnum" NOT NULL
+);
+
+
+--
+-- Name: document_template_fields; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.document_template_fields (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    parent_id uuid NOT NULL,
+    key text NOT NULL,
+    value text NOT NULL,
+    formula text,
+    derive_from uuid,
+    derive_formula text,
+    is_randomized boolean,
+    entity_type text,
+    CONSTRAINT document_template_fields_entity_type_check CHECK ((entity_type = ANY (ARRAY['characters'::text, 'blueprint_instances'::text, 'documents'::text, 'maps'::text, 'map_pins'::text, 'graphs'::text, 'dictionaries'::text, 'events'::text, 'calendars'::text, 'words'::text, 'random_tables'::text, 'dice_roll'::text, 'derived'::text, 'custom'::text])))
+);
+
+
+--
+-- Name: document_templates; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.document_templates (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    project_id uuid NOT NULL,
+    owner_id uuid NOT NULL,
+    deleted_at timestamp(3) without time zone,
+    title text NOT NULL,
+    icon text
 );
 
 
@@ -1601,6 +1619,22 @@ ALTER TABLE ONLY public.dictionaries
 
 ALTER TABLE ONLY public.document_mentions
     ADD CONSTRAINT document_mentions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: document_template_fields document_template_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields
+    ADD CONSTRAINT document_template_fields_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: document_templates document_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_templates
+    ADD CONSTRAINT document_templates_pkey PRIMARY KEY (id);
 
 
 --
@@ -3374,6 +3408,38 @@ ALTER TABLE ONLY public.dictionaries
 
 
 --
+-- Name: document_template_fields document_template_fields_derive_from_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields
+    ADD CONSTRAINT document_template_fields_derive_from_fkey FOREIGN KEY (derive_from) REFERENCES public.document_template_fields(id) ON DELETE SET NULL;
+
+
+--
+-- Name: document_template_fields document_template_fields_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields
+    ADD CONSTRAINT document_template_fields_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.document_templates(id) ON DELETE CASCADE;
+
+
+--
+-- Name: document_templates document_templates_owner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_templates
+    ADD CONSTRAINT document_templates_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: document_templates document_templates_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_templates
+    ADD CONSTRAINT document_templates_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
+
+
+--
 -- Name: documents documents_image_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3882,4 +3948,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240408164006'),
     ('20240504110832'),
     ('20240508081725'),
-    ('20240509130909');
+    ('20240509130909'),
+    ('20240529062857');
