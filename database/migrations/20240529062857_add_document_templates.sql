@@ -1,25 +1,15 @@
 -- migrate:up
 CREATE TABLE
-    document_templates (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
-        project_id UUID NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
-        owner_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-        deleted_at timestamp(3) without time zone,
-        title TEXT NOT NULL,
-        icon TEXT
-    );
-
-CREATE TABLE
     document_template_fields (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
-        parent_id UUID NOT NULL REFERENCES public.document_templates (id) ON DELETE CASCADE,
+        parent_id UUID NOT NULL REFERENCES public.documents (id) ON DELETE CASCADE,
         key TEXT NOT NULL,
-        value TEXT NOT NULL,
+        value TEXT,
         formula TEXT,
         derive_from UUID REFERENCES public.document_template_fields (id) ON DELETE SET NULL,
         derive_formula TEXT,
         is_randomized BOOLEAN,
-        entity_type TEXT CHECK (
+        entity_type TEXT NOT NULL CHECK (
             entity_type IN (
                 'characters',
                 'blueprint_instances',
@@ -41,5 +31,3 @@ CREATE TABLE
 
 -- migrate:down
 DROP TABLE document_template_fields;
-
-DROP TABLE document_templates;

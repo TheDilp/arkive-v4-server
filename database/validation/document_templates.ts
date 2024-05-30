@@ -46,20 +46,23 @@ export const InsertDocumentTemplateSchema = t.Object({
     title: t.String(),
     icon: t.Optional(t.Union([t.String(), t.Null()])),
   }),
+  relations: t.Object({}),
+});
+export const UpdateDocumentTemplateSchema = t.Object({
+  data: t.Object({
+    title: t.String(),
+    // icon: t.Optional(t.Union([t.String(), t.Null()])),
+  }),
   relations: t.Object({
     fields: t.Array(
       t.Object({
         data: t.Object({
+          id: t.String(),
           key: t.String(),
           value: t.String(),
           formula: t.Union([t.Null(), t.String()]),
-          derive: t.Union([
-            t.Null(),
-            t.Object({
-              derive_from: t.Union([t.String()]),
-              derive_formula: t.Union([t.String()]),
-            }),
-          ]),
+          derive_from: t.Union([t.Null(), t.String()]),
+          derive_formula: t.Union([t.Null(), t.String()]),
           entity_type: DocumentTemplateEntityTypes,
           is_randomized: t.Union([t.Boolean(), t.Null()]),
         }),

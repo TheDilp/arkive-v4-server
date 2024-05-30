@@ -19,7 +19,6 @@ import {
   conversation_router,
   dictionary_router,
   document_router,
-  document_template_router,
   edge_router,
   event_router,
   graph_router,
@@ -149,7 +148,6 @@ export const app = new Elysia()
       .use(character_fields_router)
       .use(character_relationship_types_router)
       .use(document_router)
-      .use(document_template_router)
       .use(map_router)
       .use(map_pin_router)
       .use(map_pin_types_router)

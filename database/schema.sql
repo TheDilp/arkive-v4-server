@@ -819,27 +819,13 @@ CREATE TABLE public.document_template_fields (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     parent_id uuid NOT NULL,
     key text NOT NULL,
-    value text NOT NULL,
+    value text,
     formula text,
     derive_from uuid,
     derive_formula text,
     is_randomized boolean,
-    entity_type text,
+    entity_type text NOT NULL,
     CONSTRAINT document_template_fields_entity_type_check CHECK ((entity_type = ANY (ARRAY['characters'::text, 'blueprint_instances'::text, 'documents'::text, 'maps'::text, 'map_pins'::text, 'graphs'::text, 'dictionaries'::text, 'events'::text, 'calendars'::text, 'words'::text, 'random_tables'::text, 'dice_roll'::text, 'derived'::text, 'custom'::text])))
-);
-
-
---
--- Name: document_templates; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.document_templates (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    project_id uuid NOT NULL,
-    owner_id uuid NOT NULL,
-    deleted_at timestamp(3) without time zone,
-    title text NOT NULL,
-    icon text
 );
 
 
@@ -1627,14 +1613,6 @@ ALTER TABLE ONLY public.document_mentions
 
 ALTER TABLE ONLY public.document_template_fields
     ADD CONSTRAINT document_template_fields_pkey PRIMARY KEY (id);
-
-
---
--- Name: document_templates document_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.document_templates
-    ADD CONSTRAINT document_templates_pkey PRIMARY KEY (id);
 
 
 --
@@ -3420,23 +3398,7 @@ ALTER TABLE ONLY public.document_template_fields
 --
 
 ALTER TABLE ONLY public.document_template_fields
-    ADD CONSTRAINT document_template_fields_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.document_templates(id) ON DELETE CASCADE;
-
-
---
--- Name: document_templates document_templates_owner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.document_templates
-    ADD CONSTRAINT document_templates_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.users(id) ON DELETE CASCADE;
-
-
---
--- Name: document_templates document_templates_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.document_templates
-    ADD CONSTRAINT document_templates_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
+    ADD CONSTRAINT document_template_fields_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.documents(id) ON DELETE CASCADE;
 
 
 --

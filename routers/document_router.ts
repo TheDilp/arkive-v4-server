@@ -3,6 +3,7 @@ import { SelectExpression, SelectQueryBuilder, sql } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 import merge from "lodash.merge";
+import omit from "lodash.omit";
 import uniq from "lodash.uniq";
 import uniqBy from "lodash.uniqby";
 
@@ -126,6 +127,12 @@ export function document_router(app: Elysia) {
                       parent_id: document.id,
                     })),
                   )
+                  .execute();
+              }
+              if (body.relations?.template_fields?.length) {
+                await tx
+                  .insertInto("document_template_fields")
+                  .values(body.relations.template_fields.map((f) => ({ ...f, parent_id: document.id })))
                   .execute();
               }
               if (body.relations?.tags?.length) {
@@ -302,6 +309,23 @@ export function document_router(app: Elysia) {
                   return jsonObjectFrom(image_query).as("image");
                 });
               }
+              if (body?.relations?.template_fields) {
+                query = query.select((eb) => {
+                  let template_fields_query = eb
+                    .selectFrom("document_template_fields")
+                    .selectAll()
+                    .where("document_template_fields.parent_id", "=", params.id);
+                  // image_query = getNestedReadPermission(
+                  //   image_query,
+                  //   permissions.is_project_owner,
+                  //   permissions.user_id,
+                  //   "documents.image_id",
+                  //   "read_assets",
+                  // );
+
+                  return jsonArrayFrom(template_fields_query).as("template_fields");
+                });
+              }
             }
 
             if (body?.relations?.children) {
@@ -383,6 +407,41 @@ export function document_router(app: Elysia) {
                           .where("parent_id", "=", params.id)
                           .where("id", "=", item.id)
                           .set({ title: item.title })
+                          .execute(),
+                      ),
+                    );
+                  }
+                }
+                if (body.relations?.template_fields) {
+                  const existingTemplateFields = await tx
+                    .selectFrom("document_template_fields")
+                    .select(["document_template_fields.id"])
+                    .where("parent_id", "=", params.id)
+                    .execute();
+
+                  const existingIds = existingTemplateFields.map((field) => field.id);
+
+                  const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+                    existingIds,
+                    body.relations?.template_fields || [],
+                  );
+                  if (idsToRemove.length) {
+                    await tx.deleteFrom("document_template_fields").where("id", "in", idsToRemove).execute();
+                  }
+                  if (itemsToAdd.length) {
+                    await tx
+                      .insertInto("document_template_fields")
+                      .values(itemsToAdd.map((i) => ({ ...i, key: i.key, entity_type: i.entity_type, parent_id: params.id })))
+                      .execute();
+                  }
+                  if (itemsToUpdate.length) {
+                    await Promise.all(
+                      itemsToUpdate.map(async (item) =>
+                        tx
+                          .updateTable("document_template_fields")
+                          .where("parent_id", "=", params.id)
+                          .where("id", "=", item.id)
+                          .set({ ...omit(item, ["id"]), parent_id: params.id })
                           .execute(),
                       ),
                     );

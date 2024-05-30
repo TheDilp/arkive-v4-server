@@ -2,6 +2,23 @@ import { t } from "elysia";
 
 import { RequestBodySchema } from "../../types/requestTypes";
 
+const DocumentTemplateEntityTypes = t.Union([
+  t.Literal("characters"),
+  t.Literal("blueprint_instances"),
+  t.Literal("documents"),
+  t.Literal("maps"),
+  t.Literal("map_pins"),
+  t.Literal("graphs"),
+  t.Literal("dictionaries"),
+  t.Literal("events"),
+  t.Literal("calendars"),
+  t.Literal("words"),
+  t.Literal("random_tables"),
+  t.Literal("dice_roll"),
+  t.Literal("derived"),
+  t.Literal("custom"),
+]);
+
 export const ReadDocumentSchema = t.Intersect([
   RequestBodySchema,
   t.Optional(
@@ -13,6 +30,7 @@ export const ReadDocumentSchema = t.Intersect([
           children: t.Optional(t.Boolean()),
           parents: t.Optional(t.Boolean()),
           image: t.Optional(t.Boolean()),
+          template_fields: t.Optional(t.Boolean()),
         }),
       ),
     }),
@@ -49,6 +67,19 @@ export const InsertDocumentSchema = t.Object({
         t.Array(
           t.Object({
             title: t.String(),
+          }),
+        ),
+      ),
+      template_fields: t.Optional(
+        t.Array(
+          t.Object({
+            key: t.String(),
+            value: t.Union([t.Null(), t.String()]),
+            formula: t.Union([t.Null(), t.String()]),
+            derive_from: t.Union([t.Null(), t.String()]),
+            derive_formula: t.Union([t.Null(), t.String()]),
+            entity_type: DocumentTemplateEntityTypes,
+            is_randomized: t.Union([t.Boolean(), t.Null()]),
           }),
         ),
       ),
@@ -107,6 +138,20 @@ export const UpdateDocumentSchema = t.Object({
         t.Array(
           t.Object({
             id: t.String(),
+          }),
+        ),
+      ),
+      template_fields: t.Optional(
+        t.Array(
+          t.Object({
+            id: t.String(),
+            key: t.String(),
+            value: t.Union([t.Null(), t.String()]),
+            formula: t.Union([t.Null(), t.String()]),
+            derive_from: t.Union([t.Null(), t.String()]),
+            derive_formula: t.Union([t.Null(), t.String()]),
+            entity_type: DocumentTemplateEntityTypes,
+            is_randomized: t.Union([t.Boolean(), t.Null()]),
           }),
         ),
       ),
