@@ -1,7 +1,7 @@
 import Elysia from "elysia";
-import { QueryResult, SelectExpression, SelectQueryBuilder, sql } from "kysely";
+import { SelectExpression, SelectQueryBuilder, sql } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
-import { BlueprintInstances, DB } from "kysely-codegen";
+import { DB } from "kysely-codegen";
 import merge from "lodash.merge";
 import omit from "lodash.omit";
 import uniq from "lodash.uniq";
@@ -165,13 +165,17 @@ export function document_router(app: Elysia) {
                 .executeTakeFirst();
 
               let content = JSON.stringify(body.data.content);
-              const randomized = body.relations.template_fields.filter((f) => f.is_randomized);
+              const randomized = body.relations.template_fields.filter((f) => f.is_randomized && !f.value);
               for (let index = 0; index < randomized.length; index += 1) {
-                if (randomized[index].entity_type === "blueprint_instances") {
-                  const related = (await sql`SELECT title FROM blueprint_instances TABLESAMPLE system_rows(1);`.execute(
-                    tx,
-                  )) as QueryResult<BlueprintInstances>;
-                  content = content.replaceAll(`%{${randomized[index].key}}%`, related.rows[0].title);
+                if (randomized[index].entity_type === "blueprint_instances" && randomized[index].related_id) {
+                  const related = await tx
+                    .selectFrom("blueprint_instances")
+                    .select(["title"])
+                    .where("parent_id", "=", randomized[index].related_id)
+                    .orderBy((ob) => ob.fn("random"))
+                    .limit(1)
+                    .executeTakeFirst();
+                  if (related?.title) content = content.replaceAll(`%{${randomized[index].key}}%`, related.title);
                 }
               }
 
