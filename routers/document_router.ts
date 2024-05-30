@@ -1,7 +1,7 @@
 import Elysia from "elysia";
-import { SelectExpression, SelectQueryBuilder, sql } from "kysely";
+import { QueryResult, SelectExpression, SelectQueryBuilder, sql } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
-import { DB } from "kysely-codegen";
+import { BlueprintInstances, DB } from "kysely-codegen";
 import merge from "lodash.merge";
 import omit from "lodash.omit";
 import uniq from "lodash.uniq";
@@ -47,7 +47,6 @@ import {
   buildTSQueryString,
   findObjectsByType,
   getCharacterFullName,
-  getEntitiesWithOwnerId,
   getEntityWithOwnerId,
   groupRelationFiltersByField,
   insertSenderToMessage,
@@ -156,41 +155,38 @@ export function document_router(app: Elysia) {
               const document = await tx
                 .selectFrom("documents")
                 .select([
-                  "title",
                   "content",
-                  "icon",
-                  "image_id",
-                  "dice_color",
-                  "project_id",
                   (eb) =>
                     jsonArrayFrom(
                       eb.selectFrom("_documentsTotags").where("A", "=", params.id).select(["_documentsTotags.B"]),
                     ).as("tags"),
                 ])
                 .where("id", "=", params.id)
-                .executeTakeFirstOrThrow();
+                .executeTakeFirst();
 
-              const newDocuments = [];
-
-              for (let index = 0; index < body.data.count; index++) {
-                newDocuments.push({
-                  title: body.data?.titles?.[index] || document.title,
-                  content: document.content as any,
-                  icon: document.icon,
-                  image_id: document.image_id,
-                  dice_color: document.dice_color,
-                  project_id: document.project_id,
-                });
+              let content = JSON.stringify(body.data.content);
+              const randomized = body.relations.template_fields.filter((f) => f.is_randomized);
+              for (let index = 0; index < randomized.length; index += 1) {
+                if (randomized[index].entity_type === "blueprint_instances") {
+                  const related = (await sql`SELECT title FROM blueprint_instances TABLESAMPLE system_rows(1);`.execute(
+                    tx,
+                  )) as QueryResult<BlueprintInstances>;
+                  content = content.replaceAll(`%{${randomized[index].key}}%`, related.rows[0].title);
+                }
               }
 
-              const createdDocuments = await tx
+              const new_doc = await tx
                 .insertInto("documents")
-                .values(getEntitiesWithOwnerId(newDocuments, permissions.user_id))
+                .values({
+                  title: body.data.title,
+                  content,
+                  owner_id: permissions.user_id,
+                  project_id: permissions.project_id as string,
+                })
                 .returning("id")
-                .execute();
-
-              if (document.tags.length) {
-                const newDocToTags = document.tags.flatMap((t) => createdDocuments.map((cd) => ({ A: cd.id, B: t.B })));
+                .executeTakeFirst();
+              if (document?.tags?.length && new_doc?.id) {
+                const newDocToTags = document.tags.map((t) => ({ A: new_doc.id, B: t.B }));
                 await tx.insertInto("_documentsTotags").values(newDocToTags).execute();
               }
             });

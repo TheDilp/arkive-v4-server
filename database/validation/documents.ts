@@ -80,6 +80,7 @@ export const InsertDocumentSchema = t.Object({
             derive_formula: t.Union([t.Null(), t.String()]),
             entity_type: DocumentTemplateEntityTypes,
             is_randomized: t.Union([t.Boolean(), t.Null()]),
+            related_id: t.Union([t.String(), t.Null()]),
             sort: t.Number(),
           }),
         ),
@@ -153,6 +154,7 @@ export const UpdateDocumentSchema = t.Object({
             derive_formula: t.Union([t.Null(), t.String()]),
             entity_type: DocumentTemplateEntityTypes,
             is_randomized: t.Union([t.Boolean(), t.Null()]),
+            related_id: t.Union([t.String(), t.Null()]),
             sort: t.Number(),
           }),
         ),
@@ -231,5 +233,19 @@ export const MentionsInDocumentSchema = t.Object({
 });
 
 export const FromTemplateSchema = t.Object({
-  data: t.Object({ titles: t.Optional(t.Array(t.String())), count: t.Number() }),
+  data: t.Object({ title: t.String(), content: t.Any() }),
+  relations: t.Object({
+    template_fields: t.Array(
+      t.Object(
+        {
+          key: t.String(),
+          value: t.Union([t.Null(), t.String()]),
+          entity_type: DocumentTemplateEntityTypes,
+          is_randomized: t.Union([t.Boolean(), t.Null()]),
+          related_id: t.Union([t.String(), t.Null()]),
+        },
+        { additionalProperties: true },
+      ),
+    ),
+  }),
 });

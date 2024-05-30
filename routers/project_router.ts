@@ -29,7 +29,7 @@ export function project_router(app: Elysia) {
       } as PermissionDecorationType)
       .post(
         "/create",
-        async ({ body, permissions }) => {
+        async ({ body }) => {
           await db.transaction().execute(async (tx) => {
             const project = await tx.insertInto("projects").values(body.data).returning("id").executeTakeFirst();
             if (project) {
@@ -37,7 +37,7 @@ export function project_router(app: Elysia) {
                 .insertInto("user_project_feature_flags")
                 .values({
                   project_id: project?.id,
-                  user_id: permissions.user_id,
+                  user_id: body.data.owner_id,
                   feature_flags: JSON.stringify(DefaultProjectFeatureFlags),
                 })
                 .execute();
@@ -48,7 +48,6 @@ export function project_router(app: Elysia) {
         {
           body: InsertProjectSchema,
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, undefined, true),
         },
       )
       .post(
