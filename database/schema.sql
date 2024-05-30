@@ -825,6 +825,7 @@ CREATE TABLE public.document_template_fields (
     derive_formula text,
     is_randomized boolean,
     entity_type text NOT NULL,
+    sort integer DEFAULT 0 NOT NULL,
     CONSTRAINT document_template_fields_entity_type_check CHECK ((entity_type = ANY (ARRAY['characters'::text, 'blueprint_instances'::text, 'documents'::text, 'maps'::text, 'map_pins'::text, 'graphs'::text, 'dictionaries'::text, 'events'::text, 'calendars'::text, 'words'::text, 'random_tables'::text, 'dice_roll'::text, 'derived'::text, 'custom'::text])))
 );
 
@@ -3911,4 +3912,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240504110832'),
     ('20240508081725'),
     ('20240509130909'),
-    ('20240529062857');
+    ('20240529062857'),
+    ('20240530105848');

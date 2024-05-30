@@ -314,6 +314,7 @@ export function document_router(app: Elysia) {
                   let template_fields_query = eb
                     .selectFrom("document_template_fields")
                     .selectAll()
+                    .orderBy("sort asc")
                     .where("document_template_fields.parent_id", "=", params.id);
                   // image_query = getNestedReadPermission(
                   //   image_query,
