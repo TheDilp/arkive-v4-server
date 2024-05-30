@@ -52,6 +52,20 @@ COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching
 
 
 --
+-- Name: tsm_system_rows; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS tsm_system_rows WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION tsm_system_rows; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION tsm_system_rows IS 'TABLESAMPLE method which accepts number of rows as a limit';
+
+
+--
 -- Name: BlueprintFieldType; Type: TYPE; Schema: public; Owner: -
 --
 
@@ -826,6 +840,7 @@ CREATE TABLE public.document_template_fields (
     is_randomized boolean,
     entity_type text NOT NULL,
     sort integer DEFAULT 0 NOT NULL,
+    related_id uuid,
     CONSTRAINT document_template_fields_entity_type_check CHECK ((entity_type = ANY (ARRAY['characters'::text, 'blueprint_instances'::text, 'documents'::text, 'maps'::text, 'map_pins'::text, 'graphs'::text, 'dictionaries'::text, 'events'::text, 'calendars'::text, 'words'::text, 'random_tables'::text, 'dice_roll'::text, 'derived'::text, 'custom'::text])))
 );
 
@@ -3913,4 +3928,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240508081725'),
     ('20240509130909'),
     ('20240529062857'),
-    ('20240530105848');
+    ('20240530105848'),
+    ('20240530142355'),
+    ('20240530171614');
