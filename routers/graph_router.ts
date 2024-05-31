@@ -25,7 +25,7 @@ import {
   UpdateEntityPermissions,
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
-import { getEntityWithOwnerId, groupRelationFiltersByField } from "../utils/transform";
+import { getEntityWithOwnerId, groupRelationFiltersByField } from "../utils/utils";
 
 export function graph_router(app: Elysia) {
   return app

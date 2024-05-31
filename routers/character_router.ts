@@ -33,7 +33,7 @@ import {
   UpdateEntityPermissions,
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
-import { getEntityWithOwnerId, groupCharacterResourceFiltersByField, groupRelationFiltersByField } from "../utils/transform";
+import { getEntityWithOwnerId, groupCharacterResourceFiltersByField, groupRelationFiltersByField } from "../utils/utils";
 
 export function character_router(app: Elysia) {
   return app

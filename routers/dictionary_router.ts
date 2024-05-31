@@ -19,7 +19,7 @@ import {
   GetRelatedEntityPermissionsAndRoles,
   UpdateEntityPermissions,
 } from "../utils/relationalQueryHelpers";
-import { getEntityWithOwnerId } from "../utils/transform";
+import { getEntityWithOwnerId } from "../utils/utils";
 
 export function dictionary_router(app: Elysia) {
   return app.group("/dictionaries", (server) =>

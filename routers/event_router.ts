@@ -19,7 +19,7 @@ import {
   UpdateEntityPermissions,
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
-import { getEntityWithOwnerId, groupRelationFiltersByField } from "../utils/transform";
+import { getEntityWithOwnerId, groupRelationFiltersByField } from "../utils/utils";
 
 export function event_router(app: Elysia) {
   return app.group("/events", (server) =>

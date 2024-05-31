@@ -17,7 +17,7 @@ import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { GetRelatedEntityPermissionsAndRoles, UpdateEntityPermissions } from "../utils/relationalQueryHelpers";
 import { s3Client } from "../utils/s3Utils";
-import { getEntityWithOwnerId } from "../utils/transform";
+import { getEntityWithOwnerId } from "../utils/utils";
 
 async function createFile(data: Blob) {
   const buff = await data.arrayBuffer();

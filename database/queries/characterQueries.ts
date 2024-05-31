@@ -9,7 +9,7 @@ import uniqBy from "lodash.uniqby";
 import { MessageEnum } from "../../enums";
 import { PermissionDecorationType, ResponseWithDataSchema } from "../../types/requestTypes";
 import { GetRelatedEntityPermissionsAndRoles, TagQuery } from "../../utils/relationalQueryHelpers";
-import { groupCharacterFields } from "../../utils/transform";
+import { groupCharacterFields } from "../../utils/utils";
 import { db } from "../db";
 import { ReadCharacterSchema } from "../validation";
 import { checkEntityLevelPermission, getNestedReadPermission } from ".";

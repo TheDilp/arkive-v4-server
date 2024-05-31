@@ -15,7 +15,7 @@ import {
   GetRelatedEntityPermissionsAndRoles,
   UpdateEntityPermissions,
 } from "../utils/relationalQueryHelpers";
-import { getEntitiesWithOwnerId, getEntityWithOwnerId } from "../utils/transform";
+import { getEntitiesWithOwnerId, getEntityWithOwnerId } from "../utils/utils";
 
 export function tag_router(app: Elysia) {
   return app.group("/tags", (server) =>

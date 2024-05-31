@@ -29,7 +29,7 @@ import { PermissionDecorationType, RequestBodySchema, ResponseSchema, ResponseWi
 import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { TagQuery } from "../utils/relationalQueryHelpers";
-import { groupRelationFiltersByField } from "../utils/transform";
+import { groupRelationFiltersByField } from "../utils/utils";
 
 export function public_router(app: Elysia) {
   return app

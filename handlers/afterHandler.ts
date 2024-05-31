@@ -10,7 +10,7 @@ import {
   getOperationFromPath,
   getParentEntity,
 } from "../utils/requestUtils";
-import { getCharacterFullName, getSingularEntityType } from "../utils/transform";
+import { getCharacterFullName, getSingularEntityType } from "../utils/utils";
 import { sendNotification } from "../utils/websocketUtils";
 
 export async function afterHandler(

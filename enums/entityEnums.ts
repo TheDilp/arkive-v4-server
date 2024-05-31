@@ -183,6 +183,19 @@ export const EntitiesWithPermissionsEnum: EntitiesWithPermissionCheck[] = [
   "character_fields_templates",
 ];
 
+export const DocumentTemplateEntities = [
+  "characters",
+  "blueprint_instances",
+  "documents",
+  "maps",
+  "map_pins",
+  "graphs",
+  "calendars",
+  "events",
+  "dictionaries",
+  "words",
+];
+
 export const ProjectOwnerAllPermissionsEnum = {
   create_characters: true,
   read_characters: true,

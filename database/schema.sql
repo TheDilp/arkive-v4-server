@@ -841,7 +841,9 @@ CREATE TABLE public.document_template_fields (
     entity_type text NOT NULL,
     sort integer DEFAULT 0 NOT NULL,
     related_id uuid,
-    CONSTRAINT document_template_fields_entity_type_check CHECK ((entity_type = ANY (ARRAY['characters'::text, 'blueprint_instances'::text, 'documents'::text, 'maps'::text, 'map_pins'::text, 'graphs'::text, 'dictionaries'::text, 'events'::text, 'calendars'::text, 'words'::text, 'random_tables'::text, 'dice_roll'::text, 'derived'::text, 'custom'::text])))
+    random_count text,
+    CONSTRAINT document_template_fields_entity_type_check CHECK ((entity_type = ANY (ARRAY['characters'::text, 'blueprint_instances'::text, 'documents'::text, 'maps'::text, 'map_pins'::text, 'graphs'::text, 'dictionaries'::text, 'events'::text, 'calendars'::text, 'words'::text, 'random_tables'::text, 'dice_roll'::text, 'derived'::text, 'custom'::text]))),
+    CONSTRAINT document_template_fields_random_count_check CHECK ((random_count = ANY (ARRAY['single'::text, 'max_2'::text, 'max_3'::text, 'max_4'::text, 'max_5'::text, 'max_6'::text, 'max_7'::text, 'max_8'::text, 'max_9'::text, 'max_10'::text, 'max_11'::text, 'max_12'::text, 'max_13'::text, 'max_14'::text, 'max_15'::text, 'max_16'::text, 'max_17'::text, 'max_18'::text, 'max_19'::text, 'max_20'::text])))
 );
 
 
@@ -3930,4 +3932,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240529062857'),
     ('20240530105848'),
     ('20240530142355'),
-    ('20240530171614');
+    ('20240530171614'),
+    ('20240531093139');

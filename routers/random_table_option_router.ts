@@ -17,7 +17,7 @@ import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { GetRelationsForUpdating } from "../utils/relationalQueryHelpers";
-import { chooseRandomItems } from "../utils/transform";
+import { chooseRandomItems } from "../utils/utils";
 
 export function random_table_option_router(app: Elysia) {
   return app.group("/random_table_options", (server) =>

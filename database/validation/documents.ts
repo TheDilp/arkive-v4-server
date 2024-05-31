@@ -2,7 +2,7 @@ import { t } from "elysia";
 
 import { RequestBodySchema } from "../../types/requestTypes";
 
-const DocumentTemplateEntityTypes = t.Union([
+export const DocumentTemplateEntityTypes = t.Union([
   t.Literal("characters"),
   t.Literal("blueprint_instances"),
   t.Literal("documents"),
@@ -232,6 +232,22 @@ export const MentionsInDocumentSchema = t.Object({
   }),
 });
 
+export const FromTemplateRandomCountSchema = t.Union([
+  t.Null(),
+  t.Literal("single"),
+  t.Literal("max_2"),
+  t.Literal("max_3"),
+  t.Literal("max_4"),
+  t.Literal("max_5"),
+  t.Literal("max_6"),
+  t.Literal("max_7"),
+  t.Literal("max_8"),
+  t.Literal("max_9"),
+  t.Literal("max_10"),
+  t.Literal("max_15"),
+  t.Literal("max_20"),
+]);
+
 export const FromTemplateSchema = t.Object({
   data: t.Object({ title: t.String(), content: t.Any() }),
   relations: t.Object({
@@ -242,6 +258,7 @@ export const FromTemplateSchema = t.Object({
           value: t.Union([t.Null(), t.String()]),
           entity_type: DocumentTemplateEntityTypes,
           is_randomized: t.Union([t.Boolean(), t.Null()]),
+          random_count: t.Optional(FromTemplateRandomCountSchema),
           related_id: t.Union([t.String(), t.Null()]),
         },
         { additionalProperties: true },

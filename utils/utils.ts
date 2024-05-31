@@ -1,3 +1,4 @@
+import { FromTemplateRandomCountSchema } from "../database/validation";
 import { MentionTypeEnum } from "../enums";
 import { baseURLS } from "../enums/baseEnums";
 import { HeadingType, MentionAtomType, ParagraphType } from "../types/documentContentTypes";
@@ -407,4 +408,20 @@ export function extractDocumentText(content: any) {
     return finalText.slice(0, 246).replaceAll('"', "'").concat("...");
   }
   return finalText;
+}
+
+export function generateRandomNumber(min: number = 0, max: number): number {
+  if (max <= min) {
+    throw new Error("The 'max' value must be greater than the 'min' value.");
+  }
+
+  // Generate a random number between min (inclusive) and max (inclusive)
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+export function getRandomTemplateCount(random_count: typeof FromTemplateRandomCountSchema.static): number {
+  if (random_count === null || random_count === "single") return 1;
+  const count = Number(random_count.replace("max_", ""));
+  if (typeof count === "number") return generateRandomNumber(1, count);
+  return 1;
 }

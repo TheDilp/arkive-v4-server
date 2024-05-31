@@ -18,7 +18,7 @@ import {
   GetRelationsForUpdating,
   UpdateEntityPermissions,
 } from "../utils/relationalQueryHelpers";
-import { getEntityWithOwnerId } from "../utils/transform";
+import { getEntityWithOwnerId } from "../utils/utils";
 
 export function blueprint_router(app: Elysia) {
   return app

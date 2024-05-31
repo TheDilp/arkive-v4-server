@@ -23,7 +23,7 @@ import {
   groupByCharacterResourceId,
   GroupedQueryFilter,
   groupFiltersByField,
-} from "./transform";
+} from "./utils";
 
 function getBPValue(value: string | number | boolean | null) {
   if (typeof value === "string") return sql<string>`REPLACE(blueprint_instance_value.value::TEXT, '"', '')`;

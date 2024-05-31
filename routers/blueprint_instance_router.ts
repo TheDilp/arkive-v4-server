@@ -30,7 +30,7 @@ import {
   UpdateEntityPermissions,
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
-import { getEntityWithOwnerId, groupRelationFiltersByField } from "../utils/transform";
+import { getEntityWithOwnerId, groupRelationFiltersByField } from "../utils/utils";
 
 export function blueprint_instance_router(app: Elysia) {
   return app

@@ -12,6 +12,7 @@ import { checkEntityLevelPermission, getHasEntityPermission, getNestedReadPermis
 import { EntitiesWithChildren } from "../database/types";
 import {
   AutolinkerSchema,
+  DocumentTemplateEntityTypes,
   FromTemplateSchema,
   GenerateDocumentSchema,
   InsertDocumentSchema,
@@ -20,6 +21,7 @@ import {
   ReadDocumentSchema,
   UpdateDocumentSchema,
 } from "../database/validation/documents";
+import { DocumentTemplateEntities } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
 import { EntitiesWithPermissionCheck, MentionType } from "../types/entityTypes";
@@ -48,9 +50,15 @@ import {
   findObjectsByType,
   getCharacterFullName,
   getEntityWithOwnerId,
+  getRandomTemplateCount,
   groupRelationFiltersByField,
   insertSenderToMessage,
-} from "../utils/transform";
+} from "../utils/utils";
+
+function getDocumentTemplateEntityFields(entity: typeof DocumentTemplateEntityTypes.static) {
+  if (entity === "characters") return ["full_name as title"] as SelectExpression<DB, "characters">[];
+  return ["title"];
+}
 
 export function document_router(app: Elysia) {
   return app
@@ -150,56 +158,65 @@ export function document_router(app: Elysia) {
         )
         .post(
           "/create/from_template/:id",
-          async ({ params, body, permissions }) => {
+          async ({ body, permissions }) => {
+            let content = JSON.stringify(body.data.content);
             await db.transaction().execute(async (tx) => {
-              const document = await tx
-                .selectFrom("documents")
-                .select([
-                  "content",
-                  (eb) =>
-                    jsonArrayFrom(
-                      eb.selectFrom("_documentsTotags").where("A", "=", params.id).select(["_documentsTotags.B"]),
-                    ).as("tags"),
-                ])
-                .where("id", "=", params.id)
-                .executeTakeFirst();
+              // const document = await tx
+              //   .selectFrom("documents")
+              //   .select([
+              //     "content",
+              //     (eb) =>
+              //       jsonArrayFrom(
+              //         eb.selectFrom("_documentsTotags").where("A", "=", params.id).select(["_documentsTotags.B"]),
+              //       ).as("tags"),
+              //   ])
+              //   .where("id", "=", params.id)
+              //   .executeTakeFirst();
 
-              let content = JSON.stringify(body.data.content);
               const randomized = body.relations.template_fields.filter((f) => f.is_randomized && !f.value);
               for (let index = 0; index < randomized.length; index += 1) {
-                if (randomized[index].entity_type === "blueprint_instances" && randomized[index].related_id) {
+                if (DocumentTemplateEntities.includes(randomized[index].entity_type) && randomized[index].related_id) {
+                  const limit = getRandomTemplateCount(randomized[index].random_count || "single");
                   const related = await tx
                     .selectFrom("blueprint_instances")
-                    .select(["title"])
+                    .select(getDocumentTemplateEntityFields(randomized[index].entity_type) as ["title"])
                     .where("parent_id", "=", randomized[index].related_id)
                     .orderBy((ob) => ob.fn("random"))
-                    .limit(1)
-                    .executeTakeFirst();
-                  if (related?.title) content = content.replaceAll(`%{${randomized[index].key}}%`, related.title);
+                    .limit(limit)
+                    .execute();
+                  if (related && related.length > 0) {
+                    const result_string = related.map((r) => r.title).join(", ");
+
+                    content = content.replaceAll(`%{${randomized[index].key}}%`, result_string);
+                  }
                 }
               }
 
-              const new_doc = await tx
-                .insertInto("documents")
-                .values({
-                  title: body.data.title,
-                  content,
-                  owner_id: permissions.user_id,
-                  project_id: permissions.project_id as string,
-                })
-                .returning("id")
-                .executeTakeFirst();
-              if (document?.tags?.length && new_doc?.id) {
-                const newDocToTags = document.tags.map((t) => ({ A: new_doc.id, B: t.B }));
-                await tx.insertInto("_documentsTotags").values(newDocToTags).execute();
-              }
+              // const new_doc = await tx
+              //   .insertInto("documents")
+              //   .values()
+              //   .returning("id")
+              //   .executeTakeFirst();
+              // if (document?.tags?.length && new_doc?.id) {
+              //   const newDocToTags = document.tags.map((t) => ({ A: new_doc.id, B: t.B }));
+              //   await tx.insertInto("_documentsTotags").values(newDocToTags).execute();
+              // }
             });
-
-            return { message: `Document ${MessageEnum.successfully_created}`, ok: true, role_access: true };
+            try {
+              const data = {
+                title: body.data.title,
+                content: JSON.parse(content),
+                owner_id: permissions.user_id,
+                project_id: permissions.project_id as string,
+              };
+              return { data, message: "Document successfully generated.", ok: true, role_access: true };
+            } catch (error) {
+              return { data: {}, message: "Document could not be generated.", ok: false, role_access: true };
+            }
           },
           {
             body: FromTemplateSchema,
-            response: ResponseSchema,
+            response: ResponseWithDataSchema,
             beforeHandle: async (context) => beforeRoleHandler(context, "create_documents"),
           },
         )

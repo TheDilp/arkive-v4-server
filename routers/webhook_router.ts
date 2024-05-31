@@ -18,7 +18,7 @@ import {
   getDefaultEntityIcon,
   getIconUrlFromIconEnum,
   getImageURL,
-} from "../utils/transform";
+} from "../utils/utils";
 
 export function webhook_router(app: Elysia) {
   return app.group("/webhooks", (server) =>
