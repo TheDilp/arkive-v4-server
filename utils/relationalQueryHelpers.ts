@@ -20,15 +20,20 @@ export function TagQuery(
   is_project_owner: boolean,
   user_id: string,
 ) {
-  let tag_query = eb
-    .selectFrom(relationalTable)
-    .whereRef(`${table}.id`, "=", `${relationalTable}.A`)
-    .leftJoin("tags", "tags.id", `${relationalTable}.B`)
+  let tag_query = eb.selectFrom(relationalTable);
+
+  tag_query = tag_query
+    .whereRef(`${table}.id`, "=", `${relationalTable}.${relationalTable === "image_tags" ? "image_id" : "A"}`)
+    .leftJoin("tags", "tags.id", `${relationalTable}.${relationalTable === "image_tags" ? "tag_id" : "B"}`)
     .select(["tags.id", "tags.title", "tags.color"]);
 
   if (user_id) {
-    // @ts-ignore
-    tag_query = getNestedReadPermission(tag_query, is_project_owner, user_id, `${relationalTable}.B`, "read_tags");
+    if (relationalTable === "image_tags") {
+      tag_query = getNestedReadPermission(tag_query, is_project_owner, user_id, `${relationalTable}.tag_id`, "read_tags");
+    } else {
+      // @ts-ignore
+      tag_query = getNestedReadPermission(tag_query, is_project_owner, user_id, `${relationalTable}.B`, "read_tags");
+    }
   }
 
   return jsonArrayFrom(tag_query).as("tags");
@@ -48,7 +53,7 @@ export async function CreateTagRelations({
   await tx
     .insertInto(relationalTable)
     .values(tags.map((tag) => ({ A: id, B: tag.id })))
-    .onConflict((oc) => oc.columns(["A", "B"]).doNothing())
+    .onConflict((oc) => oc.columns(relationalTable === "image_tags" ? ["image_id", "tag_id"] : ["A", "B"]).doNothing())
     .execute();
 }
 
@@ -67,11 +72,11 @@ export async function UpdateTagRelations({
 }) {
   const existingTags = await tx
     .selectFrom(relationalTable)
-    .select(`${relationalTable}.B`)
-    .where(`${relationalTable}.A`, "=", id)
+    .select(`${relationalTable}.${relationalTable === "image_tags" ? "tag_id" : "B"}`)
+    .where(`${relationalTable}.${relationalTable === "image_tags" ? "image_id" : "A"}`, "=", id)
     .execute();
 
-  const existingTagIds = existingTags.map((tag) => tag.B);
+  const existingTagIds = existingTags.map((tag) => (relationalTable === "image_tags" ? tag.tag_id : tag.B));
   const newTagIds = newTags.map((tag) => tag.id);
 
   const tagsToDelete = existingTagIds.filter((tag) => !newTagIds.includes(tag));
@@ -80,11 +85,15 @@ export async function UpdateTagRelations({
   if (tagsToDelete.length) {
     let delete_query = tx
       .deleteFrom(relationalTable)
-      .where(`${relationalTable}.A`, "=", id)
-      .where(`${relationalTable}.B`, "in", tagsToDelete);
+      .where(`${relationalTable}.${relationalTable === "image_tags" ? "image_id" : "A"}`, "=", id)
+      .where(`${relationalTable}.${relationalTable === "image_tags" ? "tag_id" : "B"}`, "in", tagsToDelete);
 
     if (!is_project_owner) {
-      delete_query = checkDeletePermissions(delete_query, `${relationalTable}.B`, "read_tags");
+      delete_query = checkDeletePermissions(
+        delete_query,
+        `${relationalTable}.${relationalTable === "image_tags" ? "tag_id" : "B"}`,
+        "read_tags",
+      );
     }
 
     await delete_query.execute();
@@ -93,8 +102,8 @@ export async function UpdateTagRelations({
   if (tagsToInsert.length)
     await tx
       .insertInto(relationalTable)
-      .values(tagsToInsert.map((tag) => ({ A: id, B: tag })))
-      .onConflict((oc) => oc.columns(["A", "B"]).doNothing())
+      .values(tagsToInsert.map((tag) => (relationalTable === "image_tags" ? { image_id: id, tag_id: tag } : { A: id, B: tag })))
+      .onConflict((oc) => oc.columns(relationalTable === "image_tags" ? ["image_id", "tag_id"] : ["A", "B"]).doNothing())
       .execute();
 
   return tagsToDelete;

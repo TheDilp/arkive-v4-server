@@ -1,9 +1,25 @@
 import { t } from "elysia";
 
+import { RequestBodySchema } from "../../types/requestTypes";
+
+export const ListAssetsSchema = t.Intersect([
+  RequestBodySchema,
+  t.Object({ relations: t.Optional(t.Object({ tags: t.Optional(t.Boolean()) })) }),
+]);
+export const ReadAssetsSchema = t.Intersect([
+  RequestBodySchema,
+  t.Object({ relations: t.Optional(t.Object({ tags: t.Optional(t.Boolean()) })) }),
+]);
+
 export const UpdateImageSchema = t.Object({
   data: t.Object({
     title: t.Optional(t.String()),
   }),
+  relations: t.Optional(
+    t.Object({
+      tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
+    }),
+  ),
   permissions: t.Optional(
     t.Array(
       t.Intersect([

@@ -15,8 +15,10 @@ export type TagsRelationTables =
   | "_edgesTotags"
   | "_nodesTotags"
   | "_character_fields_templatesTotags"
-  | "_blueprint_instancesTotags";
+  | "_blueprint_instancesTotags"
+  | "image_tags";
 export type EntitiesWithTags =
+  | "images"
   | "maps"
   | "graphs"
   | "characters"

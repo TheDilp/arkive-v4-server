@@ -1035,6 +1035,16 @@ CREATE TABLE public.graphs (
 
 
 --
+-- Name: image_tags; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.image_tags (
+    image_id uuid NOT NULL,
+    tag_id uuid NOT NULL
+);
+
+
+--
 -- Name: images; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1687,6 +1697,14 @@ ALTER TABLE ONLY public.favorite_characters
 
 ALTER TABLE ONLY public.graphs
     ADD CONSTRAINT graphs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: image_tags image_tags_image_id_tag_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.image_tags
+    ADD CONSTRAINT image_tags_image_id_tag_id_key UNIQUE (image_id, tag_id);
 
 
 --
@@ -3588,6 +3606,22 @@ ALTER TABLE ONLY public.graphs
 
 
 --
+-- Name: image_tags image_tags_image_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.image_tags
+    ADD CONSTRAINT image_tags_image_id_fkey FOREIGN KEY (image_id) REFERENCES public.images(id) ON DELETE CASCADE;
+
+
+--
+-- Name: image_tags image_tags_tag_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.image_tags
+    ADD CONSTRAINT image_tags_tag_id_fkey FOREIGN KEY (tag_id) REFERENCES public.tags(id) ON DELETE CASCADE;
+
+
+--
 -- Name: images images_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3933,4 +3967,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240530105848'),
     ('20240530142355'),
     ('20240530171614'),
-    ('20240531093139');
+    ('20240531093139'),
+    ('20240601171758');

@@ -8,14 +8,19 @@ import sharp from "sharp";
 
 import { db } from "../database/db";
 import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
-import { UpdateImageSchema } from "../database/validation";
+import { ListAssetsSchema, ReadAssetsSchema, UpdateImageSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
 import { AssetType } from "../types/entityTypes";
-import { PermissionDecorationType, RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import { GetRelatedEntityPermissionsAndRoles, UpdateEntityPermissions } from "../utils/relationalQueryHelpers";
+import {
+  GetRelatedEntityPermissionsAndRoles,
+  TagQuery,
+  UpdateEntityPermissions,
+  UpdateTagRelations,
+} from "../utils/relationalQueryHelpers";
 import { s3Client } from "../utils/s3Utils";
 import { getEntityWithOwnerId } from "../utils/utils";
 
@@ -44,36 +49,41 @@ export function asset_router(app: Elysia) {
       .post(
         "/:project_id/:type",
         async ({ params, body, permissions }) => {
-          const data = await db
+          let query = db
             .selectFrom("images")
-            .selectAll()
             .where("images.project_id", "=", params.project_id)
             .where("images.type", "=", params.type as AssetType)
             .limit(body?.pagination?.limit || 10)
-            .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
-            .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
-              qb = constructFilter("images", qb, body.filters);
-              return qb;
-            })
-            .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) =>
-              qb.clearSelect().select(body.fields.map((f) => `images.${f}`) as SelectExpression<DB, "images">[]),
-            )
-            .$if(!permissions.is_project_owner, (qb) => {
-              return checkEntityLevelPermission(qb, permissions, "images");
-            })
-            .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
-              GetRelatedEntityPermissionsAndRoles(qb, permissions, "images"),
-            )
-            .$if(!!body.orderBy?.length, (qb) => {
-              qb = constructOrdering(body.orderBy, qb);
-              return qb;
-            })
-            .execute();
+            .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10));
+
+          if (!!body?.filters?.and?.length || !!body?.filters?.or?.length) {
+            query = constructFilter("images", query, body.filters);
+          }
+          if (body.fields?.length) {
+            query = query.select(body.fields.map((f) => `images.${f}`) as SelectExpression<DB, "images">[]);
+          }
+
+          if (!permissions.is_project_owner) {
+            query = checkEntityLevelPermission(query, permissions, "images");
+          }
+          if (!!body.permissions && !permissions.is_project_owner) {
+            query = GetRelatedEntityPermissionsAndRoles(query, permissions, "images");
+          }
+          if (body.orderBy?.length) {
+            query = constructOrdering(body.orderBy, query);
+          }
+
+          if (body?.relations?.tags) {
+            query = query.select((eb) =>
+              TagQuery(eb, "image_tags", "images", permissions.is_project_owner, permissions.user_id),
+            );
+          }
+
+          const data = await query.execute();
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
-          body: RequestBodySchema,
+          body: ListAssetsSchema,
           response: ResponseWithDataSchema,
           beforeHandle: async (context) => beforeRoleHandler(context, "read_assets"),
         },
@@ -98,12 +108,18 @@ export function asset_router(app: Elysia) {
             query = GetRelatedEntityPermissionsAndRoles(query, permissions, "images", params.id);
           }
 
+          if (body?.relations?.tags) {
+            query = query.select((eb) =>
+              TagQuery(eb, "image_tags", "images", permissions.is_project_owner, permissions.user_id),
+            );
+          }
+
           const data = await query.executeTakeFirstOrThrow();
 
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
-          body: RequestBodySchema,
+          body: ReadAssetsSchema,
           response: ResponseWithDataSchema,
           beforeHandle: async (context) => beforeRoleHandler(context, "read_assets"),
         },
@@ -162,6 +178,16 @@ export function asset_router(app: Elysia) {
               await tx.updateTable("images").where("id", "=", params.id).set(body.data).execute();
               if (body?.permissions) {
                 await UpdateEntityPermissions(tx, params.id, body.permissions);
+              }
+
+              if (body.relations?.tags) {
+                await UpdateTagRelations({
+                  relationalTable: "image_tags",
+                  id: params.id,
+                  newTags: body.relations.tags,
+                  tx,
+                  is_project_owner: permissions.is_project_owner,
+                });
               }
             });
             return { message: `Image ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
