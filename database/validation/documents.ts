@@ -249,7 +249,7 @@ export const FromTemplateRandomCountSchema = t.Union([
 ]);
 
 export const FromTemplateSchema = t.Object({
-  data: t.Object({ title: t.String(), content: t.Any() }),
+  data: t.Object({ project_id: t.String(), title: t.String(), content: t.Any() }),
   relations: t.Object({
     template_fields: t.Array(
       t.Object(
