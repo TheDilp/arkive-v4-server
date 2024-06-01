@@ -173,28 +173,28 @@ export function document_router(app: Elysia) {
               //   .where("id", "=", params.id)
               //   .executeTakeFirst();
 
-              const randomized = body.relations.template_fields.filter((f) => f.is_randomized && !f.value);
-
-              for (let index = 0; index < randomized.length; index += 1) {
+              for (let index = 0; index < body.relations.template_fields.length; index += 1) {
+                const field = body.relations.template_fields[index];
                 if (
-                  DocumentTemplateEntities.includes(randomized[index].entity_type) &&
-                  ((randomized[index].entity_type === "blueprint_instances" && randomized[index].related_id) ||
-                    randomized[index].entity_type !== "blueprint_instances")
+                  field.is_randomized &&
+                  DocumentTemplateEntities.includes(field.entity_type) &&
+                  ((field.entity_type === "blueprint_instances" && field.related_id) ||
+                    field.entity_type !== "blueprint_instances")
                 ) {
-                  const limit = getRandomTemplateCount(randomized[index].random_count || "single");
+                  const limit = getRandomTemplateCount(field.random_count || "single");
                   let query = tx
                     // @ts-ignore
-                    .selectFrom(randomized[index].entity_type)
-                    .select(getDocumentTemplateEntityFields(randomized[index].entity_type) as ["title"])
+                    .selectFrom(field.entity_type)
+                    .select(getDocumentTemplateEntityFields(field.entity_type) as ["title"])
                     .orderBy((ob) => ob.fn("random"))
                     .limit(limit);
 
-                  if (randomized[index].entity_type === "blueprint_instances")
+                  if (field.entity_type === "blueprint_instances")
                     // @ts-ignore
                     query = query
                       .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
                       .where("blueprints.project_id", "=", body.data.project_id)
-                      .where("parent_id", "=", randomized[index].related_id);
+                      .where("parent_id", "=", field.related_id);
                   else {
                     query = query.where("project_id", "=", body.data.project_id);
                   }
@@ -203,8 +203,10 @@ export function document_router(app: Elysia) {
 
                   if (related && related.length > 0) {
                     const result_string = related.map((r) => r.title).join(", ");
-                    content = content.replaceAll(`%{${randomized[index].key}}%`, result_string);
+                    content = content.replaceAll(`%{${field.key}}%`, result_string);
                   }
+                } else if (!field.is_randomized && !!field.value) {
+                  content = content.replaceAll(`%{${field.key}}%`, field.value);
                 }
               }
 
