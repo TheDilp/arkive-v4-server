@@ -193,6 +193,7 @@ export const DocumentTemplateEntities = [
   "calendars",
   "events",
   "dictionaries",
+  "random_tables",
   "words",
 ];
 

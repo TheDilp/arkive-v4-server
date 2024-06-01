@@ -175,35 +175,59 @@ export function document_router(app: Elysia) {
 
               for (let index = 0; index < body.relations.template_fields.length; index += 1) {
                 const field = body.relations.template_fields[index];
+
                 if (
-                  field.is_randomized &&
-                  DocumentTemplateEntities.includes(field.entity_type) &&
-                  ((field.entity_type === "blueprint_instances" && field.related_id) ||
-                    field.entity_type !== "blueprint_instances")
+                  (field.is_randomized || field.entity_type === "random_tables") &&
+                  DocumentTemplateEntities.includes(field.entity_type)
                 ) {
                   const limit = getRandomTemplateCount(field.random_count || "single");
-                  let query = tx
-                    // @ts-ignore
-                    .selectFrom(field.entity_type)
-                    .select(getDocumentTemplateEntityFields(field.entity_type) as ["title"])
-                    .orderBy((ob) => ob.fn("random"))
-                    .limit(limit);
 
-                  if (field.entity_type === "blueprint_instances")
-                    // @ts-ignore
-                    query = query
-                      .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
-                      .where("blueprints.project_id", "=", body.data.project_id)
-                      .where("parent_id", "=", field.related_id);
-                  else {
-                    query = query.where("project_id", "=", body.data.project_id);
-                  }
+                  if (field.entity_type === "random_tables" && field.value) {
+                    let query = tx
+                      .selectFrom("random_tables")
+                      .select([
+                        (eb) =>
+                          jsonArrayFrom(
+                            eb
+                              .selectFrom("random_table_options")
+                              .select(["title"])
+                              .whereRef("parent_id", "=", "random_tables.id")
+                              .limit(limit),
+                          ).as("random_table_options"),
+                      ])
+                      .where("id", "=", field.related_id)
+                      .where("project_id", "=", body.data.project_id);
 
-                  const related = await query.execute();
+                    const related = await query.executeTakeFirst();
 
-                  if (related && related.length > 0) {
-                    const result_string = related.map((r) => r.title).join(", ");
-                    content = content.replaceAll(`%{${field.key}}%`, result_string);
+                    if (related && related.random_table_options.length > 0) {
+                      const result_string = related.random_table_options.map((r) => r.title).join(", ");
+                      content = content.replaceAll(`%{${field.key}}%`, result_string);
+                    }
+                  } else {
+                    let query = tx
+                      // @ts-ignore
+                      .selectFrom(field.entity_type)
+                      .select(getDocumentTemplateEntityFields(field.entity_type) as ["title"])
+                      .orderBy((ob) => ob.fn("random"))
+                      .limit(limit);
+
+                    if (field.entity_type === "blueprint_instances")
+                      // @ts-ignore
+                      query = query
+                        .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+                        .where("blueprints.project_id", "=", body.data.project_id)
+                        .where("parent_id", "=", field.related_id);
+                    else {
+                      query = query.where("project_id", "=", body.data.project_id);
+                    }
+
+                    const related = await query.execute();
+
+                    if (related && related.length > 0) {
+                      const result_string = related.map((r) => r.title).join(", ");
+                      content = content.replaceAll(`%{${field.key}}%`, result_string);
+                    }
                   }
                 } else if (!field.is_randomized && !!field.value) {
                   content = content.replaceAll(`%{${field.key}}%`, field.value);
