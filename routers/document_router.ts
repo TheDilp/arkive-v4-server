@@ -57,7 +57,7 @@ import {
 
 function getDocumentTemplateEntityFields(entity: typeof DocumentTemplateEntityTypes.static) {
   if (entity === "characters") return ["full_name as title"] as SelectExpression<DB, "characters">[];
-  return ["title"];
+  return [`${entity}.title`];
 }
 
 export function document_router(app: Elysia) {
@@ -190,13 +190,19 @@ export function document_router(app: Elysia) {
                     .limit(limit);
 
                   if (randomized[index].entity_type === "blueprint_instances")
-                    query = query.where("parent_id", "=", randomized[index].related_id);
+                    // @ts-ignore
+                    query = query
+                      .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+                      .where("blueprints.project_id", "=", body.data.project_id)
+                      .where("parent_id", "=", randomized[index].related_id);
+                  else {
+                    query = query.where("project_id", "=", body.data.project_id);
+                  }
 
                   const related = await query.execute();
 
                   if (related && related.length > 0) {
                     const result_string = related.map((r) => r.title).join(", ");
-
                     content = content.replaceAll(`%{${randomized[index].key}}%`, result_string);
                   }
                 }
@@ -221,6 +227,7 @@ export function document_router(app: Elysia) {
               };
               return { data, message: "Document successfully generated.", ok: true, role_access: true };
             } catch (error) {
+              console.error("COULD NOT GENERATE TEMPLATE - ERROR: ", error);
               return { data: {}, message: "Document could not be generated.", ok: false, role_access: true };
             }
           },
