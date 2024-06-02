@@ -27,7 +27,6 @@ export function stats_router(app: Elysia) {
   return app.group("/stats", (server) =>
     server.get("/:project_id", async ({ params }) => {
       const redis = await redisClient;
-      await redis.del(`${params.project_id}_stats`);
       const project_stats: string | null = await redis.get(`${params.project_id}_stats`);
       if (!project_stats) {
         const queries = mainEntities.map((ent) => {
