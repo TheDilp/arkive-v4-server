@@ -801,13 +801,17 @@ export function search_router(app: Elysia) {
           const { tag_ids = [], match = "any" } = body.data;
           if (tag_ids.length) {
             const requests = EntitiesWithTagsTablesEnum.filter((tb) => {
-              const entity_name = tb.replace("_", "").replace("Totags", "") as EntitiesWithPermissionCheck | "nodes" | "edges";
+              const entity_name =
+                tb === "image_tags"
+                  ? "images"
+                  : (tb.replace("_", "").replace("Totags", "") as EntitiesWithPermissionCheck | "nodes" | "edges");
               if (permissionsForSearch === true) return true;
               if (entity_name === "graphs" || entity_name === "nodes" || entity_name === "edges")
                 return !!formattedPermissions.graphs;
-              return !!formattedPermissions[entity_name];
+              return !!formattedPermissions[entity_name === "images" ? "assets" : entity_name];
             }).map((tb) => {
-              const entity_name = tb.replace("_", "").replace("Totags", "") as EntitiesWithTags;
+              const entity_name =
+                tb === "image_tags" ? "images" : (tb.replace("_", "").replace("Totags", "") as EntitiesWithTags);
 
               const fields = [`${entity_name}.id`];
 
@@ -822,8 +826,8 @@ export function search_router(app: Elysia) {
                   match === "any"
                     ? db
                         .selectFrom(tb)
-                        .where(`${tb}.B`, "in", tag_ids)
-                        .leftJoin(entity_name, `${entity_name}.id`, `${tb}.A`)
+                        .where(tb === "image_tags" ? `${tb}.tag_id` : `${tb}.B`, "in", tag_ids)
+                        .leftJoin(entity_name, `${tb}.id`, tb === "image_tags" ? `${tb}.image_id` : `${tb}.A`)
                         // @ts-ignore
                         .select(fields as SelectExpression<DB, SearchableEntities>[])
                         .distinctOn("id")
@@ -831,11 +835,11 @@ export function search_router(app: Elysia) {
                         .selectFrom(entity_name)
                         // @ts-ignore
                         .select(fields as SelectExpression<DB, SearchableEntities>[])
-                        .leftJoin(tb, `${entity_name}.id`, `${tb}.A`)
+                        .leftJoin(tb, `${entity_name}.id`, tb === "image_tags" ? `${tb}.image_id` : `${tb}.A`)
                         // @ts-ignore
-                        .leftJoin("tags", "tags.id", `${tb}.B`)
+                        .leftJoin("tags", "tags.id", tb === "image_tags" ? `${tb}.tag_id` : `${tb}.B`)
                         // @ts-ignore
-                        .where(`${tb}.B`, "in", tag_ids)
+                        .where(tb === "image_tags" ? `${tb}.tag_id` : `${tb}.B`, "in", tag_ids)
                         .groupBy(`${entity_name}.id`)
                         .having(sql`count(distinct tags.id)`, "=", tag_ids.length),
               };
