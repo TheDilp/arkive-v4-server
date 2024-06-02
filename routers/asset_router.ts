@@ -13,7 +13,7 @@ import { MessageEnum } from "../enums/requestEnums";
 import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
 import { AssetType } from "../types/entityTypes";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { constructFilter } from "../utils/filterConstructor";
+import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import {
   GetRelatedEntityPermissionsAndRoles,
@@ -22,7 +22,7 @@ import {
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
 import { s3Client } from "../utils/s3Utils";
-import { getEntityWithOwnerId } from "../utils/utils";
+import { getEntityWithOwnerId, groupRelationFiltersByField } from "../utils/utils";
 
 async function createFile(data: Blob) {
   const buff = await data.arrayBuffer();
@@ -78,6 +78,10 @@ export function asset_router(app: Elysia) {
               TagQuery(eb, "image_tags", "images", permissions.is_project_owner, permissions.user_id),
             );
           }
+
+          const { tags } = groupRelationFiltersByField(body.relationFilters || {});
+
+          if (tags?.filters?.length) query = tagsRelationFilter("images", "image_tags", query, tags?.filters || [], false);
 
           const data = await query.execute();
           return { data, message: MessageEnum.success, ok: true, role_access: true };

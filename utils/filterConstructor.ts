@@ -118,10 +118,13 @@ export function tagsRelationFilter(
 
   const orInIds = (filters || [])?.filter((filt) => filt.type === "OR")?.map((filt) => filt.value) || [];
 
+  const entity_column = tagTable === "image_tags" ? "image_tags.image_id" : `${tagTable}.A`;
+  const tag_column = tagTable === "image_tags" ? "image_tags.tag_id" : `${tagTable}.B`;
+
   if (andInIds.length > 0 || orInIds.length > 0)
     return queryBuilder
-      .innerJoin(tagTable, `${table}.id`, `${tagTable}.A`)
-      .innerJoin("tags", `${tagTable}.B`, "tags.id")
+      .innerJoin(tagTable, `${table}.id`, entity_column)
+      .innerJoin("tags", tag_column, "tags.id")
       .where(({ eb, and }) => {
         const andFilters = [];
         const finalFilters = [];
@@ -133,8 +136,8 @@ export function tagsRelationFilter(
             eb.exists((ebb) =>
               ebb
                 .selectFrom(tagTable)
-                .whereRef(`${table}.id`, "=", `${tagTable}.A`)
-                .innerJoin("tags", `${tagTable}.B`, "tags.id")
+                .whereRef(`${table}.id`, "=", entity_column)
+                .innerJoin("tags", tag_column, "tags.id")
                 .where("tags.id", "in", orInIds as string[])
                 .having(({ fn }) => fn.count<number>("tags.id").distinct(), ">=", 1),
             ),
