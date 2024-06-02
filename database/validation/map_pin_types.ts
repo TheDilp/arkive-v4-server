@@ -29,6 +29,7 @@ export const UpdateMapPinTypeSchema = t.Object({
   data: t.Object({
     title: t.String(),
     default_icon: t.Optional(t.String()),
+    owner_id: t.Optional(t.String()),
     default_icon_color: t.Optional(t.String()),
   }),
 });

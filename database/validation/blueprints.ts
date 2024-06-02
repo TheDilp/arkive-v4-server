@@ -109,8 +109,7 @@ export const UpdateBlueprintSchema = t.Object({
     title: t.Optional(t.String()),
     title_name: t.Optional(t.String()),
     icon: t.Optional(t.Union([t.String(), t.Null()])),
-
-    // title_width: t.Optional(FieldWidthSchema),
+    owner_id: t.Optional(t.String()),
   }),
   relations: t.Optional(
     t.Object({

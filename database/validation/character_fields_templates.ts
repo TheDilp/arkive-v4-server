@@ -94,6 +94,7 @@ export const UpdateTemplateSchema = t.Object({
     id: t.Optional(t.String()),
     title: t.Optional(t.String()),
     sort: t.Optional(t.Number()),
+    owner_id: t.Optional(t.String()),
   }),
   relations: t.Optional(
     t.Object({

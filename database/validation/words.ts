@@ -39,6 +39,7 @@ export const UpdateWordSchema = t.Object({
     title: t.Optional(t.String()),
     transaltion: t.Optional(t.String()),
     description: t.Optional(t.Union([t.String(), t.Null()])),
+    owner_id: t.Optional(t.String()),
   }),
   permissions: t.Optional(
     t.Array(

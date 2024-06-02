@@ -181,6 +181,7 @@ export const UpdateCharacterSchema = t.Object({
       portrait_id: t.Optional(t.Union([t.String(), t.Null()])),
       map_pin_id: t.Optional(t.Union([t.String(), t.Null()])),
       is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
+      owner_id: t.Optional(t.String()),
     }),
   ),
   relations: t.Optional(

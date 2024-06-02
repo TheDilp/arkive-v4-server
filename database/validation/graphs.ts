@@ -91,6 +91,7 @@ export const UpdateGraphSchema = t.Object({
     parent_id: t.Optional(t.Union([t.String(), t.Null()])),
     title: t.Optional(t.String()),
     is_folder: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    owner_id: t.Optional(t.String()),
     is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
     icon: t.Optional(t.Union([t.String(), t.Null()])),
     default_node_shape: t.Optional(t.String()),

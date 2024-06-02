@@ -81,6 +81,7 @@ export const UpdateMapSchema = t.Object({
     cluster_pins: t.Optional(t.Union([t.Boolean(), t.Null()])),
     icon: t.Optional(t.Union([t.Null(), t.String()])),
     parent_id: t.Optional(t.Union([t.Null(), t.String()])),
+    owner_id: t.Optional(t.String()),
     image_id: t.Optional(t.String()),
   }),
   relations: t.Optional(

@@ -154,6 +154,7 @@ export const UpdateBlueprintInstanceSchema = t.Object({
   data: t.Object({
     id: t.String(),
     title: t.Optional(t.String()),
+    owner_id: t.Optional(t.String()),
     is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
   }),
   relations: t.Optional(

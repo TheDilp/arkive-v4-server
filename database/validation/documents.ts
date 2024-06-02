@@ -126,6 +126,7 @@ export const UpdateDocumentSchema = t.Object({
     parent_id: t.Optional(t.Union([t.String(), t.Null()])),
     image_id: t.Optional(t.Union([t.String(), t.Null()])),
     dice_color: t.Optional(t.Union([t.String(), t.Null()])),
+    owner_id: t.Optional(t.String()),
   }),
   relations: t.Optional(
     t.Object({

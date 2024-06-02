@@ -14,6 +14,7 @@ export const ReadAssetsSchema = t.Intersect([
 export const UpdateImageSchema = t.Object({
   data: t.Object({
     title: t.Optional(t.String()),
+    owner_id: t.Optional(t.String()),
   }),
   relations: t.Optional(
     t.Object({

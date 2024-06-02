@@ -109,6 +109,7 @@ export const UpdateEventSchema = t.Object({
     end_minutes: t.Optional(t.Union([t.Number(), t.Null()])),
     document_id: t.Optional(t.Union([t.String(), t.Null()])),
     image_id: t.Optional(t.Union([t.String(), t.Null()])),
+    owner_id: t.Optional(t.String()),
   }),
   relations: t.Optional(
     t.Object({

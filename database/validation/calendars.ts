@@ -139,6 +139,7 @@ export const UpdateCalendarSchema = t.Object({
     icon: t.Optional(t.Union([t.String(), t.Null()])),
     parent_id: t.Optional(t.Union([t.String(), t.Null()])),
     days: t.Optional(t.Array(t.String(), { minItems: 1 })),
+    owner_id: t.Optional(t.String()),
     starts_on_day: t.Optional(t.Union([t.Number(), t.Null()])),
   }),
   relations: t.Object({
