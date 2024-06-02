@@ -27,6 +27,7 @@ export function stats_router(app: Elysia) {
   return app.group("/stats", (server) =>
     server.get("/:project_id", async ({ params }) => {
       const redis = await redisClient;
+      await redis.del(`${params.project_id}_stats`);
       const project_stats: string | null = await redis.get(`${params.project_id}_stats`);
       if (!project_stats) {
         const queries = mainEntities.map((ent) => {
@@ -82,8 +83,8 @@ export function stats_router(app: Elysia) {
             "tags.title",
             "tags.color",
             EntitiesWithTagsTablesEnum[0] === "image_tags"
-              ? (eb) => eb.fn.count<number>("tag_id").as("count")
-              : (eb) => eb.fn.count<number>("B").as("count"),
+              ? (eb) => eb.fn.countAll<number>().as("count")
+              : (eb) => eb.fn.countAll<number>().as("count"),
           ])
           .groupBy(["tags.title", "tags.color"])
           .where("tags.project_id", "=", params.project_id)
@@ -102,8 +103,8 @@ export function stats_router(app: Elysia) {
                   "tags.title",
                   "tags.color",
                   table === "image_tags"
-                    ? (eb) => eb.fn.count<number>("tag_id").as("count")
-                    : (eb) => eb.fn.count<number>("B").as("count"),
+                    ? (eb) => eb.fn.countAll<number>().as("count")
+                    : (eb) => eb.fn.countAll<number>().as("count"),
                 ])
                 .where("project_id", "=", params.project_id),
             );
@@ -119,7 +120,13 @@ export function stats_router(app: Elysia) {
         });
 
         entities_by_tag_name.forEach((tag) => {
-          if (tag.title && tag.color && tag.count) tag_entity_stats[tag.title] = { color: tag.color, count: Number(tag.count) };
+          if (tag.title && tag.color && tag.count) {
+            if (tag_entity_stats[tag.title]) {
+              tag_entity_stats[tag.title] = { color: tag.color, count: tag_entity_stats[tag.title].count + Number(tag.count) };
+            } else {
+              tag_entity_stats[tag.title] = { color: tag.color, count: Number(tag.count) };
+            }
+          }
         });
 
         const project_stats: Record<
