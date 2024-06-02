@@ -8,7 +8,6 @@ export type AfterHandlerActionType = "create" | "update" | "arkive" | "delete";
 export type SearchableEntities =
   | "characters"
   | "documents"
-  | "document_templates"
   | "maps"
   | "map_pins"
   | "graphs"

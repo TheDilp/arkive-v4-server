@@ -808,7 +808,7 @@ export function search_router(app: Elysia) {
               if (permissionsForSearch === true) return true;
               if (entity_name === "graphs" || entity_name === "nodes" || entity_name === "edges")
                 return !!formattedPermissions.graphs;
-              return !!formattedPermissions[entity_name === "images" ? "assets" : entity_name];
+              return !!formattedPermissions[entity_name];
             }).map((tb) => {
               const entity_name =
                 tb === "image_tags" ? "images" : (tb.replace("_", "").replace("Totags", "") as EntitiesWithTags);
