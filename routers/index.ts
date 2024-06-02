@@ -29,6 +29,7 @@ export * from "./random_table_option_router";
 export * from "./random_table_router";
 export * from "./role_router";
 export * from "./search_router";
+export * from "./stats_router";
 export * from "./tags_router";
 export * from "./user_router";
 export * from "./webhook_router";

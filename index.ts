@@ -37,6 +37,7 @@ import {
   random_table_router,
   role_router,
   search_router,
+  stats_router,
   tag_router,
   user_router,
   webhook_router,
@@ -167,6 +168,7 @@ export const app = new Elysia()
       .use(search_router)
       .use(message_router)
       .use(bulk_router)
+      .use(stats_router)
       .use(role_router)
       .use(permission_router),
   )

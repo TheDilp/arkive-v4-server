@@ -71,7 +71,6 @@ export async function tempAfterHandle(context: any, response: any) {
   const token = context.request.headers.get("authorization");
   const jwt = token.replace("Bearer ", "");
   const { auth_id } = decodeUserJwt(jwt);
-  await redis.del(`notification_flags_${auth_id}`);
 
   const redis_flags = await redis.get(`notification_flags_${auth_id}`);
   let flags: Record<string, boolean> = {};

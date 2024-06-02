@@ -237,8 +237,13 @@ export function project_router(app: Elysia) {
               name: "blueprint_instances",
               request: db
                 .selectFrom("blueprint_instances")
-                .select(["blueprint_instances.id", "blueprint_instances.title", "blueprint_instances.parent_id"])
                 .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+                .select([
+                  "blueprint_instances.id",
+                  "blueprint_instances.title",
+                  "blueprint_instances.parent_id",
+                  "blueprints.icon",
+                ])
                 .where("blueprints.project_id", "=", params.id)
                 .where("blueprint_instances.owner_id", "=", permissions.user_id)
                 .where("blueprint_instances.deleted_at", "is", null)

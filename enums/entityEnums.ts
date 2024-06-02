@@ -47,11 +47,15 @@ export const EntitiesWithTagsTablesEnum: TagsRelationTables[] = [
   "_documentsTotags",
   "_graphsTotags",
   "_mapsTotags",
+  "_map_pinsTotags",
   "_calendarsTotags",
+  "_eventsTotags",
   "_dictionariesTotags",
-  "_blueprint_instancesTotags",
   "_edgesTotags",
   "_nodesTotags",
+  "_character_fields_templatesTotags",
+  "_blueprint_instancesTotags",
+  "image_tags",
 ];
 
 export const EntitiesWithoutProjectIdEnum = ["map_pins", "character_map_pins", "map_layers", "nodes", "edges", "events"];
@@ -196,7 +200,6 @@ export const DocumentTemplateEntities = [
   "random_tables",
   "words",
 ];
-
 export const ProjectOwnerAllPermissionsEnum = {
   create_characters: true,
   read_characters: true,
