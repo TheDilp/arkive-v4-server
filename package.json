@@ -11,7 +11,7 @@
     "generate-schema": "bunx dbmate migrate && bun run kysely-codegen",
     "lint": "eslint '*.{ts,tsx}' --fix --report-unused-disable-directives --max-warnings 0",
     "prepare": "husky install  || echo Skipping schema build",
-    "precommit": "bun run lint --fix"
+    "precommit": "lint-staged"
   },
   "keywords": [],
   "author": "",
@@ -73,7 +73,12 @@
     "eslint-plugin-simple-import-sort": "^10.0.0",
     "husky": "^8.0.3",
     "kysely-codegen": "^0.10.1",
+    "lint-staged": "^15.2.5",
     "prettier": "^2.8.0",
     "typescript": "^5.1.6"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": "bash -c tsc -p ./tsconfig.json --noEmit",
+    "*.{ts,tsx,html}": "eslint --fix --report-unused-disable-directives --max-warnings 0"
   }
 }
