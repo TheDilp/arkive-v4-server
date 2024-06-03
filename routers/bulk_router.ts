@@ -1,5 +1,7 @@
 import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import Elysia, { t } from "elysia";
+import { SelectExpression } from "kysely";
+import { DB } from "kysely-codegen";
 import omit from "lodash.omit";
 import uniq from "lodash.uniq";
 
@@ -82,8 +84,7 @@ export function bulk_router(app: Elysia) {
 
               // @ts-ignore
               .selectFrom(params.type as DBKeys)
-              // @ts-ignore
-              .select([`${params.type}.id`])
+              .select([`${params.type}.id`] as SelectExpression<DB, DBKeys>[])
               // @ts-ignore
               .leftJoin("entity_permissions", "entity_permissions.related_id", `${params.type}.id`)
               .leftJoin("permissions", "permissions.id", "entity_permissions.permission_id")
@@ -166,8 +167,7 @@ export function bulk_router(app: Elysia) {
 
             // @ts-ignore
             .selectFrom(params.type as DBKeys)
-            // @ts-ignore
-            .select([`${params.type}.id`])
+            .select([`${params.type}.id`] as SelectExpression<DB, DBKeys>[])
             // @ts-ignore
             .leftJoin("entity_permissions", "entity_permissions.related_id", `${params.type}.id`)
             .leftJoin("permissions", "permissions.id", "entity_permissions.permission_id")
@@ -277,8 +277,7 @@ export function bulk_router(app: Elysia) {
 
                 // @ts-ignore
                 .selectFrom(params.type as DBKeys)
-                // @ts-ignore
-                .select([`${params.type}.id`])
+                .select([`${params.type}.id`] as SelectExpression<DB, DBKeys>[])
                 // @ts-ignore
                 .leftJoin("entity_permissions", "entity_permissions.related_id", `${params.type}.id`)
                 .leftJoin("permissions", "permissions.id", "entity_permissions.permission_id")
@@ -380,8 +379,7 @@ export function bulk_router(app: Elysia) {
 
                 // @ts-ignore
                 .selectFrom(params.type as DBKeys)
-                // @ts-ignore
-                .select([`${params.type}.id`])
+                .select([`${params.type}.id`] as SelectExpression<DB, DBKeys>[])
                 // @ts-ignore
                 .leftJoin("entity_permissions", "entity_permissions.related_id", `${params.type}.id`)
                 .leftJoin("permissions", "permissions.id", "entity_permissions.permission_id")

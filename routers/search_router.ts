@@ -528,13 +528,12 @@ export function search_router(app: Elysia) {
             request: db
               .selectFrom("map_pins")
               .leftJoin("maps", "maps.id", "map_pins.parent_id")
-              // @ts-ignore
               .select([
                 "map_pins.id",
-                sql`map_pins.title || ' (' || maps.title || ')' as title`,
+                sql<string>`map_pins.title || ' (' || maps.title || ')' as title`,
                 "map_pins.icon",
                 "map_pins.parent_id",
-              ])
+              ] as SelectExpression<DB, "map_pins">[])
               .where("map_pins.title", "is not", null)
               .where("map_pins.title", "ilike", `%${search_term}%`)
               .limit(5),
@@ -827,14 +826,13 @@ export function search_router(app: Elysia) {
                     ? db
                         .selectFrom(tb)
                         .where(tb === "image_tags" ? `${tb}.tag_id` : `${tb}.B`, "in", tag_ids)
-                        .leftJoin(entity_name, `${tb}.id`, tb === "image_tags" ? `${tb}.image_id` : `${tb}.A`)
+                        .leftJoin(entity_name, `${tb}.id` as any, tb === "image_tags" ? `${tb}.image_id` : `${tb}.A`)
                         // @ts-ignore
-                        .select(fields as SelectExpression<DB, SearchableEntities>[])
+                        .select(fields as SelectExpression<any, any>[])
                         .distinctOn("id")
                     : db
                         .selectFrom(entity_name)
-                        // @ts-ignore
-                        .select(fields as SelectExpression<DB, SearchableEntities>[])
+                        .select(fields as SelectExpression<DB, EntitiesWithTags>[])
                         .leftJoin(tb, `${entity_name}.id`, tb === "image_tags" ? `${tb}.image_id` : `${tb}.A`)
                         // @ts-ignore
                         .leftJoin("tags", "tags.id", tb === "image_tags" ? `${tb}.tag_id` : `${tb}.B`)

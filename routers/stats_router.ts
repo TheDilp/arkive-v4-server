@@ -219,8 +219,8 @@ export function stats_router(app: Elysia) {
                 title: m.title,
                 count: Number(mention.count),
                 entity_type: mention.mention_type,
-                icon: m?.icon,
-                image_id: m?.image_id,
+                icon: (m?.icon || undefined) as string | undefined,
+                image_id: (m?.image_id || undefined) as string | undefined,
               };
           });
 

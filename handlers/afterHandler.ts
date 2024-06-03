@@ -25,7 +25,7 @@ export async function afterHandler(
   entity: string,
   token: string,
   action: AfterHandlerActionType,
-  redis: RedisClientType<any, any, any>,
+  redis?: RedisClientType<any, any, any>,
 ) {
   const { is_folder, project_id, title, image_id } = data || {};
 
@@ -46,7 +46,7 @@ export async function afterHandler(
         userImageUrl: image_url,
         notification_type: `${entity}_${action}_notification`,
       });
-      redis.del(`${project_id}_stats`);
+      if (redis) redis.del(`${project_id}_stats`);
     }
   }
 }
