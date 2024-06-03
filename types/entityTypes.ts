@@ -70,7 +70,15 @@ export type AvailableSubEntityType =
   | "blueprint_instances"
   | "messages";
 
-export type MentionEntityType = "blueprint_instances" | "characters" | "documents" | "events" | "graphs" | "maps" | "words";
+export type MentionEntityType =
+  | "characters"
+  | "blueprint_instances"
+  | "documents"
+  | "maps"
+  | "map_pins"
+  | "graphs"
+  | "events"
+  | "words";
 
 export type EntitiesWithPermissionCheck =
   | "characters"

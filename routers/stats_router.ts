@@ -1,10 +1,13 @@
 import Elysia from "elysia";
+import { ReferenceExpression, SelectExpression } from "kysely";
+import { DB } from "kysely-codegen";
 import groupBy from "lodash.groupby";
 import uniq from "lodash.uniq";
 
 import { db } from "../database/db";
 import { DBKeys } from "../database/types";
 import { EntitiesWithTagsTablesEnum, MessageEnum } from "../enums";
+import { MentionEntityType } from "../types/entityTypes";
 import { redisClient } from "../utils/redisClient";
 
 type TagColorStatType = Record<string, number>;
@@ -29,13 +32,23 @@ const mainEntities = [
   "images",
 ];
 
+function getFieldsForMentionStats(entity_type: MentionEntityType): SelectExpression<DB, DBKeys>[] {
+  if (entity_type === "characters") return ["id", "full_name as title", "portrait_id as image_id"];
+  if (entity_type === "blueprint_instances") return ["blueprint_instances.id", "blueprint_instances.title", "blueprints.icon"];
+  if (entity_type === "documents") return ["id", "title", "icon", "image_id"];
+  if (entity_type === "maps") return ["id", "title", "image_id"];
+  if (entity_type === "map_pins") return ["map_pins.id", "map_pins.title", "map_pins.icon", "map_pins.image_id"];
+  if (entity_type === "graphs") return ["id", "title", "icon"];
+  if (entity_type === "events") return ["events.id", "events.title", "events.parent_id", "events.image_id"];
+  if (entity_type === "words") return ["words.id", "words.title", "words.parent_id"];
+  return [];
+}
+
 export function stats_router(app: Elysia) {
   return app.group("/stats", (server) =>
     server.get("/:project_id", async ({ params }) => {
       const redis = await redisClient;
       const project_stats: string | null = await redis.get(`${params.project_id}_stats`);
-
-      await redis.del(`${params.project_id}_stats`);
 
       if (!project_stats) {
         const queries = mainEntities.map((ent) => {
@@ -157,10 +170,21 @@ export function stats_router(app: Elysia) {
         const grouped_mentions = groupBy(mentions, "mention_type");
         const mention_queries = Object.entries(grouped_mentions).map(([entity, mentions]) => {
           const ids = uniq(mentions.map((m) => m.mention_id));
-          return db
+          let query = db
             .selectFrom(entity as DBKeys)
-            .select(["id", entity === "characters" ? "full_name as title" : "title"])
-            .where("id", "in", ids);
+            .select(getFieldsForMentionStats(entity as MentionEntityType))
+            .where(`${entity}.id` as ReferenceExpression<DB, DBKeys>, "in", ids);
+
+          if (entity === "blueprint_instances") {
+            query = query.leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id");
+          } else if (entity === "map_pins") {
+            query = query.leftJoin("maps", "maps.id", "map_pins.parent_id");
+          } else if (entity === "events") {
+            query = query.leftJoin("calendars", "calendars.id", "events.parent_id");
+          } else if (entity === "words") {
+            query = query.leftJoin("dictionaries", "dictionaries.id", "words.parent_id");
+          }
+          return query;
         });
         const mention_res = await Promise.all(mention_queries.map((q) => q.execute()));
 
@@ -168,11 +192,13 @@ export function stats_router(app: Elysia) {
 
         mention_res.flat().forEach((m) => {
           const mention = mentions.find((ment) => ment.mention_id === m.id);
-          if (m.id && m.title && typeof mention?.count === "number")
+          if (m.id && m.title && typeof mention?.count === "string")
             mention_res_with_count[m.id] = {
               title: m.title,
               count: Number(mention.count),
               entity_type: mention.mention_type,
+              icon: m?.icon,
+              image_id: m?.image_id,
             };
         });
 
