@@ -178,7 +178,7 @@ export function stats_router(app: Elysia) {
             .where("documents.project_id", "=", params.project_id)
             .groupBy(["mention_id", "document_mentions.mention_type"])
             .orderBy("count desc")
-            .limit(10)
+            .limit(15)
             .execute();
 
           const grouped_mentions = groupBy(mentions, "mention_type");
