@@ -94,6 +94,7 @@ export function user_router(app: Elysia) {
             if (body.data) {
               user = await tx.updateTable("users").where("id", "=", params.id).set(body.data).returning("auth_id").execute();
 
+              // Clear cached
               if (user?.[0]) {
                 await redis.del(`notification_flags_${user?.[0]?.auth_id}`);
               }
