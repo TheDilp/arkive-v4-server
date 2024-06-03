@@ -1,9 +1,15 @@
 import Elysia from "elysia";
+import groupBy from "lodash.groupby";
+import uniq from "lodash.uniq";
 
 import { db } from "../database/db";
 import { DBKeys } from "../database/types";
 import { EntitiesWithTagsTablesEnum, MessageEnum } from "../enums";
 import { redisClient } from "../utils/redisClient";
+
+type TagColorStatType = Record<string, number>;
+type TagEntityStatType = Record<string, { color: string; count: number }>;
+type MentionStatType = Record<string, { title: string; entity_type: string; count: number }>;
 
 const mainEntities = [
   "characters",
@@ -28,6 +34,9 @@ export function stats_router(app: Elysia) {
     server.get("/:project_id", async ({ params }) => {
       const redis = await redisClient;
       const project_stats: string | null = await redis.get(`${params.project_id}_stats`);
+
+      await redis.del(`${params.project_id}_stats`);
+
       if (!project_stats) {
         const queries = mainEntities.map((ent) => {
           if (ent === "blueprint_instances")
@@ -111,8 +120,8 @@ export function stats_router(app: Elysia) {
 
         const entities_by_tag_name = await query.execute();
 
-        const tag_colors_stats: Record<string, number> = {};
-        const tag_entity_stats: Record<string, { color: string; count: number }> = {};
+        const tag_entity_stats: TagEntityStatType = {};
+        const tag_colors_stats: TagColorStatType = {};
 
         tag_colors.forEach((tag) => {
           tag_colors_stats[tag.color] = Number(tag.count);
@@ -128,17 +137,49 @@ export function stats_router(app: Elysia) {
           }
         });
 
-        const project_stats: Record<
-          string,
-          number | Record<string, number> | Record<string, { color: string; count: number }>
-        > = {};
-
-        project_stats["tag_colors"] = tag_colors_stats;
-        project_stats["tag_entities"] = tag_entity_stats;
+        const project_stats: Record<string, number | TagEntityStatType | TagColorStatType | MentionStatType> = {};
 
         res.forEach((i) => {
           if (i?.entity) project_stats[i?.entity] = i?.count;
         });
+
+        //! CLEAR CACHE BUST ON TOP OF ROUTE BEFORE COMMIT
+        const mentions = await db
+          .selectFrom("document_mentions")
+          .leftJoin("documents", "documents.id", "document_mentions.parent_document_id")
+          .select(["mention_id", "document_mentions.mention_type", (eb) => eb.fn.count<number>("mention_id").as("count")])
+          .where("documents.project_id", "=", params.project_id)
+          .groupBy(["mention_id", "document_mentions.mention_type"])
+          .orderBy("count desc")
+          .limit(10)
+          .execute();
+
+        const grouped_mentions = groupBy(mentions, "mention_type");
+        const mention_queries = Object.entries(grouped_mentions).map(([entity, mentions]) => {
+          const ids = uniq(mentions.map((m) => m.mention_id));
+          return db
+            .selectFrom(entity as DBKeys)
+            .select(["id", entity === "characters" ? "full_name as title" : "title"])
+            .where("id", "in", ids);
+        });
+        const mention_res = await Promise.all(mention_queries.map((q) => q.execute()));
+
+        const mention_res_with_count: MentionStatType = {};
+
+        mention_res.flat().forEach((m) => {
+          const mention = mentions.find((ment) => ment.mention_id === m.id);
+          if (m.id && m.title && typeof mention?.count === "number")
+            mention_res_with_count[m.id] = {
+              title: m.title,
+              count: Number(mention.count),
+              entity_type: mention.mention_type,
+            };
+        });
+
+        project_stats["tag_colors"] = tag_colors_stats;
+        project_stats["tag_entities"] = tag_entity_stats;
+        project_stats["mentions"] = mention_res_with_count;
+
         redis.set(`${params.project_id}_stats`, JSON.stringify(project_stats), { EX: 60 * 60 });
         return { data: project_stats, message: MessageEnum.success, ok: true };
       } else {
