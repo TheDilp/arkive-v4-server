@@ -35,12 +35,13 @@ const mainEntities = [
 ];
 
 function getFieldsForMentionStats(entity_type: MentionEntityType): SelectExpression<DB, DBKeys>[] {
-  if (entity_type === "characters") return ["id", "full_name as title", "portrait_id as image_id"];
+  if (entity_type === "characters")
+    return ["characters.id", "characters.full_name as title", "characters.portrait_id as image_id"];
   if (entity_type === "blueprint_instances") return ["blueprint_instances.id", "blueprint_instances.title", "blueprints.icon"];
-  if (entity_type === "documents") return ["id", "title", "icon", "image_id"];
-  if (entity_type === "maps") return ["id", "title", "image_id"];
+  if (entity_type === "documents") return ["documents.id", "documents.title", "documents.icon", "documents.image_id"];
+  if (entity_type === "maps") return ["maps.id", "maps.title", "maps.image_id"];
   if (entity_type === "map_pins") return ["map_pins.id", "map_pins.title", "map_pins.icon", "map_pins.image_id"];
-  if (entity_type === "graphs") return ["id", "title", "icon"];
+  if (entity_type === "graphs") return ["graphs.id", "graphs.title", "graphs.icon"];
   if (entity_type === "events") return ["events.id", "events.title", "events.parent_id", "events.image_id"];
   if (entity_type === "words") return ["words.id", "words.title", "words.parent_id"];
   return [];
