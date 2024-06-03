@@ -88,15 +88,11 @@ export function user_router(app: Elysia) {
       .post(
         "/update/:id",
         async ({ params, body }) => {
+          const redis = await redisClient;
           await db.transaction().execute(async (tx) => {
+            let user;
             if (body.data) {
-              const user = await tx
-                .updateTable("users")
-                .where("id", "=", params.id)
-                .set(body.data)
-                .returning("auth_id")
-                .execute();
-              const redis = await redisClient;
+              user = await tx.updateTable("users").where("id", "=", params.id).set(body.data).returning("auth_id").execute();
 
               if (user?.[0]) {
                 await redis.del(`notification_flags_${user?.[0]?.auth_id}`);
@@ -116,6 +112,15 @@ export function user_router(app: Elysia) {
                     .doUpdateSet({ feature_flags: body.relations?.feature_flags?.feature_flags }),
                 )
                 .execute();
+              if (user) {
+                await redis.set(
+                  `notification_flags_${user?.[0]?.auth_id}`,
+                  JSON.stringify(body.relations?.feature_flags?.feature_flags),
+                  {
+                    EX: 60 * 60,
+                  },
+                );
+              }
             }
           });
 
