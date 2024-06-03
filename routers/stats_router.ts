@@ -8,13 +8,16 @@ import { db } from "../database/db";
 import { checkEntityLevelPermission } from "../database/queries";
 import { DBKeys } from "../database/types";
 import { EntitiesWithTagsTablesEnum, MessageEnum } from "../enums";
-import { MentionEntityType } from "../types/entityTypes";
+import { EntitiesWithPermissionCheck, MentionEntityType } from "../types/entityTypes";
 import { PermissionDecorationType } from "../types/requestTypes";
 import { redisClient } from "../utils/redisClient";
 
 type TagColorStatType = Record<string, number>;
 type TagEntityStatType = Record<string, { color: string; count: number }>;
-type MentionStatType = Record<string, { title: string; entity_type: string; count: number }>;
+type MentionStatType = Record<
+  string,
+  { title: string; icon: string | undefined; image_id: string | undefined; entity_type: string; count: number }
+>;
 
 const mainEntities = [
   "characters",
@@ -200,7 +203,7 @@ export function stats_router(app: Elysia) {
             }
 
             if (!permissions.is_project_owner) {
-              query = checkEntityLevelPermission(query, permissions, entity);
+              query = checkEntityLevelPermission(query, permissions, entity as EntitiesWithPermissionCheck);
             }
 
             return query;
