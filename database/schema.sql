@@ -10,13 +10,6 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: pger; Type: SCHEMA; Schema: -; Owner: -
---
-
-CREATE SCHEMA pger;
-
-
---
 -- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
 --
 
@@ -24,17 +17,38 @@ COMMENT ON SCHEMA public IS '';
 
 
 --
--- Name: pageinspect; Type: EXTENSION; Schema: -; Owner: -
+-- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS pageinspect WITH SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
 
 
 --
--- Name: EXTENSION pageinspect; Type: COMMENT; Schema: -; Owner: -
+-- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
 --
 
-COMMENT ON EXTENSION pageinspect IS 'inspect the contents of database pages at a low level';
+COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
+
+
+--
+-- Name: pger; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA pger;
+
+
+--
+-- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
 
 
 --
@@ -1913,6 +1927,14 @@ ALTER TABLE ONLY public.character_events_fields
 
 ALTER TABLE ONLY public.character_random_table_fields
     ADD CONSTRAINT unique_combination_constraint_char_rand UNIQUE (character_id, character_field_id, related_id);
+
+
+--
+-- Name: document_mentions unique_document_mentions; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_mentions
+    ADD CONSTRAINT unique_document_mentions UNIQUE (parent_document_id, mention_id);
 
 
 --
@@ -3968,4 +3990,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240530142355'),
     ('20240530171614'),
     ('20240531093139'),
-    ('20240601171758');
+    ('20240601171758'),
+    ('20240603072504');

@@ -544,6 +544,7 @@ export function document_router(app: Elysia) {
                             mention_type: mention.attrs.name,
                           })),
                         )
+                        .onConflict((oc) => oc.columns(["parent_document_id", "mention_id"]).doNothing())
                         .execute();
                   } else {
                     await tx
