@@ -17,8 +17,8 @@ import {
 import { AvailableEntityType, AvailablePermissions, AvailableSubEntityType } from "../types/entityTypes";
 import { AfterHandlerActionType, JWTPayloadType, SearchableEntities } from "../types/requestTypes";
 
-export function getSearchTableFromType(type: SearchableEntities | keyof DB): keyof DB {
-  if (type === "images" || type === "map_images") return "images";
+export function getSearchTableFromType(type: SearchableEntities | DBKeys): DBKeys {
+  if (type === "images" || type === "map_images") return "images" as DBKeys;
   return type;
 }
 
@@ -98,6 +98,7 @@ export function getEntityTagTable(type: AvailableEntityType | AvailableSubEntity
   if (type === "graphs") return "_graphsTotags";
   if (type === "calendars") return "_calendarsTotags";
   if (type === "character_fields_templates") return "_character_fields_templatesTotags";
+  if (type === "images") return "image_tags";
   return null;
 }
 

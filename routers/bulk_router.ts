@@ -240,11 +240,28 @@ export function bulk_router(app: Elysia) {
           const entityTagTable = getEntityTagTable(params.type as AvailableEntityType | AvailableSubEntityType);
           if (entityTagTable) {
             await db.transaction().execute(async (tx) => {
-              if (body.data.add.length) await tx.insertInto(entityTagTable).values(body.data.add).execute();
+              if (body.data.add.length)
+                await tx
+                  .insertInto(entityTagTable)
+                  .values(
+                    entityTagTable === "image_tags"
+                      ? body.data.add.map((t) => ({ image_id: t.A, tag_id: t.B }))
+                      : body.data.add,
+                  )
+                  .execute();
               if (body.data.remove.length)
                 await tx
                   .deleteFrom(entityTagTable)
-                  .where((eb) => eb.or(body.data.remove.map((r) => eb.and([eb("A", "=", r.A), eb("B", "=", r.B)]))))
+                  .where((eb) =>
+                    eb.or(
+                      body.data.remove.map((r) =>
+                        eb.and([
+                          eb(entityTagTable === "image_tags" ? "image_id" : "A", "=", r.A),
+                          eb(entityTagTable === "image_tags" ? "image_id" : "B", "=", r.B),
+                        ]),
+                      ),
+                    ),
+                  )
                   .execute();
             });
           }

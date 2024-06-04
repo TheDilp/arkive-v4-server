@@ -46,12 +46,6 @@ import {
 } from "./routers";
 
 export const app = new Elysia()
-  .use(
-    cors({
-      origin: process.env.NODE_ENV === "development" ? true : "thearkive.app",
-      methods: ["GET", "POST", "DELETE"],
-    }),
-  )
   .error({
     UNAUTHORIZED: UnauthorizedError,
     NO_PUBLIC_ACCESS: NoPublicAccess,
@@ -76,7 +70,7 @@ export const app = new Elysia()
     }
     if (code === "VALIDATION") {
       set.status = 400;
-      console.log(error);
+      console.error(error);
       return { message: "The payload was not formatted correctly.", ok: false, role_access: false };
     }
     if (code === "NO_ROLE_ACCESS") {
@@ -95,9 +89,16 @@ export const app = new Elysia()
     console.error(error);
     return { message: "There was an error with your request.", ok: false, role_access: false };
   })
+  .use(
+    cors({
+      origin: process.env.NODE_ENV === "development" ? true : "thearkive.app",
+      methods: ["GET", "POST", "DELETE"],
+    }),
+  )
+
   .use(health_check_router)
 
-  .group("/api/v1", (server) =>
+  .group("/api/v1", (server: Elysia) =>
     // @ts-ignore
     server
       .onBeforeHandle(async ({ request }) => {
@@ -108,7 +109,7 @@ export const app = new Elysia()
             const jwtPublicKeyRes = await fetch(process.env.JWT_VERIFY_URL as string);
             const jwtPublicKey = await jwtPublicKeyRes.json();
             const publicKey = jwtToPem.default(jwtPublicKey.keys[0]);
-            const verifiedToken: any = verify(jwtoken, publicKey, (err, result) => {
+            const verifiedToken: any = verify(jwtoken, publicKey, (err: any, result: any) => {
               if (err)
                 return {
                   name: "TokenExpiredError",
@@ -177,6 +178,7 @@ export const app = new Elysia()
   .use(auth_router)
   .use(websocket_router)
   .onStart(async () => {
+    // eslint-disable-next-line no-console
     console.log("LISTENING ON", process.env.PORT);
   });
 

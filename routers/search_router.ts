@@ -161,7 +161,7 @@ export function search_router(app: Elysia) {
           }
 
           let query = db
-            .selectFrom(getSearchTableFromType(type as SearchableEntities | keyof DB))
+            .selectFrom(getSearchTableFromType(type as SearchableEntities | DBKeys))
             // @ts-ignore
             .select(fields as SelectExpression<DB, SearchableEntities>[]);
 

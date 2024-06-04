@@ -46,7 +46,8 @@ export type AvailableEntityType =
   | "character_fields_templates"
   | "character_relationship_types"
   | "tags"
-  | "conversations";
+  | "conversations"
+  | "images";
 export type EntitiesWithFolders = "documents" | "maps" | "graphs" | "dictionaries" | "calendars" | "random_tables";
 export type PublicEntities =
   | "characters"
