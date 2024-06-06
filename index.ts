@@ -1,8 +1,10 @@
 import { cors } from "@elysiajs/cors";
+import { cron } from "@elysiajs/cron";
 import { Elysia } from "elysia";
 import { verify } from "jsonwebtoken";
 import * as jwtToPem from "jwk-to-pem";
 
+import { db } from "./database/db";
 // Accepts the same connection config object that the "pg" package would take
 import { NoPublicAccess, NoRoleAccess, UnauthorizedError } from "./enums";
 import { tempAfterHandle } from "./handlers";
@@ -179,7 +181,21 @@ export const app = new Elysia()
   .use(public_router)
   .use(meta_router)
   .use(auth_router)
-  .use(websocket_router);
+  .use(websocket_router)
+  .use(
+    cron({
+      name: "heartbeat",
+      pattern: "0 0 */3 * *",
+      run() {
+        const today = new Date();
+        const threeDaysAgo = new Date(today);
+        threeDaysAgo.setDate(today.getDate() - 3);
+        db.deleteFrom("notifications").where("created_at", "<", threeDaysAgo).execute();
+        // eslint-disable-next-line no-console
+        console.info(`DELETED NOTIFICATIONS OLDER THAN ${threeDaysAgo}`);
+      },
+    }),
+  );
 
 try {
   app.listen((process.env.PORT as string) || 3000);
