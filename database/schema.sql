@@ -10,27 +10,6 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON SCHEMA public IS '';
-
-
---
--- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
-
-
---
--- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
-
-
---
 -- Name: pger; Type: SCHEMA; Schema: -; Owner: -
 --
 
@@ -38,17 +17,10 @@ CREATE SCHEMA pger;
 
 
 --
--- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
-
-
---
--- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
+COMMENT ON SCHEMA public IS '';
 
 
 --
@@ -180,6 +152,69 @@ CREATE TYPE public."MentionTypeEnum" AS ENUM (
     'events',
     'map_pins'
 );
+
+
+--
+-- Name: notify_character_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.notify_character_trigger_function() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    payload JSON;
+BEGIN
+    payload = json_build_object(
+        'entity', TG_TABLE_NAME,
+        'operation', TG_OP,
+        'title', NEW.full_name,
+        'id', NEW.id
+    );
+    PERFORM pg_notify('notification_channel', payload::text);
+    RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: notify_general_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.notify_general_trigger_function() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    payload JSON;
+BEGIN
+    payload = json_build_object(
+        'entity', TG_TABLE_NAME,
+        'operation', TG_OP,
+        'title', NEW.title,
+        'id', NEW.id
+    );
+    PERFORM pg_notify('notification_channel', payload::text);
+    RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: notify_user(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.notify_user() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    -- Insert a record into user_notifications
+    INSERT INTO user_notifications (user_id, notification_id)
+    VALUES (
+        NEW.user_id,
+        NEW.id
+    );
+    RETURN NEW;
+END;
+$$;
 
 
 --
@@ -1225,6 +1260,28 @@ CREATE TABLE public.nodes (
 
 
 --
+-- Name: notifications; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.notifications (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    parent_id uuid,
+    title text NOT NULL,
+    user_id uuid NOT NULL,
+    user_name text NOT NULL,
+    user_image text,
+    image_id text,
+    created_at timestamp(3) with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    action text NOT NULL,
+    project_id uuid NOT NULL,
+    entity_type text NOT NULL,
+    related_id uuid NOT NULL,
+    CONSTRAINT notifications_action_check CHECK ((action = ANY (ARRAY['create'::text, 'update'::text, 'arkive'::text, 'delete'::text]))),
+    CONSTRAINT notifications_entity_type_check CHECK ((entity_type = ANY (ARRAY['characters'::text, 'blueprints'::text, 'blueprint_instances'::text, 'documents'::text, 'maps'::text, 'map_pins'::text, 'graphs'::text, 'nodes'::text, 'edges'::text, 'calendars'::text, 'events'::text, 'dictionaries'::text, 'words'::text, 'tags'::text, 'character_fields_templates'::text, 'images'::text, 'assets'::text, 'random_tables'::text, 'random_table_options'::text])))
+);
+
+
+--
 -- Name: permissions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1345,6 +1402,18 @@ CREATE TABLE public.tags (
     project_id uuid NOT NULL,
     owner_id uuid NOT NULL,
     deleted_at timestamp(3) without time zone
+);
+
+
+--
+-- Name: user_notifications; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_notifications (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    notification_id uuid,
+    is_read boolean DEFAULT false
 );
 
 
@@ -1794,6 +1863,14 @@ ALTER TABLE ONLY public.nodes
 
 
 --
+-- Name: notifications notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notifications
+    ADD CONSTRAINT notifications_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: permissions permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1983,6 +2060,14 @@ ALTER TABLE ONLY public.roles
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT unique_user_email UNIQUE (email);
+
+
+--
+-- Name: user_notifications user_notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_notifications
+    ADD CONSTRAINT user_notifications_pkey PRIMARY KEY (id);
 
 
 --
@@ -2422,6 +2507,13 @@ CREATE UNIQUE INDEX words_title_translation_parent_id_key ON public.words USING 
 --
 
 CREATE INDEX words_ts_index ON public.words USING gin (ts);
+
+
+--
+-- Name: notifications after_notification_insert; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER after_notification_insert AFTER INSERT ON public.notifications FOR EACH ROW EXECUTE FUNCTION public.notify_user();
 
 
 --
@@ -3828,6 +3920,22 @@ ALTER TABLE ONLY public.nodes
 
 
 --
+-- Name: notifications notifications_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notifications
+    ADD CONSTRAINT notifications_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
+
+
+--
+-- Name: notifications notifications_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notifications
+    ADD CONSTRAINT notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: projects projects_owner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3905,6 +4013,22 @@ ALTER TABLE ONLY public.events
 
 ALTER TABLE ONLY public.tags
     ADD CONSTRAINT tags_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: user_notifications user_notifications_notification_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_notifications
+    ADD CONSTRAINT user_notifications_notification_id_fkey FOREIGN KEY (notification_id) REFERENCES public.notifications(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_notifications user_notifications_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_notifications
+    ADD CONSTRAINT user_notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -3991,4 +4115,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240530171614'),
     ('20240531093139'),
     ('20240601171758'),
-    ('20240603072504');
+    ('20240603072504'),
+    ('20240604124246');

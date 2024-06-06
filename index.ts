@@ -3,6 +3,7 @@ import { Elysia } from "elysia";
 import { verify } from "jsonwebtoken";
 import * as jwtToPem from "jwk-to-pem";
 
+// Accepts the same connection config object that the "pg" package would take
 import { NoPublicAccess, NoRoleAccess, UnauthorizedError } from "./enums";
 import { tempAfterHandle } from "./handlers";
 import {
@@ -30,6 +31,7 @@ import {
   meta_router,
   month_router,
   node_router,
+  notification_router,
   permission_router,
   project_router,
   public_router,
@@ -99,8 +101,8 @@ export const app = new Elysia()
   .use(health_check_router)
 
   .group("/api/v1", (server: Elysia) =>
-    // @ts-ignore
     server
+
       .onBeforeHandle(async ({ request }) => {
         if (!request.url.includes("public")) {
           const token = request.headers.get("authorization");
@@ -169,6 +171,7 @@ export const app = new Elysia()
       .use(search_router)
       .use(message_router)
       .use(bulk_router)
+      .use(notification_router)
       .use(stats_router)
       .use(role_router)
       .use(permission_router),
@@ -176,11 +179,7 @@ export const app = new Elysia()
   .use(public_router)
   .use(meta_router)
   .use(auth_router)
-  .use(websocket_router)
-  .onStart(async () => {
-    // eslint-disable-next-line no-console
-    console.log("LISTENING ON", process.env.PORT);
-  });
+  .use(websocket_router);
 
 try {
   app.listen((process.env.PORT as string) || 3000);

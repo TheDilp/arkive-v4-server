@@ -17,9 +17,11 @@ import { sendNotification } from "../utils/websocketUtils";
 
 export async function afterHandler(
   data: {
+    id?: string;
     is_folder?: boolean | null;
     title?: string | null;
     image_id?: string | null;
+    parent_id?: string | null;
     project_id: string;
   },
   entity: string,
@@ -27,11 +29,11 @@ export async function afterHandler(
   action: AfterHandlerActionType,
   redis?: RedisClientType<any, any, any>,
 ) {
-  const { is_folder, project_id, title, image_id } = data || {};
+  const { is_folder, project_id, title, image_id, parent_id } = data || {};
 
   if (token) {
     const jwt = token.replace("Bearer ", "");
-    const { name, auth_id, image_url } = decodeUserJwt(jwt);
+    const { name, auth_id, image_url, user_id } = decodeUserJwt(jwt);
     if (project_id) {
       const entityName = title;
       sendNotification(project_id, {
@@ -48,6 +50,21 @@ export async function afterHandler(
       });
       if (redis) redis.del(`${project_id}_stats`);
     }
+    if (data?.id)
+      db.insertInto("notifications")
+        .values({
+          entity_type: entity,
+          title: data.title || "NO TITLE",
+          action,
+          parent_id: parent_id || null,
+          user_name: name,
+          image_id,
+          user_image: image_url,
+          user_id: user_id as string,
+          project_id: project_id as string,
+          related_id: data.id,
+        })
+        .execute();
   }
 }
 
@@ -105,7 +122,7 @@ export async function tempAfterHandle(context: any, response: any) {
           if (entity === "characters") {
             const { project_id, first_name, last_name, portrait_id: image_id } = context.body.data;
             afterHandler(
-              { project_id, title: getCharacterFullName(first_name, undefined, last_name), image_id },
+              { id: "", project_id, title: getCharacterFullName(first_name, undefined, last_name), image_id },
               entity,
               token,
               action,
@@ -114,11 +131,29 @@ export async function tempAfterHandle(context: any, response: any) {
           } else if (entity === "tags" && context.body.data.length) {
             const { project_id } = context.body.data[0];
 
+            const jwt = token.replace("Bearer ", "");
+            const { name, user_id, image_url } = decodeUserJwt(jwt);
+
             afterHandler({ project_id, title: "" }, entity, token, action, redis);
+
+            for (let index = 0; index < context.body.data.length; index += 1) {
+              db.insertInto("notifications")
+                .values({
+                  entity_type: entity,
+                  user_name: name,
+                  user_image: image_url,
+                  title: context.body.data[index].title,
+                  action,
+                  user_id: user_id as string,
+                  project_id: project_id as string,
+                  related_id: context.body.data[index].id as string,
+                })
+                .execute();
+            }
           } else {
             const project_id = context?.body?.data?.project_id || context?.response?.data?.project_id;
             const title = context?.body?.data?.title || context?.response?.data?.title;
-            if (project_id && title) afterHandler({ project_id, title }, entity, token, action, redis);
+            if (project_id && title) afterHandler({ id: "", project_id, title }, entity, token, action, redis);
           }
         } else if (action === "update" || action === "arkive") {
           // @ts-ignore
@@ -126,7 +161,7 @@ export async function tempAfterHandle(context: any, response: any) {
 
           if (SubEntityEnum.includes(entity)) {
             // @ts-ignore
-            query = query.select([`${entity}.id`, `${entity}.title`]);
+            query = query.select([`${entity}.id`, `${entity}.title`, `${entity}.parent_id`]);
             const parentEntity = getParentEntity(entity);
             if (parentEntity) {
               query = query

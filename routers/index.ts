@@ -22,6 +22,7 @@ export * from "./message_router";
 export * from "./meta_router";
 export * from "./month_router";
 export * from "./node_router";
+export * from "./notification_router";
 export * from "./permission_router";
 export * from "./project_router";
 export * from "./public_router";

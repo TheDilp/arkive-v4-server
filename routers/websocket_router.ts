@@ -50,8 +50,9 @@ export function websocket_router(app: Elysia) {
       },
     })
     .ws("/ws/notifications/:project_id", {
-      open(ws) {
+      async open(ws) {
         const { project_id } = ws.data.params;
+
         if (project_id) {
           ws.subscribe(`notifications/${project_id}`);
         }
