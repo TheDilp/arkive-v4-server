@@ -62,6 +62,38 @@ export function notification_router(app: Elysia) {
           response: ResponseSchema,
           body: ReadNotificationSchema,
         },
+      )
+      .post(
+        "/read/:project_id/:user_id",
+        async ({ params }) => {
+          const data = await db
+            .selectFrom("notifications")
+            .leftJoin("user_notifications", (join) =>
+              join.on((jb) =>
+                jb.and([
+                  jb("notifications.id", "=", jb.ref("user_notifications.notification_id")),
+                  jb("user_notifications.user_id", "=", params.user_id),
+                ]),
+              ),
+            )
+            .select(["notifications.id", "notifications.user_id"])
+            .where("user_notifications.is_read", "is", null)
+            .where("notifications.user_id", "!=", params.user_id)
+            .where("notifications.project_id", "=", params.project_id)
+            .execute();
+
+          if (data.length > 0) {
+            await db
+              .insertInto("user_notifications")
+              .values(data.map((d) => ({ user_id: params.user_id, notification_id: d.id, is_read: true })))
+              .execute();
+          }
+
+          return { message: "Success", ok: true, role_access: true };
+        },
+        {
+          response: ResponseSchema,
+        },
       ),
   );
 }
