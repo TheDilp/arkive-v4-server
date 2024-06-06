@@ -199,25 +199,6 @@ $$;
 
 
 --
--- Name: notify_user(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.notify_user() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-    -- Insert a record into user_notifications
-    INSERT INTO user_notifications (user_id, notification_id)
-    VALUES (
-        NEW.user_id,
-        NEW.id
-    );
-    RETURN NEW;
-END;
-$$;
-
-
---
 -- Name: updated_at_change(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -2507,13 +2488,6 @@ CREATE UNIQUE INDEX words_title_translation_parent_id_key ON public.words USING 
 --
 
 CREATE INDEX words_ts_index ON public.words USING gin (ts);
-
-
---
--- Name: notifications after_notification_insert; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER after_notification_insert AFTER INSERT ON public.notifications FOR EACH ROW EXECUTE FUNCTION public.notify_user();
 
 
 --

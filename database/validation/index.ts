@@ -24,6 +24,7 @@ export * from "./maps";
 export * from "./messages";
 export * from "./months";
 export * from "./nodes";
+export * from "./notifiications";
 export * from "./projects";
 export * from "./random_table_options";
 export * from "./random_tables";
