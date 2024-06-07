@@ -5,6 +5,7 @@ import { db } from "../database/db";
 import { ReadNotificationSchema } from "../database/validation";
 import { MessageEnum } from "../enums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { getUserProjectFlags } from "../utils/userUtils";
 
 export function notification_router(app: Elysia) {
   return app.group("notifications", (server) =>
@@ -12,6 +13,8 @@ export function notification_router(app: Elysia) {
       .get(
         "/:project_id/:user_id",
         async ({ params }) => {
+          const user_flags = await getUserProjectFlags(params.user_id, params.project_id);
+
           const data = await db
             .selectFrom("notifications")
             .leftJoin("user_notifications", (join) =>
@@ -41,6 +44,20 @@ export function notification_router(app: Elysia) {
             .where("user_notifications.is_read", "is", null)
             .where("notifications.user_id", "!=", params.user_id)
             .where("notifications.project_id", "=", params.project_id)
+            .where((wb) =>
+              wb.or(
+                Object.entries(user_flags)
+                  .filter(([, value]) => value === true)
+                  .map(([key]) => {
+                    const split_name = key.split("_");
+
+                    return wb.and([
+                      wb("notifications.action", "=", split_name[1]),
+                      wb("notifications.entity_type", "=", split_name[0]),
+                    ]);
+                  }),
+              ),
+            )
             .execute();
 
           return { data, message: MessageEnum.success, ok: true, role_access: true };

@@ -95,7 +95,7 @@ export function user_router(app: Elysia) {
 
               // Clear cached
               if (user?.[0]) {
-                await redis.del(`notification_flags_${user?.[0]?.auth_id}`);
+                await redis.del(`notification_flags_${params.id}`);
               }
             }
             if (body.relations?.feature_flags) {
@@ -114,7 +114,7 @@ export function user_router(app: Elysia) {
                 .execute();
               if (user) {
                 await redis.set(
-                  `notification_flags_${user?.[0]?.auth_id}`,
+                  `notification_flags_${params.id}`,
                   JSON.stringify(body.relations?.feature_flags?.feature_flags),
                   {
                     EX: 60 * 60,
