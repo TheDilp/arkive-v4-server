@@ -60,9 +60,9 @@ export function stats_router(app: Elysia) {
       permission_id: null,
     } as PermissionDecorationType)
     .group("/stats", (server) =>
-      server.get("/:project_id", async ({ params, permissions }) => {
+      server.get("/:project_id/:user_id", async ({ params, permissions }) => {
         const redis = await redisClient;
-        const project_stats: string | null = await redis.get(`${params.project_id}_stats`);
+        const project_stats: string | null = await redis.get(`${params.project_id}_${params.user_id}_stats`);
 
         if (!project_stats) {
           const queries = mainEntities.map((ent) => {
@@ -173,7 +173,6 @@ export function stats_router(app: Elysia) {
             if (i?.entity) project_stats[i?.entity] = i?.count;
           });
 
-          //! CLEAR CACHE BUST ON TOP OF ROUTE BEFORE COMMIT
           const mentions = await db
             .selectFrom("document_mentions")
             .leftJoin("documents", "documents.id", "document_mentions.parent_document_id")
