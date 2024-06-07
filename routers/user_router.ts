@@ -46,8 +46,7 @@ export function user_router(app: Elysia) {
         async ({ params, body }) => {
           const data = await db
             .selectFrom("users")
-            .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "users">[]))
+            .select(body.fields as SelectExpression<DB, "users">[])
             .$if(!!body.relations?.webhooks, (qb) =>
               qb.select((eb) =>
                 jsonArrayFrom(
@@ -146,7 +145,7 @@ export function user_router(app: Elysia) {
                 role_id: body.data.role_id,
                 project_id: project_id as string,
               })
-              .onConflict((oc) => oc.columns(["user_id", "role_id", "project_id"]).doUpdateSet({ role_id: body.data.role_id }))
+              .onConflict((oc) => oc.columns(["user_id", "project_id"]).doUpdateSet({ role_id: body.data.role_id }))
               .execute();
             return { message: MessageEnum.success, ok: true, role_access: true };
           }

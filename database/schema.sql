@@ -1872,7 +1872,7 @@ ALTER TABLE ONLY public.role_permissions
 --
 
 ALTER TABLE ONLY public.user_roles
-    ADD CONSTRAINT pk_users_roles PRIMARY KEY (user_id, role_id, project_id);
+    ADD CONSTRAINT pk_users_roles PRIMARY KEY (user_id, project_id);
 
 
 --
@@ -4090,4 +4090,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240531093139'),
     ('20240601171758'),
     ('20240603072504'),
-    ('20240604124246');
+    ('20240604124246'),
+    ('20240607141304');
