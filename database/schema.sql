@@ -199,6 +199,36 @@ $$;
 
 
 --
+-- Name: trim_character_text(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.trim_character_text() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    NEW.first_name = TRIM(NEW.first_name);
+    NEW.last_name = TRIM(NEW.last_name);
+    NEW.nickname = TRIM(NEW.nickname);
+    RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: trim_title_text(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.trim_title_text() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    NEW.title = TRIM(NEW.title);
+    RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: updated_at_change(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -2491,6 +2521,111 @@ CREATE INDEX words_ts_index ON public.words USING gin (ts);
 
 
 --
+-- Name: blueprint_instances trim_blueprint_instances_title; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trim_blueprint_instances_title BEFORE INSERT OR UPDATE ON public.blueprint_instances FOR EACH ROW EXECUTE FUNCTION public.trim_title_text();
+
+
+--
+-- Name: blueprints trim_blueprints_title; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trim_blueprints_title BEFORE INSERT OR UPDATE ON public.blueprints FOR EACH ROW EXECUTE FUNCTION public.trim_title_text();
+
+
+--
+-- Name: calendars trim_calendars_title; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trim_calendars_title BEFORE INSERT OR UPDATE ON public.calendars FOR EACH ROW EXECUTE FUNCTION public.trim_title_text();
+
+
+--
+-- Name: character_fields_templates trim_character_fields_templates_title; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trim_character_fields_templates_title BEFORE INSERT OR UPDATE ON public.character_fields_templates FOR EACH ROW EXECUTE FUNCTION public.trim_title_text();
+
+
+--
+-- Name: characters trim_characters_title; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trim_characters_title BEFORE INSERT OR UPDATE ON public.characters FOR EACH ROW EXECUTE FUNCTION public.trim_character_text();
+
+
+--
+-- Name: dictionaries trim_dictionaries_title; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trim_dictionaries_title BEFORE INSERT OR UPDATE ON public.dictionaries FOR EACH ROW EXECUTE FUNCTION public.trim_title_text();
+
+
+--
+-- Name: documents trim_documents_title; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trim_documents_title BEFORE INSERT OR UPDATE ON public.documents FOR EACH ROW EXECUTE FUNCTION public.trim_title_text();
+
+
+--
+-- Name: events trim_events_title; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trim_events_title BEFORE INSERT OR UPDATE ON public.events FOR EACH ROW EXECUTE FUNCTION public.trim_title_text();
+
+
+--
+-- Name: graphs trim_graphs_title; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trim_graphs_title BEFORE INSERT OR UPDATE ON public.graphs FOR EACH ROW EXECUTE FUNCTION public.trim_title_text();
+
+
+--
+-- Name: images trim_images_title; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trim_images_title BEFORE INSERT OR UPDATE ON public.images FOR EACH ROW EXECUTE FUNCTION public.trim_title_text();
+
+
+--
+-- Name: maps trim_maps_title; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trim_maps_title BEFORE INSERT OR UPDATE ON public.maps FOR EACH ROW EXECUTE FUNCTION public.trim_title_text();
+
+
+--
+-- Name: months trim_months_title; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trim_months_title BEFORE INSERT OR UPDATE ON public.months FOR EACH ROW EXECUTE FUNCTION public.trim_title_text();
+
+
+--
+-- Name: random_tables trim_random_tables_title; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trim_random_tables_title BEFORE INSERT OR UPDATE ON public.random_tables FOR EACH ROW EXECUTE FUNCTION public.trim_title_text();
+
+
+--
+-- Name: tags trim_tags_title; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trim_tags_title BEFORE INSERT OR UPDATE ON public.tags FOR EACH ROW EXECUTE FUNCTION public.trim_title_text();
+
+
+--
+-- Name: words trim_words_title; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trim_words_title BEFORE INSERT OR UPDATE ON public.words FOR EACH ROW EXECUTE FUNCTION public.trim_title_text();
+
+
+--
 -- Name: blueprint_instances update_modified_time; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -4091,4 +4226,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240601171758'),
     ('20240603072504'),
     ('20240604124246'),
-    ('20240607141304');
+    ('20240607141304'),
+    ('20240607165938');
