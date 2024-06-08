@@ -10,6 +10,27 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON SCHEMA public IS '';
+
+
+--
+-- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
+
+
+--
 -- Name: pger; Type: SCHEMA; Schema: -; Owner: -
 --
 
@@ -17,10 +38,17 @@ CREATE SCHEMA pger;
 
 
 --
--- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
+-- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
 --
 
-COMMENT ON SCHEMA public IS '';
+CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
 
 
 --
@@ -152,50 +180,6 @@ CREATE TYPE public."MentionTypeEnum" AS ENUM (
     'events',
     'map_pins'
 );
-
-
---
--- Name: notify_character_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.notify_character_trigger_function() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-    payload JSON;
-BEGIN
-    payload = json_build_object(
-        'entity', TG_TABLE_NAME,
-        'operation', TG_OP,
-        'title', NEW.full_name,
-        'id', NEW.id
-    );
-    PERFORM pg_notify('notification_channel', payload::text);
-    RETURN NEW;
-END;
-$$;
-
-
---
--- Name: notify_general_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.notify_general_trigger_function() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-    payload JSON;
-BEGIN
-    payload = json_build_object(
-        'entity', TG_TABLE_NAME,
-        'operation', TG_OP,
-        'title', NEW.title,
-        'id', NEW.id
-    );
-    PERFORM pg_notify('notification_channel', payload::text);
-    RETURN NEW;
-END;
-$$;
 
 
 --
@@ -1055,7 +1039,8 @@ CREATE TABLE public.events (
     end_hours integer,
     end_minutes integer,
     deleted_at timestamp(3) without time zone,
-    owner_id uuid NOT NULL
+    owner_id uuid NOT NULL,
+    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED
 );
 
 
@@ -4227,4 +4212,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240603072504'),
     ('20240604124246'),
     ('20240607141304'),
-    ('20240607165938');
+    ('20240607165938'),
+    ('20240608120954');
