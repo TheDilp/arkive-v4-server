@@ -211,6 +211,13 @@ export function document_router(app: Elysia) {
                         .leftJoin("calendars", "calendars.id", "events.parent_id")
                         .where("calendars.project_id", "=", body.data.project_id)
                         .where("calendars.id", "=", field.related_id);
+                    else if (field.entity_type === "map_pins")
+                      // @ts-ignore
+                      query = query
+                        .leftJoin("maps", "maps.id", "map_pins.parent_id")
+                        .where("maps.project_id", "=", body.data.project_id)
+                        .where("maps.id", "=", field.related_id)
+                        .where("map_pins.title", "is not", null);
                     else if (field.entity_type === "words")
                       // @ts-ignore
                       query = query
