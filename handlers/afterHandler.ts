@@ -118,18 +118,19 @@ export async function tempAfterHandle(context: any, response: any) {
             afterHandler({ project_id, title: "" }, entity, token, action, redis);
 
             for (let index = 0; index < context.body.data.length; index += 1) {
-              db.insertInto("notifications")
-                .values({
-                  entity_type: entity,
-                  user_name: name,
-                  user_image: image_url,
-                  title: context.body.data[index].title,
-                  action,
-                  user_id: user_id as string,
-                  project_id: project_id as string,
-                  related_id: context.body.data[index].id as string,
-                })
-                .execute();
+              if (context.body.data[index].id)
+                db.insertInto("notifications")
+                  .values({
+                    entity_type: entity,
+                    user_name: name,
+                    user_image: image_url,
+                    title: context.body.data[index].title,
+                    action,
+                    user_id: user_id as string,
+                    project_id: project_id as string,
+                    related_id: context.body.data[index].id as string,
+                  })
+                  .execute();
             }
           } else {
             const project_id = context?.body?.data?.project_id || context?.response?.data?.project_id;
