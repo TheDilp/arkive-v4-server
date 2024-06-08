@@ -137,7 +137,7 @@ export function getPermissionFromAction(
 }
 
 export function getAutomentionFields(
-  type: "characters" | "documents" | "blueprint_instances" | "maps" | "map_pins" | "graphs" | "words",
+  type: "characters" | "documents" | "blueprint_instances" | "maps" | "map_pins" | "graphs" | "events" | "words",
 ) {
   if (type === "characters") return ["id", "full_name as title", "portrait_id as image_id"] as const;
   if (type === "blueprint_instances")
@@ -149,6 +149,6 @@ export function getAutomentionFields(
       "blueprints.title as blueprint_title",
     ] as const;
   if (type === "maps" || type === "graphs") return ["id", "title"] as const;
-  if (type === "words") return ["id", "title", "parent_id"] as const;
+  if (type === "words" || type === "events") return ["id", "title", "parent_id"] as const;
   return ["id", "title", "image_id"] as const;
 }

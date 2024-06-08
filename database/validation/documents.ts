@@ -205,6 +205,7 @@ export const AutolinkerSchema = t.Object({
       t.Literal("maps"),
       t.Literal("map_pins"),
       t.Literal("graphs"),
+      t.Literal("events"),
       t.Literal("words"),
     ]),
   }),

@@ -9,7 +9,7 @@ import uniqBy from "lodash.uniqby";
 
 import { db } from "../database/db";
 import { checkEntityLevelPermission, getHasEntityPermission, getNestedReadPermission } from "../database/queries";
-import { EntitiesWithChildren } from "../database/types";
+import { DBKeys, EntitiesWithChildren } from "../database/types";
 import {
   AutolinkerSchema,
   DocumentTemplateEntityTypes,
@@ -161,18 +161,6 @@ export function document_router(app: Elysia) {
           async ({ body, permissions }) => {
             let content = JSON.stringify(body.data.content);
             await db.transaction().execute(async (tx) => {
-              // const document = await tx
-              //   .selectFrom("documents")
-              //   .select([
-              //     "content",
-              //     (eb) =>
-              //       jsonArrayFrom(
-              //         eb.selectFrom("_documentsTotags").where("A", "=", params.id).select(["_documentsTotags.B"]),
-              //       ).as("tags"),
-              //   ])
-              //   .where("id", "=", params.id)
-              //   .executeTakeFirst();
-
               for (let index = 0; index < body.relations.template_fields.length; index += 1) {
                 const field = body.relations.template_fields[index];
 
@@ -206,8 +194,7 @@ export function document_router(app: Elysia) {
                     }
                   } else {
                     let query = tx
-                      // @ts-ignore
-                      .selectFrom(field.entity_type)
+                      .selectFrom(field.entity_type as DBKeys)
                       .select(getDocumentTemplateEntityFields(field.entity_type) as ["title"])
                       .orderBy((ob) => ob.fn("random"))
                       .limit(limit);
@@ -218,6 +205,12 @@ export function document_router(app: Elysia) {
                         .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
                         .where("blueprints.project_id", "=", body.data.project_id)
                         .where("parent_id", "=", field.related_id);
+                    else if (field.entity_type === "events")
+                      // @ts-ignore
+                      query = query
+                        .leftJoin("calendars", "calendars.id", "events.parent_id")
+                        .where("calendars.project_id", "=", body.data.project_id)
+                        .where("calendars.id", "=", field.related_id);
                     else {
                       query = query.where("project_id", "=", body.data.project_id);
                     }
@@ -652,6 +645,10 @@ export function document_router(app: Elysia) {
               query = query
                 .leftJoin("dictionaries", "dictionaries.id", "words.parent_id")
                 .where("dictionaries.project_id", "=", body.data.project_id);
+            } else if (body.data.type === "events") {
+              query = query
+                .leftJoin("calendars", "calendars.id", "events.parent_id")
+                .where("calendars.project_id", "=", body.data.project_id);
             } else if (body.data.type === "blueprint_instances") {
               query = query
                 .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
