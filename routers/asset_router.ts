@@ -150,13 +150,13 @@ export function asset_router(app: Elysia) {
               Body: buffer,
               ACL: "public-read",
               ContentType: "image/webp",
-              CacheControl: "max-age=3600",
+              CacheControl: "max-age=600",
             });
             const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
             await fetch(url, {
               headers: {
                 "Content-Type": "image/webp",
-                "Cache-Control": "max-age=3600",
+                "Cache-Control": "max-age=600",
                 "x-amz-acl": "public-read",
               },
               method: "PUT",
@@ -172,19 +172,87 @@ export function asset_router(app: Elysia) {
           beforeHandle: async (context) => beforeRoleHandler(context, "create_assets"),
         },
       )
-
       .post(
         "/update/:id",
         async ({ params, body, permissions }) => {
           const permissionCheck = await getHasEntityPermission("images", params.id, permissions);
           if (permissionCheck) {
             await db.transaction().execute(async (tx) => {
-              await tx.updateTable("images").where("id", "=", params.id).set(body.data).execute();
-              if (body?.permissions) {
+              let update_data: Record<string, any> = {};
+              if ("data" in body) {
+                if (body.data.title) {
+                  update_data.title = body.data.title;
+                }
+                if (body.data.owner_id) {
+                  update_data.owner_id = body.data.owner_id;
+                }
+              } else {
+                if (body.title) {
+                  update_data.title = body.title;
+                }
+                if (body.owner_id) {
+                  update_data.owner_id = body.owner_id;
+                }
+                if (body.file) {
+                  const image_data = await tx
+                    .selectFrom("images")
+                    .where("images.id", "=", params.id)
+                    .select(["id", "project_id", "type"])
+                    .executeTakeFirst();
+
+                  if (image_data) {
+                    try {
+                      const filePath = `assets/${image_data.project_id}/${image_data.type}`;
+                      await s3Client.send(
+                        new DeleteObjectCommand({
+                          Bucket: process.env.DO_SPACES_NAME as string,
+                          Key: `${filePath}/${params.id}.webp`,
+                        }),
+                      );
+                      const buffer = await createFile(body.file as File);
+
+                      const command = new PutObjectCommand({
+                        Bucket: process.env.DO_SPACES_NAME as string,
+                        Key: `${filePath}/${params.id}.webp`,
+                        Body: buffer,
+                        ACL: "public-read",
+                        ContentType: "image/webp",
+                        CacheControl: "max-age=600",
+                      });
+                      const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
+                      await fetch(url, {
+                        headers: {
+                          "Content-Type": "image/webp",
+                          "Cache-Control": "max-age=600",
+                          "x-amz-acl": "public-read",
+                        },
+                        method: "PUT",
+                        body: buffer,
+                      });
+
+                      fetch("https://api.digitalocean.com/v2/cdn/endpoints/2d4f9376-7445-4c59-b4fd-58e758acd06d/cache", {
+                        method: "DELETE",
+                        headers: {
+                          "Content-Type": "application/json",
+                          Authorization: `Bearer ${process.env.DO_CDN_PURGE_ACCESS_KEY}`,
+                        },
+                        body: JSON.stringify({
+                          files: ["*"],
+                        }),
+                      });
+                    } catch (error) {
+                      return { message: "Could not delete image.", ok: false, role_access: true };
+                    }
+                  }
+                }
+              }
+
+              await tx.updateTable("images").where("id", "=", params.id).set(update_data).execute();
+              if ("permissions" in body && body?.permissions) {
                 await UpdateEntityPermissions(tx, params.id, body.permissions);
               }
 
-              if (body.relations?.tags) {
+              if ("relations" in body && body.relations?.tags) {
                 await UpdateTagRelations({
                   relationalTable: "image_tags",
                   id: params.id,
