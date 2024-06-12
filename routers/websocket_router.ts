@@ -17,7 +17,7 @@ export function websocket_router(app: Elysia) {
       async message(ws, message) {
         const { conversation_id } = ws.data.params;
         const typedMessage = message as WebsocketConversationMessage;
-        if (conversation_id) {
+        if (conversation_id && app.server) {
           try {
             if (typedMessage.data.content.length === 0) {
               return;

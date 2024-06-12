@@ -5,13 +5,16 @@ export function meta_router(app: Elysia) {
     server.post(
       "/version",
       ({ body }) => {
-        if (body.type === "DEPLOY" && body?.status === "SUCCESS") {
-          const timestamp = new Date().getTime();
-          console.log(timestamp);
-          app.server.publish("version", JSON.stringify({ timestamp }));
-        } else {
-          const timestamp = new Date().getTime();
-          app.server.publish("version", JSON.stringify({ timestamp }));
+        if (app.server) {
+          if (body.type === "DEPLOY" && body?.status === "SUCCESS") {
+            const timestamp = new Date().getTime();
+            // eslint-disable-next-line no-console
+            console.log(timestamp);
+            app.server.publish("version", JSON.stringify({ timestamp }));
+          } else {
+            const timestamp = new Date().getTime();
+            app.server.publish("version", JSON.stringify({ timestamp }));
+          }
         }
         return true;
       },

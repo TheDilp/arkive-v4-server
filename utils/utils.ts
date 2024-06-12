@@ -1,3 +1,5 @@
+import { createHmac } from "crypto";
+
 import { FromTemplateRandomCountSchema } from "../database/validation";
 import { MentionTypeEnum } from "../enums";
 import { baseURLS } from "../enums/baseEnums";
@@ -142,6 +144,16 @@ export function getImageURL(project_id: string, type: AssetType, image_id?: stri
   return `https://${process.env.DO_SPACES_NAME}.${
     isGraphImage ? process.env.DO_SPACES_ENDPOINT : process.env.DO_SPACES_CDN_ENDPOINT
   }/assets/${project_id}/${type}/${image_id}.webp`;
+}
+
+export function getMapTile(url: string, dimensions?: { width: number; height: number }) {
+  const sizedUrl = `${dimensions?.width || 35}x${dimensions?.height || 35}/${url}`;
+  const hash = createHmac("sha1", process.env.IMAGOR_SECRET as string)
+    .update(sizedUrl)
+    .digest("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+  return `${baseURLS.baseThumbnailServer}/${hash}/${sizedUrl}`;
 }
 
 export function createEntityURL(project_id: string, type: string, id: string): string {
@@ -404,7 +416,7 @@ export function extractDocumentText(content: any) {
 
   const finalText = text.join("");
   if (finalText.length >= 250) {
-    // eslint-disable-next-line prettier/prettier, quotes
+    // eslint-disable-next-line quotes
     return finalText.slice(0, 246).replaceAll('"', "'").concat("...");
   }
   return finalText;
