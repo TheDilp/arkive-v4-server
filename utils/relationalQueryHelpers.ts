@@ -25,6 +25,7 @@ export function TagQuery(
   tag_query = tag_query
     .whereRef(`${table}.id`, "=", `${relationalTable}.${relationalTable === "image_tags" ? "image_id" : "A"}`)
     .leftJoin("tags", "tags.id", `${relationalTable}.${relationalTable === "image_tags" ? "tag_id" : "B"}`)
+    .where("tags.deleted_at", "is", null)
     .select(["tags.id", "tags.title", "tags.color"]);
 
   if (user_id) {
