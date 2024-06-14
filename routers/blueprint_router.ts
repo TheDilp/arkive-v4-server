@@ -263,7 +263,7 @@ export function blueprint_router(app: Elysia) {
                     const { blueprint_fields } = body.relations;
                     const existingBlueprintFields = await tx
                       .selectFrom("blueprint_fields")
-                      .select(["id", "parent_id"])
+                      .select(["id", "parent_id", "blueprint_fields.field_type"])
                       .where("blueprint_fields.parent_id", "=", params.id)
                       .execute();
 

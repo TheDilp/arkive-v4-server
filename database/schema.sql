@@ -10,27 +10,6 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON SCHEMA public IS '';
-
-
---
--- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
-
-
---
--- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
-
-
---
 -- Name: pger; Type: SCHEMA; Schema: -; Owner: -
 --
 
@@ -38,17 +17,10 @@ CREATE SCHEMA pger;
 
 
 --
--- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
-
-
---
--- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
+COMMENT ON SCHEMA public IS '';
 
 
 --
@@ -180,6 +152,106 @@ CREATE TYPE public."MentionTypeEnum" AS ENUM (
     'events',
     'map_pins'
 );
+
+
+--
+-- Name: handle_bp_field_type_change(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.handle_bp_field_type_change() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE compatible BOOLEAN := FALSE;
+BEGIN
+
+    IF (OLD.field_type = NEW.field_type) THEN compatible := TRUE;
+
+    ELSIF (OLD.field_type = 'characters_single' AND NEW.field_type = 'characters_multiple') OR
+        (OLD.field_type = 'characters_multiple' AND NEW.field_type = 'characters_single') OR
+        (OLD.field_type = 'documents_single' AND NEW.field_type = 'documents_multiple') OR
+        (OLD.field_type = 'documents_multiple' AND NEW.field_type = 'documents_single') OR
+        (OLD.field_type = 'images_single' AND NEW.field_type = 'images_multiple') OR
+        (OLD.field_type = 'images_multiple' AND NEW.field_type = 'images_single') OR
+        (OLD.field_type = 'locations_single' AND NEW.field_type = 'locations_multiple') OR
+        (OLD.field_type = 'locations_multiple' AND NEW.field_type = 'locations_single') OR
+        (OLD.field_type = 'blueprints_single' AND NEW.field_type = 'blueprints_multiple') OR
+        (OLD.field_type = 'blueprints_multiple' AND NEW.field_type = 'blueprints_single') OR
+        (OLD.field_type = 'events_single' AND NEW.field_type = 'events_multiple') OR
+        (OLD.field_type = 'select' AND NEW.field_type = 'select_multiple') OR
+        (OLD.field_type = 'select_multiple' AND NEW.field_type = 'select') OR
+
+        THEN
+            compatible := TRUE;
+    END IF;
+
+
+  IF NOT compatible THEN
+    IF (OLD.field_type = 'characters_single' OR OLD.field_type = 'characters_multiple') THEN
+        DELETE FROM blueprint_instance_characters WHERE blueprint_field_id = NEW.id;
+    ELSIF (OLD.field_type = 'documents_single' OR OLD.field_type = 'documents_multiple') THEN
+        DELETE FROM blueprint_instance_documents WHERE blueprint_field_id = NEW.id;
+    ELSIF (OLD.field_type = 'images_single' OR OLD.field_type = 'images_multiple') THEN
+        DELETE FROM blueprint_instance_images WHERE blueprint_field_id = NEW.id;
+    ELSIF (OLD.field_type = 'locations_single' OR OLD.field_type = 'locations_multiple') THEN
+        DELETE FROM blueprint_instance_locations WHERE blueprint_field_id = NEW.id;
+    ELSIF (OLD.field_type = 'blueprints_single' OR OLD.field_type = 'blueprints_multiple') THEN
+        DELETE FROM blueprint_instance_blueprint_instances WHERE blueprint_field_id = NEW.id;
+    ELSIF (OLD.field_type = 'events_single' OR OLD.field_type = 'events_multiple') THEN
+        DELETE FROM blueprint_instance_events WHERE blueprint_field_id = NEW.id;
+    ELSIF (OLD.field_type = 'random_table') THEN
+        DELETE FROM blueprint_instance_random_tables WHERE blueprint_field_id = NEW.id;
+    ELSIF (OLD.field_type = 'text' OR OLD.field_type = 'select' OR OLD.field_type = 'select_multiple' OR OLD.field_type = 'dice_roll'
+            OR OLD.field_type = 'number' OR OLD.field_type = 'textarea' OR OLD.field_type = 'boolean' ) THEN
+            DELETE FROM blueprint_instance_value WHERE blueprint_field_id = NEW.id;
+    END IF;
+END IF;
+    RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: notify_character_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.notify_character_trigger_function() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    payload JSON;
+BEGIN
+    payload = json_build_object(
+        'entity', TG_TABLE_NAME,
+        'operation', TG_OP,
+        'title', NEW.full_name,
+        'id', NEW.id
+    );
+    PERFORM pg_notify('notification_channel', payload::text);
+    RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: notify_general_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.notify_general_trigger_function() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    payload JSON;
+BEGIN
+    payload = json_build_object(
+        'entity', TG_TABLE_NAME,
+        'operation', TG_OP,
+        'title', NEW.title,
+        'id', NEW.id
+    );
+    PERFORM pg_notify('notification_channel', payload::text);
+    RETURN NEW;
+END;
+$$;
 
 
 --
@@ -2506,6 +2578,13 @@ CREATE INDEX words_ts_index ON public.words USING gin (ts);
 
 
 --
+-- Name: blueprint_fields field_type_change_trigger; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER field_type_change_trigger AFTER UPDATE OF field_type ON public.blueprint_fields FOR EACH ROW EXECUTE FUNCTION public.handle_bp_field_type_change();
+
+
+--
 -- Name: blueprint_instances trim_blueprint_instances_title; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -4213,4 +4292,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240604124246'),
     ('20240607141304'),
     ('20240607165938'),
-    ('20240608120954');
+    ('20240608120954'),
+    ('20240614063009');

@@ -44,7 +44,6 @@ export function blueprint_instance_router(app: Elysia) {
     } as PermissionDecorationType)
     .group("/blueprint_instances", (server) =>
       server
-
         .post(
           "/create",
           async ({ body, permissions }) => {
