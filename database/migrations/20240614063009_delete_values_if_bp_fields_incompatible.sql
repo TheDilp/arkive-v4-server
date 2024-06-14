@@ -46,6 +46,12 @@ BEGIN
             DELETE FROM blueprint_instance_value WHERE blueprint_field_id = NEW.id;
     END IF;
 END IF;
+
+IF OLD.field_type = 'select' AND NEW.field_type = 'select_multiple' THEN
+        UPDATE character_value_fields
+        SET value = jsonb_build_array(value)
+        WHERE blueprint_field_id = NEW.id;
+    END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
