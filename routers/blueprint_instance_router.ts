@@ -47,7 +47,7 @@ export function blueprint_instance_router(app: Elysia) {
         .post(
           "/create",
           async ({ body, permissions }) => {
-            await db.transaction().execute(async (tx) => {
+            const id = await db.transaction().execute(async (tx) => {
               const newInstance = await tx
                 .insertInto("blueprint_instances")
                 .values(getEntityWithOwnerId(body.data, permissions.user_id))
@@ -180,6 +180,7 @@ export function blueprint_instance_router(app: Elysia) {
               if (body.permissions?.length) {
                 await CreateEntityPermissions(tx, newInstance.id, body.permissions);
               }
+              return newInstance.id;
             });
             const data = await db
               .selectFrom("blueprints")
@@ -188,7 +189,7 @@ export function blueprint_instance_router(app: Elysia) {
               .executeTakeFirstOrThrow();
 
             return {
-              data: { project_id: data.project_id, title: body.data.title },
+              data: { id, project_id: data.project_id, title: body.data.title },
               message: `Blueprint instance ${MessageEnum.successfully_created}`,
               ok: true,
               role_access: true,

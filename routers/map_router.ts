@@ -38,7 +38,7 @@ export function map_router(app: Elysia) {
         .post(
           "/create",
           async ({ body, permissions }) => {
-            await db.transaction().execute(async (tx) => {
+            const id = await db.transaction().execute(async (tx) => {
               const map = await tx
                 .insertInto("maps")
                 .values(getEntityWithOwnerId(body.data, permissions.user_id))
@@ -55,13 +55,14 @@ export function map_router(app: Elysia) {
               if (body?.permissions) {
                 await CreateEntityPermissions(tx, map.id, body.permissions);
               }
+              return map.id;
             });
 
-            return { message: `Map ${MessageEnum.successfully_created}`, ok: true, role_access: true };
+            return { data: { id }, message: `Map ${MessageEnum.successfully_created}`, ok: true, role_access: true };
           },
           {
             body: InsertMapSchema,
-            response: ResponseSchema,
+            response: ResponseWithDataSchema,
             beforeHandle: async (context) => beforeRoleHandler(context, "create_maps"),
           },
         )

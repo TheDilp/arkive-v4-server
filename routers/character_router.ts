@@ -49,13 +49,12 @@ export function character_router(app: Elysia) {
         .post(
           "/create",
           async ({ body, permissions }) => {
-            await db.transaction().execute(async (tx) => {
+            const id = await db.transaction().execute(async (tx) => {
               const character = await tx
                 .insertInto("characters")
                 .values(getEntityWithOwnerId(body.data, permissions.user_id))
                 .returning("id")
                 .executeTakeFirstOrThrow();
-
               if (body?.relations) {
                 if (typeof body.relations?.is_favorite === "boolean") {
                   await tx
@@ -236,13 +235,14 @@ export function character_router(app: Elysia) {
                   await CreateEntityPermissions(tx, character.id, body.permissions);
                 }
               }
+              return character.id;
             });
 
-            return { message: `Character ${MessageEnum.successfully_created}`, ok: true, role_access: true };
+            return { data: { id }, message: `Character ${MessageEnum.successfully_created}`, ok: true, role_access: true };
           },
           {
             body: InsertCharacterSchema,
-            response: ResponseSchema,
+            response: ResponseWithDataSchema,
             beforeHandle: async (context) => beforeRoleHandler(context, "create_characters"),
           },
         )

@@ -32,7 +32,7 @@ export function map_pin_router(app: Elysia) {
         .post(
           "/create",
           async ({ body, permissions }) => {
-            await db.transaction().execute(async (tx) => {
+            const id = await db.transaction().execute(async (tx) => {
               const map_pin = await tx
                 .insertInto("map_pins")
                 .values(getEntityWithOwnerId(body.data, permissions.user_id))
@@ -46,6 +46,7 @@ export function map_pin_router(app: Elysia) {
               if (body.permissions?.length) {
                 await CreateEntityPermissions(tx, map_pin.id, body.permissions);
               }
+              return map_pin.id;
             });
             const data = await db
               .selectFrom("maps")
@@ -53,7 +54,7 @@ export function map_pin_router(app: Elysia) {
               .where("id", "=", body.data.parent_id)
               .executeTakeFirstOrThrow();
             return {
-              data: { title: body.data.title, project_id: data.project_id },
+              data: { id, title: body.data.title, project_id: data.project_id },
               message: `Map pin ${MessageEnum.successfully_created}`,
               ok: true,
               role_access: true,

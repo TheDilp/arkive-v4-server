@@ -42,7 +42,7 @@ export function calendar_router(app: Elysia) {
       .post(
         "/create",
         async ({ body, permissions }) => {
-          await db.transaction().execute(async (tx) => {
+          const id = await db.transaction().execute(async (tx) => {
             const { id } = await tx
               .insertInto("calendars")
               .values(getEntityWithOwnerId(body.data, permissions.user_id))
@@ -67,9 +67,10 @@ export function calendar_router(app: Elysia) {
             if (body.permissions?.length) {
               await CreateEntityPermissions(tx, id, body.permissions);
             }
+            return id;
           });
 
-          return { message: MessageEnum.success, ok: true, role_access: true };
+          return { data: { id }, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: InsertCalendarSchema,

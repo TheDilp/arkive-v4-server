@@ -74,7 +74,7 @@ export function document_router(app: Elysia) {
         .post(
           "/create",
           async ({ body, permissions }) => {
-            await db.transaction().execute(async (tx) => {
+            const id = await db.transaction().execute(async (tx) => {
               const document = await tx
                 .insertInto("documents")
                 .values(getEntityWithOwnerId(body.data, permissions.user_id))
@@ -101,13 +101,14 @@ export function document_router(app: Elysia) {
               if (body.permissions?.length) {
                 await CreateEntityPermissions(tx, document.id, body.permissions);
               }
+              return document.id;
             });
 
-            return { message: `Document ${MessageEnum.successfully_created}`, ok: true, role_access: true };
+            return { data: { id }, message: `Document ${MessageEnum.successfully_created}`, ok: true, role_access: true };
           },
           {
             body: InsertDocumentSchema,
-            response: ResponseSchema,
+            response: ResponseWithDataSchema,
             beforeHandle: async (context) => beforeRoleHandler(context, "create_documents"),
           },
         )

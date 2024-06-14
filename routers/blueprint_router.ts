@@ -34,7 +34,7 @@ export function blueprint_router(app: Elysia) {
         .post(
           "/create",
           async ({ body, permissions }) => {
-            await db.transaction().execute(async (tx) => {
+            const id = await db.transaction().execute(async (tx) => {
               const newBlueprint = await tx
                 .insertInto("blueprints")
                 .values(getEntityWithOwnerId(body.data, permissions.user_id))
@@ -61,12 +61,13 @@ export function blueprint_router(app: Elysia) {
               if (body.permissions?.length) {
                 await CreateEntityPermissions(tx, newBlueprint.id, body.permissions);
               }
+              return newBlueprint.id;
             });
-            return { message: `Blueprint ${MessageEnum.successfully_created}`, ok: true, role_access: true };
+            return { data: { id }, message: `Blueprint ${MessageEnum.successfully_created}`, ok: true, role_access: true };
           },
           {
             body: InsertBlueprintSchema,
-            response: ResponseSchema,
+            response: ResponseWithDataSchema,
             beforeHandle: async (context) => beforeRoleHandler(context, "create_blueprints"),
           },
         )

@@ -34,12 +34,16 @@ export function dictionary_router(app: Elysia) {
       .post(
         "/create",
         async ({ body, permissions }) => {
-          await db.insertInto("dictionaries").values(getEntityWithOwnerId(body.data, permissions.user_id)).execute();
-          return { ok: true, role_access: true, message: `Dictionary ${MessageEnum.successfully_created}` };
+          const data = await db
+            .insertInto("dictionaries")
+            .values(getEntityWithOwnerId(body.data, permissions.user_id))
+            .returning("id")
+            .execute();
+          return { data, ok: true, role_access: true, message: `Dictionary ${MessageEnum.successfully_created}` };
         },
         {
           body: InsertDictionarySchema,
-          response: ResponseSchema,
+          response: ResponseWithDataSchema,
           beforeHandle: async (context) => beforeRoleHandler(context, "create_dictionaries"),
         },
       )

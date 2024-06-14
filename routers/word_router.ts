@@ -36,7 +36,7 @@ export function word_router(app: Elysia) {
               .select(["project_id"])
               .where("id", "=", body.data.parent_id)
               .executeTakeFirstOrThrow();
-            await db.transaction().execute(async (tx) => {
+            const word = await db.transaction().execute(async (tx) => {
               const word = await tx
                 .insertInto("words")
                 .values(getEntityWithOwnerId(body.data, permissions.user_id))
@@ -46,10 +46,11 @@ export function word_router(app: Elysia) {
               if (body.permissions?.length) {
                 await CreateEntityPermissions(tx, word.id, body.permissions);
               }
+              return word;
             });
 
             return {
-              data: { title: body.data.title, project_id: data.project_id },
+              data: { id: word.id, title: body.data.title, project_id: data.project_id },
               ok: true,
               role_access: true,
               message: `Word ${MessageEnum.successfully_created}`,

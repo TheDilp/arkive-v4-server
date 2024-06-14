@@ -101,41 +101,31 @@ export async function tempAfterHandle(context: any, response: any) {
       } else {
         if (action === "create") {
           if (entity === "characters") {
+            const { id } = context.response.data;
             const { project_id, first_name, last_name, portrait_id: image_id } = context.body.data;
             afterHandler(
-              { id: "", project_id, title: getCharacterFullName(first_name, undefined, last_name), image_id },
+              { id, project_id, title: getCharacterFullName(first_name, undefined, last_name), image_id },
               entity,
               token,
               action,
               redis,
             );
-          } else if (entity === "tags" && context.body.data.length) {
+          } else if (entity === "tags") {
             const { project_id } = context.body.data[0];
 
-            const jwt = token.replace("Bearer ", "");
-            const { name, user_id, image_url } = decodeUserJwt(jwt);
+            const tags = context.response.data;
 
-            afterHandler({ project_id, title: "" }, entity, token, action, redis);
-
-            for (let index = 0; index < context.body.data.length; index += 1) {
-              if (context.body.data[index].id)
-                db.insertInto("notifications")
-                  .values({
-                    entity_type: entity,
-                    user_name: name,
-                    user_image: image_url,
-                    title: context.body.data[index].title,
-                    action,
-                    user_id: user_id as string,
-                    project_id: project_id as string,
-                    related_id: context.body.data[index].id as string,
-                  })
-                  .execute();
+            for (let index = 0; index < tags.length; index += 1) {
+              if (tags[index].id) {
+                afterHandler({ id: tags[index].id, project_id, title: tags[index].title }, entity, token, action, redis);
+              }
             }
           } else {
+            const { id } = context.response.data;
+
             const project_id = context?.body?.data?.project_id || context?.response?.data?.project_id;
             const title = context?.body?.data?.title || context?.response?.data?.title;
-            if (project_id && title) afterHandler({ id: "", project_id, title }, entity, token, action, redis);
+            if (project_id && title) afterHandler({ id, project_id, title }, entity, token, action, redis);
           }
         } else if (action === "update" || action === "arkive") {
           // @ts-ignore

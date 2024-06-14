@@ -37,7 +37,7 @@ export function random_table_router(app: Elysia) {
         .post(
           "/create",
           async ({ body, permissions }) => {
-            await db.transaction().execute(async (tx) => {
+            const random_table = await db.transaction().execute(async (tx) => {
               const { id } = await tx
                 .insertInto("random_tables")
                 .values(getEntityWithOwnerId(body.data, permissions.user_id))
@@ -54,12 +54,18 @@ export function random_table_router(app: Elysia) {
               if (body.permissions?.length) {
                 await CreateEntityPermissions(tx, id, body.permissions);
               }
+              return { id };
             });
-            return { message: `Random table ${MessageEnum.successfully_created}`, ok: true, role_access: true };
+            return {
+              data: random_table,
+              message: `Random table ${MessageEnum.successfully_created}`,
+              ok: true,
+              role_access: true,
+            };
           },
           {
             body: InsertRandomTableSchema,
-            response: ResponseSchema,
+            response: ResponseWithDataSchema,
             beforeHandle: async (context) => beforeRoleHandler(context, "create_random_tables"),
           },
         )

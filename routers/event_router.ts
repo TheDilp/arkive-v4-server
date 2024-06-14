@@ -34,47 +34,46 @@ export function event_router(app: Elysia) {
       .post(
         "/create",
         async ({ body, permissions }) => {
-          if (body) {
-            await db.transaction().execute(async (tx) => {
-              const { id } = await tx
-                .insertInto("events")
-                .values(getEntityWithOwnerId(body.data, permissions.user_id))
-                .returning(["id"])
-                .executeTakeFirstOrThrow();
+          const event_data = await db.transaction().execute(async (tx) => {
+            const { id } = await tx
+              .insertInto("events")
+              .values(getEntityWithOwnerId(body.data, permissions.user_id))
+              .returning(["id"])
+              .executeTakeFirstOrThrow();
 
-              if (body?.relations?.tags?.length) {
-                const { tags } = body.relations;
-                await tx
-                  .insertInto("_eventsTotags")
-                  .values(tags.map((tag) => ({ A: id, B: tag.id })))
-                  .execute();
-              }
-              if (body?.relations?.characters?.length) {
-                const { characters } = body.relations;
-                await tx
-                  .insertInto("event_characters")
-                  .values(characters.map((char) => ({ event_id: id, related_id: char.id })))
-                  .execute();
-              }
-              if (body?.relations?.map_pins?.length) {
-                const { map_pins } = body.relations;
-                await tx
-                  .insertInto("event_map_pins")
-                  .values(map_pins.map((map_pin) => ({ event_id: id, related_id: map_pin.id })))
-                  .execute();
-              }
-              if (body.permissions?.length) {
-                await CreateEntityPermissions(tx, id, body.permissions);
-              }
-            });
-          }
+            if (body?.relations?.tags?.length) {
+              const { tags } = body.relations;
+              await tx
+                .insertInto("_eventsTotags")
+                .values(tags.map((tag) => ({ A: id, B: tag.id })))
+                .execute();
+            }
+            if (body?.relations?.characters?.length) {
+              const { characters } = body.relations;
+              await tx
+                .insertInto("event_characters")
+                .values(characters.map((char) => ({ event_id: id, related_id: char.id })))
+                .execute();
+            }
+            if (body?.relations?.map_pins?.length) {
+              const { map_pins } = body.relations;
+              await tx
+                .insertInto("event_map_pins")
+                .values(map_pins.map((map_pin) => ({ event_id: id, related_id: map_pin.id })))
+                .execute();
+            }
+            if (body.permissions?.length) {
+              await CreateEntityPermissions(tx, id, body.permissions);
+            }
+            return { id };
+          });
           const data = await db
             .selectFrom("calendars")
             .select(["project_id"])
             .where("id", "=", body.data.parent_id)
             .executeTakeFirstOrThrow();
           return {
-            data: { title: body.data.title, project_id: data.project_id },
+            data: { id: event_data.id, title: body.data.title, project_id: data.project_id },
             message: MessageEnum.success,
             ok: true,
             role_access: true,

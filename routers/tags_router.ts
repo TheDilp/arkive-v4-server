@@ -30,26 +30,27 @@ export function tag_router(app: Elysia) {
       .post(
         "/create",
         async ({ body, permissions }) => {
-          await db.transaction().execute(async (tx) => {
-            const tag = await tx
+          const tags_data = await db.transaction().execute(async (tx) => {
+            const tags = await tx
               .insertInto("tags")
               .values(
                 Array.isArray(body.data)
                   ? getEntitiesWithOwnerId(body.data, permissions.user_id)
                   : getEntityWithOwnerId(body.data, permissions.user_id),
               )
-              .returning("id")
+              .returning(["id", "title"])
               .execute();
 
             if (body.permissions?.length) {
-              await Promise.all(tag.map((t) => CreateEntityPermissions(tx, t.id, body.permissions)));
+              await Promise.all(tags.map((t) => CreateEntityPermissions(tx, t.id, body.permissions)));
             }
+            return tags;
           });
-          return { message: `Tags ${MessageEnum.successfully_created}`, ok: true, role_access: true };
+          return { data: tags_data, message: `Tags ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
           body: InsertTagSchema,
-          response: ResponseSchema,
+          response: ResponseWithDataSchema,
           beforeHandle: async (context) => beforeRoleHandler(context, "create_tags"),
         },
       )
