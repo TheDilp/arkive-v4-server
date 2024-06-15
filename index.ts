@@ -93,6 +93,7 @@ export const app = new Elysia()
     console.error(error);
     return { message: "There was an error with your request.", ok: false, role_access: false };
   })
+  .onStart(() => console.info(`Listening on ${process.env.PORT}`))
   .use(
     cors({
       origin: process.env.NODE_ENV === "development" ? true : "thearkive.app",
@@ -191,7 +192,7 @@ export const app = new Elysia()
         const threeDaysAgo = new Date(today);
         threeDaysAgo.setDate(today.getDate() - 3);
         db.deleteFrom("notifications").where("created_at", "<", threeDaysAgo).execute();
-        // eslint-disable-next-line no-console
+
         console.info(`DELETED NOTIFICATIONS OLDER THAN ${threeDaysAgo}`);
       },
     }),

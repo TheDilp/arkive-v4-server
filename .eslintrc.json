@@ -36,7 +36,7 @@
     "import/extensions": ["error", "never"],
     "import/prefer-default-export": "off",
     "lines-between-class-members": ["error", "always", { "exceptAfterSingleLine": true }],
-    "no-console": [1, { "allow": ["error"] }],
+    "no-console": [1, { "allow": ["error", "info"] }],
     "prettier/prettier": [
       "error",
       {
