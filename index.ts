@@ -186,7 +186,7 @@ export const app = new Elysia()
   .use(
     cron({
       name: "heartbeat",
-      pattern: "0 0 */3 * *",
+      pattern: "0 0 */1 * *",
       run() {
         const today = new Date();
         const threeDaysAgo = new Date(today);
