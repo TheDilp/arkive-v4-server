@@ -93,3 +93,7 @@ export const UploadImageSchema = t.Record(
     t.Null(),
   ]),
 );
+
+export const DownloadAssetsSchema = t.Object({
+  data: t.Array(t.Object({ id: t.String(), title: t.String() })),
+});

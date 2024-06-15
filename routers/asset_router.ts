@@ -8,7 +8,7 @@ import sharp from "sharp";
 
 import { db } from "../database/db";
 import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
-import { ListAssetsSchema, ReadAssetsSchema, UpdateImageSchema } from "../database/validation";
+import { DownloadAssetsSchema, ListAssetsSchema, ReadAssetsSchema, UpdateImageSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
 import { AssetType } from "../types/entityTypes";
@@ -35,6 +35,20 @@ async function createFile(data: Blob) {
   const sharpData = sharp(buff);
   return sharpData.toFormat("webp").toBuffer();
 }
+
+// Function to turn the file's body into a string.
+const streamToString = (stream: StreamingBlobPayloadOutputTypes | undefined) => {
+  const chunks: Buffer[] = [];
+  if (!stream) return chunks;
+  return new Promise((resolve, reject) => {
+    // @ts-ignore
+    stream.on("data", (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+    // @ts-ignore
+    stream.on("error", (err) => reject(err));
+    // @ts-ignore
+    stream.on("end", () => resolve(Buffer.concat(chunks).toString("base64")));
+  });
+};
 
 export function asset_router(app: Elysia) {
   return app.group("/assets", (server) =>
@@ -274,40 +288,31 @@ export function asset_router(app: Elysia) {
           beforeHandle: async (context) => beforeRoleHandler(context, "update_assets"),
         },
       )
-      .get(
-        "/download/:project_id/:type/:id",
-        async ({ params }) => {
-          const { project_id, type, id } = params;
+      .post(
+        "/download/:project_id/:type",
+        async ({ body, params }) => {
+          const { project_id, type } = params;
           const filePath = `assets/${project_id}/${type}`;
-          const bucketParams = {
-            Bucket: process.env.DO_SPACES_NAME as string,
-            Key: `${filePath}/${id}.webp`,
-          };
+          const responseFiles = [];
+          for (let index = 0; index < body.data.length; index++) {
+            const bucketParams = {
+              Bucket: process.env.DO_SPACES_NAME as string,
+              Key: `${filePath}/${body.data[index].id}.webp`,
+            };
+            try {
+              const response = await s3Client.send(new GetObjectCommand(bucketParams));
+              const data = await streamToString(response.Body);
 
-          // Function to turn the file's body into a string.
-          const streamToString = (stream: StreamingBlobPayloadOutputTypes | undefined) => {
-            const chunks: Buffer[] = [];
-            if (!stream) return chunks;
-            return new Promise((resolve, reject) => {
-              // @ts-ignore
-              stream.on("data", (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
-              // @ts-ignore
-              stream.on("error", (err) => reject(err));
-              // @ts-ignore
-              stream.on("end", () => resolve(Buffer.concat(chunks).toString("base64")));
-            });
-          };
-
-          try {
-            const response = await s3Client.send(new GetObjectCommand(bucketParams));
-            const data = await streamToString(response.Body);
-
-            return { data, message: MessageEnum.success, ok: true, role_access: true };
-          } catch (err) {
-            throw new Error("Error downloading file.");
+              responseFiles.push(data);
+            } catch (err) {
+              console.error(err);
+              responseFiles.push(null);
+            }
           }
+          return { data: responseFiles, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
+          body: DownloadAssetsSchema,
           beforeHandle: async (context) => beforeRoleHandler(context, "read_assets"),
         },
       )
