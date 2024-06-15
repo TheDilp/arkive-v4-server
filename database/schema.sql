@@ -10,6 +10,27 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON SCHEMA public IS '';
+
+
+--
+-- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
+
+
+--
 -- Name: pger; Type: SCHEMA; Schema: -; Owner: -
 --
 
@@ -17,10 +38,17 @@ CREATE SCHEMA pger;
 
 
 --
--- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
+-- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
 --
 
-COMMENT ON SCHEMA public IS '';
+CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
 
 
 --
@@ -286,50 +314,6 @@ $$;
 
 
 --
--- Name: notify_character_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.notify_character_trigger_function() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-    payload JSON;
-BEGIN
-    payload = json_build_object(
-        'entity', TG_TABLE_NAME,
-        'operation', TG_OP,
-        'title', NEW.full_name,
-        'id', NEW.id
-    );
-    PERFORM pg_notify('notification_channel', payload::text);
-    RETURN NEW;
-END;
-$$;
-
-
---
--- Name: notify_general_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.notify_general_trigger_function() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-    payload JSON;
-BEGIN
-    payload = json_build_object(
-        'entity', TG_TABLE_NAME,
-        'operation', TG_OP,
-        'title', NEW.title,
-        'id', NEW.id
-    );
-    PERFORM pg_notify('notification_channel', payload::text);
-    RETURN NEW;
-END;
-$$;
-
-
---
 -- Name: trim_character_text(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -580,7 +564,8 @@ CREATE TABLE public.blueprint_fields (
 CREATE TABLE public.blueprint_instance_blueprint_instances (
     blueprint_instance_id uuid NOT NULL,
     blueprint_field_id uuid NOT NULL,
-    related_id uuid NOT NULL
+    related_id uuid NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -597,7 +582,8 @@ CREATE TABLE public.blueprint_instance_calendars (
     end_day integer,
     end_year integer,
     start_day integer,
-    start_year integer
+    start_year integer,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -608,7 +594,8 @@ CREATE TABLE public.blueprint_instance_calendars (
 CREATE TABLE public.blueprint_instance_characters (
     blueprint_instance_id uuid NOT NULL,
     blueprint_field_id uuid NOT NULL,
-    related_id uuid NOT NULL
+    related_id uuid NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -619,7 +606,8 @@ CREATE TABLE public.blueprint_instance_characters (
 CREATE TABLE public.blueprint_instance_documents (
     blueprint_instance_id uuid NOT NULL,
     blueprint_field_id uuid NOT NULL,
-    related_id uuid NOT NULL
+    related_id uuid NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -630,7 +618,8 @@ CREATE TABLE public.blueprint_instance_documents (
 CREATE TABLE public.blueprint_instance_events (
     blueprint_instance_id uuid NOT NULL,
     blueprint_field_id uuid NOT NULL,
-    related_id uuid NOT NULL
+    related_id uuid NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -664,7 +653,8 @@ CREATE TABLE public.blueprint_instance_field_values (
 CREATE TABLE public.blueprint_instance_images (
     blueprint_instance_id uuid NOT NULL,
     blueprint_field_id uuid NOT NULL,
-    related_id uuid NOT NULL
+    related_id uuid NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -675,7 +665,8 @@ CREATE TABLE public.blueprint_instance_images (
 CREATE TABLE public.blueprint_instance_map_pins (
     blueprint_instance_id uuid NOT NULL,
     blueprint_field_id uuid NOT NULL,
-    related_id uuid NOT NULL
+    related_id uuid NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -688,7 +679,8 @@ CREATE TABLE public.blueprint_instance_random_tables (
     blueprint_field_id uuid NOT NULL,
     related_id uuid NOT NULL,
     option_id uuid,
-    suboption_id uuid
+    suboption_id uuid,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -699,7 +691,8 @@ CREATE TABLE public.blueprint_instance_random_tables (
 CREATE TABLE public.blueprint_instance_value (
     blueprint_instance_id uuid NOT NULL,
     blueprint_field_id uuid NOT NULL,
-    value jsonb
+    value jsonb,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -768,7 +761,8 @@ CREATE TABLE public.calendars (
 CREATE TABLE public.character_blueprint_instance_fields (
     character_id uuid NOT NULL,
     character_field_id uuid NOT NULL,
-    related_id uuid NOT NULL
+    related_id uuid NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -785,7 +779,8 @@ CREATE TABLE public.character_calendar_fields (
     end_day integer,
     end_year integer,
     start_day integer,
-    start_year integer
+    start_year integer,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -796,7 +791,8 @@ CREATE TABLE public.character_calendar_fields (
 CREATE TABLE public.character_characters_fields (
     character_id uuid NOT NULL,
     character_field_id uuid NOT NULL,
-    related_id uuid NOT NULL
+    related_id uuid NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -807,7 +803,8 @@ CREATE TABLE public.character_characters_fields (
 CREATE TABLE public.character_documents_fields (
     character_id uuid NOT NULL,
     character_field_id uuid NOT NULL,
-    related_id uuid NOT NULL
+    related_id uuid NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -818,7 +815,8 @@ CREATE TABLE public.character_documents_fields (
 CREATE TABLE public.character_events_fields (
     character_id uuid NOT NULL,
     character_field_id uuid NOT NULL,
-    related_id uuid NOT NULL
+    related_id uuid NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -908,7 +906,8 @@ CREATE TABLE public.character_random_table_fields (
     character_field_id uuid NOT NULL,
     related_id uuid NOT NULL,
     option_id uuid,
-    suboption_id uuid
+    suboption_id uuid,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -932,7 +931,8 @@ CREATE TABLE public.character_relationship_types (
 CREATE TABLE public.character_value_fields (
     character_id uuid NOT NULL,
     character_field_id uuid NOT NULL,
-    value jsonb
+    value jsonb,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -1144,7 +1144,8 @@ CREATE TABLE public.eras (
 
 CREATE TABLE public.event_characters (
     event_id uuid NOT NULL,
-    related_id uuid NOT NULL
+    related_id uuid NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -1154,7 +1155,8 @@ CREATE TABLE public.event_characters (
 
 CREATE TABLE public.event_map_pins (
     event_id uuid NOT NULL,
-    related_id uuid NOT NULL
+    related_id uuid NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -1198,7 +1200,8 @@ CREATE TABLE public.events (
 CREATE TABLE public.favorite_characters (
     character_id uuid NOT NULL,
     user_id uuid NOT NULL,
-    is_favorite boolean
+    is_favorite boolean,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -1232,7 +1235,8 @@ CREATE TABLE public.graphs (
 
 CREATE TABLE public.image_tags (
     image_id uuid NOT NULL,
-    tag_id uuid NOT NULL
+    tag_id uuid NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
 
@@ -1670,11 +1674,75 @@ ALTER TABLE ONLY public.blueprint_fields
 
 
 --
+-- Name: blueprint_instance_blueprint_instances blueprint_instance_blueprint_instances_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.blueprint_instance_blueprint_instances
+    ADD CONSTRAINT blueprint_instance_blueprint_instances_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: blueprint_instance_calendars blueprint_instance_calendars_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.blueprint_instance_calendars
+    ADD CONSTRAINT blueprint_instance_calendars_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: blueprint_instance_characters blueprint_instance_characters_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.blueprint_instance_characters
+    ADD CONSTRAINT blueprint_instance_characters_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: blueprint_instance_documents blueprint_instance_documents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.blueprint_instance_documents
+    ADD CONSTRAINT blueprint_instance_documents_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: blueprint_instance_events blueprint_instance_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.blueprint_instance_events
+    ADD CONSTRAINT blueprint_instance_events_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: blueprint_instance_field_values blueprint_instance_field_values_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.blueprint_instance_field_values
     ADD CONSTRAINT blueprint_instance_field_values_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: blueprint_instance_images blueprint_instance_images_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.blueprint_instance_images
+    ADD CONSTRAINT blueprint_instance_images_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: blueprint_instance_map_pins blueprint_instance_map_pins_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.blueprint_instance_map_pins
+    ADD CONSTRAINT blueprint_instance_map_pins_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: blueprint_instance_random_tables blueprint_instance_random_tables_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.blueprint_instance_random_tables
+    ADD CONSTRAINT blueprint_instance_random_tables_pkey PRIMARY KEY (id);
 
 
 --
@@ -1742,6 +1810,14 @@ ALTER TABLE ONLY public.blueprint_instance_random_tables
 
 
 --
+-- Name: blueprint_instance_value blueprint_instance_value_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.blueprint_instance_value
+    ADD CONSTRAINT blueprint_instance_value_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: blueprint_instances blueprint_instances_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1766,11 +1842,51 @@ ALTER TABLE ONLY public.calendars
 
 
 --
+-- Name: character_blueprint_instance_fields character_blueprint_instance_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_blueprint_instance_fields
+    ADD CONSTRAINT character_blueprint_instance_fields_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: character_calendar_fields character_calendar_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_calendar_fields
+    ADD CONSTRAINT character_calendar_fields_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: character_characters_fields character_characters_fields_character_id_character_field_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.character_characters_fields
     ADD CONSTRAINT character_characters_fields_character_id_character_field_id_key UNIQUE (character_id, character_field_id, related_id);
+
+
+--
+-- Name: character_characters_fields character_characters_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_characters_fields
+    ADD CONSTRAINT character_characters_fields_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: character_documents_fields character_documents_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_documents_fields
+    ADD CONSTRAINT character_documents_fields_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: character_events_fields character_events_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_events_fields
+    ADD CONSTRAINT character_events_fields_pkey PRIMARY KEY (id);
 
 
 --
@@ -1814,11 +1930,27 @@ ALTER TABLE ONLY public.character_locations_fields
 
 
 --
+-- Name: character_random_table_fields character_random_table_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_random_table_fields
+    ADD CONSTRAINT character_random_table_fields_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: character_relationship_types character_relationship_types_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.character_relationship_types
     ADD CONSTRAINT character_relationship_types_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: character_value_fields character_value_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_value_fields
+    ADD CONSTRAINT character_value_fields_pkey PRIMARY KEY (id);
 
 
 --
@@ -1902,11 +2034,35 @@ ALTER TABLE ONLY public.eras
 
 
 --
+-- Name: event_characters event_characters_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_characters
+    ADD CONSTRAINT event_characters_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: event_map_pins event_map_pins_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_map_pins
+    ADD CONSTRAINT event_map_pins_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: events events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.events
     ADD CONSTRAINT events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: favorite_characters favorite_characters_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.favorite_characters
+    ADD CONSTRAINT favorite_characters_pkey PRIMARY KEY (id);
 
 
 --
@@ -1931,6 +2087,14 @@ ALTER TABLE ONLY public.graphs
 
 ALTER TABLE ONLY public.image_tags
     ADD CONSTRAINT image_tags_image_id_tag_id_key UNIQUE (image_id, tag_id);
+
+
+--
+-- Name: image_tags image_tags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.image_tags
+    ADD CONSTRAINT image_tags_pkey PRIMARY KEY (id);
 
 
 --
@@ -4375,4 +4539,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240607141304'),
     ('20240607165938'),
     ('20240608120954'),
-    ('20240614063009');
+    ('20240614063009'),
+    ('20240615071802');
