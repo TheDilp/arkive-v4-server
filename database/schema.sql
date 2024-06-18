@@ -1265,6 +1265,7 @@ CREATE TABLE public.games (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    title text NOT NULL,
     owner_id uuid NOT NULL,
     project_id uuid NOT NULL,
     background_image uuid,

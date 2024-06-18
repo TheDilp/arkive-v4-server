@@ -4,6 +4,7 @@ CREATE TABLE
         id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
         created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
         updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        title TEXT NOT NULL,
         owner_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
         project_id UUID NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
         background_image UUID REFERENCES images (id) ON DELETE SET NULL,
