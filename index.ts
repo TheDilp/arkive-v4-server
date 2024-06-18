@@ -128,7 +128,11 @@ export const app = new Elysia()
               console.error("ERROR VERIFYING TOKEN");
               throw new UnauthorizedError("UNAUTHORIZED");
             }
-            if (verifiedToken.azp !== process.env.JWT_VERIFY_HOST || verifiedToken.exp * 1000 < Date.now()) {
+            if (
+              (verifiedToken.azp !== process.env.JWT_VERIFY_HOST_WIKI &&
+                verifiedToken.azp !== process.env.JWT_VERIFY_HOST_DYCE) ||
+              verifiedToken.exp * 1000 < Date.now()
+            ) {
               console.error("EXPIRED");
 
               throw new UnauthorizedError("UNAUTHORIZED");
