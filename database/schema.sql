@@ -155,6 +155,21 @@ CREATE TYPE public."MentionTypeEnum" AS ENUM (
 
 
 --
+-- Name: add_game_player(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.add_game_player() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    INSERT INTO game_players (user_id, game_id, role)
+    VALUES (NEW.owner_id, NEW.id, 'gamemaster');
+    RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: handle_bp_field_type_change(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1694,7 +1709,10 @@ CREATE TABLE public.users (
     auth_id text,
     email text NOT NULL,
     feature_flags jsonb,
-    updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    oauth text,
+    password text,
+    CONSTRAINT oauth_type CHECK ((oauth = ANY (ARRAY['discord'::text, 'google'::text, 'github'::text, 'facebook'::text, 'twitter'::text, 'notion'::text, 'apple'::text])))
 );
 
 
@@ -2915,6 +2933,13 @@ CREATE UNIQUE INDEX words_title_translation_parent_id_key ON public.words USING 
 --
 
 CREATE INDEX words_ts_index ON public.words USING gin (ts);
+
+
+--
+-- Name: games after_game_insert; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER after_game_insert AFTER INSERT ON public.games FOR EACH ROW EXECUTE FUNCTION public.add_game_player();
 
 
 --
@@ -4722,4 +4747,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240608120954'),
     ('20240614063009'),
     ('20240615071802'),
-    ('20240616154112');
+    ('20240616154112'),
+    ('20240618110747'),
+    ('20240620104355');
