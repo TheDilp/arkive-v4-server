@@ -94,7 +94,7 @@ export const app = new Elysia()
   .onStart(() => console.info(`Listening on ${process.env.PORT}`))
   .use(
     cors({
-      origin: process.env.NODE_ENV === "development" ? true : "thearkive.app",
+      origin: process.env.NODE_ENV === "development" ? true : "arkive-v4-auth-service.railway.internal",
       methods: ["GET", "POST", "DELETE"],
     }),
   )
