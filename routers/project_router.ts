@@ -14,7 +14,6 @@ import { DefaultProjectFeatureFlags } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeProjectOwnerHandler, beforeRoleHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { decodeUserJwt } from "../utils/requestUtils";
 import { deleteFolder } from "../utils/s3Utils";
 
 export function project_router(app: Elysia) {
@@ -52,7 +51,7 @@ export function project_router(app: Elysia) {
       )
       .post(
         "/",
-        async ({ body, permissions }) => {
+        async ({ permissions }) => {
           const data = await db
             .selectFrom("projects")
             .leftJoin("users", "users.id", "projects.owner_id")
@@ -62,7 +61,7 @@ export function project_router(app: Elysia) {
                 .onRef("user_project_feature_flags.project_id", "=", "projects.id"),
             )
             .select(["projects.id", "projects.title", "projects.image_id", "user_project_feature_flags.feature_flags"])
-            .where("users.auth_id", "=", body.data.auth_id)
+            .where("projects.owner_id", "=", permissions.user_id)
             .union(
               db
                 .selectFrom("projects")
@@ -74,7 +73,7 @@ export function project_router(app: Elysia) {
                 )
                 .select(["projects.id", "projects.title", "projects.image_id", "user_project_feature_flags.feature_flags"])
                 .where("_project_members.B", "=", (eb) =>
-                  eb.selectFrom("users").select("id").where("users.auth_id", "=", body.data.auth_id),
+                  eb.selectFrom("users").select("id").where("users.id", "=", permissions.user_id),
                 ),
             )
             .execute();
@@ -85,10 +84,8 @@ export function project_router(app: Elysia) {
           body: ProjectListSchema,
           response: ResponseWithDataSchema,
           beforeHandle: async (context) => {
-            const jwt = context?.headers?.["authorization"]?.replace("Bearer ", "");
-            if (jwt) {
-              const { user_id } = decodeUserJwt(jwt);
-              // @ts-ignore
+            const user_id = context?.headers?.["user-id"];
+            if (user_id) {
               context.permissions.user_id = user_id;
             }
           },
@@ -182,9 +179,8 @@ export function project_router(app: Elysia) {
           body: ReadProjectSchema,
           response: ResponseWithDataSchema,
           beforeHandle: async (context) => {
-            const jwt = context?.headers?.["authorization"]?.replace("Bearer ", "");
-            if (jwt) {
-              const { user_id } = decodeUserJwt(jwt);
+            const user_id = context?.headers?.["user-id"];
+            if (user_id) {
               // @ts-ignore
               context.permissions.user_id = user_id;
             }

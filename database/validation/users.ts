@@ -17,7 +17,7 @@ export const ReadUserSchema = t.Intersect([
   ),
   t.Object({
     data: t.Object({
-      auth_id: t.String(),
+      id: t.String(),
       project_id: t.Optional(t.String()),
     }),
   }),

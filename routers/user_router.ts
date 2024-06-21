@@ -19,7 +19,6 @@ import { beforeProjectOwnerHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { resend } from "../utils/emailClient";
 import { redisClient } from "../utils/redisClient";
-import { decodeUserJwt } from "../utils/requestUtils";
 
 export function user_router(app: Elysia) {
   return app.group("/users", (server) =>
@@ -42,7 +41,7 @@ export function user_router(app: Elysia) {
         },
       )
       .post(
-        "/:auth_id",
+        "/:id",
         async ({ params, body }) => {
           const data = await db
             .selectFrom("users")
@@ -75,7 +74,7 @@ export function user_router(app: Elysia) {
                 ).as("role"),
               ),
             )
-            .where("auth_id", "=", params.auth_id)
+            .where("id", "=", params.id)
             .executeTakeFirstOrThrow();
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
@@ -134,23 +133,17 @@ export function user_router(app: Elysia) {
       .post(
         "/assign_role",
         async ({ body, headers }) => {
-          const token = headers?.["authorization"];
-          if (token) {
-            const jwt = token.replace("Bearer ", "");
-            const { project_id } = decodeUserJwt(jwt);
-            await db
-              .insertInto("user_roles")
-              .values({
-                user_id: body.data.user_id,
-                role_id: body.data.role_id,
-                project_id: project_id as string,
-              })
-              .onConflict((oc) => oc.columns(["user_id", "project_id"]).doUpdateSet({ role_id: body.data.role_id }))
-              .execute();
-            return { message: MessageEnum.success, ok: true, role_access: true };
-          }
-          console.error("MISSING TOKEN", "ASSIGN ROLE");
-          return { message: "There was an error with this request.", ok: false, role_access: true };
+          const project_id = headers?.["project-id"];
+          await db
+            .insertInto("user_roles")
+            .values({
+              user_id: body.data.user_id,
+              role_id: body.data.role_id,
+              project_id: project_id as string,
+            })
+            .onConflict((oc) => oc.columns(["user_id", "project_id"]).doUpdateSet({ role_id: body.data.role_id }))
+            .execute();
+          return { message: MessageEnum.success, ok: true, role_access: true };
         },
         {
           body: AssignRoleSchema,

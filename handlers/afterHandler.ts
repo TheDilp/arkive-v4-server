@@ -5,13 +5,7 @@ import { SubEntityEnum, UserNotificationEntitiesEnum } from "../enums";
 import { AvailableEntityType, AvailableSubEntityType } from "../types/entityTypes";
 import { AfterHandlerActionType } from "../types/requestTypes";
 import { redisClient } from "../utils/redisClient";
-import {
-  decodeUserJwt,
-  getAfterHandlerActionFromType,
-  getEntityFromPath,
-  getOperationFromPath,
-  getParentEntity,
-} from "../utils/requestUtils";
+import { getAfterHandlerActionFromType, getEntityFromPath, getOperationFromPath, getParentEntity } from "../utils/requestUtils";
 import { getCharacterFullName, getSingularEntityType } from "../utils/utils";
 import { sendNotification } from "../utils/websocketUtils";
 
@@ -25,15 +19,16 @@ export async function afterHandler(
     project_id: string;
   },
   entity: string,
-  token: string,
+  headers: Record<string, string>,
   action: AfterHandlerActionType,
   redis?: RedisClientType<any, any, any>,
 ) {
   const { is_folder, project_id, title, image_id, parent_id } = data || {};
 
-  if (token) {
-    const jwt = token.replace("Bearer ", "");
-    const { name, auth_id, image_url, user_id } = decodeUserJwt(jwt);
+  if (headers) {
+    const name: string = headers["user-name"];
+    const user_id: string = headers["user-id"];
+    const image_url: string | undefined = headers["user-image-url"];
     if (project_id) {
       const entityName = title;
       sendNotification(project_id, {
@@ -43,7 +38,7 @@ export async function afterHandler(
         } - "${entityName}"`,
         entity,
         image_id,
-        userId: auth_id,
+        userId: user_id,
         nickname: name,
         userImageUrl: image_url,
         notification_type: `${entity}_${action}_notification`,
@@ -68,22 +63,27 @@ export async function afterHandler(
   }
 }
 
-export async function afterHandlerMany(entity: string, token: string, action: AfterHandlerActionType) {
-  if (token) {
-    const jwt = token.replace("Bearer ", "");
-    const { name, auth_id, image_url, project_id } = decodeUserJwt(jwt);
-    if (project_id) {
-      sendNotification(project_id as string, {
-        event_type: "NEW_NOTIFICATION",
-        message: `${name || "User"} ${getAfterHandlerActionFromType(action)} multiple ${entity.replaceAll("_", "")}.`,
-        entity,
-        image_id: null,
-        userId: auth_id,
-        nickname: name,
-        userImageUrl: image_url,
-        notification_type: `${entity}_${action}_notification`,
-      });
-    }
+export async function afterHandlerMany(
+  entity: string,
+  headers: Record<string, string | undefined>,
+  action: AfterHandlerActionType,
+) {
+  const name = headers["user-name"];
+  const user_id = headers["user-id"];
+  const image_url = headers["user-image-url"];
+  const project_id = headers["project-id"];
+
+  if (project_id) {
+    sendNotification(project_id as string, {
+      event_type: "NEW_NOTIFICATION",
+      message: `${name || "User"} ${getAfterHandlerActionFromType(action)} multiple ${entity.replaceAll("_", "")}.`,
+      entity,
+      image_id: null,
+      userId: user_id as string,
+      nickname: name,
+      userImageUrl: image_url,
+      notification_type: `${entity}_${action}_notification`,
+    });
   }
 }
 

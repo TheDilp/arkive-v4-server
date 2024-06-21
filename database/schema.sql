@@ -1712,6 +1712,7 @@ CREATE TABLE public.users (
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     oauth text,
     password text,
+    image_id text,
     CONSTRAINT oauth_type CHECK ((oauth = ANY (ARRAY['discord'::text, 'google'::text, 'github'::text, 'facebook'::text, 'twitter'::text, 'notion'::text, 'apple'::text])))
 );
 
@@ -4749,4 +4750,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240615071802'),
     ('20240616154112'),
     ('20240618110747'),
-    ('20240620104355');
+    ('20240620104355'),
+    ('20240621103954');

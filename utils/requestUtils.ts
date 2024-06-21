@@ -1,4 +1,3 @@
-import { decodeJwt } from "jose";
 import { TableExpression } from "kysely";
 import { DB } from "kysely-codegen";
 
@@ -15,15 +14,11 @@ import {
   TagsRelationTables,
 } from "../database/types";
 import { AvailableEntityType, AvailablePermissions, AvailableSubEntityType } from "../types/entityTypes";
-import { AfterHandlerActionType, JWTPayloadType, SearchableEntities } from "../types/requestTypes";
+import { AfterHandlerActionType, SearchableEntities } from "../types/requestTypes";
 
 export function getSearchTableFromType(type: SearchableEntities | DBKeys): DBKeys {
   if (type === "images" || type === "map_images") return "images" as DBKeys;
   return type;
-}
-
-export function decodeUserJwt(jwt: string) {
-  return decodeJwt<JWTPayloadType>(jwt);
 }
 
 export function getAfterHandlerActionFromType(type: AfterHandlerActionType) {

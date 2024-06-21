@@ -35,10 +35,16 @@ export function conversation_router(app: Elysia) {
               .values(body.relations.characters.map((char) => ({ A: char.id, B: conversation.id })))
               .execute();
           });
-          const token = request.headers.get("authorization");
-          if (token) {
-            afterHandler(body.data, "conversations", token, "create");
-          }
+          afterHandler(
+            body.data,
+            "conversations",
+            {
+              user_id: request.headers.get("user-id") || "",
+              project_id: request.headers.get("project-id") || "",
+              image_url: request.headers.get("user-image-url") || "",
+            },
+            "create",
+          );
           return { message: `Conversation ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
@@ -183,7 +189,17 @@ export function conversation_router(app: Elysia) {
             .executeTakeFirstOrThrow();
 
           const token = request.headers.get("authorization");
-          if (token) afterHandler(data, "characters", token, "create");
+          if (token)
+            afterHandler(
+              data,
+              "characters",
+              {
+                user_id: request.headers.get("user-id") || "",
+                project_id: request.headers.get("project-id") || "",
+                image_url: request.headers.get("user-image-url") || "",
+              },
+              "create",
+            );
 
           return { message: `Character ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
         },

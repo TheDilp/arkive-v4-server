@@ -1,8 +1,6 @@
 import { cors } from "@elysiajs/cors";
 import { cron } from "@elysiajs/cron";
 import { Elysia } from "elysia";
-import { verify } from "jsonwebtoken";
-import * as jwtToPem from "jwk-to-pem";
 
 import { db } from "./database/db";
 // Accepts the same connection config object that the "pg" package would take
@@ -105,44 +103,6 @@ export const app = new Elysia()
 
   .group("/api/v1", (server: Elysia) =>
     server
-
-      .onBeforeHandle(async ({ request }) => {
-        if (!request.url.includes("public")) {
-          const token = request.headers.get("authorization");
-          if (token) {
-            const jwtoken = token.replace("Bearer ", "");
-            const jwtPublicKeyRes = await fetch(process.env.JWT_VERIFY_URL as string);
-            const jwtPublicKey = await jwtPublicKeyRes.json();
-            const publicKey = jwtToPem.default(jwtPublicKey.keys[0]);
-            const verifiedToken: any = verify(jwtoken, publicKey, (err: any, result: any) => {
-              if (err)
-                return {
-                  name: "TokenExpiredError",
-                  message: "Session ended.",
-                  expiredAt: Date.now(),
-                  error: true,
-                };
-              return result;
-            });
-            if (verifiedToken.error) {
-              console.error("ERROR VERIFYING TOKEN");
-              throw new UnauthorizedError("UNAUTHORIZED");
-            }
-            if (
-              (verifiedToken.azp !== process.env.JWT_VERIFY_HOST_WIKI &&
-                verifiedToken.azp !== process.env.JWT_VERIFY_HOST_DYCE) ||
-              verifiedToken.exp * 1000 < Date.now()
-            ) {
-              console.error("EXPIRED");
-
-              throw new UnauthorizedError("UNAUTHORIZED");
-            }
-          } else {
-            console.error("NO TOKEN");
-            throw new UnauthorizedError("UNAUTHORIZED");
-          }
-        }
-      })
       // @ts-ignore
       .onAfterHandle(async (context, response) => {
         await tempAfterHandle(context, response);

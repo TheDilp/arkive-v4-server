@@ -28,9 +28,6 @@
     "@sinclair/typebox": "^0.31.14",
     "elysia": "0.8.8",
     "elysia-rate-limit": "^2.0.1",
-    "jose": "^5.1.0",
-    "jsonwebtoken": "^9.0.2",
-    "jwk-to-pem": "^2.0.5",
     "kysely": "latest",
     "lodash.groupby": "^4.6.0",
     "lodash.merge": "^4.6.2",
@@ -52,8 +49,6 @@
   "devDependencies": {
     "@commitlint/cli": "^18.4.3",
     "@commitlint/config-conventional": "^18.4.3",
-    "@types/jsonwebtoken": "^9.0.5",
-    "@types/jwk-to-pem": "^2.0.3",
     "@types/lodash.groupby": "^4.6.7",
     "@types/lodash.merge": "^4.6.8",
     "@types/lodash.omit": "^4.5.7",
