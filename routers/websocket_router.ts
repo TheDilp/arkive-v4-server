@@ -58,9 +58,4 @@ export function websocket_router(app: Elysia) {
         }
       },
     });
-  // .ws("/ws/version", {
-  //   open(ws) {
-  //     ws.subscribe("version");
-  //   },
-  // });
 }
