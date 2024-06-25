@@ -1706,13 +1706,13 @@ CREATE TABLE public.user_sessions (
 
 CREATE TABLE public.users (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    auth_id text,
     email text NOT NULL,
     feature_flags jsonb,
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     oauth text,
     password text,
     image_id text,
+    nickname text NOT NULL,
     CONSTRAINT oauth_type CHECK ((oauth = ANY (ARRAY['discord'::text, 'google'::text, 'github'::text, 'facebook'::text, 'twitter'::text, 'notion'::text, 'apple'::text])))
 );
 
@@ -2514,6 +2514,14 @@ ALTER TABLE ONLY public.user_sessions
 
 
 --
+-- Name: users users_nickname_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_nickname_key UNIQUE (nickname);
+
+
+--
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2899,13 +2907,6 @@ CREATE UNIQUE INDEX tags_title_project_id_key ON public.tags USING btree (title,
 --
 
 CREATE INDEX ts_idx ON public.documents USING gin (ts);
-
-
---
--- Name: users_auth_id_key; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX users_auth_id_key ON public.users USING btree (auth_id);
 
 
 --
@@ -4238,7 +4239,7 @@ ALTER TABLE ONLY public.events
 --
 
 ALTER TABLE ONLY public.favorite_characters
-    ADD CONSTRAINT favorite_characters_character_id_fkey FOREIGN KEY (character_id) REFERENCES public.characters(id);
+    ADD CONSTRAINT favorite_characters_character_id_fkey FOREIGN KEY (character_id) REFERENCES public.characters(id) ON DELETE CASCADE;
 
 
 --
@@ -4246,7 +4247,7 @@ ALTER TABLE ONLY public.favorite_characters
 --
 
 ALTER TABLE ONLY public.favorite_characters
-    ADD CONSTRAINT favorite_characters_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+    ADD CONSTRAINT favorite_characters_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -4751,4 +4752,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240616154112'),
     ('20240618110747'),
     ('20240620104355'),
-    ('20240621103954');
+    ('20240621103954'),
+    ('20240625070702'),
+    ('20240625100031');
