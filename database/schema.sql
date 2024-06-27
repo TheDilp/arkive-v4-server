@@ -1713,7 +1713,9 @@ CREATE TABLE public.users (
     password text,
     image_id text,
     nickname text NOT NULL,
-    CONSTRAINT oauth_type CHECK ((oauth = ANY (ARRAY['discord'::text, 'google'::text, 'github'::text, 'facebook'::text, 'twitter'::text, 'notion'::text, 'apple'::text])))
+    is_email_confirmed boolean DEFAULT false,
+    CONSTRAINT oauth_type CHECK ((oauth = ANY (ARRAY['discord'::text, 'google'::text, 'github'::text, 'facebook'::text, 'twitter'::text, 'notion'::text, 'apple'::text]))),
+    CONSTRAINT password_or_auth CHECK ((((password IS NOT NULL) OR (oauth IS NOT NULL)) AND (((password IS NULL) AND (oauth IS NOT NULL)) OR ((password IS NOT NULL) AND (oauth IS NULL)))))
 );
 
 
@@ -4754,4 +4756,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240620104355'),
     ('20240621103954'),
     ('20240625070702'),
-    ('20240625100031');
+    ('20240625100031'),
+    ('20240626092958'),
+    ('20240627122138');
