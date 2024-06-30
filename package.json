@@ -1,5 +1,5 @@
 {
-  "name": "arkive-v4-server",
+  "name": "arkive-v4-editor-server",
   "version": "1.0.0",
   "description": "",
   "module": "index.ts",

@@ -73,7 +73,8 @@ export function project_router(app: Elysia) {
                 )
                 .select(["projects.id", "projects.title", "projects.image_id", "user_project_feature_flags.feature_flags"])
                 .where("_project_members.B", "=", (eb) =>
-                  eb.selectFrom("users").select("id").where("users.id", "=", permissions.user_id),
+                  // @ts-ignore
+                  eb.selectFrom("users").select(["users.id", "users.image_id"]).where("users.id", "=", permissions.user_id),
                 ),
             )
             .execute();
