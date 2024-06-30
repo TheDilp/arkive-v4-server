@@ -1743,7 +1743,8 @@ CREATE TABLE public.words (
     parent_id uuid NOT NULL,
     ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
     deleted_at timestamp(3) without time zone,
-    owner_id uuid NOT NULL
+    owner_id uuid NOT NULL,
+    is_public boolean
 );
 
 
@@ -4758,4 +4759,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240625070702'),
     ('20240625100031'),
     ('20240626092958'),
-    ('20240627122138');
+    ('20240627122138'),
+    ('20240630111143');
