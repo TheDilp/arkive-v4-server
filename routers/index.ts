@@ -1,5 +1,4 @@
 export * from "./asset_router";
-export * from "./auth_router";
 export * from "./blueprint_instance_router";
 export * from "./blueprint_router";
 export * from "./bulk_router";
