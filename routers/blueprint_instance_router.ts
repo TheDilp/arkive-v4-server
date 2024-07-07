@@ -697,8 +697,7 @@ export function blueprint_instance_router(app: Elysia) {
                       return jsonArrayFrom(document_query).as("documents");
                     });
                   }
-
-                  if (permissions.all_permissions) {
+                  if (permissions.all_permissions?.read_map_pins) {
                     bp_fields_select.push((ebb) => {
                       let map_pin_query = ebb
                         .selectFrom("blueprint_instance_map_pins")
@@ -726,7 +725,6 @@ export function blueprint_instance_router(app: Elysia) {
                       return jsonArrayFrom(map_pin_query).as("map_pins");
                     });
                   }
-
                   if (permissions.all_permissions?.read_calendars) {
                     bp_fields_select.push((ebb) => {
                       let calendar_query = ebb
@@ -754,7 +752,6 @@ export function blueprint_instance_router(app: Elysia) {
                       return jsonObjectFrom(calendar_query).as("calendar");
                     });
                   }
-
                   if (permissions.all_permissions?.read_events) {
                     bp_fields_select.push((ebb) => {
                       let event_query = ebb
@@ -783,7 +780,6 @@ export function blueprint_instance_router(app: Elysia) {
                       return jsonArrayFrom(event_query).as("events");
                     });
                   }
-
                   if (permissions.all_permissions?.read_assets) {
                     bp_fields_select.push((ebb) => {
                       let image_query = ebb
