@@ -93,7 +93,10 @@ export const app = new Elysia()
   .onStart(() => console.info(`Listening on ${process.env.PORT}`))
   .use(
     cors({
-      origin: process.env.NODE_ENV === "development" ? true : [process.env.AUTH_SERVER, process.env.PUBLIC_SERVER],
+      origin:
+        process.env.NODE_ENV === "development"
+          ? true
+          : [process.env.AUTH_SERVER as string, process.env.PUBLIC_SERVER as string],
       methods: ["GET", "POST", "DELETE"],
     }),
   )
