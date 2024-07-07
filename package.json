@@ -27,7 +27,7 @@
     "@sinclair/typebox": "^0.31.14",
     "elysia": "0.8.8",
     "elysia-rate-limit": "^2.0.1",
-    "kysely": "latest",
+    "kysely": "^0.27.4",
     "lodash.groupby": "^4.6.0",
     "lodash.merge": "^4.6.2",
     "lodash.omit": "^4.5.0",
