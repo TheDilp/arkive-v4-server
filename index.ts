@@ -97,9 +97,7 @@ export const app = new Elysia()
       methods: ["GET", "POST", "DELETE"],
     }),
   )
-
   .use(health_check_router)
-
   .group("/api/v1", (server: Elysia) =>
     server
       // @ts-ignore

@@ -933,10 +933,8 @@ export function public_router(app: Elysia) {
                 .selectFrom("documents")
                 .where("documents.project_id", "=", body?.data?.project_id)
                 .where("documents.is_public", "=", true)
-                .$if(!body?.fields?.length, (qb) => qb.selectAll())
-                .$if(!!body?.fields?.length, (qb) =>
-                  qb.clearSelect().select(body.fields as SelectExpression<DB, "documents">[]),
-                )
+                .where((wb) => wb.or([wb("is_folder", "=", false), wb("is_folder", "is", null)]))
+                .select(body.fields as SelectExpression<DB, "documents">[])
                 .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
                   qb = constructFilter("documents", qb, body.filters);
                   return qb;
@@ -948,7 +946,6 @@ export function public_router(app: Elysia) {
                   return qb;
                 })
                 .$if(!!body.orderBy, (qb) => constructOrdering(body.orderBy, qb))
-
                 .execute();
               return { data, message: MessageEnum.success, ok: true, role_access: true };
             },
@@ -964,8 +961,8 @@ export function public_router(app: Elysia) {
                 .selectFrom("maps")
                 .where("project_id", "=", body.data.project_id)
                 .where("is_public", "=", true)
-                .$if(!body.fields?.length, (qb) => qb.selectAll())
-                .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "maps">[]))
+                .where((wb) => wb.or([wb("is_folder", "=", false), wb("is_folder", "is", null)]))
+                .select(body.fields as SelectExpression<DB, "maps">[])
                 .$if(!!body?.relations?.tags, (qb) => qb.select((eb) => TagQuery(eb, "_mapsTotags", "maps", true, "")))
                 .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
                   qb = constructFilter("maps", qb, body.filters);
@@ -986,8 +983,8 @@ export function public_router(app: Elysia) {
                 .selectFrom("graphs")
                 .where("project_id", "=", body.data.project_id)
                 .where("is_public", "=", true)
-                .$if(!body.fields?.length, (qb) => qb.selectAll())
-                .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "graphs">[]))
+                .where((wb) => wb.or([wb("is_folder", "=", false), wb("is_folder", "is", null)]))
+                .select(body.fields as SelectExpression<DB, "graphs">[])
                 .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
                   qb = constructFilter("graphs", qb, body.filters);
                   return qb;
@@ -1013,8 +1010,8 @@ export function public_router(app: Elysia) {
                 .selectFrom("calendars")
                 .where("calendars.project_id", "=", body?.data?.project_id)
                 .where("calendars.is_public", "=", true)
-                .$if(!body.fields?.length, (qb) => qb.selectAll())
-                .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "calendars">[]))
+                .where((wb) => wb.or([wb("is_folder", "=", false), wb("is_folder", "is", null)]))
+                .select(body.fields as SelectExpression<DB, "calendars">[])
                 .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
                   qb = constructFilter("calendars", qb, body.filters);
                   return qb;
@@ -1035,10 +1032,10 @@ export function public_router(app: Elysia) {
                 .selectFrom("dictionaries")
                 .limit(body?.pagination?.limit || 10)
                 .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
-                .$if(!body.fields?.length, (qb) => qb.selectAll())
-                .$if(!!body.fields?.length, (qb) =>
-                  qb.clearSelect().select(body.fields as SelectExpression<DB, "dictionaries">[]),
-                )
+                .where("project_id", "=", body.data.project_id)
+                .where("is_public", "=", true)
+                .where((wb) => wb.or([wb("is_folder", "=", false), wb("is_folder", "is", null)]))
+                .select(body.fields as SelectExpression<DB, "dictionaries">[])
                 .$if(!!body.orderBy?.length, (qb) => {
                   qb = constructOrdering(body.orderBy, qb);
                   return qb;
@@ -1047,8 +1044,6 @@ export function public_router(app: Elysia) {
                   qb = constructFilter("dictionaries", qb, body.filters);
                   return qb;
                 })
-                .where("project_id", "=", body.data.project_id)
-                .where("is_public", "=", true)
                 .execute();
 
               return { data, message: MessageEnum.success, ok: true, role_access: true };
@@ -1065,8 +1060,7 @@ export function public_router(app: Elysia) {
                 .selectFrom("words")
                 .limit(body?.pagination?.limit || 10)
                 .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
-                .$if(!body.fields?.length, (qb) => qb.selectAll())
-                .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "words">[]))
+                .select(body.fields as SelectExpression<DB, "words">[])
                 .$if(!!body.orderBy?.length, (qb) => {
                   qb = constructOrdering(body.orderBy, qb);
                   return qb;
@@ -1108,6 +1102,7 @@ export function public_router(app: Elysia) {
                   .select(["id", "title as label", "icon"])
                   .where("documents.title", "ilike", `%${search_term}%`)
                   .where("documents.is_public", "=", true)
+                  .where((wb) => wb.or([wb("is_folder", "=", false), wb("is_folder", "is", null)]))
                   .where("project_id", "=", project_id)
                   .limit(5),
               };
@@ -1119,6 +1114,7 @@ export function public_router(app: Elysia) {
                   .select(["id", "title as label"])
                   .where("maps.title", "ilike", `%${search_term}%`)
                   .where("maps.is_public", "=", true)
+                  .where((wb) => wb.or([wb("is_folder", "=", false), wb("is_folder", "is", null)]))
                   .where("project_id", "=", project_id)
                   .limit(5),
               };
@@ -1167,6 +1163,7 @@ export function public_router(app: Elysia) {
                   .selectFrom("graphs")
                   .where("graphs.title", "ilike", `%${search_term}%`)
                   .where("project_id", "=", project_id)
+                  .where((wb) => wb.or([wb("is_folder", "=", false), wb("is_folder", "is", null)]))
                   .select(["id", "title as label", "icon"])
                   .limit(5),
               };
