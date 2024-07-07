@@ -475,8 +475,7 @@ export function public_router(app: Elysia) {
                 .selectFrom("graphs")
                 .where("graphs.id", "=", params.id)
                 .where("graphs.is_public", "=", true)
-                .$if(!body.fields?.length, (qb) => qb.selectAll())
-                .$if(!!body.fields?.length, (qb) => qb.clearSelect().select(body.fields as SelectExpression<DB, "graphs">[]))
+                .select(body.fields as SelectExpression<DB, "graphs">[])
                 .$if(!!body?.relations?.nodes, (qb) =>
                   qb.select((eb) =>
                     jsonArrayFrom(
@@ -506,7 +505,8 @@ export function public_router(app: Elysia) {
                             sb
                               .selectFrom("characters")
                               .select(["characters.first_name", "characters.last_name", "characters.portrait_id"])
-                              .whereRef("characters.id", "=", "nodes.character_id"),
+                              .whereRef("characters.id", "=", "nodes.character_id")
+                              .where("characters.is_public", "=", true),
                           ).as("character"),
                         ]),
                     ).as("nodes"),
