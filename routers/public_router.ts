@@ -751,17 +751,14 @@ export function public_router(app: Elysia) {
             async ({ params, body }) => {
               const data = await db
                 .selectFrom("dictionaries")
-                .where("id", "=", params.id)
-                .$if(!body.fields?.length, (qb) => qb.selectAll())
-                .$if(!!body.fields?.length, (qb) =>
-                  qb.clearSelect().select(body.fields as SelectExpression<DB, "dictionaries">[]),
-                )
+                .where("dictionaries.id", "=", params.id)
+                .select(body.fields.map((f) => `dictionaries.${f}`) as SelectExpression<DB, "dictionaries">[])
                 .$if(!!body.relations?.words, (qb) =>
                   qb.select((eb) =>
                     jsonArrayFrom(
                       eb
                         .selectFrom("words")
-                        .select(["words.id", "words.title", "words.translation"])
+                        .select(["words.id", "words.title", "words.translation", "words.is_public"])
                         .where("words.parent_id", "=", params.id),
                     ).as("words"),
                   ),
@@ -784,12 +781,9 @@ export function public_router(app: Elysia) {
                 .leftJoin("dictionaries", "dictionaries.id", "words.parent_id")
                 .where("words.id", "=", params.id)
                 .where("dictionaries.is_public", "=", true)
-                .$if(!body.fields?.length, (qb) => qb.selectAll())
-                .$if(!!body.fields?.length, (qb) =>
-                  qb.clearSelect().select(
-                    // @ts-ignore
-                    body.fields.map((f) => `words.${f}`).concat("dictionaries.is_public") as SelectExpression<DB, "words">[],
-                  ),
+                .select(
+                  // @ts-ignore
+                  body.fields.map((f) => `words.${f}`).concat("dictionaries.is_public") as SelectExpression<DB, "words">[],
                 )
                 .executeTakeFirst();
               if (data?.is_public) return { data, message: MessageEnum.success, ok: true, role_access: true };
@@ -1060,7 +1054,7 @@ export function public_router(app: Elysia) {
                 .selectFrom("words")
                 .limit(body?.pagination?.limit || 10)
                 .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
-                .select(body.fields as SelectExpression<DB, "words">[])
+                .select(body.fields.map((f) => `words.${f}`) as SelectExpression<DB, "words">[])
                 .$if(!!body.orderBy?.length, (qb) => {
                   qb = constructOrdering(body.orderBy, qb);
                   return qb;
@@ -1069,9 +1063,10 @@ export function public_router(app: Elysia) {
                   qb = constructFilter("words", qb, body.filters);
                   return qb;
                 })
-                .where("parent_id", "=", body.data.parent_id)
+                .where("words.parent_id", "=", body.data.parent_id)
                 .leftJoin("dictionaries", "dictionaries.id", "words.parent_id")
                 .where("dictionaries.is_public", "=", true)
+                .where("words.is_public", "=", true)
                 .execute();
               return { data, ok: true, role_access: true, message: MessageEnum.success };
             },
