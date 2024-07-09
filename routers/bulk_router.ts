@@ -15,7 +15,7 @@ import {
   UpdateNodeSchema,
 } from "../database/validation";
 import { BulkUpdateAccess } from "../database/validation/bulk";
-import { BulkArkiveEntitiesEnum, BulkDeleteEntitiesEnum } from "../enums";
+import { BulkArkiveEntitiesEnum, BulkDeleteEntitiesEnum, newTagTables } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeProjectOwnerHandler, beforeRoleHandler } from "../handlers";
 import {
@@ -244,8 +244,8 @@ export function bulk_router(app: Elysia) {
                 await tx
                   .insertInto(entityTagTable)
                   .values(
-                    entityTagTable === "image_tags"
-                      ? body.data.add.map((t) => ({ image_id: t.A, tag_id: t.B }))
+                    newTagTables.includes(entityTagTable)
+                      ? body.data.add.map((t) => ({ related_id: t.A, tag_id: t.B }))
                       : body.data.add,
                   )
                   .execute();
@@ -256,8 +256,8 @@ export function bulk_router(app: Elysia) {
                     eb.or(
                       body.data.remove.map((r) =>
                         eb.and([
-                          eb(entityTagTable === "image_tags" ? "image_id" : "A", "=", r.A),
-                          eb(entityTagTable === "image_tags" ? "image_id" : "B", "=", r.B),
+                          eb(newTagTables.includes(entityTagTable) ? "related_id" : "A", "=", r.A),
+                          eb(newTagTables.includes(entityTagTable) ? "tag_id" : "B", "=", r.B),
                         ]),
                       ),
                     ),

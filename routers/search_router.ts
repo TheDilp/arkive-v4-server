@@ -6,7 +6,7 @@ import { db } from "../database/db";
 import { checkEntityLevelPermission } from "../database/queries";
 import { DBKeys, EntitiesWithTags } from "../database/types";
 import { BasicSearchSchema, CategorySearchSchema, TagSearchSchema } from "../database/validation/search";
-import { EntitiesWithPermissionsEnum, EntitiesWithTagsTablesEnum, SubEntityEnum } from "../enums/entityEnums";
+import { EntitiesWithPermissionsEnum, EntitiesWithTagsTablesEnum, newTagTables, SubEntityEnum } from "../enums/entityEnums";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeRoleHandler } from "../handlers";
 import { AvailablePermissions, EntitiesWithFolders, EntitiesWithPermissionCheck } from "../types/entityTypes";
@@ -809,8 +809,9 @@ export function search_router(app: Elysia) {
                 return !!formattedPermissions.graphs;
               return !!formattedPermissions[entity_name];
             }).map((tb) => {
-              const entity_name =
-                tb === "image_tags" ? "images" : (tb.replace("_", "").replace("Totags", "") as EntitiesWithTags);
+              const entity_name = newTagTables.includes(tb)
+                ? tb.replace("_tags", "")
+                : (tb.replace("_", "").replace("Totags", "") as EntitiesWithTags);
 
               const fields = [`${entity_name}.id`];
 
@@ -825,19 +826,24 @@ export function search_router(app: Elysia) {
                   match === "any"
                     ? db
                         .selectFrom(tb)
-                        .where(tb === "image_tags" ? `${tb}.tag_id` : `${tb}.B`, "in", tag_ids)
-                        .leftJoin(entity_name, `${tb}.id` as any, tb === "image_tags" ? `${tb}.image_id` : `${tb}.A`)
+                        // @ts-ignore
+
+                        .where(newTagTables.includes(tb) ? `${tb}.tag_id` : `${tb}.B`, "in", tag_ids)
+                        // @ts-ignore
+                        .leftJoin(entity_name, `${tb}.id` as any, newTagTables.includes(tb) ? `${tb}.related_id` : `${tb}.A`)
                         // @ts-ignore
                         .select(fields as SelectExpression<any, any>[])
                         .distinctOn("id")
                     : db
+                        // @ts-ignore
                         .selectFrom(entity_name)
                         .select(fields as SelectExpression<DB, EntitiesWithTags>[])
-                        .leftJoin(tb, `${entity_name}.id`, tb === "image_tags" ? `${tb}.image_id` : `${tb}.A`)
                         // @ts-ignore
-                        .leftJoin("tags", "tags.id", tb === "image_tags" ? `${tb}.tag_id` : `${tb}.B`)
+                        .leftJoin(tb, `${entity_name}.id`, newTagTables.includes(tb) ? `${tb}.related_id` : `${tb}.A`)
                         // @ts-ignore
-                        .where(tb === "image_tags" ? `${tb}.tag_id` : `${tb}.B`, "in", tag_ids)
+                        .leftJoin("tags", "tags.id", newTagTables.includes(tb) ? `${tb}.tag_id` : `${tb}.B`)
+                        // @ts-ignore
+                        .where(newTagTables.includes(tb) ? `${tb}.tag_id` : `${tb}.B`, "in", tag_ids)
                         .groupBy(`${entity_name}.id`)
                         .having(sql`count(distinct tags.id)`, "=", tag_ids.length),
               };

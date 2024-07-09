@@ -14,6 +14,7 @@ export * from "./edge_router";
 export * from "./event_router";
 export * from "./graph_router";
 export * from "./health_check";
+export * from "./manuscript_router";
 export * from "./map_pin_router";
 export * from "./map_pin_types_router";
 export * from "./map_router";

@@ -96,7 +96,8 @@ export type EntitiesWithPermissionCheck =
   | "random_tables"
   | "character_fields_templates"
   | "tags"
-  | "images";
+  | "images"
+  | "manuscripts";
 
 export type MentionType = {
   type: "mentionAtom";

@@ -23,6 +23,7 @@ import {
   event_router,
   graph_router,
   health_check_router,
+  manuscript_router,
   map_pin_router,
   map_pin_types_router,
   map_router,
@@ -139,6 +140,7 @@ export const app = new Elysia()
       .use(message_router)
       .use(bulk_router)
       .use(notification_router)
+      .use(manuscript_router)
       .use(stats_router)
       .use(role_router)
       .use(permission_router),

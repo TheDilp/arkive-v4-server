@@ -16,7 +16,8 @@ export type TagsRelationTables =
   | "_nodesTotags"
   | "_character_fields_templatesTotags"
   | "_blueprint_instancesTotags"
-  | "image_tags";
+  | "image_tags"
+  | "manuscript_tags";
 export type EntitiesWithTags =
   | "images"
   | "maps"
@@ -29,7 +30,8 @@ export type EntitiesWithTags =
   | "edges"
   | "nodes"
   | "character_fields_templates"
-  | "blueprint_instances";
+  | "blueprint_instances"
+  | "manuscripts";
 
 export type EntitiesWithChildren = "documents" | "maps" | "graphs" | "calendars" | "dictionaries" | "random_tables";
 

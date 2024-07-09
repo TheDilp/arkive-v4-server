@@ -56,7 +56,10 @@ export const EntitiesWithTagsTablesEnum: TagsRelationTables[] = [
   "_character_fields_templatesTotags",
   "_blueprint_instancesTotags",
   "image_tags",
+  "manuscript_tags",
 ];
+
+export const newTagTables = ["image_tags", "manuscript_tags"];
 
 export const EntitiesWithoutProjectIdEnum = ["map_pins", "character_map_pins", "map_layers", "nodes", "edges", "events"];
 
@@ -170,6 +173,10 @@ export const RolePermissionsEnum = [
   "read_words" as const,
   "update_words" as const,
   "delete_words" as const,
+  "create_manuscripts" as const,
+  "read_manuscripts" as const,
+  "update_manuscripts" as const,
+  "delete_manuscripts" as const,
 ];
 
 export const EntitiesWithPermissionsEnum: EntitiesWithPermissionCheck[] = [

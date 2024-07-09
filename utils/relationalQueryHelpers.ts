@@ -4,6 +4,7 @@ import { DB } from "kysely-codegen";
 
 import { getNestedReadPermission } from "../database/queries";
 import { EntitiesWithChildren, EntitiesWithTags, TagsRelationTables } from "../database/types";
+import { newTagTables } from "../enums";
 import {
   AvailablePermissions,
   EntitiesWithFolders,
@@ -23,13 +24,13 @@ export function TagQuery(
   let tag_query = eb.selectFrom(relationalTable);
 
   tag_query = tag_query
-    .whereRef(`${table}.id`, "=", `${relationalTable}.${relationalTable === "image_tags" ? "image_id" : "A"}`)
-    .leftJoin("tags", "tags.id", `${relationalTable}.${relationalTable === "image_tags" ? "tag_id" : "B"}`)
+    .whereRef(`${table}.id`, "=", `${relationalTable}.${newTagTables.includes(relationalTable) ? "related_id" : "A"}`)
+    .leftJoin("tags", "tags.id", `${relationalTable}.${newTagTables.includes(relationalTable) ? "tag_id" : "B"}`)
     .where("tags.deleted_at", "is", null)
     .select(["tags.id", "tags.title", "tags.color"]);
 
   if (user_id) {
-    if (relationalTable === "image_tags") {
+    if (newTagTables.includes(relationalTable)) {
       tag_query = getNestedReadPermission(tag_query, is_project_owner, user_id, `${relationalTable}.tag_id`, "read_tags");
     } else {
       // @ts-ignore
@@ -54,7 +55,7 @@ export async function CreateTagRelations({
   await tx
     .insertInto(relationalTable)
     .values(tags.map((tag) => ({ A: id, B: tag.id })))
-    .onConflict((oc) => oc.columns(relationalTable === "image_tags" ? ["image_id", "tag_id"] : ["A", "B"]).doNothing())
+    .onConflict((oc) => oc.columns(newTagTables.includes(relationalTable) ? ["related_id", "tag_id"] : ["A", "B"]).doNothing())
     .execute();
 }
 
@@ -73,11 +74,11 @@ export async function UpdateTagRelations({
 }) {
   const existingTags = await tx
     .selectFrom(relationalTable)
-    .select(`${relationalTable}.${relationalTable === "image_tags" ? "tag_id" : "B"}`)
-    .where(`${relationalTable}.${relationalTable === "image_tags" ? "image_id" : "A"}`, "=", id)
+    .select(`${relationalTable}.${newTagTables.includes(relationalTable) ? "tag_id" : "B"}`)
+    .where(`${relationalTable}.${newTagTables.includes(relationalTable) ? "related_id" : "A"}`, "=", id)
     .execute();
 
-  const existingTagIds = existingTags.map((tag) => (relationalTable === "image_tags" ? tag.tag_id : tag.B));
+  const existingTagIds = existingTags.map((tag) => (newTagTables.includes(relationalTable) ? tag.tag_id : tag.B));
   const newTagIds = newTags.map((tag) => tag.id);
 
   const tagsToDelete = existingTagIds.filter((tag) => !newTagIds.includes(tag));
@@ -86,13 +87,13 @@ export async function UpdateTagRelations({
   if (tagsToDelete.length) {
     let delete_query = tx
       .deleteFrom(relationalTable)
-      .where(`${relationalTable}.${relationalTable === "image_tags" ? "image_id" : "A"}`, "=", id)
-      .where(`${relationalTable}.${relationalTable === "image_tags" ? "tag_id" : "B"}`, "in", tagsToDelete);
+      .where(`${relationalTable}.${newTagTables.includes(relationalTable) ? "related_id" : "A"}`, "=", id)
+      .where(`${relationalTable}.${newTagTables.includes(relationalTable) ? "tag_id" : "B"}`, "in", tagsToDelete);
 
     if (!is_project_owner) {
       delete_query = checkDeletePermissions(
         delete_query,
-        `${relationalTable}.${relationalTable === "image_tags" ? "tag_id" : "B"}`,
+        `${relationalTable}.${newTagTables.includes(relationalTable) ? "tag_id" : "B"}`,
         "read_tags",
       );
     }
@@ -103,8 +104,14 @@ export async function UpdateTagRelations({
   if (tagsToInsert.length)
     await tx
       .insertInto(relationalTable)
-      .values(tagsToInsert.map((tag) => (relationalTable === "image_tags" ? { image_id: id, tag_id: tag } : { A: id, B: tag })))
-      .onConflict((oc) => oc.columns(relationalTable === "image_tags" ? ["image_id", "tag_id"] : ["A", "B"]).doNothing())
+      .values(
+        tagsToInsert.map((tag) =>
+          newTagTables.includes(relationalTable) ? { related_id: id, tag_id: tag } : { A: id, B: tag },
+        ),
+      )
+      .onConflict((oc) =>
+        oc.columns(newTagTables.includes(relationalTable) ? ["related_id", "tag_id"] : ["A", "B"]).doNothing(),
+      )
       .execute();
 
   return tagsToDelete;

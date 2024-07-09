@@ -90,7 +90,7 @@ export function user_router(app: Elysia) {
           await db.transaction().execute(async (tx) => {
             let user;
             if (body.data) {
-              user = await tx.updateTable("users").where("id", "=", params.id).set(body.data).returning("auth_id").execute();
+              user = await tx.updateTable("users").where("id", "=", params.id).set(body.data).returning("id").execute();
 
               // Clear cached
               if (user?.[0]) {
@@ -166,19 +166,19 @@ export function user_router(app: Elysia) {
               })
               .execute();
           } else {
-            const newUser = await db.insertInto("users").values({ email: body.data.email }).returning("id").executeTakeFirst();
-            if (newUser) {
-              await db.insertInto("_project_members").values({ A: body.data.project_id, B: newUser.id }).execute();
-
-              await db
-                .insertInto("user_project_feature_flags")
-                .values({
-                  project_id: body.data.project_id,
-                  user_id: newUser.id,
-                  feature_flags: JSON.stringify(DefaultProjectFeatureFlags),
-                })
-                .execute();
-            }
+            return { ok: false, role_access: true, message: "User must already have an account on the Arkive." };
+            // const newUser = await db.insertInto("users").values({ email: body.data.email }).returning("id").executeTakeFirst();
+            // if (newUser) {
+            //   await db.insertInto("_project_members").values({ A: body.data.project_id, B: newUser.id }).execute();
+            //   await db
+            //     .insertInto("user_project_feature_flags")
+            //     .values({
+            //       project_id: body.data.project_id,
+            //       user_id: newUser.id,
+            //       feature_flags: JSON.stringify(DefaultProjectFeatureFlags),
+            //     })
+            //     .execute();
+            // }
           }
           const { title, image_id } = await db
             .selectFrom("projects")

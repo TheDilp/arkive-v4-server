@@ -10,6 +10,27 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON SCHEMA public IS '';
+
+
+--
+-- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
+
+
+--
 -- Name: pger; Type: SCHEMA; Schema: -; Owner: -
 --
 
@@ -17,10 +38,17 @@ CREATE SCHEMA pger;
 
 
 --
--- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
+-- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
 --
 
-COMMENT ON SCHEMA public IS '';
+CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
 
 
 --
@@ -295,50 +323,6 @@ END IF;
 
 
 
-    RETURN NEW;
-END;
-$$;
-
-
---
--- Name: notify_character_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.notify_character_trigger_function() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-    payload JSON;
-BEGIN
-    payload = json_build_object(
-        'entity', TG_TABLE_NAME,
-        'operation', TG_OP,
-        'title', NEW.full_name,
-        'id', NEW.id
-    );
-    PERFORM pg_notify('notification_channel', payload::text);
-    RETURN NEW;
-END;
-$$;
-
-
---
--- Name: notify_general_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.notify_general_trigger_function() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-    payload JSON;
-BEGIN
-    payload = json_build_object(
-        'entity', TG_TABLE_NAME,
-        'operation', TG_OP,
-        'title', NEW.title,
-        'id', NEW.id
-    );
-    PERFORM pg_notify('notification_channel', payload::text);
     RETURN NEW;
 END;
 $$;
@@ -1318,7 +1302,7 @@ CREATE TABLE public.graphs (
 --
 
 CREATE TABLE public.image_tags (
-    image_id uuid NOT NULL,
+    related_id uuid NOT NULL,
     tag_id uuid NOT NULL,
     id uuid DEFAULT gen_random_uuid() NOT NULL
 );
@@ -1349,6 +1333,43 @@ CREATE TABLE public.leap_days (
     parent_id uuid NOT NULL,
     month_id uuid NOT NULL,
     conditions jsonb
+);
+
+
+--
+-- Name: manuscript_tags; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscript_tags (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tag_id uuid NOT NULL,
+    related_id uuid NOT NULL
+);
+
+
+--
+-- Name: manuscript_trees; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscript_trees (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    manuscript_id uuid NOT NULL,
+    doc_id uuid NOT NULL,
+    parent_id uuid
+);
+
+
+--
+-- Name: manuscripts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscripts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    title text NOT NULL,
+    project_id uuid NOT NULL,
+    is_public boolean,
+    icon text,
+    deleted_at timestamp(3) without time zone
 );
 
 
@@ -2205,22 +2226,6 @@ ALTER TABLE ONLY public.graphs
 
 
 --
--- Name: image_tags image_tags_image_id_tag_id_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.image_tags
-    ADD CONSTRAINT image_tags_image_id_tag_id_key UNIQUE (image_id, tag_id);
-
-
---
--- Name: image_tags image_tags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.image_tags
-    ADD CONSTRAINT image_tags_pkey PRIMARY KEY (id);
-
-
---
 -- Name: images images_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2234,6 +2239,30 @@ ALTER TABLE ONLY public.images
 
 ALTER TABLE ONLY public.leap_days
     ADD CONSTRAINT leap_days_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: manuscript_tags manuscript_tags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_tags
+    ADD CONSTRAINT manuscript_tags_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: manuscript_trees manuscript_trees_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_trees
+    ADD CONSTRAINT manuscript_trees_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: manuscripts manuscripts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscripts
+    ADD CONSTRAINT manuscripts_pkey PRIMARY KEY (id);
 
 
 --
@@ -4350,11 +4379,11 @@ ALTER TABLE ONLY public.graphs
 
 
 --
--- Name: image_tags image_tags_image_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: image_tags image_tags_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.image_tags
-    ADD CONSTRAINT image_tags_image_id_fkey FOREIGN KEY (image_id) REFERENCES public.images(id) ON DELETE CASCADE;
+    ADD CONSTRAINT image_tags_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.images(id);
 
 
 --
@@ -4362,7 +4391,7 @@ ALTER TABLE ONLY public.image_tags
 --
 
 ALTER TABLE ONLY public.image_tags
-    ADD CONSTRAINT image_tags_tag_id_fkey FOREIGN KEY (tag_id) REFERENCES public.tags(id) ON DELETE CASCADE;
+    ADD CONSTRAINT image_tags_tag_id_fkey FOREIGN KEY (tag_id) REFERENCES public.tags(id);
 
 
 --
@@ -4395,6 +4424,54 @@ ALTER TABLE ONLY public.leap_days
 
 ALTER TABLE ONLY public.leap_days
     ADD CONSTRAINT leap_days_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.calendars(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_tags manuscript_tags_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_tags
+    ADD CONSTRAINT manuscript_tags_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.manuscripts(id);
+
+
+--
+-- Name: manuscript_tags manuscript_tags_tag_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_tags
+    ADD CONSTRAINT manuscript_tags_tag_id_fkey FOREIGN KEY (tag_id) REFERENCES public.tags(id);
+
+
+--
+-- Name: manuscript_trees manuscript_trees_doc_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_trees
+    ADD CONSTRAINT manuscript_trees_doc_id_fkey FOREIGN KEY (doc_id) REFERENCES public.documents(id);
+
+
+--
+-- Name: manuscript_trees manuscript_trees_manuscript_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_trees
+    ADD CONSTRAINT manuscript_trees_manuscript_id_fkey FOREIGN KEY (manuscript_id) REFERENCES public.manuscripts(id);
+
+
+--
+-- Name: manuscript_trees manuscript_trees_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_trees
+    ADD CONSTRAINT manuscript_trees_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.documents(id);
+
+
+--
+-- Name: manuscripts manuscripts_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscripts
+    ADD CONSTRAINT manuscripts_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id);
 
 
 --
@@ -4760,4 +4837,8 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240625100031'),
     ('20240626092958'),
     ('20240627122138'),
-    ('20240630111143');
+    ('20240630111143'),
+    ('20240708175228'),
+    ('20240708180634'),
+    ('20240709074432'),
+    ('20240709095356');
