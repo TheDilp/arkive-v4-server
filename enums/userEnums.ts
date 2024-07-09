@@ -70,6 +70,9 @@ export const DefaultProjectFeatureFlags = {
   character_fields_templates_create_notification: true,
   character_fields_templates_delete_notification: true,
   character_fields_templates_update_notification: true,
+  manuscripts_create_notification: true,
+  manuscripts_delete_notification: true,
+  manuscripts_update_notification: true,
 };
 
 export const DefaultUserFeatureFlags = {
