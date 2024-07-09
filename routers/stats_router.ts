@@ -7,7 +7,7 @@ import uniq from "lodash.uniq";
 import { db } from "../database/db";
 import { checkEntityLevelPermission } from "../database/queries";
 import { DBKeys } from "../database/types";
-import { EntitiesWithTagsTablesEnum, MessageEnum } from "../enums";
+import { EntitiesWithTagsTablesEnum, MessageEnum, newTagTables } from "../enums";
 import { EntitiesWithPermissionCheck, MentionEntityType } from "../types/entityTypes";
 import { PermissionDecorationType } from "../types/requestTypes";
 import { redisClient } from "../utils/redisClient";
@@ -74,7 +74,6 @@ export function stats_router(app: Elysia) {
         const project_stats: string | null = await redis.get(`${params.project_id}_${params.user_id}_stats`);
 
         // await redis.del(`${params.project_id}_${params.user_id}_stats`);
-
         if (!project_stats) {
           const queries = mainEntities.map((ent) => {
             if (ent === "blueprint_instances")
@@ -124,34 +123,35 @@ export function stats_router(app: Elysia) {
 
           let query = db
             .selectFrom(EntitiesWithTagsTablesEnum[0])
-            .leftJoin("tags", "tags.id", EntitiesWithTagsTablesEnum[0] === "image_tags" ? "tag_id" : "B")
-            .select([
-              "tags.title",
-              "tags.color",
-              EntitiesWithTagsTablesEnum[0] === "image_tags"
-                ? (eb) => eb.fn.countAll<number>().as("count")
-                : (eb) => eb.fn.countAll<number>().as("count"),
-            ])
+            .leftJoin(
+              "tags",
+              "tags.id",
+              // @ts-ignore
+              `${EntitiesWithTagsTablesEnum[0]}.${newTagTables.includes(EntitiesWithTagsTablesEnum[0]) ? "tag_id" : "B"}`,
+            )
+            .select(["tags.title", "tags.color", (eb) => eb.fn.countAll<number>().as("count")])
             .groupBy(["tags.title", "tags.color"])
             .where("tags.project_id", "=", params.project_id)
             .orderBy("count desc");
 
           for (let index = 1; index < EntitiesWithTagsTablesEnum.length; index += 1) {
             const table = EntitiesWithTagsTablesEnum[index];
+
             query = query
               // @ts-ignore
               .union(
                 db
                   .selectFrom(table)
-                  .leftJoin("tags", "tags.id", table === "image_tags" ? "tag_id" : "B")
+                  .leftJoin(
+                    "tags",
+                    "tags.id",
+                    // @ts-ignore
+                    `${EntitiesWithTagsTablesEnum[index]}.${
+                      newTagTables.includes(EntitiesWithTagsTablesEnum[index]) ? "tag_id" : "B"
+                    }`,
+                  )
                   .groupBy(["title", "color"])
-                  .select([
-                    "tags.title",
-                    "tags.color",
-                    table === "image_tags"
-                      ? (eb) => eb.fn.countAll<number>().as("count")
-                      : (eb) => eb.fn.countAll<number>().as("count"),
-                  ])
+                  .select(["tags.title", "tags.color", (eb) => eb.fn.countAll<number>().as("count")])
                   .where("project_id", "=", params.project_id),
               );
           }
