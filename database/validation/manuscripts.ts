@@ -2,6 +2,13 @@ import { t } from "elysia";
 
 import { RequestBodySchema } from "../../types/requestTypes";
 
+const ManuscriptDocumentSchema = t.Object({
+  id: t.String(),
+  title: t.String(),
+  sort: t.Number(),
+  children: t.Array(t.Any()),
+});
+
 export const ListManuscriptSchema = t.Intersect([
   RequestBodySchema,
   t.Object({
@@ -33,7 +40,7 @@ export const InsertManuscriptSchema = t.Object({
   }),
   relations: t.Optional(
     t.Object({
-      documents: t.Array(t.Object({ doc_id: t.String(), parent_id: t.Union([t.Null(), t.String()]) })),
+      documents: t.Array(ManuscriptDocumentSchema),
       tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
     }),
   ),

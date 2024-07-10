@@ -4,7 +4,13 @@ import { FromTemplateRandomCountSchema } from "../database/validation";
 import { MentionTypeEnum } from "../enums";
 import { baseURLS } from "../enums/baseEnums";
 import { HeadingType, MentionAtomType, ParagraphType } from "../types/documentContentTypes";
-import { AssetType, AvailableEntityType, AvailableSubEntityType, MentionType } from "../types/entityTypes";
+import {
+  AssetType,
+  AvailableEntityType,
+  AvailableSubEntityType,
+  ManuscriptDocumentType,
+  MentionType,
+} from "../types/entityTypes";
 import { RequestBodyFiltersType, RequestFilterType } from "../types/requestTypes";
 
 export function capitalizeFirstLetter(word: string): string {
@@ -436,4 +442,22 @@ export function getRandomTemplateCount(random_count: typeof FromTemplateRandomCo
   const count = Number(random_count.replace("max_", ""));
   if (typeof count === "number") return generateRandomNumber(1, count);
   return 1;
+}
+
+export function flattenManuscriptDocuments(
+  state: ManuscriptDocumentType[],
+  parent_id: string | null = null,
+): { doc_id: string; parent_id: string | null; sort: number }[] {
+  let flatArray: { doc_id: string; parent_id: string | null; sort: number }[] = [];
+
+  state.forEach((element) => {
+    const { id: doc_id, children, sort } = element;
+    flatArray.push({ doc_id, parent_id: parent_id, sort });
+
+    if (children && children.length > 0) {
+      flatArray = flatArray.concat(flattenManuscriptDocuments(children, doc_id));
+    }
+  });
+
+  return flatArray;
 }

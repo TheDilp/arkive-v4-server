@@ -146,3 +146,19 @@ export type UpdatePermissionType =
         }
     ))[]
   | undefined;
+
+export type ManuscriptType = {
+  id: string;
+  deleted_at: string;
+  owner_id: string;
+  title: string;
+  project_id: string;
+  documents: ManuscriptDocumentType[];
+};
+
+export type ManuscriptDocumentType = {
+  id: string;
+  title: string;
+  sort: number;
+  children: ManuscriptDocumentType[];
+};

@@ -1,5 +1,6 @@
 import Elysia from "elysia";
 import { SelectExpression } from "kysely";
+import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
@@ -15,7 +16,7 @@ import {
   GetRelatedEntityPermissionsAndRoles,
   TagQuery,
 } from "../utils/relationalQueryHelpers";
-import { getEntityWithOwnerId } from "../utils/utils";
+import { flattenManuscriptDocuments, getEntityWithOwnerId } from "../utils/utils";
 
 export function manuscript_router(app: Elysia) {
   return app
@@ -39,13 +40,18 @@ export function manuscript_router(app: Elysia) {
                 .executeTakeFirstOrThrow();
 
               if (body.relations?.documents?.length) {
-                tx.insertInto("manuscript_trees").values(
-                  body.relations.documents.map((doc) => ({
-                    manuscript_id: manuscript.id,
-                    doc_id: doc.doc_id,
-                    parent_id: doc.parent_id,
-                  })),
-                );
+                const flattened = flattenManuscriptDocuments(body.relations.documents);
+                await tx
+                  .insertInto("manuscript_trees")
+                  .values(
+                    flattened.map((doc) => ({
+                      manuscript_id: manuscript.id,
+                      doc_id: doc.doc_id,
+                      parent_id: doc.parent_id,
+                      sort: doc.sort,
+                    })),
+                  )
+                  .execute();
               }
 
               if (body.relations?.tags?.length) {
@@ -60,6 +66,7 @@ export function manuscript_router(app: Elysia) {
             return { ok: true, role_access: true, message: `Manuscript ${MessageEnum.successfully_created}` };
           },
           {
+            beforeHandle: async (context) => beforeRoleHandler(context, "create_manuscripts"),
             body: InsertManuscriptSchema,
             response: ResponseSchema,
           },
@@ -116,6 +123,17 @@ export function manuscript_router(app: Elysia) {
               if (body?.relations?.tags && permissions.all_permissions?.read_tags) {
                 query = query.select((eb) =>
                   TagQuery(eb, "manuscript_tags", "manuscripts", permissions.is_project_owner, permissions.user_id),
+                );
+              }
+              if (body?.relations?.documents && permissions.all_permissions?.read_documents) {
+                query = query.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("manuscript_trees")
+                      .leftJoin("documents", "documents.id", "manuscript_trees.doc_id")
+                      .select(["manuscript_trees.doc_id as id", "manuscript_trees.parent_id", "documents.title"])
+                      .where("manuscript_trees.manuscript_id", "=", params.id),
+                  ).as("documents"),
                 );
               }
             }

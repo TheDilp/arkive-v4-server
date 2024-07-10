@@ -73,7 +73,7 @@ export const app = new Elysia()
     if (code === "VALIDATION") {
       set.status = 400;
       console.error(error);
-      return { message: "The payload was not formatted correctly.", ok: false, role_access: false };
+      return { message: "There was an error with your request.", ok: false, role_access: false };
     }
     if (code === "NO_ROLE_ACCESS") {
       set.status = 200;
