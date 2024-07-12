@@ -2,18 +2,25 @@ import { t } from "elysia";
 
 import { RequestBodySchema } from "../../types/requestTypes";
 
-const ManuscriptDocumentSchema = t.Object({
-  id: t.String(),
-  title: t.String(),
+const ManuscriptEntitySchema = t.Object({
+  parent_id: t.Union([t.Null(), t.String()]),
+  manuscript_id: t.String(),
+  document_id: t.Union([t.Null(), t.String()]),
+  character_id: t.Union([t.Null(), t.String()]),
+  blueprint_instance_id: t.Union([t.Null(), t.String()]),
+  map_id: t.Union([t.Null(), t.String()]),
+  map_pin_id: t.Union([t.Null(), t.String()]),
+  graph_id: t.Union([t.Null(), t.String()]),
+  event_id: t.Union([t.Null(), t.String()]),
+  image_id: t.Union([t.Null(), t.String()]),
   sort: t.Number(),
-  children: t.Array(t.Any()),
 });
 
 export const ListManuscriptSchema = t.Intersect([
   RequestBodySchema,
   t.Object({
     data: t.Object({ project_id: t.String() }),
-    relations: t.Optional(t.Object({ tags: t.Optional(t.Boolean()), documents: t.Optional(t.Boolean()) })),
+    relations: t.Optional(t.Object({ tags: t.Optional(t.Boolean()), entities: t.Optional(t.Boolean()) })),
   }),
 ]);
 
@@ -24,7 +31,7 @@ export const ReadManuscriptSchema = t.Intersect([
       relations: t.Optional(
         t.Object({
           tags: t.Optional(t.Boolean()),
-          documents: t.Optional(t.Boolean()),
+          entities: t.Optional(t.Boolean()),
         }),
       ),
     }),
@@ -40,7 +47,7 @@ export const InsertManuscriptSchema = t.Object({
   }),
   relations: t.Optional(
     t.Object({
-      documents: t.Array(ManuscriptDocumentSchema),
+      entities: t.Array(ManuscriptEntitySchema),
       tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
     }),
   ),
@@ -73,13 +80,15 @@ export const UpdateManuscriptSchema = t.Object({
   }),
   relations: t.Optional(
     t.Object({
+      entities: t.Array(ManuscriptEntitySchema),
       tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
     }),
   ),
   permissions: t.Optional(
     t.Array(
       t.Intersect([
-        t.Object({ related_id: t.Optional(t.Null()) }),
+        t.Object({ related_id: t.String() }),
+
         t.Union([
           t.Object({
             permission_id: t.String(),

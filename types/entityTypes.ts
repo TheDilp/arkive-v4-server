@@ -153,12 +153,17 @@ export type ManuscriptType = {
   owner_id: string;
   title: string;
   project_id: string;
-  documents: ManuscriptDocumentType[];
+  documents: ManuscriptEntityType[];
 };
 
-export type ManuscriptDocumentType = {
-  id: string;
-  title: string;
-  sort: number;
-  children: ManuscriptDocumentType[];
+export type ManuscriptEntityType = {
+  parent_id: string | null;
+  manuscript_id: string;
+  document_id: string | null;
+  character_id: string | null;
+  blueprint_instance_id: string | null;
+  map_id: string | null;
+  map_pin_id: string | null;
+  graph_id: string | null;
+  event_id: string | null;
 };
