@@ -167,6 +167,7 @@ export function getIconUrlFromIconEnum(icon: string, color?: string) {
 }
 
 export function getDefaultEntityIcon(type: AvailableEntityType | AvailableSubEntityType) {
+  if (type === "manuscripts") return "ph:books";
   if (type === "characters") return "ph:user";
   if (type === "documents") return "ph:files-fill";
   if (type === "maps") return "ph:map-trifold";

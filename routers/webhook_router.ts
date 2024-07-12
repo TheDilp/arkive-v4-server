@@ -99,6 +99,15 @@ export function webhook_router(app: Elysia) {
           } else if (body.data.type === "document_text") {
             content.title = body.data.title;
             content.description = body.data.description;
+          } else if (body.data.type === "manuscripts") {
+            const data = await db
+              .selectFrom("manuscripts")
+              .where("id", "=", body.data.id)
+              .select(["id", "title", "icon", "project_id"])
+              .executeTakeFirstOrThrow();
+            content.url = `${createEntityURL(data.project_id, "manuscripts", data.id)}`;
+            content.title = `${data.title} (Manuscript)`;
+            content.thumbnail = { url: getIconUrlFromIconEnum(data.icon || getDefaultEntityIcon("manuscripts")) };
           } else if (body.data.type === "documents") {
             const data = await db
               .selectFrom("documents")

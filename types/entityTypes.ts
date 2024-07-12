@@ -34,6 +34,7 @@ export type BulkArkiveEntitiesType =
 
 export type AvailableEntityType =
   | "projects"
+  | "manuscripts"
   | "characters"
   | "documents"
   | "maps"
