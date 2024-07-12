@@ -1353,6 +1353,26 @@ CREATE TABLE public.leap_days (
 
 
 --
+-- Name: manuscript_entities; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscript_entities (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    document_id uuid,
+    character_id uuid,
+    blueprint_instance_id uuid,
+    map_id uuid,
+    map_pin_id uuid,
+    graph_id uuid,
+    event_id uuid,
+    image_id uuid,
+    parent_id uuid,
+    manuscript_id uuid NOT NULL,
+    sort integer
+);
+
+
+--
 -- Name: manuscript_tags; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1360,19 +1380,6 @@ CREATE TABLE public.manuscript_tags (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     tag_id uuid NOT NULL,
     related_id uuid NOT NULL
-);
-
-
---
--- Name: manuscript_trees; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.manuscript_trees (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    manuscript_id uuid NOT NULL,
-    doc_id uuid NOT NULL,
-    parent_id uuid,
-    sort integer
 );
 
 
@@ -2260,19 +2267,19 @@ ALTER TABLE ONLY public.leap_days
 
 
 --
+-- Name: manuscript_entities manuscript_entities_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_entities
+    ADD CONSTRAINT manuscript_entities_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: manuscript_tags manuscript_tags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.manuscript_tags
     ADD CONSTRAINT manuscript_tags_pkey PRIMARY KEY (id);
-
-
---
--- Name: manuscript_trees manuscript_trees_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.manuscript_trees
-    ADD CONSTRAINT manuscript_trees_pkey PRIMARY KEY (id);
 
 
 --
@@ -2505,6 +2512,14 @@ ALTER TABLE ONLY public.entity_permissions
 
 ALTER TABLE ONLY public.entity_permissions
     ADD CONSTRAINT unique_entity_user_permission_combination UNIQUE (related_id, user_id, permission_id);
+
+
+--
+-- Name: manuscript_tags unique_manuscript_tags; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_tags
+    ADD CONSTRAINT unique_manuscript_tags UNIQUE (related_id, tag_id);
 
 
 --
@@ -4445,6 +4460,86 @@ ALTER TABLE ONLY public.leap_days
 
 
 --
+-- Name: manuscript_entities manuscript_entities_blueprint_instance_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_entities
+    ADD CONSTRAINT manuscript_entities_blueprint_instance_id_fkey FOREIGN KEY (blueprint_instance_id) REFERENCES public.blueprint_instances(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_entities manuscript_entities_character_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_entities
+    ADD CONSTRAINT manuscript_entities_character_id_fkey FOREIGN KEY (character_id) REFERENCES public.characters(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_entities manuscript_entities_document_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_entities
+    ADD CONSTRAINT manuscript_entities_document_id_fkey FOREIGN KEY (document_id) REFERENCES public.documents(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_entities manuscript_entities_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_entities
+    ADD CONSTRAINT manuscript_entities_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_entities manuscript_entities_graph_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_entities
+    ADD CONSTRAINT manuscript_entities_graph_id_fkey FOREIGN KEY (graph_id) REFERENCES public.graphs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_entities manuscript_entities_image_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_entities
+    ADD CONSTRAINT manuscript_entities_image_id_fkey FOREIGN KEY (image_id) REFERENCES public.images(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_entities manuscript_entities_manuscript_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_entities
+    ADD CONSTRAINT manuscript_entities_manuscript_id_fkey FOREIGN KEY (manuscript_id) REFERENCES public.manuscripts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_entities manuscript_entities_map_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_entities
+    ADD CONSTRAINT manuscript_entities_map_id_fkey FOREIGN KEY (map_id) REFERENCES public.maps(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_entities manuscript_entities_map_pin_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_entities
+    ADD CONSTRAINT manuscript_entities_map_pin_id_fkey FOREIGN KEY (map_pin_id) REFERENCES public.map_pins(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_entities manuscript_entities_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_entities
+    ADD CONSTRAINT manuscript_entities_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.manuscript_entities(id) ON DELETE CASCADE;
+
+
+--
 -- Name: manuscript_tags manuscript_tags_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4458,30 +4553,6 @@ ALTER TABLE ONLY public.manuscript_tags
 
 ALTER TABLE ONLY public.manuscript_tags
     ADD CONSTRAINT manuscript_tags_tag_id_fkey FOREIGN KEY (tag_id) REFERENCES public.tags(id);
-
-
---
--- Name: manuscript_trees manuscript_trees_doc_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.manuscript_trees
-    ADD CONSTRAINT manuscript_trees_doc_id_fkey FOREIGN KEY (doc_id) REFERENCES public.documents(id);
-
-
---
--- Name: manuscript_trees manuscript_trees_manuscript_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.manuscript_trees
-    ADD CONSTRAINT manuscript_trees_manuscript_id_fkey FOREIGN KEY (manuscript_id) REFERENCES public.manuscripts(id);
-
-
---
--- Name: manuscript_trees manuscript_trees_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.manuscript_trees
-    ADD CONSTRAINT manuscript_trees_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.documents(id);
 
 
 --
@@ -4869,4 +4940,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240709074432'),
     ('20240709095356'),
     ('20240709120816'),
-    ('20240709121028');
+    ('20240709121028'),
+    ('20240711084312'),
+    ('20240712091231');
