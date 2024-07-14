@@ -1,4 +1,5 @@
 import { createHmac } from "crypto";
+import { readFile } from "fs";
 
 import { FromTemplateRandomCountSchema } from "../database/validation";
 import { MentionTypeEnum } from "../enums";
@@ -19,7 +20,7 @@ export function getXCoordinate(index: number, generation: number, previousOffset
   }
 }
 
-type MainType = { id: string; title: string; suboptions?: { id: string; title: string }[] };
+type MainType = { id: string; title: string; description?: string | null; suboptions?: { id: string; title: string }[] };
 
 export type GroupedQueryFilter = RequestFilterType & { type: "AND" | "OR" };
 export interface GroupedQueries {
@@ -28,12 +29,15 @@ export interface GroupedQueries {
   };
 }
 
-export function chooseRandomItems(arr: MainType[], M: number): { id: string; subitem_id?: string; title: string }[] {
+export function chooseRandomTableItems(
+  arr: MainType[],
+  M: number,
+): { id: string; subitem_id?: string; title: string; description?: string | null }[] {
   if (M > arr.length) {
     return [];
   }
 
-  const randomItems: { id: string; subitem_id?: string; title: string }[] = [];
+  const randomItems: { id: string; subitem_id?: string; title: string; description?: string | null }[] = [];
 
   for (let i = 0; i < M; i++) {
     const randomIndex = Math.floor(Math.random() * arr.length);
@@ -45,6 +49,7 @@ export function chooseRandomItems(arr: MainType[], M: number): { id: string; sub
         id: selectedItem.id,
         subitem_id: seletedSubItem.id,
         title: `${selectedItem.title} - ${seletedSubItem.title}`,
+        description: selectedItem?.description || "",
       });
     } else {
       randomItems.push({ id: selectedItem.id, title: selectedItem.title });
@@ -437,4 +442,16 @@ export function getRandomTemplateCount(random_count: typeof FromTemplateRandomCo
   const count = Number(random_count.replace("max_", ""));
   if (typeof count === "number") return generateRandomNumber(1, count);
   return 1;
+}
+
+export function imageToBase64(filePath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    readFile(filePath, (err, data) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(data.toString("base64"));
+      }
+    });
+  });
 }
