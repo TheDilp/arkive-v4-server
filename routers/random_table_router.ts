@@ -1,5 +1,5 @@
 import Elysia from "elysia";
-import { SelectExpression, SelectQueryBuilder } from "kysely";
+import { SelectExpression, SelectQueryBuilder, sql } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
@@ -133,7 +133,11 @@ export function random_table_router(app: Elysia) {
                               .select(["random_table_suboptions.id", "random_table_suboptions.title"])
                               .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id"),
                           ).as("random_table_suboptions"),
-                      ]),
+                      ])
+                      .orderBy(
+                        (ob) => sql`NULLIF(regexp_replace(${ob.ref("random_table_options.title")}, '\\D.*', ''), '')::int`,
+                      )
+                      .orderBy((ob) => sql`regexp_replace(${ob.ref("random_table_options.title")}, '^\\d+\\s+', '')`),
                   ).as("random_table_options"),
                 ),
               )

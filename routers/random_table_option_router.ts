@@ -1,5 +1,5 @@
 import Elysia from "elysia";
-import { SelectExpression } from "kysely";
+import { ExpressionBuilder, SelectExpression, sql } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 import groupBy from "lodash.groupby";
@@ -15,7 +15,6 @@ import {
 } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { constructOrdering } from "../utils/orderByConstructor";
 import { GetRelationsForUpdating } from "../utils/relationalQueryHelpers";
 import { chooseRandomItems } from "../utils/utils";
 
@@ -52,10 +51,10 @@ export function random_table_option_router(app: Elysia) {
       .post(
         "/",
         async ({ body }) => {
-          const data = await db
+          let query = db
             .selectFrom("random_table_options")
             .select(body.fields as SelectExpression<DB, "random_table_options">[])
-            .$if(!!body.orderBy, (qb) => constructOrdering(body.orderBy, qb))
+
             .$if(!!body.relations?.random_table_suboptions, (qb) =>
               qb.select((eb) =>
                 jsonArrayFrom(
@@ -70,8 +69,33 @@ export function random_table_option_router(app: Elysia) {
                 ).as("random_table_suboptions"),
               ),
             )
-            .where("random_table_options.parent_id", "=", body.data.parent_id)
-            .execute();
+            .where("random_table_options.parent_id", "=", body.data.parent_id);
+
+          if (body.orderBy?.length && body.orderBy[0].field === "title") {
+            if (body.orderBy[0].sort === "asc") {
+              query = query
+                .orderBy(
+                  (ob: ExpressionBuilder<DB, "random_table_options">) =>
+                    sql`NULLIF(regexp_replace(${ob.ref("random_table_options.title")}, '\\D.*', ''), '')::int asc`,
+                )
+                .orderBy(
+                  (ob: ExpressionBuilder<DB, "random_table_options">) =>
+                    sql`regexp_replace(${ob.ref("random_table_options.title")}, '^\\d+\\s+', '') asc`,
+                );
+            } else {
+              query = query
+                .orderBy(
+                  (ob: ExpressionBuilder<DB, "random_table_options">) =>
+                    sql`NULLIF(regexp_replace(${ob.ref("random_table_options.title")}, '\\D.*', ''), '')::int desc`,
+                )
+                .orderBy(
+                  (ob: ExpressionBuilder<DB, "random_table_options">) =>
+                    sql`regexp_replace(${ob.ref("random_table_options.title")}, '^\\d+\\s+', '') desc`,
+                );
+            }
+          }
+
+          const data = await query.execute();
           return { data, message: "Success", ok: true, role_access: true };
         },
         {
@@ -93,6 +117,7 @@ export function random_table_option_router(app: Elysia) {
               "random_table_options.icon",
               "random_table_options.parent_id",
             ])
+
             .$if(!!body.relations?.random_table_suboptions, (qb) =>
               qb.select((eb) =>
                 jsonArrayFrom(
