@@ -14,6 +14,7 @@ ENV NODE_ENV=production
 COPY --from=builder /usr/src/app/dist ./dist
 COPY --from=builder /usr/src/app/node_modules/sharp ./node_modules/sharp
 COPY --from=builder /usr/src/app/node_modules/semver ./node_modules/semver
+COPY --from=builder /usr/src/app/public/Logo.webp ./public/Logo.webp
 RUN bun install --include=optional sharp
 USER bun
 EXPOSE 5174/tcp
