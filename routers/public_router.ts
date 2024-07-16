@@ -1204,9 +1204,11 @@ export function public_router(app: Elysia) {
           .post(
             "/interaction",
             async ({ body, headers, set }) => {
+              console.info(headers);
               if (headers) {
                 const signature = headers?.["x-signature-ed25519"];
                 const timestamp = headers?.["x-signature-timestamp"];
+                console.info(signature, timestamp);
 
                 if (signature && timestamp) {
                   const PUBLIC_KEY = process.env.DISCORD_APP_PUBLIC_KEY;
@@ -1216,6 +1218,8 @@ export function public_router(app: Elysia) {
                     Buffer.from(signature, "hex"),
                     Buffer.from(PUBLIC_KEY as string, "hex"),
                   );
+
+                  console.info(isVerified);
 
                   if (!isVerified) {
                     set.status = 401;
