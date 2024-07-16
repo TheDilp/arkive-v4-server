@@ -1773,7 +1773,8 @@ CREATE TABLE public.webhooks (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     title text NOT NULL,
     url text NOT NULL,
-    user_id uuid NOT NULL
+    user_id uuid NOT NULL,
+    webhook_id text NOT NULL
 );
 
 
@@ -4942,4 +4943,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240709120816'),
     ('20240709121028'),
     ('20240711084312'),
-    ('20240712091231');
+    ('20240712091231'),
+    ('20240716172359');

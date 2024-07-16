@@ -52,7 +52,7 @@ export function chooseRandomTableItems(
         description: selectedItem?.description || "",
       });
     } else {
-      randomItems.push({ id: selectedItem.id, title: selectedItem.title });
+      randomItems.push({ id: selectedItem.id, title: selectedItem.title, description: selectedItem?.description });
     }
   }
 

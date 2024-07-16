@@ -13,11 +13,13 @@ import {
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import {
+  chooseRandomTableItems,
   createEntityURL,
   extractDocumentText,
   getDefaultEntityIcon,
   getIconUrlFromIconEnum,
   getImageURL,
+  imageToBase64,
 } from "../utils/utils";
 
 export function webhook_router(app: Elysia) {
@@ -26,7 +28,22 @@ export function webhook_router(app: Elysia) {
       .post(
         "/create",
         async ({ body }) => {
-          await db.insertInto("webhooks").values(body.data).execute();
+          const webhook_avatar = await imageToBase64("public/Logo.webp");
+          const res = await fetch(`https://discordapp.com/api/channels/${body.data.channel_id}/webhooks`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ name: body.data.title, avatar: `data:image/webp;base64,${webhook_avatar}` }),
+          });
+
+          const data = (await res.json()) as { id: string; url: string };
+
+          await db
+            .insertInto("webhooks")
+            .values({ title: body.data.title, url: data.url, webhook_id: data.id, user_id: body.data.user_id })
+            .execute();
 
           return { message: `Webhook ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
@@ -78,7 +95,6 @@ export function webhook_router(app: Elysia) {
         async ({ params, body }) => {
           const { url } = await db
             .selectFrom("webhooks")
-            .leftJoin("users", "users.id", "webhooks.user_id")
             .select(["url"])
             .where("webhooks.id", "=", params.id)
             .executeTakeFirstOrThrow();
@@ -179,16 +195,39 @@ export function webhook_router(app: Elysia) {
             content.url = `${createEntityURL(data.project_id, "graphs", data.id)}`;
             content.title = `${data.title} (Graph)`;
             content.thumbnail = { url: getIconUrlFromIconEnum(getDefaultEntityIcon("graphs")) };
+          } else if (body.data.type === "roll_btn") {
+            content.content = `Roll on random table - ${body.data.title}`;
+          } else {
+            console.error("Incorrect webhook type. - ", params.id);
+            return { message: "There was an error with your request.", ok: false, role_access: true };
           }
-
           await fetch(url, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-              embeds: [content],
-            }),
+            body: JSON.stringify(
+              body.data.type === "roll_btn"
+                ? {
+                    content: content.content,
+                    components: [
+                      {
+                        type: 1,
+                        components: [
+                          {
+                            type: 2,
+                            label: "Roll",
+                            style: 3,
+                            custom_id: `roll-btn_${body.data.id}`,
+                          },
+                        ],
+                      },
+                    ],
+                  }
+                : {
+                    embeds: [content],
+                  },
+            ),
           });
 
           return { message: MessageEnum.success, ok: true, role_access: true };
@@ -198,6 +237,44 @@ export function webhook_router(app: Elysia) {
           response: ResponseSchema,
         },
       )
+      // :id is the id of the webhook
+      .post("/:id/:random_table_id/roll", async ({ params }) => {
+        const { url } = await db
+          .selectFrom("webhooks")
+          .select(["url"])
+          .where("webhooks.id", "=", params.id)
+          .executeTakeFirstOrThrow();
+
+        const data = await db
+          .selectFrom("random_table_options")
+          .select(["id", "title", "description"])
+          .where("parent_id", "=", params.random_table_id)
+          .execute();
+
+        if (data.length) {
+          const random_option = chooseRandomTableItems(data, 1);
+          if (random_option) {
+            const content = {
+              title: random_option[0].title,
+              description: random_option[0].description,
+            };
+
+            await fetch(url, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                embeds: [content],
+              }),
+            });
+
+            return { ok: true, role_access: true, message: MessageEnum.success };
+          }
+        }
+
+        return { ok: false, role_access: true, message: "No options for this table." };
+      })
       .delete(
         "/:id",
         async ({ params }) => {

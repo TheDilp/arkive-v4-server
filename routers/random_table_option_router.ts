@@ -16,7 +16,7 @@ import {
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { GetRelationsForUpdating } from "../utils/relationalQueryHelpers";
-import { chooseRandomItems } from "../utils/utils";
+import { chooseRandomTableItems } from "../utils/utils";
 
 export function random_table_option_router(app: Elysia) {
   return app.group("/random_table_options", (server) =>
@@ -159,7 +159,7 @@ export function random_table_option_router(app: Elysia) {
             return { message: "More items requested than there are available.", ok: false, role_access: true };
           }
 
-          const data = chooseRandomItems(options, body.data.count);
+          const data = chooseRandomTableItems(options, body.data.count);
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
@@ -193,7 +193,7 @@ export function random_table_option_router(app: Elysia) {
           for (let i = 0; i < tableIdsToFetch.length; i++) {
             const currentTableId = tableIdsToFetch[i];
             const options = groupedOptions[currentTableId];
-            const chosenOptions = chooseRandomItems(options, body.data[i].count ?? 1);
+            const chosenOptions = chooseRandomTableItems(options, body.data[i].count ?? 1);
             data.push({
               random_table_id: currentTableId,
               random_table: chosenOptions,

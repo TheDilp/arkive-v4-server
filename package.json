@@ -38,7 +38,8 @@
     "react-email": "^2.0.0",
     "redis": "^4.6.13",
     "resend": "^1.1.0",
-    "sharp": "^0.33.0"
+    "sharp": "^0.33.0",
+    "tweetnacl": "^1.0.3"
   },
   "trustedDependencies": [
     "elysia",

@@ -9,8 +9,9 @@ export const ReadWebhookSchema = t.Intersect([RequestBodySchema, t.Object({ data
 export const InsertWebhookSchema = t.Object({
   data: t.Object({
     title: t.String(),
-    url: t.String(),
+    channel_id: t.String(),
     user_id: t.String(),
+    icon: t.Optional(t.Union([t.String(), t.Null()])),
   }),
 });
 export const UpdateWebhookSchema = t.Object({
@@ -27,6 +28,7 @@ export const SendWebhookSchema = t.Object({
       description: t.Optional(t.String()),
       type: t.Union([t.Literal("random_table_roll")]),
     }),
+    t.Object({ id: t.String(), title: t.String(), type: t.Literal("roll_btn") }),
     t.Object({
       id: t.String(),
       type: t.Union([
