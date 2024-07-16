@@ -1204,11 +1204,9 @@ export function public_router(app: Elysia) {
           .post(
             "/interaction",
             async ({ body, headers, set }) => {
-              console.info(headers);
               if (headers) {
                 const signature = headers?.["x-signature-ed25519"];
                 const timestamp = headers?.["x-signature-timestamp"];
-                console.info(signature, timestamp);
 
                 if (signature && timestamp) {
                   const PUBLIC_KEY = process.env.DISCORD_APP_PUBLIC_KEY;
@@ -1218,8 +1216,6 @@ export function public_router(app: Elysia) {
                     Buffer.from(signature, "hex"),
                     Buffer.from(PUBLIC_KEY as string, "hex"),
                   );
-
-                  console.info(isVerified);
 
                   if (!isVerified) {
                     set.status = 401;
@@ -1233,8 +1229,6 @@ export function public_router(app: Elysia) {
 
                   const [type, id] = body.data.custom_id.split("_");
 
-                  console.info(body.data);
-
                   if (type === "roll-btn") {
                     const { url } = await db
                       .selectFrom("webhooks")
@@ -1247,17 +1241,14 @@ export function public_router(app: Elysia) {
                       .select(["id", "title", "description"])
                       .where("parent_id", "=", id)
                       .execute();
-                    console.info(data);
                     if (data.length) {
                       const random_option = chooseRandomTableItems(data, 1);
-                      console.info(random_option);
 
                       if (random_option) {
                         const content = {
                           title: random_option[0].title,
                           description: random_option[0].description,
                         };
-                        console.info(content);
 
                         fetch(`https://discordapp.com/api/channels/${body.message.channel_id}/messages/${body.message.id}`, {
                           method: "DELETE",
