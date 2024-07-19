@@ -51,6 +51,7 @@ export function auth_router(app: Elysia) {
           params,
           //  cookie
         }) => {
+          console.info(query);
           // const environment = process.env.NODE_ENV;
           const client_id = process.env.DISCORD_CLIENT_ID as string;
           const client_secret = process.env.DISCORD_CLIENT_SECRET as string;
