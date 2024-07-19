@@ -1,4 +1,7 @@
+import { Cookie } from "elysia";
+
 import { db } from "../database/db";
+import { JWTResponse } from "../types/entityTypes";
 import { redisClient } from "./redisClient";
 
 export async function getUserProjectFlags(user_id: string, project_id: string) {
@@ -21,4 +24,66 @@ export async function getUserProjectFlags(user_id: string, project_id: string) {
     }
   }
   return flags;
+}
+
+export function extractDiscordAvatar(user_id: string, avatar?: string) {
+  if (avatar) return `https://cdn.discordapp.com/avatars/${user_id}/${avatar}`;
+  return undefined;
+}
+
+export async function verifyJWT({
+  refresh,
+  access,
+}: {
+  refresh: Cookie<string | undefined>;
+  access: Cookie<string | undefined>;
+}) {
+  const res = await fetch(`${process.env.ARKIVE_AUTH_URL}/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      access: access.value,
+      refresh: refresh.value,
+    }),
+  });
+
+  if (res.status >= 400) {
+    console.error(await res.text());
+    // set.status = 401;
+    return { status: "unauthenticated" };
+  }
+
+  try {
+    const cookie_data = (await res.json()) as JWTResponse;
+    access.value = cookie_data.access;
+    access.expires = getCookieExpiry("access");
+    refresh.value = cookie_data.refresh;
+    refresh.expires = getCookieExpiry("refresh");
+
+    return {
+      status: "authenticated",
+      user_id: cookie_data.claims.user_id,
+      project_id: cookie_data.claims.project_id,
+      image_url: cookie_data.claims.image_url,
+      is_email_confirmed: cookie_data.claims.is_email_confirmed,
+      name: cookie_data.claims.name,
+    };
+  } catch (error) {
+    console.error(error);
+    // set.status = 401;
+    throw new Error("UNAUTHORIZED");
+  }
+}
+export function getCookieExpiry(type: "access" | "refresh"): Date {
+  const now = new Date();
+
+  if (type === "access") {
+    // Add 5 minutes for access token
+    now.setMinutes(now.getMinutes() + 5);
+  } else if (type === "refresh") {
+    // Add 6 hours for refresh token
+    now.setHours(now.getHours() + 6);
+  }
+
+  return now;
 }

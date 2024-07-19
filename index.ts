@@ -8,6 +8,7 @@ import { NoPublicAccess, NoRoleAccess, UnauthorizedError } from "./enums";
 import { tempAfterHandle } from "./handlers";
 import {
   asset_router,
+  auth_router,
   blueprint_instance_router,
   blueprint_router,
   bulk_router,
@@ -46,16 +47,36 @@ import {
   websocket_router,
   word_router,
 } from "./routers";
+import { getCookieExpiry, verifyJWT } from "./utils/userUtils";
 
-export const app = new Elysia()
+export const app = new Elysia({ name: "Editor.Router" })
   .error({
     UNAUTHORIZED: UnauthorizedError,
     NO_PUBLIC_ACCESS: NoPublicAccess,
     NO_ROLE_ACCESS: NoRoleAccess,
   })
-  .onError(({ code, error, set }) => {
+  .onError(({ code, error, set, cookie }) => {
     if (code === "UNAUTHORIZED") {
-      set.status = 403;
+      const environment = process.env.NODE_ENV;
+      set.status = 401;
+
+      cookie.access.set({
+        value: "None",
+        httpOnly: true,
+        secure: environment === "production",
+        sameSite: environment === "production",
+        path: "/",
+        expires: getCookieExpiry("access"),
+      });
+      cookie.refresh.set({
+        value: "None",
+        httpOnly: true,
+        secure: environment === "production",
+        sameSite: environment === "production",
+        path: "/",
+        expires: getCookieExpiry("refresh"),
+      });
+
       return { message: "UNAUTHORIZED", ok: false, role_access: false };
     }
     if (code === "NO_PUBLIC_ACCESS") {
@@ -91,19 +112,18 @@ export const app = new Elysia()
     console.error(error);
     return { message: "There was an error with your request.", ok: false, role_access: false };
   })
-  .onStart(() => console.info(`Listening on ${process.env.PORT}`))
-  .use(
-    cors({
-      origin:
-        process.env.NODE_ENV === "development"
-          ? true
-          : [process.env.AUTH_SERVER as string, process.env.PUBLIC_SERVER as string],
-      methods: ["GET", "POST", "DELETE"],
-    }),
-  )
-  .use(health_check_router)
-  .group("/api/v1", (server: Elysia) =>
+  .onStart(() => console.info(`LISTENING ON PORT ${process.env.PORT} 🚀`))
+  .group("/api/v1" as any, (server) =>
     server
+      .onBeforeHandle(async ({ headers, cookie: { access, refresh } }) => {
+        const data = await verifyJWT({ access, refresh });
+
+        if (data.status === "authenticated") {
+          headers["user-id"] = data.user_id;
+          headers["project-id"] = data.project_id || undefined;
+          headers["user-image-url"] = data.user_id || undefined;
+        }
+      })
       // @ts-ignore
       .onAfterHandle(async (context, response) => {
         await tempAfterHandle(context, response);
@@ -145,9 +165,20 @@ export const app = new Elysia()
       .use(role_router)
       .use(permission_router),
   )
+  .use(auth_router)
   .use(public_router)
   .use(meta_router)
   .use(websocket_router)
+  .use(health_check_router)
+  .use(
+    cors({
+      origin:
+        process.env.NODE_ENV === "development"
+          ? true
+          : [process.env.AUTH_SERVER as string, process.env.PUBLIC_SERVER as string],
+      methods: ["GET", "POST", "DELETE"],
+    }),
+  )
   .use(
     cron({
       name: "heartbeat",

@@ -168,3 +168,24 @@ export type ManuscriptEntityType = {
   graph_id: string | null;
   event_id: string | null;
 };
+
+export type DiscordUser = {
+  id: string;
+  username: string;
+  avatar?: string;
+  email: string;
+};
+
+export type JWTClaims = {
+  user_id: string;
+  project_id: string | null;
+  image_url: string | null;
+  is_email_confirmed: boolean | null;
+  name: string | null;
+};
+
+export type JWTResponse = {
+  access: string;
+  refresh: string;
+  claims: JWTClaims;
+};
