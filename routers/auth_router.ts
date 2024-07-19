@@ -1,14 +1,48 @@
-import { compare } from "bcryptjs";
+import { compare, genSalt, hash } from "bcryptjs";
 import { Elysia, t } from "elysia";
 
 import { db } from "../database/db";
+import { EmailSignUp } from "../emails/EmailSignUp";
 import { ErrorEnums } from "../enums";
 import { DiscordUser, JWTResponse } from "../types/entityTypes";
+import { resend } from "../utils/emailClient";
 import { extractDiscordAvatar, getCookieExpiry, verifyJWT } from "../utils/userUtils";
 
 export function auth_router(app: Elysia) {
   return app.group("/auth" as any, (server) =>
     server
+      .post(
+        "/signup",
+        async ({ body }) => {
+          if (body.password === body.password_confirm) {
+            const salt = await genSalt(10);
+            const password_hash = await hash(body.password, salt);
+
+            const user = await db
+              .insertInto("users")
+              .values({ password: password_hash, email: body.email, nickname: body.nickname })
+              .returning("id")
+              .executeTakeFirstOrThrow();
+
+            await resend.emails.send({
+              from: "The Arkive <emails@thearkive.app>",
+              to: [body.email],
+              subject: "Arkive signup",
+              react: EmailSignUp({ user_id: user.id }),
+            });
+
+            return { ok: true, code: "signed_up" };
+          }
+        },
+        {
+          body: t.Object({ email: t.String(), nickname: t.String(), password: t.String(), password_confirm: t.String() }),
+        },
+      )
+      .get("/email_confirm/:user_id", async ({ params, redirect }) => {
+        await db.updateTable("users").where("users.id", "=", params.user_id).set("is_email_confirmed", true).execute();
+
+        return redirect(`${process.env.ARKIVE_HOME_URL}/signin/editor`);
+      })
       .get(
         "/signin/discord/:module",
         async ({ query, redirect, params, cookie }) => {

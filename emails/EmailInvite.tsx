@@ -13,13 +13,13 @@ import {
   Text,
 } from "@react-email/components";
 
-interface VercelInviteUserEmailProps {
+interface InviteUserEmailProps {
   project_name: string;
   image?: string;
   isRemoved: boolean;
 }
 
-export const EmailInvite = ({ project_name, image, isRemoved }: VercelInviteUserEmailProps) => {
+export const EmailInvite = ({ project_name, image, isRemoved }: InviteUserEmailProps) => {
   return (
     <Html>
       <Head />
