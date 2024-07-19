@@ -45,11 +45,12 @@ export function auth_router(app: Elysia) {
       })
       .get(
         "/signin/discord/:module",
-        async ({ query, params, cookie, redirect }) => {
+        async (ctx) => {
+          console.info(ctx);
           const environment = process.env.NODE_ENV;
           const client_id = process.env.DISCORD_CLIENT_ID as string;
           const client_secret = process.env.DISCORD_CLIENT_SECRET as string;
-          const redirect_uri = `${process.env.REDIRECT_URL}/${params.module}`;
+          const redirect_uri = `${process.env.REDIRECT_URL}/${ctx?.params.module}`;
 
           const res = await fetch("https://discord.com/api/oauth2/token", {
             method: "POST",
@@ -61,7 +62,7 @@ export function auth_router(app: Elysia) {
               client_secret,
               grant_type: "authorization_code",
               redirect_uri,
-              code: query.code,
+              code: ctx?.query.code,
             }),
           });
 
@@ -121,7 +122,7 @@ export function auth_router(app: Elysia) {
             const cookie_data = (await cookie_res.json()) as JWTResponse;
 
             if (cookie_data?.access && cookie_data?.refresh && cookie_data?.claims) {
-              cookie?.access?.set({
+              ctx?.cookie?.access?.set({
                 value: cookie_data.access,
                 httpOnly: true,
                 secure: environment === "production",
@@ -130,7 +131,7 @@ export function auth_router(app: Elysia) {
                 expires: getCookieExpiry("access"),
               });
 
-              cookie?.refresh?.set({
+              ctx?.cookie?.refresh?.set({
                 value: cookie_data.refresh,
                 httpOnly: true,
                 secure: environment === "production",
@@ -138,12 +139,12 @@ export function auth_router(app: Elysia) {
                 path: "/",
                 expires: getCookieExpiry("refresh"),
               });
-              return redirect(process.env.ARKIVE_EDITOR_URL as string);
+              return ctx?.redirect(process.env.ARKIVE_EDITOR_URL as string);
             } else {
-              return redirect(process.env.ARKIVE_HOME_URL as string);
+              return ctx?.redirect(process.env.ARKIVE_HOME_URL as string);
             }
           }
-          if (params.module === "editor") return redirect(process.env.EDITOR_CLIENT_URL as string);
+          if (ctx?.params.module === "editor") return ctx?.redirect(process.env.EDITOR_CLIENT_URL as string);
           throw new Error("UNAUTHORIZED");
         },
         {
