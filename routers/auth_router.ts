@@ -45,9 +45,13 @@ export function auth_router(app: Elysia) {
       })
       .get(
         "/signin/discord/:module",
-        async ({ query, redirect, params, cookie }) => {
-          console.log("TEST");
-          const environment = process.env.NODE_ENV;
+        async ({
+          query,
+          redirect,
+          params,
+          //  cookie
+        }) => {
+          // const environment = process.env.NODE_ENV;
           const client_id = process.env.DISCORD_CLIENT_ID as string;
           const client_secret = process.env.DISCORD_CLIENT_SECRET as string;
           const redirect_uri = `${process.env.REDIRECT_URL}/${params.module}`;
@@ -71,8 +75,6 @@ export function auth_router(app: Elysia) {
             throw new Error("UNAUTHORIZED");
           }
 
-          console.log("TEST2", res);
-
           const data = (await res.json()) as { access_token: string };
 
           const user_data_res = await fetch("https://discord.com/api/v9/users/@me", {
@@ -86,8 +88,6 @@ export function auth_router(app: Elysia) {
           }
 
           const user_data = (await user_data_res.json()) as DiscordUser;
-
-          console.log("TEST3", user_data);
 
           const discord_avatar = extractDiscordAvatar(user_data.id, user_data.avatar);
 
@@ -111,8 +111,6 @@ export function auth_router(app: Elysia) {
           }
 
           if (user) {
-            console.log("TEST4", user);
-
             const cookie_res = await fetch(`${process.env.ARKIVE_AUTH_URL}/tokens`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -127,25 +125,23 @@ export function auth_router(app: Elysia) {
 
             const cookie_data = (await cookie_res.json()) as JWTResponse;
 
-            console.log("TEST5", cookie_data);
-
             if (cookie_data.access && cookie_data.refresh && cookie_data?.claims) {
-              cookie.access.set({
-                value: cookie_data.access,
-                httpOnly: true,
-                secure: environment === "production",
-                sameSite: environment === "production",
-                path: "/",
-                expires: getCookieExpiry("access"),
-              });
-              cookie.refresh.set({
-                value: cookie_data.refresh,
-                httpOnly: true,
-                secure: environment === "production",
-                sameSite: environment === "production",
-                path: "/",
-                expires: getCookieExpiry("refresh"),
-              });
+              // cookie.access.set({
+              //   value: cookie_data.access,
+              //   httpOnly: true,
+              //   secure: environment === "production",
+              //   sameSite: environment === "production",
+              //   path: "/",
+              //   expires: getCookieExpiry("access"),
+              // });
+              // cookie.refresh.set({
+              //   value: cookie_data.refresh,
+              //   httpOnly: true,
+              //   secure: environment === "production",
+              //   sameSite: environment === "production",
+              //   path: "/",
+              //   expires: getCookieExpiry("refresh"),
+              // });
               return redirect(process.env.ARKIVE_EDITOR_URL as string);
             } else {
               return redirect(process.env.ARKIVE_HOME_URL as string);
