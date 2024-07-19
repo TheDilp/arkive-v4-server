@@ -22,8 +22,6 @@ WORKDIR /usr/src/app
 ENV NODE_ENV=production
 COPY --from=sharp /usr/src/app ./
 RUN bun build --entrypoints ./dist/index.js --outfile ./app --compile --sourcemap --target=bun-linux-x64-modern
-
-
 USER bun
 EXPOSE 5174/tcp
-ENTRYPOINT [ "bun", "run", "/usr/src/app/dist/index.js" ]
+CMD [ "./app" ]
