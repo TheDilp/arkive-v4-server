@@ -4,10 +4,10 @@ WORKDIR /usr/src/app
 ENV HUSKY=0
 ENV NODE_ENV=production
 COPY . .
+RUN bun install
 USER bun
 EXPOSE 5174/tcp
 ENTRYPOINT [ "bun", "run", "index.ts" ]
-# RUN bun install --production --force
 # RUN bun build ./index.ts --outdir ./dist --target bun --external 'sharp'
 
 # # Stage 2: Production stage
