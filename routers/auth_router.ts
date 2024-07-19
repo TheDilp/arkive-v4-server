@@ -51,6 +51,9 @@ export function auth_router(app: Elysia) {
           const client_secret = process.env.DISCORD_CLIENT_SECRET as string;
           const redirect_uri = `${process.env.REDIRECT_URL}/${params.module}`;
 
+          set.status = 301;
+          set.redirect = process.env.ARKIVE_EDITOR_URL as string;
+
           const res = await fetch("https://discord.com/api/oauth2/token", {
             method: "POST",
             headers: {
@@ -119,7 +122,6 @@ export function auth_router(app: Elysia) {
             });
 
             const cookie_data = (await cookie_res.json()) as JWTResponse;
-            console.info(cookie_data);
             if (cookie_data.access && cookie_data.refresh && cookie_data?.claims) {
               cookie.access.set({
                 value: cookie_data.access,
@@ -140,6 +142,7 @@ export function auth_router(app: Elysia) {
               set.status = 301;
               set.redirect = process.env.ARKIVE_EDITOR_URL as string;
             } else {
+              set.status = 301;
               set.redirect = process.env.ARKIVE_HOME_URL as string;
             }
             return "ok";
