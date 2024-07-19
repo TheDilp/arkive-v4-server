@@ -49,7 +49,7 @@ import {
 } from "./routers";
 import { getCookieExpiry, verifyJWT } from "./utils/userUtils";
 
-export const app = new Elysia({ name: "Editor.Router", aot: false })
+export const app = new Elysia({ name: "Editor.Router" })
   .error({
     UNAUTHORIZED: UnauthorizedError,
     NO_PUBLIC_ACCESS: NoPublicAccess,

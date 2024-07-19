@@ -45,7 +45,7 @@ export function auth_router(app: Elysia) {
       })
       .get(
         "/signin/discord/:module",
-        async ({ query, params, cookie }) => {
+        async ({ query, params, cookie, redirect }) => {
           const environment = process.env.NODE_ENV;
           const client_id = process.env.DISCORD_CLIENT_ID as string;
           const client_secret = process.env.DISCORD_CLIENT_SECRET as string;
@@ -137,12 +137,12 @@ export function auth_router(app: Elysia) {
                 path: "/",
                 expires: getCookieExpiry("refresh"),
               });
-              return Response.redirect(process.env.ARKIVE_EDITOR_URL as string);
+              return redirect(process.env.ARKIVE_EDITOR_URL as string);
             } else {
-              return Response.redirect(process.env.ARKIVE_HOME_URL as string);
+              return redirect(process.env.ARKIVE_HOME_URL as string);
             }
           }
-          if (params.module === "editor") return Response.redirect(process.env.EDITOR_CLIENT_URL as string);
+          if (params.module === "editor") return redirect(process.env.EDITOR_CLIENT_URL as string);
           throw new Error("UNAUTHORIZED");
         },
         {
