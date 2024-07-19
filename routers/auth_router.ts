@@ -46,7 +46,7 @@ export function auth_router(app: Elysia) {
       .get(
         "/signin/discord/:module",
         async (ctx) => {
-          console.info(ctx);
+          if (!ctx?.cookie?.access || !ctx?.cookie?.refresh) return "OOPS";
           const environment = process.env.NODE_ENV;
           const client_id = process.env.DISCORD_CLIENT_ID as string;
           const client_secret = process.env.DISCORD_CLIENT_SECRET as string;
