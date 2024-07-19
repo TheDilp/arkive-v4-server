@@ -143,9 +143,11 @@ export function auth_router(app: Elysia) {
               set.redirect = process.env.ARKIVE_HOME_URL as string;
             }
           }
-          if (params.module === "editor") set.redirect = process.env.EDITOR_CLIENT_URL as string;
+          if (params.module === "editor") {
+            set.redirect = process.env.ARKIVE_HOME_URL as string;
+            throw new Error("UNAUTHORIZED");
+          }
           return "ok";
-          throw new Error("UNAUTHORIZED");
         },
         {
           query: t.Object({ code: t.String() }),
