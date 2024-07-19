@@ -118,9 +118,9 @@ export function auth_router(app: Elysia) {
               }),
             });
 
-            try {
-              const cookie_data = (await cookie_res.json()) as JWTResponse;
+            const cookie_data = (await cookie_res.json()) as JWTResponse;
 
+            if (cookie_data.access && cookie_data.refresh && cookie_data?.claims) {
               cookie.access.set({
                 value: cookie_data.access,
                 httpOnly: true,
@@ -138,8 +138,7 @@ export function auth_router(app: Elysia) {
                 expires: getCookieExpiry("refresh"),
               });
               return redirect(process.env.ARKIVE_EDITOR_URL as string);
-            } catch (error) {
-              console.error(error);
+            } else {
               return redirect(process.env.ARKIVE_HOME_URL as string);
             }
           }
