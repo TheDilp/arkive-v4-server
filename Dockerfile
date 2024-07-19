@@ -4,6 +4,8 @@ WORKDIR /usr/src/app
 ENV HUSKY=0
 ENV NODE_ENV=production
 COPY . .
+USER bun
+EXPOSE 5174/tcp
 ENTRYPOINT [ "bun", "run", "index.ts" ]
 # RUN bun install --production --force
 # RUN bun build ./index.ts --outdir ./dist --target bun --external 'sharp'
@@ -25,5 +27,4 @@ ENTRYPOINT [ "bun", "run", "index.ts" ]
 # RUN bun build --entrypoints ./dist/index.js --outfile ./app --compile --sourcemap --target=bun-linux-x64-modern
 
 
-# USER bun
-# EXPOSE 5174/tcp
+
