@@ -112,7 +112,6 @@ export const app = new Elysia({ name: "Editor.Router" })
     console.error(error);
     return { message: "There was an error with your request.", ok: false, role_access: false };
   })
-  .onStart(() => console.info(`LISTENING ON PORT ${process.env.PORT} 🚀`))
   .group("/api/v1" as any, (server) =>
     server
       .onBeforeHandle(async ({ headers, cookie: { access, refresh } }) => {
@@ -192,7 +191,8 @@ export const app = new Elysia({ name: "Editor.Router" })
         console.info(`DELETED NOTIFICATIONS OLDER THAN ${threeDaysAgo}`);
       },
     }),
-  );
+  )
+  .onStart(() => console.info(`LISTENING ON PORT ${process.env.PORT} 🚀`));
 
 try {
   app.listen((process.env.PORT as string) || 3000);
