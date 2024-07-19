@@ -46,6 +46,7 @@ export function auth_router(app: Elysia) {
       .get(
         "/signin/discord/:module",
         async ({ query, set, params, cookie }) => {
+          set.status = 301;
           const environment = process.env.NODE_ENV;
           const client_id = process.env.DISCORD_CLIENT_ID as string;
           const client_secret = process.env.DISCORD_CLIENT_SECRET as string;
@@ -144,6 +145,8 @@ export function auth_router(app: Elysia) {
               return false;
             }
           }
+          set.status = 301;
+
           if (params.module === "editor") set.redirect = process.env.EDITOR_CLIENT_URL as string;
           throw new Error("UNAUTHORIZED");
         },
