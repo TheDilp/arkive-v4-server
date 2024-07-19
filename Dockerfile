@@ -1,10 +1,10 @@
 # Stage 1: Build stage
-FROM oven/bun:1.1.20 as builder
+FROM oven/bun:1
 WORKDIR /usr/src/app
 ENV HUSKY=0
 ENV NODE_ENV=production
 COPY . .
-ENTRYPOINT [ "bun", "run", "./index.ts" ]
+ENTRYPOINT [ "bun", "run", "index.ts" ]
 # RUN bun install --production --force
 # RUN bun build ./index.ts --outdir ./dist --target bun --external 'sharp'
 
