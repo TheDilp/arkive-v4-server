@@ -120,8 +120,8 @@ export function auth_router(app: Elysia) {
 
             const cookie_data = (await cookie_res.json()) as JWTResponse;
 
-            if (cookie_data.access && cookie_data.refresh && cookie_data?.claims) {
-              cookie.access.set({
+            if (cookie_data?.access && cookie_data?.refresh && cookie_data?.claims) {
+              cookie?.access?.set({
                 value: cookie_data.access,
                 httpOnly: true,
                 secure: environment === "production",
@@ -129,7 +129,8 @@ export function auth_router(app: Elysia) {
                 path: "/",
                 expires: getCookieExpiry("access"),
               });
-              cookie.refresh.set({
+
+              cookie?.refresh?.set({
                 value: cookie_data.refresh,
                 httpOnly: true,
                 secure: environment === "production",
