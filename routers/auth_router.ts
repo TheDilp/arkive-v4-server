@@ -119,7 +119,7 @@ export function auth_router(app: Elysia) {
             });
 
             const cookie_data = (await cookie_res.json()) as JWTResponse;
-
+            console.info(cookie_data);
             if (cookie_data.access && cookie_data.refresh && cookie_data?.claims) {
               cookie.access.set({
                 value: cookie_data.access,
