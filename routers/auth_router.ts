@@ -142,10 +142,14 @@ export function auth_router(app: Elysia) {
             } else {
               set.redirect = process.env.ARKIVE_HOME_URL as string;
             }
+            return "ok";
           }
           if (params.module !== "editor") {
             set.redirect = process.env.ARKIVE_HOME_URL as string;
             throw new Error("UNAUTHORIZED");
+          } else {
+            set.status = 301;
+            set.redirect = process.env.ARKIVE_EDITOR_URL as string;
           }
           return "ok";
         },
