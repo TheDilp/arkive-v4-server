@@ -11,6 +11,12 @@ import { extractDiscordAvatar, getCookies, verifyJWT } from "../utils/userUtils"
 export function auth_router(app: Elysia) {
   return app.group("/auth" as any, (server) =>
     server
+      .onError(({ set }) => {
+        set.headers.location = `${process.env.HOME_CLIENT_URL}/signin/editor`;
+        set.status = 301;
+
+        return { code: "unable_to_verify" };
+      })
       .post(
         "/signup",
         async ({ body }) => {
@@ -41,17 +47,20 @@ export function auth_router(app: Elysia) {
       .get("/email_confirm/:user_id", async ({ params, redirect }) => {
         await db.updateTable("users").where("users.id", "=", params.user_id).set("is_email_confirmed", true).execute();
 
-        return redirect(`${process.env.ARKIVE_HOME_URL}/signin/editor`);
+        return redirect(`${process.env.HOME_CLIENT_URL}/signin/editor`);
       })
       .get(
         "/signin/discord/:module",
         async ({ query, params, set }) => {
+          if (!query?.code) {
+            set.status = 301;
+            set.headers.location = process.env.HOME_CLIENT_URL as string;
+            return { code: "error_logging_in" };
+          }
+
           const client_id = process.env.DISCORD_CLIENT_ID as string;
           const client_secret = process.env.DISCORD_CLIENT_SECRET as string;
           const redirect_uri = `${process.env.REDIRECT_URL}/${params.module}`;
-
-          set.status = 301;
-          set.headers.location = process.env.ARKIVE_EDITOR_URL as string;
 
           const res = await fetch("https://discord.com/api/oauth2/token", {
             method: "POST",
@@ -120,10 +129,14 @@ export function auth_router(app: Elysia) {
               }),
             });
 
+            if (cookie_res.status >= 400) {
+              console.error(await user_data_res.json());
+              throw new Error("UNAUTHORIZED");
+            }
+
             const cookie_data = (await cookie_res.json()) as JWTResponse;
             if (cookie_data.access && cookie_data.refresh && cookie_data?.claims) {
               set.headers["set-cookie"] = getCookies(cookie_data.access, cookie_data.refresh);
-
               set.status = 301;
               set.headers.location = process.env.EDITOR_CLIENT_URL as string;
             } else {
@@ -133,7 +146,6 @@ export function auth_router(app: Elysia) {
             return "ok";
           }
           if (params.module !== "editor") {
-            set.headers.location = process.env.HOME_CLIENT_URL as string;
             throw new Error("UNAUTHORIZED");
           } else {
             set.status = 301;
@@ -142,7 +154,7 @@ export function auth_router(app: Elysia) {
           return "ok";
         },
         {
-          query: t.Object({ code: t.String() }),
+          query: t.Object({ code: t.Optional(t.String()) }),
         },
       )
       .post(
@@ -183,11 +195,11 @@ export function auth_router(app: Elysia) {
             } catch (error) {
               console.error(error);
               set.status = 301;
-              set.headers.location = process.env.ARKIVE_HOME_URL as string;
+              set.headers.location = process.env.HOME_CLIENT_URL as string;
             }
           }
           set.status = 301;
-          set.headers.location = process.env.ARKIVE_HOME_URL as string;
+          set.headers.location = process.env.HOME_CLIENT_URL as string;
           return "ok";
         },
         { body: t.Object({ email: t.String(), password: t.String() }) },
