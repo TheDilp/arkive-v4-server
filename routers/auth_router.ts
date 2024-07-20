@@ -135,19 +135,19 @@ export function auth_router(app: Elysia) {
               ];
 
               set.status = 301;
-              set.headers.location = process.env.ARKIVE_EDITOR_URL as string;
+              set.headers.location = process.env.EDITOR_CLIENT_URL as string;
             } else {
               set.status = 301;
-              set.headers.location = process.env.ARKIVE_HOME_URL as string;
+              set.headers.location = process.env.HOME_CLIENT_URL as string;
             }
             return "ok";
           }
           if (params.module !== "editor") {
-            set.headers.location = process.env.ARKIVE_HOME_URL as string;
+            set.headers.location = process.env.HOME_CLIENT_URL as string;
             throw new Error("UNAUTHORIZED");
           } else {
             set.status = 301;
-            set.headers.location = process.env.ARKIVE_EDITOR_URL as string;
+            set.headers.location = process.env.EDITOR_CLIENT_URL as string;
           }
           return "ok";
         },
