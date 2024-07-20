@@ -52,7 +52,7 @@ export function auth_router(app: Elysia) {
           const redirect_uri = `${process.env.REDIRECT_URL}/${params.module}`;
 
           set.status = 301;
-          set.redirect = process.env.ARKIVE_EDITOR_URL as string;
+          set.headers.location = process.env.ARKIVE_EDITOR_URL as string;
 
           const res = await fetch("https://discord.com/api/oauth2/token", {
             method: "POST",
@@ -140,19 +140,19 @@ export function auth_router(app: Elysia) {
                 expires: getCookieExpiry("refresh"),
               });
               set.status = 301;
-              set.redirect = process.env.ARKIVE_EDITOR_URL as string;
+              set.headers.location = process.env.ARKIVE_EDITOR_URL as string;
             } else {
               set.status = 301;
-              set.redirect = process.env.ARKIVE_HOME_URL as string;
+              set.headers.location = process.env.ARKIVE_HOME_URL as string;
             }
             return "ok";
           }
           if (params.module !== "editor") {
-            set.redirect = process.env.ARKIVE_HOME_URL as string;
+            set.headers.location = process.env.ARKIVE_HOME_URL as string;
             throw new Error("UNAUTHORIZED");
           } else {
             set.status = 301;
-            set.redirect = process.env.ARKIVE_EDITOR_URL as string;
+            set.headers.location = process.env.ARKIVE_EDITOR_URL as string;
           }
           return "ok";
         },
