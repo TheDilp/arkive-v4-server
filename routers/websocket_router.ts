@@ -2,9 +2,17 @@ import { Elysia } from "elysia";
 
 import { db } from "../database/db";
 import { WebsocketConversationMessage } from "../types/websocketTypes";
+import { verifyJWT } from "../utils/userUtils";
 
 export function websocket_router(app: Elysia) {
   return app
+    .onBeforeHandle(async ({ cookie: { access, refresh }, set }) => {
+      const verified = await verifyJWT({ access, refresh, set });
+
+      if (verified) return;
+
+      return "Unauthorized";
+    })
     .ws("/ws/conversation/:conversation_id", {
       open(ws) {
         const { conversation_id } = ws.data.params;
