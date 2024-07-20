@@ -30,7 +30,6 @@ import {
   map_pin_types_router,
   map_router,
   message_router,
-  meta_router,
   month_router,
   node_router,
   notification_router,
@@ -164,10 +163,9 @@ export const app = new Elysia({ name: "Editor.Router" })
       .use(role_router)
       .use(permission_router),
   )
+  .use(websocket_router)
   .use(auth_router)
   .use(interaction_router)
-  .use(meta_router)
-  .use(websocket_router)
   .use(health_check_router)
   .use(
     cors({
