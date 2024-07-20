@@ -51,7 +51,7 @@ export async function verifyJWT({
   });
 
   if (res.status >= 400) {
-    console.error(await res.text());
+    // console.error(await res.text());
     // set.status = 401;
     return { status: "unauthenticated" };
   }
@@ -69,7 +69,7 @@ export async function verifyJWT({
       name: cookie_data.claims.name,
     };
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     // set.status = 401;
     throw new Error("UNAUTHORIZED");
   }
