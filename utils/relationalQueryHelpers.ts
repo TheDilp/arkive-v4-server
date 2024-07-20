@@ -131,24 +131,6 @@ export function GetRelationsForUpdating(
 }
 
 export async function GetParents({ db, id, table_name }: { db: Kysely<DB>; id: string; table_name: EntitiesWithFolders }) {
-  // with recursive tree as (
-  //   select id,
-  //          parent_id,
-  //          array[id] as all_parents
-  //   from hierarchy
-  //   where parent_id is null
-
-  //   union all
-
-  //   select c.id,
-  //          c.parent_id,
-  //          p.all_parents||c.id
-  //   from hierarchy c
-  //      join tree p
-  //       on c.parent_id = p.id
-  //      and c.id <> ALL (p.all_parents) -- this is the trick to exclude the endless loops
-  // )
-
   const parents_data = await db
     .withRecursive("entityWithParents", (d) =>
       d

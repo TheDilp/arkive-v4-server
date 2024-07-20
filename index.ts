@@ -24,6 +24,7 @@ import {
   event_router,
   graph_router,
   health_check_router,
+  interaction_router,
   manuscript_router,
   map_pin_router,
   map_pin_types_router,
@@ -35,7 +36,6 @@ import {
   notification_router,
   permission_router,
   project_router,
-  public_router,
   random_table_option_router,
   random_table_router,
   role_router,
@@ -165,7 +165,7 @@ export const app = new Elysia({ name: "Editor.Router" })
       .use(permission_router),
   )
   .use(auth_router)
-  .use(public_router)
+  .use(interaction_router)
   .use(meta_router)
   .use(websocket_router)
   .use(health_check_router)
