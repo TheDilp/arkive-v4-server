@@ -1,4 +1,4 @@
-import Elysia from "elysia";
+import { Elysia } from "elysia";
 import { ExpressionBuilder, ReferenceExpression, SelectExpression, sql } from "kysely";
 import { DB } from "kysely-codegen";
 

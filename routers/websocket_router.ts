@@ -1,4 +1,4 @@
-import Elysia from "elysia";
+import { Elysia } from "elysia";
 
 import { db } from "../database/db";
 import { WebsocketConversationMessage } from "../types/websocketTypes";

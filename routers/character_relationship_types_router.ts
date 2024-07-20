@@ -1,4 +1,4 @@
-import Elysia from "elysia";
+import { Elysia } from "elysia";
 
 import { db } from "../database/db";
 import { InsertRelationshipTypeSchema, ListCharacterRelationshipTypeSchema } from "../database/validation";
