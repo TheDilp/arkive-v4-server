@@ -1,4 +1,5 @@
 import { Cookie } from "elysia";
+import { HTTPHeaders } from "elysia/types";
 
 import { db } from "../database/db";
 import { JWTResponse } from "../types/entityTypes";
@@ -34,9 +35,11 @@ export function extractDiscordAvatar(user_id: string, avatar?: string) {
 export async function verifyJWT({
   refresh,
   access,
+  set,
 }: {
   refresh: Cookie<string | undefined>;
   access: Cookie<string | undefined>;
+  set: { headers: HTTPHeaders };
 }) {
   const res = await fetch(`${process.env.ARKIVE_AUTH_URL}/verify`, {
     method: "POST",
@@ -55,10 +58,7 @@ export async function verifyJWT({
 
   try {
     const cookie_data = (await res.json()) as JWTResponse;
-    access.value = cookie_data.access;
-    access.expires = getCookieExpiry("access");
-    refresh.value = cookie_data.refresh;
-    refresh.expires = getCookieExpiry("refresh");
+    set.headers["set-cookie"] = getCookies(cookie_data.access, cookie_data.refresh);
 
     return {
       status: "authenticated",
@@ -86,4 +86,13 @@ export function getCookieExpiry(type: "access" | "refresh"): Date {
   }
 
   return now;
+}
+
+export function getCookies(access: string, refresh: string) {
+  const additional_cookie_params = process.env.NODE_ENV === "production" ? "Secure; SameSite=None;" : "";
+
+  return [
+    `access=${access}; HttpOnly; Path=/; ${additional_cookie_params} Expires=${getCookieExpiry("access")}`,
+    `refresh=${refresh}; HttpOnly; Path=/; ${additional_cookie_params} Expires=${getCookieExpiry("refresh")}`,
+  ];
 }

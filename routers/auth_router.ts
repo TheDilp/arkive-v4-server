@@ -6,7 +6,7 @@ import { EmailSignUp } from "../emails/EmailSignUp";
 import { ErrorEnums } from "../enums";
 import { DiscordUser, JWTResponse } from "../types/entityTypes";
 import { resend } from "../utils/emailClient";
-import { extractDiscordAvatar, getCookieExpiry, verifyJWT } from "../utils/userUtils";
+import { extractDiscordAvatar, getCookies, verifyJWT } from "../utils/userUtils";
 
 export function auth_router(app: Elysia) {
   return app.group("/auth" as any, (server) =>
@@ -46,7 +46,6 @@ export function auth_router(app: Elysia) {
       .get(
         "/signin/discord/:module",
         async ({ query, params, set }) => {
-          const environment = process.env.NODE_ENV;
           const client_id = process.env.DISCORD_CLIENT_ID as string;
           const client_secret = process.env.DISCORD_CLIENT_SECRET as string;
           const redirect_uri = `${process.env.REDIRECT_URL}/${params.module}`;
@@ -123,16 +122,7 @@ export function auth_router(app: Elysia) {
 
             const cookie_data = (await cookie_res.json()) as JWTResponse;
             if (cookie_data.access && cookie_data.refresh && cookie_data?.claims) {
-              const additional_cookie_params = environment === "production" ? "Secure; SameSite=None;" : "";
-
-              set.headers["set-cookie"] = [
-                `access=${cookie_data.access}; HttpOnly; Path=/; ${additional_cookie_params} Expires=${getCookieExpiry(
-                  "access",
-                )}`,
-                `refresh=${cookie_data.refresh}; HttpOnly; Path=/; ${additional_cookie_params} Expires=${getCookieExpiry(
-                  "refresh",
-                )}`,
-              ];
+              set.headers["set-cookie"] = getCookies(cookie_data.access, cookie_data.refresh);
 
               set.status = 301;
               set.headers.location = process.env.EDITOR_CLIENT_URL as string;
@@ -157,8 +147,7 @@ export function auth_router(app: Elysia) {
       )
       .post(
         "/signin/password/:module",
-        async ({ redirect, body, cookie }) => {
-          const environment = process.env.NODE_ENV;
+        async ({ set, body }) => {
           const user = await db
             .selectFrom("users")
             .select(["id", "image_id", "oauth", "nickname", "is_email_confirmed", "password"])
@@ -187,37 +176,27 @@ export function auth_router(app: Elysia) {
 
               if (!cookie_data.claims.is_email_confirmed) throw new Error(ErrorEnums.unauthorized);
 
-              cookie.access.set({
-                value: cookie_data.access,
-                httpOnly: true,
-                secure: environment === "production",
-                sameSite: environment === "production",
-                path: "/",
-                expires: getCookieExpiry("access"),
-              });
-              cookie.refresh.set({
-                value: cookie_data.refresh,
-                httpOnly: true,
-                secure: environment === "production",
-                sameSite: environment === "production",
-                path: "/",
-                expires: getCookieExpiry("refresh"),
-              });
-              return redirect(process.env.ARKIVE_EDITOR_URL as string);
+              set.headers["set-cookie"] = getCookies(cookie_data.access, cookie_data.refresh);
+
+              set.status = 301;
+              set.headers.location = process.env.EDITOR_CLIENT_URL as string;
             } catch (error) {
               console.error(error);
-              return redirect(process.env.ARKIVE_HOME_URL as string);
+              set.status = 301;
+              set.headers.location = process.env.ARKIVE_HOME_URL as string;
             }
           }
-          return redirect(process.env.ARKIVE_HOME_URL as string);
+          set.status = 301;
+          set.headers.location = process.env.ARKIVE_HOME_URL as string;
+          return "ok";
         },
         { body: t.Object({ email: t.String(), password: t.String() }) },
       )
-      .get("/status", async ({ cookie: { access, refresh } }) => verifyJWT({ access, refresh }))
+      .get("/status", async ({ cookie: { access, refresh }, set }) => verifyJWT({ access, refresh, set }))
       .post(
         "/status/update",
-        async ({ body, cookie: { access, refresh } }) => {
-          const user = await verifyJWT({ access, refresh });
+        async ({ body, set, cookie: { access, refresh } }) => {
+          const user = await verifyJWT({ access, refresh, set });
 
           if (user.status !== "authenticated") {
             throw new Error("UNAUTHENTICATED");
@@ -239,10 +218,7 @@ export function auth_router(app: Elysia) {
             try {
               const cookie_data = (await cookie_res.json()) as JWTResponse;
 
-              access.value = cookie_data.access;
-              access.expires = getCookieExpiry("access");
-              refresh.value = cookie_data.refresh;
-              refresh.expires = getCookieExpiry("refresh");
+              set.headers["set-cookie"] = getCookies(cookie_data.access, cookie_data.refresh);
 
               return {
                 user_id: cookie_data.claims.user_id,

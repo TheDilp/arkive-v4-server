@@ -114,8 +114,8 @@ export const app = new Elysia({ name: "Editor.Router" })
   })
   .group("/api/v1" as any, (server) =>
     server
-      .onBeforeHandle(async ({ headers, cookie: { access, refresh } }) => {
-        const data = await verifyJWT({ access, refresh });
+      .onBeforeHandle(async ({ headers, set, cookie: { access, refresh } }) => {
+        const data = await verifyJWT({ access, refresh, set });
 
         if (data.status === "authenticated") {
           headers["user-id"] = data.user_id;
