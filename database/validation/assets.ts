@@ -69,31 +69,6 @@ export const UpdateImageSchema = t.Union([
   }),
 ]);
 
-export const UploadImageSchema = t.Record(
-  t.String(),
-  t.Union([
-    t.File({ maxSize: "100m" }),
-    t.Array(
-      t.Intersect([
-        t.Object({ related_id: t.Optional(t.Null()) }),
-        t.Union([
-          t.Object({
-            permission_id: t.String(),
-            user_id: t.String(),
-            role_id: t.Null(),
-          }),
-          t.Object({
-            permission_id: t.Null(),
-            user_id: t.Null(),
-            role_id: t.String(),
-          }),
-        ]),
-      ]),
-    ),
-    t.Null(),
-  ]),
-);
-
 export const DownloadAssetsSchema = t.Object({
   data: t.Array(t.Object({ id: t.String(), title: t.String() })),
 });

@@ -1,4 +1,4 @@
-export type TextType = {
+type TextType = {
   type: "text";
   text: string;
 };
@@ -12,7 +12,7 @@ export type MentionAtomType = {
     projectId?: string;
   };
 };
-export type ImageType = {
+type ImageType = {
   type: "image";
   attrs: {
     alt: string;
@@ -41,9 +41,4 @@ export type HeadingType = {
     style: string;
   };
   content: TextType[];
-};
-
-export type DocumentContentType = {
-  type: "doc";
-  content?: (ParagraphType | HeadingType)[];
 };

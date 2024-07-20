@@ -10,11 +10,6 @@ export const ListMapPinTypeSchema = t.Intersect([
     }),
   }),
 ]);
-export const ReadMapPinTypeSchema = t.Object({
-  data: t.Object({
-    id: t.String(),
-  }),
-});
 
 export const InsertMapPinTypeSchema = t.Object({
   data: t.Object({

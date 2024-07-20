@@ -74,7 +74,3 @@ export const DefaultProjectFeatureFlags = {
   manuscripts_delete_notification: true,
   manuscripts_update_notification: true,
 };
-
-export const DefaultUserFeatureFlags = {
-  close_drawer_on_save: false,
-};

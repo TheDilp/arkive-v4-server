@@ -1,4 +1,3 @@
-import { createHmac } from "crypto";
 import { readFile } from "fs";
 
 import { FromTemplateRandomCountSchema } from "../database/validation";
@@ -8,29 +7,22 @@ import { HeadingType, MentionAtomType, ParagraphType } from "../types/documentCo
 import { AssetType, AvailableEntityType, AvailableSubEntityType, MentionType } from "../types/entityTypes";
 import { RequestBodyFiltersType, RequestFilterType } from "../types/requestTypes";
 
-export function capitalizeFirstLetter(word: string): string {
-  return word.charAt(0).toUpperCase() + word.slice(1);
-}
-
-export function getXCoordinate(index: number, generation: number, previousOffset: number = 0): number {
-  if (index % 2 === 0) {
-    return (index / 2) * 150 + 150 + generation * 150 + previousOffset;
-  } else {
-    return (Math.floor(index / 2) * 150 + 150 + generation * 150 + previousOffset) * -1;
-  }
-}
-
-type MainType = { id: string; title: string; description?: string | null; suboptions?: { id: string; title: string }[] };
+type MainRandomPickType = {
+  id: string;
+  title: string;
+  description?: string | null;
+  suboptions?: { id: string; title: string }[];
+};
 
 export type GroupedQueryFilter = RequestFilterType & { type: "AND" | "OR" };
-export interface GroupedQueries {
+interface GroupedQueries {
   [key: string]: {
     filters: GroupedQueryFilter[];
   };
 }
 
 export function chooseRandomTableItems(
-  arr: MainType[],
+  arr: MainRandomPickType[],
   M: number,
 ): { id: string; subitem_id?: string; title: string; description?: string | null }[] {
   if (M > arr.length) {
@@ -61,27 +53,6 @@ export function chooseRandomTableItems(
 
 export function getCharacterFullName(first_name: string, nickname?: string | null, last_name?: string | null): string {
   return `${first_name.trim()}${nickname ? ` ${nickname?.trim()}` : ""}${last_name ? ` ${last_name?.trim()}` : ""}`;
-}
-
-export function areArraysEqual(a: string[], b: string[]) {
-  if (a === b) return true;
-  if (a == null || b == null) return false;
-  if (a.length !== b.length) return false;
-
-  // If you don't care about the order of the elements inside
-  // the array, you should sort both arrays here.
-  // Please note that calling sort on an array will modify that array.
-  // you might want to clone your array first.
-
-  for (var i = 0; i < a.length; ++i) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
-}
-
-export function getSentenceCase(field: string) {
-  const result = field.replaceAll("_", " ").replace(/([A-Z])/g, " $1");
-  return result.charAt(0).toUpperCase() + result.slice(1);
 }
 
 export function getSingularEntityType(type: string): string {
@@ -149,16 +120,6 @@ export function getImageURL(project_id: string, type: AssetType, image_id?: stri
   return `https://${process.env.DO_SPACES_NAME}.${
     isGraphImage ? process.env.DO_SPACES_ENDPOINT : process.env.DO_SPACES_CDN_ENDPOINT
   }/assets/${project_id}/${type}/${image_id}.webp`;
-}
-
-export function getMapTile(url: string, dimensions?: { width: number; height: number }) {
-  const sizedUrl = `${dimensions?.width || 35}x${dimensions?.height || 35}/${url}`;
-  const hash = createHmac("sha1", process.env.IMAGOR_SECRET as string)
-    .update(sizedUrl)
-    .digest("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
-  return `${baseURLS.baseThumbnailServer}/${hash}/${sizedUrl}`;
 }
 
 export function createEntityURL(project_id: string, type: string, id: string): string {
@@ -361,7 +322,7 @@ export function buildTSQueryString(searchTerms: string[]): string {
   return tsQuery;
 }
 
-export function extractMentionContent(mention: MentionAtomType) {
+function extractMentionContent(mention: MentionAtomType) {
   if (mention.attrs?.projectId) {
     let link = `https://thearkive.app/public/${mention.attrs.projectId}/${mention.attrs.name}/${mention.attrs.id}`;
     const text = `[${mention?.attrs?.label}](${link})`;
@@ -370,7 +331,7 @@ export function extractMentionContent(mention: MentionAtomType) {
   return mention.attrs.label;
 }
 
-export function extractParagraphContent(paragraph: ParagraphType) {
+function extractParagraphContent(paragraph: ParagraphType) {
   if (paragraph?.content) {
     const text = paragraph?.content
       .filter((obj) => obj?.type !== "image")
@@ -386,7 +347,7 @@ export function extractParagraphContent(paragraph: ParagraphType) {
   }
   return "";
 }
-export function extractHeadingContent(heading: HeadingType) {
+function extractHeadingContent(heading: HeadingType) {
   const text = heading?.content?.map((obj) => obj?.text).join(" ");
   return `${text}\n`;
 }
@@ -428,7 +389,7 @@ export function extractDocumentText(content: any) {
   return finalText;
 }
 
-export function generateRandomNumber(min: number = 0, max: number): number {
+function generateRandomNumber(min: number = 0, max: number): number {
   if (max <= min) {
     throw new Error("The 'max' value must be greater than the 'min' value.");
   }
@@ -444,6 +405,7 @@ export function getRandomTemplateCount(random_count: typeof FromTemplateRandomCo
   return 1;
 }
 
+// Used for Discord bot avatar
 export function imageToBase64(filePath: string): Promise<string> {
   return new Promise((resolve, reject) => {
     readFile(filePath, (err, data) => {

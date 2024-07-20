@@ -1,7 +1,7 @@
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { StreamingBlobPayloadOutputTypes } from "@smithy/types";
-import Elysia, { t } from "elysia";
+import { Elysia, t } from "elysia";
 import { SelectExpression } from "kysely";
 import { DB } from "kysely-codegen";
 import sharp from "sharp";

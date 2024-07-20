@@ -1,4 +1,4 @@
-import Elysia, { t } from "elysia";
+import { Elysia, t } from "elysia";
 import { SelectExpression } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";

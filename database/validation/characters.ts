@@ -39,12 +39,6 @@ export const ReadCharacterSchema = t.Intersect([
   ),
 ]);
 
-export const GenerateCharacterRelationshipTreeSchema = t.Object({
-  data: t.Object({
-    direct_only: t.Optional(t.Boolean()),
-  }),
-});
-
 export const InsertCharacterSchema = t.Object({
   data: t.Object({
     first_name: t.String(),
@@ -323,25 +317,4 @@ export const UpdateCharacterSchema = t.Object({
       ]),
     ),
   ),
-});
-
-export const DeleteCharacterItemSchema = t.Object({
-  data: t.Object({
-    document: t.Optional(t.Object({ data: t.Object({ id: t.String() }) })),
-    image: t.Optional(t.Object({ data: t.Object({ id: t.String() }) })),
-    tag: t.Optional(t.Object({ data: t.Object({ id: t.String() }) })),
-  }),
-});
-
-export const UpdateCharacterResourceSchema = t.Object({
-  relations: t.Object({
-    documents: t.Optional(
-      t.Array(
-        t.Object({
-          id: t.String(),
-          is_main_page: t.Boolean(),
-        }),
-      ),
-    ),
-  }),
 });

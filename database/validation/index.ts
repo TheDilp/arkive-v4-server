@@ -1,6 +1,4 @@
 export * from "./assets";
-export * from "./auth";
-export * from "./blueprint_fields";
 export * from "./blueprint_instances";
 export * from "./blueprints";
 export * from "./bulk";
@@ -10,10 +8,8 @@ export * from "./character_fields_templates";
 export * from "./characters";
 export * from "./conversations";
 export * from "./dictionaries";
-export * from "./document_templates";
 export * from "./documents";
 export * from "./edges";
-export * from "./event_groups";
 export * from "./events";
 export * from "./generic";
 export * from "./graphs";

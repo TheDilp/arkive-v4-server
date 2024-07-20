@@ -3,7 +3,7 @@ import { NoRoleAccess, ProjectOwnerAllPermissionsEnum } from "../enums";
 import { AvailablePermissions } from "../types/entityTypes";
 import { PermissionDecorationType } from "../types/requestTypes";
 
-export async function checkRole(
+async function checkRole(
   project_id: string | null,
   user_id: string,
   required_permission: AvailablePermissions | undefined,
@@ -76,7 +76,7 @@ export async function checkRole(
   };
 }
 
-export async function checkOwner(project_id: string | null, user_id: string) {
+async function checkOwner(project_id: string | null, user_id: string) {
   if (!project_id) return false;
   const data = await db.selectFrom("projects").where("id", "=", project_id).select("owner_id").executeTakeFirst();
   if (data) {

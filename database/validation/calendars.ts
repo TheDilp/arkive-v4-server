@@ -2,7 +2,7 @@ import { t } from "elysia";
 
 import { RequestBodySchema } from "../../types/requestTypes";
 
-export const InsertEraSchema = t.Object({
+const InsertEraSchema = t.Object({
   data: t.Object({
     title: t.String(),
     days: t.Number(),
@@ -19,7 +19,7 @@ export const InsertEraSchema = t.Object({
     parent_id: t.Optional(t.String()),
   }),
 });
-export const UpdateEraSchema = t.Object({
+const UpdateEraSchema = t.Object({
   data: t.Object({
     id: t.String(),
     title: t.Optional(t.String()),
@@ -36,7 +36,7 @@ export const UpdateEraSchema = t.Object({
   }),
 });
 
-export const InsertMonthSchema = t.Object({
+const InsertMonthSchema = t.Object({
   data: t.Object({
     title: t.String(),
     days: t.Number(),
@@ -45,7 +45,7 @@ export const InsertMonthSchema = t.Object({
     parent_id: t.Optional(t.String()),
   }),
 });
-export const UpdateMonthSchema = t.Object({
+const UpdateMonthSchema = t.Object({
   data: t.Object({
     id: t.String(),
     title: t.Optional(t.String()),
@@ -54,14 +54,14 @@ export const UpdateMonthSchema = t.Object({
   }),
 });
 
-export const InsertLeapDaySchema = t.Object({
+const InsertLeapDaySchema = t.Object({
   data: t.Object({
     month_id: t.String(),
     parent_id: t.String(),
     conditions: t.Any(),
   }),
 });
-export const UpdateLeapDaySchema = t.Object({
+const UpdateLeapDaySchema = t.Object({
   data: t.Object({
     month_id: t.Optional(t.String()),
     conditions: t.Optional(t.Any()),

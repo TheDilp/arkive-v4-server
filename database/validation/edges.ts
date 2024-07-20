@@ -102,6 +102,4 @@ export const UpdateEdgeSchema = t.Object({
   ),
 });
 
-export const UpdateManyEdgesSchema = t.Object({ data: t.Array(UpdateEdgeSchema) });
-
 export const DeleteManyEdgeSchema = t.Object({ data: t.Array(t.Object({ id: t.String() })) });

@@ -33,7 +33,7 @@ export type SearchableMentionEntities =
   | "nodes"
   | "words";
 
-export type RequestFilterOperatorType = keyof typeof FilterEnum;
+type RequestFilterOperatorType = keyof typeof FilterEnum;
 
 export interface RequestFilterType {
   id: string;
@@ -50,28 +50,13 @@ export interface RequestBodyFiltersType {
   and?: RequestFilterType[];
   or?: RequestFilterType[];
 }
-export type SortType = "asc" | "desc";
+type SortType = "asc" | "desc";
 export interface RequestOrderByType {
   field: string;
   sort: SortType;
 }
 
-export interface RequestPaginationType {
-  limit?: number;
-  page?: number;
-}
-
-export interface RequestBodyType<T extends { data: any; relations: any }> {
-  data?: T["data"];
-  fields: string[];
-  orderBy?: RequestOrderByType[];
-  pagination?: RequestPaginationType;
-  relations?: T["relations"];
-  filters?: RequestBodyFiltersType;
-  relationFilters?: RequestBodyFiltersType;
-}
-
-export const FilterEnumSchema = t.Union([
+const FilterEnumSchema = t.Union([
   t.Literal("eq"),
   t.Literal("neq"),
   t.Literal("gt"),

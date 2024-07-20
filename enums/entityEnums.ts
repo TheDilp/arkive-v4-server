@@ -1,22 +1,6 @@
 import { TagsRelationTables } from "../database/types";
 import { EntitiesWithPermissionCheck } from "../types/entityTypes";
 
-export const AllEntities = [
-  "characters",
-  "blueprints",
-  "blueprint_instances",
-  "documents",
-  "maps",
-  "graphs",
-  "calendars",
-  "dictionaries",
-  "character_fields_templates",
-  "character_fields",
-  "conversations",
-  "random_tables",
-  "tags",
-];
-
 export const SubEntityEnum = [
   "alter_names",
   "blueprint_instances",
@@ -60,8 +44,6 @@ export const EntitiesWithTagsTablesEnum: TagsRelationTables[] = [
 ];
 
 export const newTagTables = ["image_tags", "manuscript_tags"];
-
-export const EntitiesWithoutProjectIdEnum = ["map_pins", "character_map_pins", "map_layers", "nodes", "edges", "events"];
 
 export const UserNotificationEntitiesEnum = [
   "characters",

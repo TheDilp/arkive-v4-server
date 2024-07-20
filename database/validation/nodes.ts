@@ -2,7 +2,7 @@ import { t } from "elysia";
 
 import { RequestBodySchema } from "../../types/requestTypes";
 
-export const NodeShapeEnum = t.Optional(
+const NodeShapeEnum = t.Optional(
   t.Union([
     t.Literal("rectangle"),
     t.Literal("ellipse"),
@@ -115,7 +115,5 @@ export const UpdateNodeSchema = t.Object({
     }),
   ),
 });
-
-export const UpdateManyNodesSchema = t.Object({ data: t.Array(UpdateNodeSchema) });
 
 export const DeleteManyNodesSchema = t.Object({ data: t.Array(t.Object({ id: t.String() })) });

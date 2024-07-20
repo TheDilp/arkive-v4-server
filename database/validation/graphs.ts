@@ -1,5 +1,4 @@
 import { t } from "elysia";
-import { Graphs } from "kysely-codegen";
 
 import { RequestBodySchema } from "../../types/requestTypes";
 
@@ -207,5 +206,3 @@ export const GenerateGraphSchema = t.Object({
     ),
   }),
 });
-
-export type BoardColumns = keyof Graphs;

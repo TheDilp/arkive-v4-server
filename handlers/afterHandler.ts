@@ -63,11 +63,7 @@ export async function afterHandler(
   }
 }
 
-export async function afterHandlerMany(
-  entity: string,
-  headers: Record<string, string | undefined>,
-  action: AfterHandlerActionType,
-) {
+async function afterHandlerMany(entity: string, headers: Record<string, string | undefined>, action: AfterHandlerActionType) {
   const name = headers["user-name"];
   const user_id = headers["user-id"];
   const image_url = headers["user-image-url"];

@@ -31,21 +31,21 @@ export const ListRandomTableOptionRandomManySchema = t.Object({
   data: t.Array(t.Object({ table_id: t.String(), count: t.Number() })),
 });
 
-export const RandomTableSubOptionSchema = t.Object({
+const RandomTableSubOptionSchema = t.Object({
   id: t.String(),
   title: t.String(),
   description: t.Optional(t.Union([t.String(), t.Null()])),
   parent_id: t.String(),
 });
 
-export const InsertRandomTableSubOptionSchema = t.Object({
+const InsertRandomTableSubOptionSchema = t.Object({
   data: t.Object({
     title: t.String(),
     parent_id: t.String(),
     description: t.Optional(t.Union([t.String(), t.Null()])),
   }),
 });
-export const UpdateRandomTableSubOptionSchema = t.Object({
+const UpdateRandomTableSubOptionSchema = t.Object({
   data: t.Object({
     id: t.String(),
     title: t.Optional(t.String()),

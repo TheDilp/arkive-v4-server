@@ -1,7 +1,6 @@
 import { DB } from "kysely-codegen";
 
 export type DBKeys = keyof DB;
-export type DBValues = DB[DBKeys];
 
 export type TagsRelationTables =
   | "_charactersTotags"
