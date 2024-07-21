@@ -4,7 +4,7 @@ import { Elysia } from "elysia";
 
 import { db } from "./database/db";
 // Accepts the same connection config object that the "pg" package would take
-import { NoPublicAccess, NoRoleAccess, UnauthorizedError } from "./enums";
+import { ErrorEnums, NoPublicAccess, NoRoleAccess, UnauthorizedError } from "./enums";
 import { tempAfterHandle } from "./handlers";
 import {
   asset_router,
@@ -120,6 +120,9 @@ export const app = new Elysia({ name: "Editor.Router" })
           headers["user-id"] = data.user_id;
           headers["project-id"] = data.project_id || undefined;
           headers["user-image-url"] = data.user_id || undefined;
+        } else {
+          set.status = 401;
+          throw new Error(ErrorEnums.unauthorized);
         }
       })
       // @ts-ignore
