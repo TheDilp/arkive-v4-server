@@ -4,16 +4,11 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import {
-  InsertProjectSchema,
-  ProjectListSchema,
-  ReadProjectSchema,
-  UpdateProjectSchema,
-} from "../database/validation/projects";
+import { InsertProjectSchema, ReadProjectSchema, UpdateProjectSchema } from "../database/validation/projects";
 import { DefaultProjectFeatureFlags } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeProjectOwnerHandler, beforeRoleHandler } from "../handlers";
-import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { PermissionDecorationType, RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { deleteFolder } from "../utils/s3Utils";
 
 export function project_router(app: Elysia) {
@@ -81,7 +76,7 @@ export function project_router(app: Elysia) {
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
-          body: ProjectListSchema,
+          body: RequestBodySchema,
           response: ResponseWithDataSchema,
           beforeHandle: async (context) => {
             const user_id = context?.headers?.["user-id"];

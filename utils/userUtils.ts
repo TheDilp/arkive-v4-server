@@ -51,7 +51,7 @@ export async function verifyJWT({
   });
 
   if (res.status >= 400) {
-    console.error(await res.text());
+    // console.error(await res.text());
     set.status = 401;
     return { status: "unauthenticated" };
   }
@@ -89,7 +89,7 @@ export function getCookieExpiry(type: "access" | "refresh"): Date {
 }
 
 export function getCookies(access: string, refresh: string) {
-  const additional_cookie_params = process.env.NODE_ENV === "production" ? "Secure; SameSite=None;" : "";
+  const additional_cookie_params = process.env.NODE_ENV === "production" ? "domain=.thearkive.app; Secure; SameSite=None;" : "";
 
   return [
     `access=${access}; HttpOnly; Path=/; ${additional_cookie_params} Expires=${getCookieExpiry("access")}`,
