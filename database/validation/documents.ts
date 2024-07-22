@@ -133,7 +133,6 @@ export const UpdateDocumentSchema = t.Object({
       alter_names: t.Optional(
         t.Array(
           t.Object({
-            id: t.String(),
             title: t.String(),
           }),
         ),
