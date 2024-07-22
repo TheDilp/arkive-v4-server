@@ -3,6 +3,7 @@ import { t } from "elysia";
 import { RequestBodySchema } from "../../types/requestTypes";
 
 const ManuscriptEntitySchema = t.Object({
+  id: t.Optional(t.String()),
   parent_id: t.Union([t.Null(), t.String()]),
   manuscript_id: t.String(),
   document_id: t.Union([t.Null(), t.String()]),
