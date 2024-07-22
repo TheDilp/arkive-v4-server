@@ -26,4 +26,4 @@ RUN bun build --entrypoints ./dist/index.js --outfile ./app --compile --sourcema
 
 USER bun
 EXPOSE 5174/tcp
-CMD [ "./app" ]
+CMD [ "sleep", "180", "./app" ]
