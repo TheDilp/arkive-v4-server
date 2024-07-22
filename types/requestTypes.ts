@@ -39,10 +39,12 @@ export interface RequestFilterType {
   id: string;
   field: string;
   value: string | number | string[] | number[] | boolean | boolean[] | null;
+  header_name?: string | undefined;
   operator: RequestFilterOperatorType;
   relationalData?: {
     blueprint_field_id?: string;
     character_field_id?: string;
+    label?: string;
   };
 }
 
@@ -85,6 +87,14 @@ const RequestFilterSchema = t.Optional(
         t.Array(t.Boolean()),
       ]),
       operator: FilterEnumSchema,
+      header_name: t.Optional(t.String()),
+      relationalData: t.Optional(
+        t.Object({
+          character_field_id: t.Optional(t.String()),
+          blueprint_field_id: t.Optional(t.String()),
+          label: t.String(),
+        }),
+      ),
     }),
   ),
 );

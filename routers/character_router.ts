@@ -270,7 +270,7 @@ export function character_router(app: Elysia) {
               )
               .$if(!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length, (qb) => {
                 const { characters, blueprint_instances, documents, map_pins, events, tags, value } =
-                  groupRelationFiltersByField(body.relationFilters || {});
+                  groupRelationFiltersByField(body.relationFilters || { and: [], or: [] });
 
                 const {
                   documents: resourceDocuments,
@@ -278,7 +278,7 @@ export function character_router(app: Elysia) {
                   events: resourceEvents,
                   tags: resourceTags,
                   images,
-                } = groupCharacterResourceFiltersByField(body.relationFilters || {});
+                } = groupCharacterResourceFiltersByField(body.relationFilters || { and: [], or: [] });
 
                 if (tags?.filters?.length || resourceTags?.filters?.length)
                   qb = tagsRelationFilter(

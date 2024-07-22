@@ -188,11 +188,9 @@ export function groupRelationFiltersByField(queryStructure: RequestBodyFiltersTy
             filters: [],
           };
         }
-        if (rest?.relationalData?.character_field_id || rest?.relationalData?.blueprint_field_id) {
-          const newFilter = rest;
-          newFilter.type = groupKey.toUpperCase() as "AND" | "OR";
-          groupedQueries[field].filters.push(newFilter);
-        }
+        const newFilter = rest;
+        newFilter.type = groupKey.toUpperCase() as "AND" | "OR";
+        groupedQueries[field].filters.push(newFilter);
       }
     }
   }
