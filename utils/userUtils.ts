@@ -1,4 +1,4 @@
-import { Cookie } from "elysia";
+import { Cookie, StatusMap } from "elysia";
 import { HTTPHeaders } from "elysia/types";
 
 import { db } from "../database/db";
@@ -39,7 +39,7 @@ export async function verifyJWT({
 }: {
   refresh: Cookie<string | undefined>;
   access: Cookie<string | undefined>;
-  set: { headers: HTTPHeaders };
+  set: { headers: HTTPHeaders; status?: number | keyof StatusMap };
 }) {
   const res = await fetch(`${process.env.ARKIVE_AUTH_URL}/verify`, {
     method: "POST",
@@ -52,7 +52,7 @@ export async function verifyJWT({
 
   if (res.status >= 400) {
     console.error(await res.text());
-    // set.status = 401;
+    set.status = 401;
     return { status: "unauthenticated" };
   }
 

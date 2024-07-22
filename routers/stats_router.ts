@@ -1,4 +1,4 @@
-import Elysia from "elysia";
+import { Elysia } from "elysia";
 import { ReferenceExpression, SelectExpression } from "kysely";
 import { DB } from "kysely-codegen";
 import groupBy from "lodash.groupby";
