@@ -113,7 +113,6 @@ export const app = new Elysia({ name: "Editor.Router" })
   .group("/api/v1" as any, (server) =>
     server.guard(
       {
-        type: "none",
         beforeHandle: async ({ headers, set, cookie: { access, refresh } }) => {
           const data = await verifyJWT({ access, refresh, set });
           if (data.status === "authenticated") {
