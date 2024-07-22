@@ -1,4 +1,4 @@
-import Elysia from "elysia";
+import { Elysia } from "elysia";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 
 import { db } from "../database/db";

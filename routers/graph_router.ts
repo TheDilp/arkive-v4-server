@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import Elysia from "elysia";
+import { Elysia } from "elysia";
 import { SelectExpression, SelectQueryBuilder } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";

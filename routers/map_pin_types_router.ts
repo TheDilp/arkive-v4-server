@@ -1,4 +1,4 @@
-import Elysia from "elysia";
+import { Elysia } from "elysia";
 
 import { db } from "../database/db";
 import { InsertMapPinTypeSchema, ListMapPinTypeSchema, UpdateMapPinTypeSchema } from "../database/validation/map_pin_types";

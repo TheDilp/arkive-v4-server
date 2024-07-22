@@ -1,4 +1,4 @@
-import Elysia from "elysia";
+import { Elysia } from "elysia";
 
 // import groupBy from "lodash.groupby";
 import { db } from "../database/db";
