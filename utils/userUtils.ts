@@ -69,7 +69,7 @@ export async function verifyJWT({
       name: cookie_data.claims.name,
     };
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     // set.status = 401;
     throw new Error("UNAUTHORIZED");
   }
