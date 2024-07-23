@@ -3,17 +3,8 @@ import { t } from "elysia";
 import { RequestBodySchema } from "../../types/requestTypes";
 
 const ManuscriptEntitySchema = t.Object({
-  id: t.Optional(t.String()),
-  parent_id: t.Union([t.Null(), t.String()]),
-  manuscript_id: t.String(),
-  document_id: t.Union([t.Null(), t.String()]),
-  character_id: t.Union([t.Null(), t.String()]),
-  blueprint_instance_id: t.Union([t.Null(), t.String()]),
-  map_id: t.Union([t.Null(), t.String()]),
-  map_pin_id: t.Union([t.Null(), t.String()]),
-  graph_id: t.Union([t.Null(), t.String()]),
-  event_id: t.Union([t.Null(), t.String()]),
-  image_id: t.Union([t.Null(), t.String()]),
+  id: t.String(),
+  related_id: t.String(),
   sort: t.Number(),
 });
 
@@ -48,7 +39,14 @@ export const InsertManuscriptSchema = t.Object({
   }),
   relations: t.Optional(
     t.Object({
-      entities: t.Array(ManuscriptEntitySchema),
+      characters: t.Array(ManuscriptEntitySchema),
+      blueprint_instances: t.Array(ManuscriptEntitySchema),
+      documents: t.Array(ManuscriptEntitySchema),
+      maps: t.Array(ManuscriptEntitySchema),
+      map_pins: t.Array(ManuscriptEntitySchema),
+      graphs: t.Array(ManuscriptEntitySchema),
+      events: t.Array(ManuscriptEntitySchema),
+      images: t.Array(ManuscriptEntitySchema),
       tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
     }),
   ),
@@ -81,7 +79,14 @@ export const UpdateManuscriptSchema = t.Object({
   }),
   relations: t.Optional(
     t.Object({
-      entities: t.Array(ManuscriptEntitySchema),
+      characters: t.Array(ManuscriptEntitySchema),
+      blueprint_instances: t.Array(ManuscriptEntitySchema),
+      documents: t.Array(ManuscriptEntitySchema),
+      maps: t.Array(ManuscriptEntitySchema),
+      map_pins: t.Array(ManuscriptEntitySchema),
+      graphs: t.Array(ManuscriptEntitySchema),
+      events: t.Array(ManuscriptEntitySchema),
+      images: t.Array(ManuscriptEntitySchema),
       tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
     }),
   ),

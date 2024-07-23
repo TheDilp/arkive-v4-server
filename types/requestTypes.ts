@@ -92,7 +92,7 @@ const RequestFilterSchema = t.Optional(
         t.Object({
           character_field_id: t.Optional(t.String()),
           blueprint_field_id: t.Optional(t.String()),
-          label: t.String(),
+          label: t.Optional(t.String()),
         }),
       ),
     }),

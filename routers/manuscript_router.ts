@@ -47,13 +47,90 @@ export function manuscript_router(app: Elysia) {
                 .returning("id")
                 .executeTakeFirstOrThrow();
 
-              if (body.relations?.entities?.length) {
+              if (body.relations?.characters?.length) {
                 await tx
-                  .insertInto("manuscript_entities")
+                  .insertInto("manuscript_characters")
                   .values(
-                    body.relations?.entities.map((doc) => ({
+                    body.relations?.characters.map((doc) => ({
                       ...doc,
-                      manuscript_id: manuscript.id,
+                      parent_id: manuscript.id,
+                    })),
+                  )
+                  .execute();
+              }
+              if (body.relations?.blueprint_instances?.length) {
+                await tx
+                  .insertInto("manuscript_blueprint_instances")
+                  .values(
+                    body.relations?.blueprint_instances.map((doc) => ({
+                      ...doc,
+                      parent_id: manuscript.id,
+                    })),
+                  )
+                  .execute();
+              }
+              if (body.relations?.documents?.length) {
+                await tx
+                  .insertInto("manuscript_documents")
+                  .values(
+                    body.relations?.documents.map((doc) => ({
+                      ...doc,
+                      parent_id: manuscript.id,
+                    })),
+                  )
+                  .execute();
+              }
+              if (body.relations?.maps?.length) {
+                await tx
+                  .insertInto("manuscript_maps")
+                  .values(
+                    body.relations?.maps.map((doc) => ({
+                      ...doc,
+                      parent_id: manuscript.id,
+                    })),
+                  )
+                  .execute();
+              }
+              if (body.relations?.map_pins?.length) {
+                await tx
+                  .insertInto("manuscript_map_pins")
+                  .values(
+                    body.relations?.map_pins.map((doc) => ({
+                      ...doc,
+                      parent_id: manuscript.id,
+                    })),
+                  )
+                  .execute();
+              }
+              if (body.relations?.graphs?.length) {
+                await tx
+                  .insertInto("manuscript_graphs")
+                  .values(
+                    body.relations?.graphs.map((doc) => ({
+                      ...doc,
+                      parent_id: manuscript.id,
+                    })),
+                  )
+                  .execute();
+              }
+              if (body.relations?.events?.length) {
+                await tx
+                  .insertInto("manuscript_events")
+                  .values(
+                    body.relations?.events.map((doc) => ({
+                      ...doc,
+                      parent_id: manuscript.id,
+                    })),
+                  )
+                  .execute();
+              }
+              if (body.relations?.images?.length) {
+                await tx
+                  .insertInto("manuscript_images")
+                  .values(
+                    body.relations?.images.map((doc) => ({
+                      ...doc,
+                      parent_id: manuscript.id,
                     })),
                   )
                   .execute();
@@ -134,46 +211,143 @@ export function manuscript_router(app: Elysia) {
                 query = query.select((eb) =>
                   jsonArrayFrom(
                     eb
-                      .selectFrom("manuscript_entities")
-                      .leftJoin("characters", "characters.id", "manuscript_entities.character_id")
-                      .leftJoin("blueprint_instances", "blueprint_instances.id", "manuscript_entities.blueprint_instance_id")
-                      .leftJoin("documents", "documents.id", "manuscript_entities.document_id")
-                      .leftJoin("maps", "maps.id", "manuscript_entities.map_id")
-                      .leftJoin("map_pins", (jb) =>
-                        jb.onRef("map_pins.id", "=", "manuscript_entities.map_pin_id").on("map_pins.character_id", "is", null),
-                      )
-                      .leftJoin("graphs", "graphs.id", "manuscript_entities.graph_id")
-                      .leftJoin("events", "events.id", "manuscript_entities.event_id")
-                      .leftJoin("images", "images.id", "manuscript_entities.image_id")
+                      .selectFrom("manuscript_characters")
+                      .where("manuscript_characters.parent_id", "=", params.id)
+                      .leftJoin("characters", "characters.id", "manuscript_characters.related_id")
                       .select([
-                        "manuscript_entities.id",
-                        "manuscript_entities.parent_id",
-                        "manuscript_entities.sort",
-                        "manuscript_entities.character_id",
-                        "manuscript_entities.blueprint_instance_id",
-                        "manuscript_entities.document_id",
-                        "manuscript_entities.map_id",
-                        "manuscript_entities.map_pin_id",
-                        "manuscript_entities.graph_id",
-                        "manuscript_entities.event_id",
-                        "manuscript_entities.image_id",
-                        () =>
-                          sql<string>`COALESCE(characters.full_name, blueprint_instances.title, documents.title, maps.title,
-                                          map_pins.title, graphs.title, events.title, images.title)`.as("title"),
-                        () =>
-                          sql<string>`CASE
-                                        WHEN manuscript_entities.character_id IS NOT NULL THEN 'characters'
-                                        WHEN manuscript_entities.blueprint_instance_id IS NOT NULL THEN 'blueprint_instances'
-                                        WHEN manuscript_entities.document_id IS NOT NULL THEN 'documents'
-                                        WHEN manuscript_entities.map_id IS NOT NULL THEN 'maps'
-                                        WHEN manuscript_entities.map_pin_id IS NOT NULL THEN 'map_pins'
-                                        WHEN manuscript_entities.graph_id IS NOT NULL THEN 'graphs'
-                                        WHEN manuscript_entities.event_id IS NOT NULL THEN 'events'
-                                        WHEN manuscript_entities.image_id IS NOT NULL THEN 'images'
-                                      END  `.as("type"),
-                      ])
-                      .where("manuscript_entities.manuscript_id", "=", params.id),
-                  ).as("entities"),
+                        "manuscript_characters.id",
+                        "manuscript_characters.parent_id",
+                        "manuscript_characters.related_id",
+                        "manuscript_characters.sort",
+                        "characters.full_name as title",
+                        "characters.portrait_id as image_id",
+                        sql`'characters'::TEXT`.as("type"),
+                      ]),
+                  ).as("characters"),
+                );
+                query = query.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("manuscript_blueprint_instances")
+                      .where("manuscript_blueprint_instances.parent_id", "=", params.id)
+                      .leftJoin("blueprint_instances", "blueprint_instances.id", "manuscript_blueprint_instances.related_id")
+                      .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+                      .select([
+                        "manuscript_blueprint_instances.id",
+                        "manuscript_blueprint_instances.parent_id",
+                        "manuscript_blueprint_instances.related_id",
+                        "manuscript_blueprint_instances.sort",
+                        "blueprint_instances.title",
+                        "blueprints.icon",
+                        sql`'blueprint_instances'::TEXT`.as("type"),
+                      ]),
+                  ).as("blueprint_instances"),
+                );
+                query = query.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("manuscript_documents")
+                      .where("manuscript_documents.parent_id", "=", params.id)
+                      .leftJoin("documents", "documents.id", "manuscript_documents.related_id")
+                      .select([
+                        "manuscript_documents.id",
+                        "manuscript_documents.parent_id",
+                        "manuscript_documents.related_id",
+                        "manuscript_documents.sort",
+                        "documents.title",
+                        "documents.icon",
+                        "documents.image_id",
+                        sql`'documents'::TEXT`.as("type"),
+                      ]),
+                  ).as("documents"),
+                );
+                query = query.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("manuscript_maps")
+                      .where("manuscript_maps.parent_id", "=", params.id)
+                      .leftJoin("maps", "maps.id", "manuscript_maps.related_id")
+                      .select([
+                        "manuscript_maps.id",
+                        "manuscript_maps.parent_id",
+                        "manuscript_maps.related_id",
+                        "manuscript_maps.sort",
+                        "maps.title",
+                        "maps.icon",
+                        "maps.image_id",
+                        sql`'maps'::TEXT`.as("type"),
+                      ]),
+                  ).as("maps"),
+                );
+                query = query.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("manuscript_map_pins")
+                      .where("manuscript_map_pins.parent_id", "=", params.id)
+                      .leftJoin("map_pins", "map_pins.id", "manuscript_map_pins.related_id")
+                      .select([
+                        "manuscript_map_pins.id",
+                        "manuscript_map_pins.parent_id",
+                        "manuscript_map_pins.related_id",
+                        "manuscript_map_pins.sort",
+                        "map_pins.title",
+                        "map_pins.icon",
+                        "map_pins.image_id",
+                        sql`'map_pins'::TEXT`.as("type"),
+                      ]),
+                  ).as("map_pins"),
+                );
+                query = query.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("manuscript_graphs")
+                      .where("manuscript_graphs.parent_id", "=", params.id)
+                      .leftJoin("graphs", "graphs.id", "manuscript_graphs.related_id")
+                      .select([
+                        "manuscript_graphs.id",
+                        "manuscript_graphs.parent_id",
+                        "manuscript_graphs.related_id",
+                        "manuscript_graphs.sort",
+                        "graphs.title",
+                        "graphs.icon",
+                        sql`'graphs'::TEXT`.as("type"),
+                      ]),
+                  ).as("graphs"),
+                );
+
+                query = query.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("manuscript_events")
+                      .where("manuscript_events.parent_id", "=", params.id)
+                      .leftJoin("events", "events.id", "manuscript_events.related_id")
+                      .select([
+                        "manuscript_events.id",
+                        "manuscript_events.parent_id",
+                        "manuscript_events.related_id",
+                        "manuscript_events.sort",
+                        "events.title",
+                        "events.image_id",
+                        sql`'events'::TEXT`.as("type"),
+                      ]),
+                  ).as("events"),
+                );
+                query = query.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("manuscript_images")
+                      .where("manuscript_images.parent_id", "=", params.id)
+                      .leftJoin("images", "images.id", "manuscript_images.related_id")
+                      .select([
+                        "manuscript_images.id",
+                        "manuscript_images.parent_id",
+                        "manuscript_images.related_id",
+                        "manuscript_images.sort",
+                        "images.title",
+
+                        sql`'images'::TEXT`.as("type"),
+                      ]),
+                  ).as("images"),
                 );
               }
             }
@@ -204,65 +378,330 @@ export function manuscript_router(app: Elysia) {
 
             if (permissionCheck) {
               await db.transaction().execute(async (tx) => {
-                await tx.updateTable("manuscripts").set(body.data).executeTakeFirstOrThrow();
+                await tx.updateTable("manuscripts").set(body.data).where("id", "=", params.id).executeTakeFirstOrThrow();
 
-                if (body.relations?.entities?.length) {
-                  const existingEntities = await tx
-                    .selectFrom("manuscript_entities")
-                    .select([
-                      "id",
-                      "character_id",
-                      "blueprint_instance_id",
-                      "document_id",
-                      "map_id",
-                      "map_pin_id",
-                      "graph_id",
-                      "event_id",
-                      "image_id",
-                      "parent_id",
-                      "sort",
-                    ])
-                    .where("manuscript_id", "=", params.id)
+                if (body.relations?.characters) {
+                  const existingIds = await tx
+                    .selectFrom("manuscript_characters")
+                    .select("id")
+                    .where("manuscript_characters.parent_id", "=", params.id)
                     .execute();
 
-                  const existingIds = existingEntities.map((field) => field.id);
-
                   const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
-                    existingIds,
-                    body.relations?.entities,
+                    existingIds.map((item) => item.id),
+                    body.relations?.characters || [],
                   );
 
-                  if (idsToRemove.length) {
-                    await tx.deleteFrom("manuscript_entities").where("id", "in", idsToRemove).execute();
-                  }
+                  if (idsToRemove.length) await tx.deleteFrom("manuscript_characters").where("id", "in", idsToRemove).execute();
                   if (itemsToAdd.length) {
                     await tx
-                      .insertInto("manuscript_entities")
+                      .insertInto("manuscript_characters")
                       .values(
                         itemsToAdd.map((item) => ({
-                          ...item,
-                          manuscript_id: params.id,
+                          parent_id: params.id,
+                          id: item.id,
+                          sort: item.sort,
+                          related_id: item.related_id,
                         })),
                       )
                       .execute();
                   }
+
                   if (itemsToUpdate.length) {
                     await Promise.all(
                       itemsToUpdate.map(async (item) =>
                         tx
-                          .updateTable("manuscript_entities")
-                          .where("parent_id", "=", params.id)
+                          .updateTable("manuscript_characters")
                           .where("id", "=", item.id)
-                          .set({ ...item, manuscript_id: params.id })
+                          .set({ ...item, parent_id: params.id })
                           .execute(),
                       ),
                     );
                   }
-                } else {
-                  await tx
-                    .deleteFrom("manuscript_entities")
-                    .where("manuscript_entities.manuscript_id", "=", params.id)
+                }
+
+                if (body.relations?.blueprint_instances) {
+                  const existingIds = await tx
+                    .selectFrom("manuscript_blueprint_instances")
+                    .select("id")
+                    .where("manuscript_blueprint_instances.parent_id", "=", params.id)
                     .execute();
+
+                  const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+                    existingIds.map((item) => item.id),
+                    body.relations?.blueprint_instances || [],
+                  );
+
+                  if (idsToRemove.length)
+                    await tx.deleteFrom("manuscript_blueprint_instances").where("id", "in", idsToRemove).execute();
+
+                  if (itemsToAdd.length) {
+                    await tx
+                      .insertInto("manuscript_blueprint_instances")
+                      .values(
+                        itemsToAdd.map((item) => ({
+                          parent_id: params.id,
+                          id: item.id,
+                          sort: item.sort,
+                          related_id: item.related_id,
+                        })),
+                      )
+                      .execute();
+                  }
+
+                  if (itemsToUpdate.length) {
+                    await Promise.all(
+                      itemsToUpdate.map(async (item) =>
+                        tx
+                          .updateTable("manuscript_blueprint_instances")
+                          .where("id", "=", item.id)
+                          .set({ ...item, parent_id: params.id })
+                          .execute(),
+                      ),
+                    );
+                  }
+                }
+
+                if (body.relations?.documents) {
+                  const existingIds = await tx
+                    .selectFrom("manuscript_documents")
+                    .select("id")
+                    .where("manuscript_documents.parent_id", "=", params.id)
+                    .execute();
+
+                  const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+                    existingIds.map((item) => item.id),
+                    body.relations?.documents || [],
+                  );
+
+                  if (idsToRemove.length) await tx.deleteFrom("manuscript_documents").where("id", "in", idsToRemove).execute();
+
+                  if (itemsToAdd.length) {
+                    await tx
+                      .insertInto("manuscript_documents")
+                      .values(
+                        itemsToAdd.map((item) => ({
+                          parent_id: params.id,
+                          id: item.id,
+                          sort: item.sort,
+                          related_id: item.related_id,
+                        })),
+                      )
+                      .execute();
+                  }
+
+                  if (itemsToUpdate.length) {
+                    await Promise.all(
+                      itemsToUpdate.map(async (item) =>
+                        tx
+                          .updateTable("manuscript_documents")
+                          .where("id", "=", item.id)
+                          .set({ ...item, parent_id: params.id })
+                          .execute(),
+                      ),
+                    );
+                  }
+                }
+
+                if (body.relations?.maps) {
+                  const existingIds = await tx
+                    .selectFrom("manuscript_maps")
+                    .select("id")
+                    .where("manuscript_maps.parent_id", "=", params.id)
+                    .execute();
+
+                  const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+                    existingIds.map((item) => item.id),
+                    body.relations?.maps || [],
+                  );
+                  if (idsToRemove.length) await tx.deleteFrom("manuscript_maps").where("id", "in", idsToRemove).execute();
+
+                  if (itemsToAdd.length) {
+                    await tx
+                      .insertInto("manuscript_maps")
+                      .values(
+                        itemsToAdd.map((item) => ({
+                          parent_id: params.id,
+                          id: item.id,
+                          sort: item.sort,
+                          related_id: item.related_id,
+                        })),
+                      )
+                      .execute();
+                  }
+
+                  if (itemsToUpdate.length) {
+                    await Promise.all(
+                      itemsToUpdate.map(async (item) =>
+                        tx
+                          .updateTable("manuscript_maps")
+                          .where("id", "=", item.id)
+                          .set({ ...item, parent_id: params.id })
+                          .execute(),
+                      ),
+                    );
+                  }
+                }
+
+                if (body.relations?.map_pins) {
+                  const existingIds = await tx
+                    .selectFrom("manuscript_map_pins")
+                    .select("id")
+                    .where("manuscript_map_pins.parent_id", "=", params.id)
+                    .execute();
+
+                  const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+                    existingIds.map((item) => item.id),
+                    body.relations?.map_pins || [],
+                  );
+
+                  if (idsToRemove.length) await tx.deleteFrom("manuscript_map_pins").where("id", "in", idsToRemove).execute();
+
+                  if (itemsToAdd.length) {
+                    await tx
+                      .insertInto("manuscript_map_pins")
+                      .values(
+                        itemsToAdd.map((item) => ({
+                          parent_id: params.id,
+                          id: item.id,
+                          sort: item.sort,
+                          related_id: item.related_id,
+                        })),
+                      )
+                      .execute();
+                  }
+
+                  if (itemsToUpdate.length) {
+                    await Promise.all(
+                      itemsToUpdate.map(async (item) =>
+                        tx
+                          .updateTable("manuscript_map_pins")
+                          .where("id", "=", item.id)
+                          .set({ ...item, parent_id: params.id })
+                          .execute(),
+                      ),
+                    );
+                  }
+                }
+
+                if (body.relations?.graphs) {
+                  const existingIds = await tx
+                    .selectFrom("manuscript_graphs")
+                    .select("id")
+                    .where("manuscript_graphs.parent_id", "=", params.id)
+                    .execute();
+
+                  const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+                    existingIds.map((item) => item.id),
+                    body.relations?.graphs || [],
+                  );
+                  if (idsToRemove.length) await tx.deleteFrom("manuscript_graphs").where("id", "in", idsToRemove).execute();
+
+                  if (itemsToAdd.length) {
+                    await tx
+                      .insertInto("manuscript_graphs")
+                      .values(
+                        itemsToAdd.map((item) => ({
+                          parent_id: params.id,
+                          id: item.id,
+                          sort: item.sort,
+                          related_id: item.related_id,
+                        })),
+                      )
+                      .execute();
+                  }
+
+                  if (itemsToUpdate.length) {
+                    await Promise.all(
+                      itemsToUpdate.map(async (item) =>
+                        tx
+                          .updateTable("manuscript_graphs")
+                          .where("id", "=", item.id)
+                          .set({ ...item, parent_id: params.id })
+                          .execute(),
+                      ),
+                    );
+                  }
+                }
+
+                if (body.relations?.events) {
+                  const existingIds = await tx
+                    .selectFrom("manuscript_events")
+                    .select("id")
+                    .where("manuscript_events.parent_id", "=", params.id)
+                    .execute();
+
+                  const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+                    existingIds.map((item) => item.id),
+                    body.relations?.graphs || [],
+                  );
+                  if (idsToRemove.length) await tx.deleteFrom("manuscript_events").where("id", "in", idsToRemove).execute();
+
+                  if (itemsToAdd.length) {
+                    await tx
+                      .insertInto("manuscript_events")
+                      .values(
+                        itemsToAdd.map((item) => ({
+                          parent_id: params.id,
+                          id: item.id,
+                          sort: item.sort,
+                          related_id: item.related_id,
+                        })),
+                      )
+                      .execute();
+                  }
+
+                  if (itemsToUpdate.length) {
+                    await Promise.all(
+                      itemsToUpdate.map(async (item) =>
+                        tx
+                          .updateTable("manuscript_events")
+                          .where("id", "=", item.id)
+                          .set({ ...item, parent_id: params.id })
+                          .execute(),
+                      ),
+                    );
+                  }
+                }
+
+                if (body.relations?.images) {
+                  const existingIds = await tx
+                    .selectFrom("manuscript_images")
+                    .select("id")
+                    .where("manuscript_images.parent_id", "=", params.id)
+                    .execute();
+
+                  const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+                    existingIds.map((item) => item.id),
+                    body.relations?.graphs || [],
+                  );
+                  if (idsToRemove.length) await tx.deleteFrom("manuscript_images").where("id", "in", idsToRemove).execute();
+
+                  if (itemsToAdd.length) {
+                    await tx
+                      .insertInto("manuscript_images")
+                      .values(
+                        itemsToAdd.map((item) => ({
+                          parent_id: params.id,
+                          id: item.id,
+                          sort: item.sort,
+                          related_id: item.related_id,
+                        })),
+                      )
+                      .execute();
+                  }
+
+                  if (itemsToUpdate.length) {
+                    await Promise.all(
+                      itemsToUpdate.map(async (item) =>
+                        tx
+                          .updateTable("manuscript_images")
+                          .where("id", "=", item.id)
+                          .set({ ...item, parent_id: params.id })
+                          .execute(),
+                      ),
+                    );
+                  }
                 }
 
                 if (body.relations?.tags?.length) {
