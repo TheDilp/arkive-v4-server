@@ -1353,21 +1353,97 @@ CREATE TABLE public.leap_days (
 
 
 --
--- Name: manuscript_entities; Type: TABLE; Schema: public; Owner: -
+-- Name: manuscript_blueprint_instances; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.manuscript_entities (
+CREATE TABLE public.manuscript_blueprint_instances (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    document_id uuid,
-    character_id uuid,
-    blueprint_instance_id uuid,
-    map_id uuid,
-    map_pin_id uuid,
-    graph_id uuid,
-    event_id uuid,
-    image_id uuid,
-    parent_id uuid,
-    manuscript_id uuid NOT NULL,
+    related_id uuid NOT NULL,
+    parent_id uuid NOT NULL,
+    sort integer
+);
+
+
+--
+-- Name: manuscript_characters; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscript_characters (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    parent_id uuid NOT NULL,
+    sort integer
+);
+
+
+--
+-- Name: manuscript_documents; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscript_documents (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    parent_id uuid NOT NULL,
+    sort integer
+);
+
+
+--
+-- Name: manuscript_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscript_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    parent_id uuid NOT NULL,
+    sort integer
+);
+
+
+--
+-- Name: manuscript_graphs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscript_graphs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    parent_id uuid NOT NULL,
+    sort integer
+);
+
+
+--
+-- Name: manuscript_images; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscript_images (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    parent_id uuid NOT NULL,
+    sort integer
+);
+
+
+--
+-- Name: manuscript_map_pins; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscript_map_pins (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    parent_id uuid NOT NULL,
+    sort integer
+);
+
+
+--
+-- Name: manuscript_maps; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscript_maps (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    parent_id uuid NOT NULL,
     sort integer
 );
 
@@ -2265,14 +2341,6 @@ ALTER TABLE ONLY public.images
 
 ALTER TABLE ONLY public.leap_days
     ADD CONSTRAINT leap_days_pkey PRIMARY KEY (id);
-
-
---
--- Name: manuscript_entities manuscript_entities_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.manuscript_entities
-    ADD CONSTRAINT manuscript_entities_pkey PRIMARY KEY (id);
 
 
 --
@@ -4461,83 +4529,131 @@ ALTER TABLE ONLY public.leap_days
 
 
 --
--- Name: manuscript_entities manuscript_entities_blueprint_instance_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: manuscript_blueprint_instances manuscript_blueprint_instances_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.manuscript_entities
-    ADD CONSTRAINT manuscript_entities_blueprint_instance_id_fkey FOREIGN KEY (blueprint_instance_id) REFERENCES public.blueprint_instances(id) ON DELETE CASCADE;
-
-
---
--- Name: manuscript_entities manuscript_entities_character_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.manuscript_entities
-    ADD CONSTRAINT manuscript_entities_character_id_fkey FOREIGN KEY (character_id) REFERENCES public.characters(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.manuscript_blueprint_instances
+    ADD CONSTRAINT manuscript_blueprint_instances_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.manuscripts(id) ON DELETE CASCADE;
 
 
 --
--- Name: manuscript_entities manuscript_entities_document_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: manuscript_blueprint_instances manuscript_blueprint_instances_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.manuscript_entities
-    ADD CONSTRAINT manuscript_entities_document_id_fkey FOREIGN KEY (document_id) REFERENCES public.documents(id) ON DELETE CASCADE;
-
-
---
--- Name: manuscript_entities manuscript_entities_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.manuscript_entities
-    ADD CONSTRAINT manuscript_entities_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.manuscript_blueprint_instances
+    ADD CONSTRAINT manuscript_blueprint_instances_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.blueprint_instances(id) ON DELETE CASCADE;
 
 
 --
--- Name: manuscript_entities manuscript_entities_graph_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: manuscript_characters manuscript_characters_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.manuscript_entities
-    ADD CONSTRAINT manuscript_entities_graph_id_fkey FOREIGN KEY (graph_id) REFERENCES public.graphs(id) ON DELETE CASCADE;
-
-
---
--- Name: manuscript_entities manuscript_entities_image_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.manuscript_entities
-    ADD CONSTRAINT manuscript_entities_image_id_fkey FOREIGN KEY (image_id) REFERENCES public.images(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.manuscript_characters
+    ADD CONSTRAINT manuscript_characters_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.manuscripts(id) ON DELETE CASCADE;
 
 
 --
--- Name: manuscript_entities manuscript_entities_manuscript_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: manuscript_characters manuscript_characters_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.manuscript_entities
-    ADD CONSTRAINT manuscript_entities_manuscript_id_fkey FOREIGN KEY (manuscript_id) REFERENCES public.manuscripts(id) ON DELETE CASCADE;
-
-
---
--- Name: manuscript_entities manuscript_entities_map_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.manuscript_entities
-    ADD CONSTRAINT manuscript_entities_map_id_fkey FOREIGN KEY (map_id) REFERENCES public.maps(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.manuscript_characters
+    ADD CONSTRAINT manuscript_characters_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.characters(id) ON DELETE CASCADE;
 
 
 --
--- Name: manuscript_entities manuscript_entities_map_pin_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: manuscript_documents manuscript_documents_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.manuscript_entities
-    ADD CONSTRAINT manuscript_entities_map_pin_id_fkey FOREIGN KEY (map_pin_id) REFERENCES public.map_pins(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.manuscript_documents
+    ADD CONSTRAINT manuscript_documents_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.manuscripts(id) ON DELETE CASCADE;
 
 
 --
--- Name: manuscript_entities manuscript_entities_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: manuscript_documents manuscript_documents_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.manuscript_entities
-    ADD CONSTRAINT manuscript_entities_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.manuscript_entities(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.manuscript_documents
+    ADD CONSTRAINT manuscript_documents_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.documents(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_events manuscript_events_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_events
+    ADD CONSTRAINT manuscript_events_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.manuscripts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_events manuscript_events_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_events
+    ADD CONSTRAINT manuscript_events_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.events(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_graphs manuscript_graphs_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_graphs
+    ADD CONSTRAINT manuscript_graphs_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.manuscripts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_graphs manuscript_graphs_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_graphs
+    ADD CONSTRAINT manuscript_graphs_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.graphs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_images manuscript_images_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_images
+    ADD CONSTRAINT manuscript_images_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.manuscripts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_images manuscript_images_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_images
+    ADD CONSTRAINT manuscript_images_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.images(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_map_pins manuscript_map_pins_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_map_pins
+    ADD CONSTRAINT manuscript_map_pins_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.manuscripts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_map_pins manuscript_map_pins_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_map_pins
+    ADD CONSTRAINT manuscript_map_pins_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.map_pins(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_maps manuscript_maps_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_maps
+    ADD CONSTRAINT manuscript_maps_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.manuscripts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_maps manuscript_maps_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_maps
+    ADD CONSTRAINT manuscript_maps_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.maps(id) ON DELETE CASCADE;
 
 
 --
@@ -4545,7 +4661,7 @@ ALTER TABLE ONLY public.manuscript_entities
 --
 
 ALTER TABLE ONLY public.manuscript_tags
-    ADD CONSTRAINT manuscript_tags_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.manuscripts(id);
+    ADD CONSTRAINT manuscript_tags_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.manuscripts(id) ON DELETE CASCADE;
 
 
 --
@@ -4944,4 +5060,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240709121028'),
     ('20240711084312'),
     ('20240712091231'),
-    ('20240716172359');
+    ('20240716172359'),
+    ('20240723062540');
