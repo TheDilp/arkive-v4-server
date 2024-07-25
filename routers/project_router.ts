@@ -7,7 +7,6 @@ import { db } from "../database/db";
 import { InsertProjectSchema, ReadProjectSchema, UpdateProjectSchema } from "../database/validation/projects";
 import { DefaultProjectFeatureFlags } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeProjectOwnerHandler, beforeRoleHandler } from "../handlers";
 import { PermissionDecorationType, RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { deleteFolder } from "../utils/s3Utils";
 
@@ -78,12 +77,6 @@ export function project_router(app: Elysia) {
         {
           body: RequestBodySchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => {
-            const user_id = context?.headers?.["user-id"];
-            if (user_id) {
-              context.permissions.user_id = user_id;
-            }
-          },
         },
       )
       .post(
@@ -173,13 +166,6 @@ export function project_router(app: Elysia) {
         {
           body: ReadProjectSchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => {
-            const user_id = context?.headers?.["user-id"];
-            if (user_id) {
-              // @ts-ignore
-              context.permissions.user_id = user_id;
-            }
-          },
         },
       )
       .post(
@@ -192,7 +178,6 @@ export function project_router(app: Elysia) {
         {
           body: UpdateProjectSchema,
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
         },
       )
       .get(
@@ -316,7 +301,6 @@ export function project_router(app: Elysia) {
         },
         {
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, undefined, true),
         },
       )
       .delete(
@@ -334,7 +318,6 @@ export function project_router(app: Elysia) {
         },
         {
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
         },
       ),
   );

@@ -7,7 +7,7 @@ import { db } from "../database/db";
 import { checkEntityLevelPermission, getHasEntityPermission, getNestedReadPermission } from "../database/queries";
 import { InsertEventSchema, ListEventSchema, ReadEventSchema, UpdateEventSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
+import { noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, eventRelationFilters } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -82,7 +82,6 @@ export function event_router(app: Elysia) {
         {
           body: InsertEventSchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "create_events"),
         },
       )
       .post(
@@ -180,7 +179,6 @@ export function event_router(app: Elysia) {
         {
           body: ListEventSchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "read_events"),
         },
       )
       .post(
@@ -277,7 +275,6 @@ export function event_router(app: Elysia) {
         {
           body: ReadEventSchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "read_events"),
         },
       )
       .post(
@@ -364,7 +361,6 @@ export function event_router(app: Elysia) {
         {
           body: UpdateEventSchema,
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "update_events"),
         },
       )
       .delete(
@@ -392,7 +388,6 @@ export function event_router(app: Elysia) {
         },
         {
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "delete_events"),
         },
       ),
   );

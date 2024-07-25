@@ -7,7 +7,7 @@ import { db } from "../database/db";
 import { checkEntityLevelPermission, getHasEntityPermission, getNestedReadPermission } from "../database/queries";
 import { InsertMapPinSchema, ListMapPinSchema, ReadMapPinSchema, UpdateMapPinSchema } from "../database/validation/map_pins";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
+import { noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import {
@@ -63,7 +63,6 @@ export function map_pin_router(app: Elysia) {
           {
             body: InsertMapPinSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "create_map_pins"),
           },
         )
         .post(
@@ -134,7 +133,6 @@ export function map_pin_router(app: Elysia) {
           {
             body: ListMapPinSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "read_map_pins"),
           },
         )
         .post(
@@ -230,7 +228,6 @@ export function map_pin_router(app: Elysia) {
           {
             body: ReadMapPinSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "read_map_pins"),
           },
         )
         .post(
@@ -254,7 +251,6 @@ export function map_pin_router(app: Elysia) {
           {
             body: UpdateMapPinSchema,
             response: ResponseSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "update_map_pins"),
           },
         )
         .delete(
@@ -286,7 +282,6 @@ export function map_pin_router(app: Elysia) {
           },
           {
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "delete_map_pins"),
           },
         ),
     );

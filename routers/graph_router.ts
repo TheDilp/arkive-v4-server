@@ -11,7 +11,7 @@ import { EntitiesWithChildren } from "../database/types";
 import { EntityListSchema } from "../database/validation";
 import { GenerateGraphSchema, InsertGraphSchema, ReadGraphSchema, UpdateGraphSchema } from "../database/validation/graphs";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
+import { noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -30,9 +30,10 @@ import { getEntityWithOwnerId, groupRelationFiltersByField } from "../utils/util
 export function graph_router(app: Elysia) {
   return app
     .decorate("permissions", {
+      user_id: "",
+      project_id: null,
       is_project_owner: false,
       role_access: false,
-      user_id: "",
       role_id: null,
       permission_id: null,
       all_permissions: {},
@@ -62,7 +63,6 @@ export function graph_router(app: Elysia) {
           {
             body: InsertGraphSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "create_graphs"),
           },
         )
         .post(
@@ -108,7 +108,6 @@ export function graph_router(app: Elysia) {
           {
             body: EntityListSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "read_graphs"),
           },
         )
         .post(
@@ -212,7 +211,6 @@ export function graph_router(app: Elysia) {
           {
             body: ReadGraphSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "read_graphs"),
           },
         )
         .post(
@@ -248,7 +246,6 @@ export function graph_router(app: Elysia) {
           {
             body: UpdateGraphSchema,
             response: ResponseSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "update_graphs"),
           },
         )
         .post(
@@ -295,7 +292,6 @@ export function graph_router(app: Elysia) {
           {
             body: GenerateGraphSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "read_graphs"),
           },
         )
         .delete(
@@ -318,7 +314,6 @@ export function graph_router(app: Elysia) {
           },
           {
             response: ResponseSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "delete_graphs"),
           },
         )
         .delete(
@@ -341,7 +336,6 @@ export function graph_router(app: Elysia) {
           },
           {
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "delete_graphs"),
           },
         ),
     );

@@ -9,7 +9,7 @@ import { EntitiesWithChildren } from "../database/types";
 import { EntityListSchema } from "../database/validation";
 import { InsertDictionarySchema, ReadDictionarySchema, UpdateDictionarySchema } from "../database/validation/dictionaries";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
+import { noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -44,7 +44,6 @@ export function dictionary_router(app: Elysia) {
         {
           body: InsertDictionarySchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "create_dictionaries"),
         },
       )
       .post(
@@ -78,7 +77,6 @@ export function dictionary_router(app: Elysia) {
         {
           body: EntityListSchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "read_dictionaries"),
         },
       )
       .post(
@@ -127,7 +125,6 @@ export function dictionary_router(app: Elysia) {
         {
           body: ReadDictionarySchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "read_dictionaries"),
         },
       )
       .post(
@@ -150,7 +147,6 @@ export function dictionary_router(app: Elysia) {
         {
           body: UpdateDictionarySchema,
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "update_dictionaries"),
         },
       )
       .delete(
@@ -173,7 +169,6 @@ export function dictionary_router(app: Elysia) {
         },
         {
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "delete_dictionaries"),
         },
       )
       .delete(
@@ -196,7 +191,6 @@ export function dictionary_router(app: Elysia) {
         },
         {
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "delete_dictionaries"),
         },
       ),
   );

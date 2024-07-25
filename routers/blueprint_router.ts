@@ -8,7 +8,7 @@ import { db } from "../database/db";
 import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
 import { InsertBlueprintSchema, ListBlueprintSchema, ReadBlueprintSchema, UpdateBlueprintSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
+import { noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -68,7 +68,6 @@ export function blueprint_router(app: Elysia) {
           {
             body: InsertBlueprintSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "create_blueprints"),
           },
         )
         .post(
@@ -131,7 +130,6 @@ export function blueprint_router(app: Elysia) {
           {
             body: ListBlueprintSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "read_blueprints"),
           },
         )
         .post(
@@ -243,7 +241,6 @@ export function blueprint_router(app: Elysia) {
           {
             body: ReadBlueprintSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "read_blueprints"),
           },
         )
         .post(
@@ -315,7 +312,6 @@ export function blueprint_router(app: Elysia) {
           {
             body: UpdateBlueprintSchema,
             response: ResponseSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "update_blueprints"),
           },
         )
         .delete(
@@ -338,7 +334,6 @@ export function blueprint_router(app: Elysia) {
           },
           {
             response: ResponseSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "delete_blueprints"),
           },
         )
         .delete(
@@ -366,7 +361,6 @@ export function blueprint_router(app: Elysia) {
           },
           {
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "delete_blueprints"),
           },
         ),
     );

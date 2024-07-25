@@ -8,7 +8,7 @@ import { checkEntityLevelPermission, getHasEntityPermission, getNestedReadPermis
 import { EntityListSchema } from "../database/validation";
 import { InsertMapSchema, ReadMapSchema, UpdateMapSchema } from "../database/validation/maps";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
+import { noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -63,7 +63,6 @@ export function map_router(app: Elysia) {
           {
             body: InsertMapSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "create_maps"),
           },
         )
         .post(
@@ -109,7 +108,6 @@ export function map_router(app: Elysia) {
           {
             body: EntityListSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "read_maps"),
           },
         )
         .post(
@@ -265,7 +263,6 @@ export function map_router(app: Elysia) {
           {
             body: ReadMapSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "read_maps"),
           },
         )
         .post(
@@ -336,7 +333,6 @@ export function map_router(app: Elysia) {
           {
             body: UpdateMapSchema,
             response: ResponseSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "update_maps"),
           },
         )
         .delete(
@@ -359,7 +355,6 @@ export function map_router(app: Elysia) {
           },
           {
             response: ResponseSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "delete_maps"),
           },
         )
         .delete(
@@ -383,7 +378,6 @@ export function map_router(app: Elysia) {
           },
           {
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "delete_maps"),
           },
         ),
     );

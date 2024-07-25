@@ -37,12 +37,34 @@ export function getOperationFromPath(path: string | null, method: "GET" | "POST"
   if (path.includes("update")) return "update";
   return null;
 }
+export function getPermissionOperationFromPath(
+  path: string | null,
+  method: "GET" | "POST" | "DELETE",
+): AfterHandlerActionType | "read" | null {
+  if (!path) return null;
+  if (path.includes("generate")) return "create";
+  if (path.includes("automention")) return "update";
+  if (path.includes("mentions") || path.includes("mentioned_in")) return "read";
+  if (method === "DELETE" && path.includes("arkive")) return "delete";
+  if (method === "DELETE") return "delete";
+  if (path.includes("create")) return "create";
+  if (path.includes("update")) return "update";
+  if (path.includes("resource/add") || path.includes("remove")) return "update";
+  if (method === "POST") return "read";
+  return null;
+}
 
-export function getEntityFromPath(path: string): string {
-  if (path.includes("bulk")) return path.split("/").at(-1) || "";
+export function getEntityFromPath(path: string): AvailableEntityType | AvailableSubEntityType | null {
+  if (path.includes("bulk")) {
+    const entity = path.split("/").at(-1);
+
+    if (entity === "nodes" || entity === "edges") return "graphs";
+
+    return (path.split("/").at(-1) as AvailableEntityType | AvailableSubEntityType | undefined) || null;
+  }
   const entity = path.split("/")[3];
   if (entity === "character_map_pins") return "map_pins";
-  return entity;
+  return entity as AvailableEntityType | AvailableSubEntityType;
 }
 
 export function getParentEntity(sub_entity: string): TableExpression<DB, DBKeys> | null {

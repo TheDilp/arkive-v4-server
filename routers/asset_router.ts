@@ -10,7 +10,7 @@ import { db } from "../database/db";
 import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
 import { DownloadAssetsSchema, ListAssetsSchema, ReadAssetsSchema, UpdateImageSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
+import { noRoleAccessErrorHandler } from "../handlers";
 import { AssetType } from "../types/entityTypes";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
@@ -54,6 +54,7 @@ export function asset_router(app: Elysia) {
   return app.group("/assets", (server) =>
     server
       .decorate("permissions", {
+        all_permissions: {},
         is_project_owner: false,
         role_access: false,
         user_id: "",
@@ -103,7 +104,6 @@ export function asset_router(app: Elysia) {
         {
           body: ListAssetsSchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "read_assets"),
         },
       )
       .post(
@@ -139,7 +139,6 @@ export function asset_router(app: Elysia) {
         {
           body: ReadAssetsSchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "read_assets"),
         },
       )
       .post(
@@ -183,7 +182,6 @@ export function asset_router(app: Elysia) {
         {
           body: t.Record(t.String(), t.File({ maxSize: "100m" })),
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "create_assets"),
         },
       )
       .post(
@@ -285,7 +283,6 @@ export function asset_router(app: Elysia) {
         {
           body: UpdateImageSchema,
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "update_assets"),
         },
       )
       .post(
@@ -313,7 +310,6 @@ export function asset_router(app: Elysia) {
         },
         {
           body: DownloadAssetsSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "read_assets"),
         },
       )
       .delete(
@@ -342,7 +338,6 @@ export function asset_router(app: Elysia) {
         },
         {
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "delete_assets"),
         },
       ),
   );

@@ -137,11 +137,11 @@ export const ResponseWithDataSchema = t.Object({
 });
 
 export type PermissionDecorationType = {
+  user_id: string;
+  project_id: string | null;
   is_project_owner: boolean;
   role_access: boolean;
-  project_id: string | null;
-  user_id: string;
   role_id: string | null;
   permission_id: string | null;
-  all_permissions: Partial<Record<AvailablePermissions, boolean>>;
+  all_permissions: Record<AvailablePermissions, boolean>;
 };

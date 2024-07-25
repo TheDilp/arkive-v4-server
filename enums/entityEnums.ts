@@ -1,5 +1,4 @@
 import { TagsRelationTables } from "../database/types";
-import { EntitiesWithPermissionCheck } from "../types/entityTypes";
 
 export const SubEntityEnum = [
   "alter_names",
@@ -161,7 +160,7 @@ export const RolePermissionsEnum = [
   "delete_manuscripts" as const,
 ];
 
-export const EntitiesWithPermissionsEnum: EntitiesWithPermissionCheck[] = [
+export const EntitiesWithPermissionsEnum = [
   "characters",
   "blueprints",
   "blueprint_instances",

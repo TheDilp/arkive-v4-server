@@ -6,7 +6,7 @@ import { db } from "../database/db";
 import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
 import { EntityListSchema, InsertTagSchema, UpdateTagSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
+import { noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -51,7 +51,6 @@ export function tag_router(app: Elysia) {
         {
           body: InsertTagSchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "create_tags"),
         },
       )
       .post(
@@ -85,7 +84,6 @@ export function tag_router(app: Elysia) {
         {
           body: EntityListSchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "read_tags"),
         },
       )
       .post(
@@ -112,7 +110,6 @@ export function tag_router(app: Elysia) {
         {
           body: RequestBodySchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "read_tags"),
         },
       )
       .post(
@@ -131,7 +128,6 @@ export function tag_router(app: Elysia) {
         {
           body: UpdateTagSchema,
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "update_tags"),
         },
       )
       .delete(
@@ -154,7 +150,6 @@ export function tag_router(app: Elysia) {
         },
         {
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "delete_tags"),
         },
       )
       .delete(
@@ -170,7 +165,6 @@ export function tag_router(app: Elysia) {
         },
         {
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "delete_tags"),
         },
       ),
   );

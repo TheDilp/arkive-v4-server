@@ -4,7 +4,7 @@ import { Elysia } from "elysia";
 
 import { db } from "./database/db";
 // Accepts the same connection config object that the "pg" package would take
-import { ErrorEnums, NoPublicAccess, NoRoleAccess, UnauthorizedError } from "./enums";
+import { EntitiesWithPermissionsEnum, ErrorEnums, NoPublicAccess, NoRoleAccess, UnauthorizedError } from "./enums";
 import { tempAfterHandle } from "./handlers";
 import {
   asset_router,
@@ -45,6 +45,8 @@ import {
   websocket_router,
   word_router,
 } from "./routers";
+import { PermissionDecorationType } from "./types/requestTypes";
+import { getEntityFromPath, getPermissionOperationFromPath } from "./utils/requestUtils";
 import { getCookieExpiry, verifyJWT } from "./utils/userUtils";
 
 export const app = new Elysia({ name: "Editor.Router" })
@@ -113,12 +115,57 @@ export const app = new Elysia({ name: "Editor.Router" })
   .group("/api/v1" as any, (server) =>
     server.guard(
       {
-        beforeHandle: async ({ headers, set, cookie: { access, refresh } }) => {
+        beforeHandle: async (context) => {
+          const {
+            headers,
+            set,
+            cookie: { access, refresh },
+            path,
+            request,
+          } = context;
           const data = await verifyJWT({ access, refresh, set });
           if (data.status === "authenticated") {
-            headers["user-id"] = data.user_id;
-            headers["project-id"] = data.project_id || undefined;
+            const { user_id, project_id } = data;
+            headers["user-id"] = user_id;
+            headers["project-id"] = project_id || undefined;
             headers["user-image-url"] = data.user_id || undefined;
+            const entity = getEntityFromPath(path);
+
+            if (entity && EntitiesWithPermissionsEnum.includes(entity)) {
+              if (user_id) {
+                const action = getPermissionOperationFromPath(path, request.method as "GET" | "POST" | "DELETE");
+
+                const res = await fetch(`${process.env.ARKIVE_AUTH_URL}/auth/permission/${action}_${entity}`, {
+                  method: "GET",
+                  //  @ts-ignore
+                  headers: {
+                    "Content-Type": "application/json",
+                    "user-id": user_id,
+                    "project-id": project_id,
+                  },
+                });
+
+                try {
+                  const permissions = (await res.json()) as Pick<
+                    PermissionDecorationType,
+                    "is_project_owner" | "all_permissions" | "role_access" | "role_id" | "permission_id"
+                  > & { user_id: string; project_id: string };
+
+                  permissions.user_id = user_id;
+                  permissions.project_id = project_id || "";
+                  // @ts-ignore
+                  context.permissions = permissions;
+                } catch (error) {
+                  console.error(error);
+                }
+              } else {
+                set.status = 403;
+                throw new Error(ErrorEnums.no_role_access);
+              }
+            } else {
+              // @ts-ignore
+              context.permissions.user_id = user_id;
+            }
           } else {
             set.status = 401;
             throw new Error(ErrorEnums.unauthorized);

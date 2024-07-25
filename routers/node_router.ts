@@ -13,7 +13,6 @@ import {
   UpdateNodeSchema,
 } from "../database/validation/nodes";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -160,7 +159,6 @@ export function node_router(app: Elysia) {
         {
           body: ReadNodeSchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "read_graphs"),
         },
       )
       .post(
@@ -186,7 +184,6 @@ export function node_router(app: Elysia) {
         {
           body: UpdateNodeSchema,
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "read_graphs"),
         },
       )
 

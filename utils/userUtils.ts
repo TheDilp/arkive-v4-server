@@ -27,11 +27,6 @@ export async function getUserProjectFlags(user_id: string, project_id: string) {
   return flags;
 }
 
-export function extractDiscordAvatar(user_id: string, avatar?: string) {
-  if (avatar) return `https://cdn.discordapp.com/avatars/${user_id}/${avatar}`;
-  return undefined;
-}
-
 export async function verifyJWT({
   refresh,
   access,
@@ -88,7 +83,7 @@ export function getCookieExpiry(type: "access" | "refresh"): Date {
   return now;
 }
 
-export function getCookies(access: string, refresh: string) {
+function getCookies(access: string, refresh: string) {
   const additional_cookie_params = process.env.NODE_ENV === "production" ? "domain=.thearkive.app; Secure; SameSite=None;" : "";
 
   return [

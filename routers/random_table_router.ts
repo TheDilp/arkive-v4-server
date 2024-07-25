@@ -9,7 +9,7 @@ import { EntitiesWithChildren } from "../database/types";
 import { EntityListSchema } from "../database/validation";
 import { InsertRandomTableSchema, ReadRandomTableSchema, UpdateRandomTableSchema } from "../database/validation/random_tables";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
+import { noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -66,7 +66,6 @@ export function random_table_router(app: Elysia) {
           {
             body: InsertRandomTableSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "create_random_tables"),
           },
         )
         .post(
@@ -101,7 +100,6 @@ export function random_table_router(app: Elysia) {
           {
             body: EntityListSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "read_random_tables"),
           },
         )
         .post(
@@ -172,7 +170,6 @@ export function random_table_router(app: Elysia) {
           {
             body: ReadRandomTableSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "read_random_tables"),
           },
         )
         .post(
@@ -239,7 +236,6 @@ export function random_table_router(app: Elysia) {
           {
             body: UpdateRandomTableSchema,
             response: ResponseSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "update_random_tables"),
           },
         )
         .delete(
@@ -262,7 +258,6 @@ export function random_table_router(app: Elysia) {
           },
           {
             response: ResponseSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "delete_documents"),
           },
         )
         .delete(
@@ -277,7 +272,7 @@ export function random_table_router(app: Elysia) {
               return { message: "", ok: false, role_access: false };
             }
           },
-          { response: ResponseSchema, beforeHandle: async (context) => beforeRoleHandler(context, "delete_random_tables") },
+          { response: ResponseSchema },
         ),
     );
 }

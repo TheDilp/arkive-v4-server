@@ -13,7 +13,7 @@ import {
   UpdateTemplateSchema,
 } from "../database/validation/character_fields_templates";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
+import { noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -77,7 +77,6 @@ export function character_fields_templates_router(app: Elysia) {
         {
           body: InsertCharacterFieldsTemplateSchema,
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "create_character_fields_templates"),
         },
       )
       .post(
@@ -207,7 +206,6 @@ export function character_fields_templates_router(app: Elysia) {
         {
           body: ListCharacterFieldsTemplateSchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "read_character_fields_templates"),
         },
       )
       .post(
@@ -291,7 +289,6 @@ export function character_fields_templates_router(app: Elysia) {
         {
           body: ReadCharacterFieldsTemplateSchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "read_character_fields_templates"),
         },
       )
       .post(
@@ -375,7 +372,6 @@ export function character_fields_templates_router(app: Elysia) {
         {
           body: UpdateTemplateSchema,
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "update_character_fields_templates"),
         },
       )
       .delete(
@@ -398,7 +394,6 @@ export function character_fields_templates_router(app: Elysia) {
         },
         {
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "delete_documents"),
         },
       )
       .delete(
@@ -429,7 +424,6 @@ export function character_fields_templates_router(app: Elysia) {
         },
         {
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "delete_character_fields_templates"),
         },
       ),
   );

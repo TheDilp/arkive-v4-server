@@ -6,7 +6,7 @@ import { db } from "../database/db";
 import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
 import { InserWordSchema, ListWordSchema, ReadWordSchema, UpdateWordSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
+import { noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -59,7 +59,6 @@ export function word_router(app: Elysia) {
           {
             body: InserWordSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "create_words"),
           },
         )
         .post(
@@ -97,7 +96,6 @@ export function word_router(app: Elysia) {
           {
             body: ListWordSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "read_words"),
           },
         )
         .post(
@@ -123,7 +121,6 @@ export function word_router(app: Elysia) {
           {
             body: ReadWordSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "read_words"),
           },
         )
         .post(
@@ -147,7 +144,6 @@ export function word_router(app: Elysia) {
           {
             body: UpdateWordSchema,
             response: ResponseSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "update_words"),
           },
         )
         .delete(
@@ -175,7 +171,6 @@ export function word_router(app: Elysia) {
           },
           {
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "delete_words"),
           },
         ),
     );

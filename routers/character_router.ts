@@ -13,7 +13,7 @@ import {
 } from "../database/queries";
 import { InsertCharacterSchema, ListCharacterSchema, ReadCharacterSchema, UpdateCharacterSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers/roleHandler";
+import { noRoleAccessErrorHandler } from "../handlers/roleHandler";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import {
   characterRelationFilter,
@@ -38,11 +38,13 @@ import { getEntityWithOwnerId, groupCharacterResourceFiltersByField, groupRelati
 export function character_router(app: Elysia) {
   return app
     .decorate("permissions", {
+      user_id: "",
+      project_id: null,
       is_project_owner: false,
       role_access: false,
-      user_id: "",
       role_id: null,
       permission_id: null,
+      all_permissions: {},
     } as PermissionDecorationType)
     .group("/characters", (server) =>
       server
@@ -243,7 +245,6 @@ export function character_router(app: Elysia) {
           {
             body: InsertCharacterSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "create_characters"),
           },
         )
 
@@ -364,13 +365,11 @@ export function character_router(app: Elysia) {
           {
             body: ListCharacterSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "read_characters"),
           },
         )
         .post("/:id", async ({ params, body, permissions }) => readCharacter(body, params, permissions, false), {
           body: ReadCharacterSchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "read_characters"),
         })
         .get(
           "/family/:relation_type_id/:id/:count",
@@ -379,7 +378,6 @@ export function character_router(app: Elysia) {
           },
           {
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "read_characters"),
           },
         )
         .post(
@@ -804,7 +802,6 @@ export function character_router(app: Elysia) {
           {
             body: UpdateCharacterSchema,
             response: ResponseSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "update_characters"),
           },
         )
         .post(
@@ -861,7 +858,6 @@ export function character_router(app: Elysia) {
           {
             body: UpdateCharacterSchema,
             response: ResponseSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "update_characters"),
           },
         )
         .post(
@@ -911,7 +907,6 @@ export function character_router(app: Elysia) {
           {
             body: UpdateCharacterSchema,
             response: ResponseSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "update_characters"),
           },
         )
         .delete(
@@ -934,7 +929,6 @@ export function character_router(app: Elysia) {
           },
           {
             response: ResponseSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "delete_characters"),
           },
         )
         .delete(
@@ -968,7 +962,6 @@ export function character_router(app: Elysia) {
           },
           {
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "delete_characters"),
           },
         ),
     );

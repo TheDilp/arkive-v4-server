@@ -33,6 +33,7 @@ export async function getHasEntityPermission(
   id: string,
   permissions: PermissionDecorationType,
 ): Promise<boolean> {
+  // !ADD REDIS CHECK FIRST
   const permissionCheck = await db
     .selectFrom(entity)
     .where(`${entity}.id`, "=", id)

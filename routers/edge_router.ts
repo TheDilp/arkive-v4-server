@@ -11,7 +11,6 @@ import {
   UpdateEdgeSchema,
 } from "../database/validation/edges";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
@@ -112,7 +111,6 @@ export function edge_router(app: Elysia) {
         {
           body: UpdateEdgeSchema,
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "read_graphs"),
         },
       )
       .delete(

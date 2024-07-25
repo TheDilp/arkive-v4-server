@@ -12,7 +12,7 @@ import {
   UpdateBlueprintInstanceSchema,
 } from "../database/validation/blueprint_instances";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
+import { noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import {
   blueprintInstanceRelationFilter,
@@ -198,7 +198,6 @@ export function blueprint_instance_router(app: Elysia) {
           {
             body: InsertBlueprintInstanceSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "create_blueprint_instances"),
           },
         )
         .post(
@@ -528,7 +527,6 @@ export function blueprint_instance_router(app: Elysia) {
           {
             body: ListBlueprintInstanceSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "read_blueprint_instances"),
           },
         )
         .post(
@@ -845,7 +843,6 @@ export function blueprint_instance_router(app: Elysia) {
           {
             body: ReadBlueprintInstanceSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "read_blueprint_instances"),
           },
         )
         .post(
@@ -1115,7 +1112,6 @@ export function blueprint_instance_router(app: Elysia) {
           {
             body: UpdateBlueprintInstanceSchema,
             response: ResponseSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "update_blueprint_instances"),
           },
         )
         .delete(
@@ -1138,7 +1134,6 @@ export function blueprint_instance_router(app: Elysia) {
           },
           {
             response: ResponseSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "delete_documents"),
           },
         )
         .delete(
@@ -1178,7 +1173,6 @@ export function blueprint_instance_router(app: Elysia) {
           },
           {
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "delete_blueprint_instances"),
           },
         ),
     );

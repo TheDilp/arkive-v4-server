@@ -8,8 +8,7 @@ import { DBKeys, EntitiesWithTags } from "../database/types";
 import { BasicSearchSchema, CategorySearchSchema, TagSearchSchema } from "../database/validation/search";
 import { EntitiesWithPermissionsEnum, EntitiesWithTagsTablesEnum, newTagTables, SubEntityEnum } from "../enums/entityEnums";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler } from "../handlers";
-import { AvailablePermissions, EntitiesWithFolders, EntitiesWithPermissionCheck } from "../types/entityTypes";
+import { EntitiesWithFolders, EntitiesWithPermissionCheck } from "../types/entityTypes";
 import { PermissionDecorationType, ResponseWithDataSchema, SearchableEntities } from "../types/requestTypes";
 import { getSearchTableFromType } from "../utils/requestUtils";
 
@@ -236,11 +235,6 @@ export function search_router(app: Elysia) {
         {
           response: ResponseWithDataSchema,
           body: BasicSearchSchema,
-          beforeHandle: async (context) =>
-            beforeRoleHandler(
-              context,
-              `read_${context.params.type === "images" ? "assets" : context.params.type}` as AvailablePermissions,
-            ),
         },
       )
       .post(
@@ -469,7 +463,8 @@ export function search_router(app: Elysia) {
         {
           body: CategorySearchSchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, undefined, true),
+
+          // beforeHandle: async (context) => beforeRoleHandler(context, undefined, true),
         },
       )
       .post(
@@ -771,7 +766,7 @@ export function search_router(app: Elysia) {
         },
         {
           body: BasicSearchSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, undefined, true),
+          // beforeHandle: async (context) => beforeRoleHandler(context, undefined, true),
         },
       )
       .post(
@@ -875,7 +870,7 @@ export function search_router(app: Elysia) {
         {
           body: TagSearchSchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, undefined, true),
+          // beforeHandle: async (context) => beforeRoleHandler(context, undefined, true),
         },
       ),
   );

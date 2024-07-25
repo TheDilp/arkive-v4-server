@@ -12,7 +12,7 @@ import {
   UpdateManuscriptSchema,
 } from "../database/validation/manuscripts";
 import { MessageEnum } from "../enums";
-import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
+import { noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructOrdering } from "../utils/orderByConstructor";
 import {
@@ -148,7 +148,6 @@ export function manuscript_router(app: Elysia) {
             return { ok: true, role_access: true, message: `Manuscript ${MessageEnum.successfully_created}` };
           },
           {
-            beforeHandle: async (context) => beforeRoleHandler(context, "create_manuscripts"),
             body: InsertManuscriptSchema,
             response: ResponseSchema,
           },
@@ -191,7 +190,6 @@ export function manuscript_router(app: Elysia) {
           {
             body: ListManuscriptSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "read_manuscripts"),
           },
         )
         .post(
@@ -368,7 +366,6 @@ export function manuscript_router(app: Elysia) {
           {
             body: ReadManuscriptSchema,
             response: ResponseWithDataSchema,
-            beforeHandle: async (context) => beforeRoleHandler(context, "read_manuscripts"),
           },
         )
         .post(
@@ -725,7 +722,6 @@ export function manuscript_router(app: Elysia) {
             }
           },
           {
-            beforeHandle: async (context) => beforeRoleHandler(context, "update_manuscripts"),
             body: UpdateManuscriptSchema,
             response: ResponseSchema,
           },

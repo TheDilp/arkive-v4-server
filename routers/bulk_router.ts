@@ -1,5 +1,5 @@
 import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
-import Elysia, { t } from "elysia";
+import { Elysia, t } from "elysia";
 import { SelectExpression } from "kysely";
 import { DB } from "kysely-codegen";
 import omit from "lodash.omit";
@@ -17,10 +17,8 @@ import {
 import { BulkUpdateAccess } from "../database/validation/bulk";
 import { BulkArkiveEntitiesEnum, BulkDeleteEntitiesEnum, newTagTables } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeProjectOwnerHandler, beforeRoleHandler } from "../handlers";
 import {
   AvailableEntityType,
-  AvailablePermissions,
   AvailableSubEntityType,
   BulkArkiveEntitiesType,
   BulkDeleteEntitiesType,
@@ -54,7 +52,6 @@ export function bulk_router(app: Elysia) {
         {
           body: t.Object({ data: t.Array(t.Union([InsertNodeSchema, t.Object({ data: InsertRandomTableOptionItemSchema })])) }),
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, `create_${context.params.type}` as AvailablePermissions),
         },
       )
       .post(
@@ -71,7 +68,6 @@ export function bulk_router(app: Elysia) {
         {
           body: t.Object({ data: t.Object({ ids: t.Array(t.String()), is_public: t.Boolean() }) }),
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, `update_${context.params.type}` as AvailablePermissions),
         },
       )
       .post(
@@ -147,13 +143,6 @@ export function bulk_router(app: Elysia) {
         {
           body: t.Object({ data: t.Array(t.Union([UpdateEventSchema, UpdateNodeSchema, UpdateEdgeSchema])) }),
           response: ResponseSchema,
-          beforeHandle: async (context) =>
-            beforeRoleHandler(
-              context,
-              `update_${
-                context.params.type === "nodes" || context.params.type === "edges" ? "graphs" : context.params.type
-              }` as AvailablePermissions,
-            ),
         },
       )
       .post(
@@ -229,7 +218,6 @@ export function bulk_router(app: Elysia) {
           return { message: MessageEnum.success, ok: true, role_access: true };
         },
         {
-          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
           body: BulkUpdateAccess,
           response: ResponseSchema,
         },
@@ -275,7 +263,6 @@ export function bulk_router(app: Elysia) {
             }),
           }),
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, `update_${context.params.type}` as AvailablePermissions),
         },
       )
       .delete(
@@ -335,7 +322,6 @@ export function bulk_router(app: Elysia) {
             }),
           }),
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, `delete_${context.params.type}` as AvailablePermissions),
         },
       )
       .delete(
@@ -415,7 +401,7 @@ export function bulk_router(app: Elysia) {
             }
           }
           return {
-            message: `Many ${params.type.replaceAll("_", " ")} ${MessageEnum.successfully_deleted}`,
+            message: MessageEnum.success,
             ok: true,
             role_access: true,
           };
@@ -428,7 +414,6 @@ export function bulk_router(app: Elysia) {
             }),
           }),
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, `delete_${context.params.type}` as AvailablePermissions),
         },
       ),
   );

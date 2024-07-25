@@ -13,7 +13,7 @@ import {
   UpdateCalendarSchema,
 } from "../database/validation/calendars";
 import { MessageEnum } from "../enums/requestEnums";
-import { beforeRoleHandler, noRoleAccessErrorHandler } from "../handlers";
+import { noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import {
@@ -75,7 +75,6 @@ export function calendar_router(app: Elysia) {
         {
           body: InsertCalendarSchema,
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "create_calendars"),
         },
       )
       .post(
@@ -118,7 +117,6 @@ export function calendar_router(app: Elysia) {
         {
           body: ListCalendarSchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "read_calendars"),
         },
       )
       .post(
@@ -209,7 +207,6 @@ export function calendar_router(app: Elysia) {
         {
           body: ReadCalendarSchema,
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "read_calendars"),
         },
       )
       .post(
@@ -355,7 +352,6 @@ export function calendar_router(app: Elysia) {
         {
           body: UpdateCalendarSchema,
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "update_calendars"),
         },
       )
       .delete(
@@ -378,7 +374,6 @@ export function calendar_router(app: Elysia) {
         },
         {
           response: ResponseSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "delete_calendars"),
         },
       )
       .delete(
@@ -401,7 +396,6 @@ export function calendar_router(app: Elysia) {
         },
         {
           response: ResponseWithDataSchema,
-          beforeHandle: async (context) => beforeRoleHandler(context, "delete_calendars"),
         },
       ),
   );
