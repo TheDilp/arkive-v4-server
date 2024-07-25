@@ -56,7 +56,7 @@ export const InsertCharacterFieldsTemplateSchema = t.Object({
     t.Object({
       character_fields: t.Array(
         t.Object({
-          id: t.String(),
+          id: t.Optional(t.String()),
           title: t.String(),
           field_type: FieldTypeSchema,
           sort: t.Optional(t.Number()),
