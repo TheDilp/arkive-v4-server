@@ -188,7 +188,8 @@ export function search_router(app: Elysia) {
           } else if (type === "blueprint_instances") {
             query = query
               .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
-              .select(["blueprints.icon as icon"]);
+              .select(["blueprints.icon as icon"])
+              .where("blueprints.project_id", "=", params.project_id);
           } else if (type === "images") {
             query = query.where("type", "=", "images");
           }

@@ -8,7 +8,6 @@ import { ErrorEnums, NoPublicAccess, NoRoleAccess, UnauthorizedError } from "./e
 import { tempAfterHandle } from "./handlers";
 import {
   asset_router,
-  auth_router,
   blueprint_instance_router,
   blueprint_router,
   bulk_router,
@@ -112,62 +111,65 @@ export const app = new Elysia({ name: "Editor.Router" })
     return { message: "There was an error with your request.", ok: false, role_access: false };
   })
   .group("/api/v1" as any, (server) =>
-    server
-      .onBeforeHandle(async ({ headers, set, cookie: { access, refresh } }) => {
-        const data = await verifyJWT({ access, refresh, set });
+    server.guard(
+      {
+        beforeHandle: async ({ headers, set, cookie: { access, refresh } }) => {
+          const data = await verifyJWT({ access, refresh, set });
+          if (data.status === "authenticated") {
+            headers["user-id"] = data.user_id;
+            headers["project-id"] = data.project_id || undefined;
+            headers["user-image-url"] = data.user_id || undefined;
+          } else {
+            set.status = 401;
+            throw new Error(ErrorEnums.unauthorized);
+          }
+        },
+        // @ts-ignore
+        afterHandle: async (context, response) => {
+          await tempAfterHandle(context, response);
+          return response;
+        },
+      },
 
-        if (data.status === "authenticated") {
-          headers["user-id"] = data.user_id;
-          headers["project-id"] = data.project_id || undefined;
-          headers["user-image-url"] = data.user_id || undefined;
-        } else {
-          set.status = 401;
-          throw new Error(ErrorEnums.unauthorized);
-        }
-      })
-      // @ts-ignore
-      .onAfterHandle(async (context, response) => {
-        await tempAfterHandle(context, response);
-        return response;
-      })
-
-      .use(user_router)
-      .use(project_router)
-      .use(asset_router)
-      .use(tag_router)
-      .use(character_router)
-      .use(conversation_router)
-      .use(character_fields_templates_router)
-      .use(character_fields_router)
-      .use(character_relationship_types_router)
-      .use(document_router)
-      .use(map_router)
-      .use(map_pin_router)
-      .use(map_pin_types_router)
-      .use(graph_router)
-      .use(node_router)
-      .use(edge_router)
-      .use(blueprint_router)
-      .use(blueprint_instance_router)
-      .use(calendar_router)
-      .use(month_router)
-      .use(event_router)
-      .use(dictionary_router)
-      .use(word_router)
-      .use(random_table_router)
-      .use(random_table_option_router)
-      .use(webhook_router)
-      .use(search_router)
-      .use(message_router)
-      .use(bulk_router)
-      .use(notification_router)
-      .use(manuscript_router)
-      .use(stats_router)
-      .use(role_router)
-      .use(permission_router),
+      (app) =>
+        app
+          .use(user_router)
+          .use(project_router)
+          .use(asset_router)
+          .use(tag_router)
+          .use(character_router)
+          .use(conversation_router)
+          .use(character_fields_templates_router)
+          .use(character_fields_router)
+          .use(character_relationship_types_router)
+          .use(document_router)
+          .use(map_router)
+          .use(map_pin_router)
+          .use(map_pin_types_router)
+          .use(graph_router)
+          .use(node_router)
+          .use(edge_router)
+          .use(blueprint_router)
+          .use(blueprint_instance_router)
+          .use(calendar_router)
+          .use(month_router)
+          .use(event_router)
+          .use(dictionary_router)
+          .use(word_router)
+          .use(random_table_router)
+          .use(random_table_option_router)
+          .use(webhook_router)
+          .use(search_router)
+          .use(message_router)
+          .use(bulk_router)
+          .use(notification_router)
+          .use(manuscript_router)
+          .use(stats_router)
+          .use(role_router)
+          .use(permission_router),
+    ),
   )
   .use(websocket_router)
-  .use(auth_router)
   .use(interaction_router)
   .use(health_check_router)
   .use(

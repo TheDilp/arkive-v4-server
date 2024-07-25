@@ -440,45 +440,17 @@ export function document_router(app: Elysia) {
                   });
                 }
                 if (body.relations?.alter_names) {
-                  const existingAlterNames = await tx
-                    .selectFrom("alter_names")
-                    .select(["id", "title"])
-                    .where("parent_id", "=", params.id)
+                  await tx.deleteFrom("alter_names").where("parent_id", "=", params.id).execute();
+                  await tx
+                    .insertInto("alter_names")
+                    .values(
+                      body.relations.alter_names.map((alter) => ({
+                        title: alter.title,
+                        parent_id: params.id,
+                        project_id: permissions.project_id as string,
+                      })),
+                    )
                     .execute();
-
-                  const existingIds = existingAlterNames.map((field) => field.id);
-
-                  const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
-                    existingIds,
-                    body.relations?.alter_names,
-                  );
-                  if (idsToRemove.length) {
-                    await tx.deleteFrom("alter_names").where("id", "in", idsToRemove).execute();
-                  }
-                  if (itemsToAdd.length) {
-                    await tx
-                      .insertInto("alter_names")
-                      .values(
-                        itemsToAdd.map((item) => ({
-                          project_id: item.project_id,
-                          parent_id: params.id,
-                          title: item.title,
-                        })),
-                      )
-                      .execute();
-                  }
-                  if (itemsToUpdate.length) {
-                    await Promise.all(
-                      itemsToUpdate.map(async (item) =>
-                        tx
-                          .updateTable("alter_names")
-                          .where("parent_id", "=", params.id)
-                          .where("id", "=", item.id)
-                          .set({ title: item.title })
-                          .execute(),
-                      ),
-                    );
-                  }
                 }
                 if (body.relations?.template_fields) {
                   const existingTemplateFields = await tx

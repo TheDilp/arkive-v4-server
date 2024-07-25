@@ -33,12 +33,3 @@ export const UpdateProjectSchema = t.Object({
     show_image_table_view: t.Optional(t.Union([t.Boolean(), t.Null()])),
   }),
 });
-
-export const ProjectListSchema = t.Intersect([
-  RequestBodySchema,
-  t.Object({
-    data: t.Object({
-      auth_id: t.String(),
-    }),
-  }),
-]);

@@ -186,12 +186,12 @@ export function random_table_router(app: Elysia) {
                 if (body?.relations) {
                   if (body.relations?.random_table_options) {
                     const { random_table_options } = body.relations;
-                    const existingCharacterFields = await tx
+                    const existingRandomTableOptions = await tx
                       .selectFrom("random_table_options")
                       .select(["id"])
                       .where("random_table_options.parent_id", "=", params.id)
                       .execute();
-                    const existingIds = existingCharacterFields.map((field) => field.id);
+                    const existingIds = existingRandomTableOptions.map((field) => field.id);
                     const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
                       existingIds,
                       random_table_options.map((opt) => opt.data),

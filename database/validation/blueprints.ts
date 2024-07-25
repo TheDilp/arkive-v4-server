@@ -115,6 +115,7 @@ export const UpdateBlueprintSchema = t.Object({
     t.Object({
       blueprint_fields: t.Array(
         t.Object({
+          id: t.String(),
           title: t.String(),
           field_type: BlueprintFieldTypeSchema,
           // width: FieldWidthSchema,
