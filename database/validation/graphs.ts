@@ -126,6 +126,7 @@ export const UpdateGraphSchema = t.Object({
 
 export const GenerateGraphSchema = t.Object({
   data: t.Object({
+    deleted_at: t.Optional(t.Union([t.String(), t.Null()])),
     title: t.String(),
     project_id: t.String(),
   }),
@@ -138,6 +139,7 @@ export const GenerateGraphSchema = t.Object({
           id: t.String(),
           // parent_id does not exist before the graph is generated
           //// parent_id: t.String(),
+
           label: t.Optional(t.Union([t.String(), t.Null()])),
           type: NodeShapeEnum,
           width: t.Optional(t.Number()),

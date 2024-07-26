@@ -73,6 +73,7 @@ export const InsertManuscriptSchema = t.Object({
 
 export const UpdateManuscriptSchema = t.Object({
   data: t.Object({
+    deleted_at: t.Optional(t.Union([t.String(), t.Null()])),
     title: t.Optional(t.String()),
     is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
     icon: t.Optional(t.Union([t.String(), t.Null()])),

@@ -113,6 +113,7 @@ export const InsertCharacterFieldsTemplateSchema = t.Object({
 export const UpdateTemplateSchema = t.Object({
   data: t.Object({
     id: t.Optional(t.String()),
+    deleted_at: t.Optional(t.Union([t.String(), t.Null()])),
     title: t.Optional(t.String()),
     sort: t.Optional(t.Number()),
     owner_id: t.Optional(t.String()),
