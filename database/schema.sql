@@ -888,7 +888,21 @@ CREATE TABLE public.character_fields (
     parent_id uuid,
     options jsonb,
     calendar_id uuid,
-    blueprint_id uuid
+    blueprint_id uuid,
+    section_id uuid
+);
+
+
+--
+-- Name: character_fields_sections; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.character_fields_sections (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    title text NOT NULL,
+    owner_id uuid NOT NULL,
+    sort integer DEFAULT 0 NOT NULL,
+    parent_id uuid NOT NULL
 );
 
 
@@ -2117,6 +2131,14 @@ ALTER TABLE ONLY public.character_field_values
 
 ALTER TABLE ONLY public.character_fields
     ADD CONSTRAINT character_fields_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: character_fields_sections character_fields_sections_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_fields_sections
+    ADD CONSTRAINT character_fields_sections_pkey PRIMARY KEY (id);
 
 
 --
@@ -4033,6 +4055,30 @@ ALTER TABLE ONLY public.character_fields
 
 
 --
+-- Name: character_fields character_fields_section_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_fields
+    ADD CONSTRAINT character_fields_section_id_fkey FOREIGN KEY (section_id) REFERENCES public.character_fields_sections(id) ON DELETE SET NULL;
+
+
+--
+-- Name: character_fields_sections character_fields_sections_owner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_fields_sections
+    ADD CONSTRAINT character_fields_sections_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: character_fields_sections character_fields_sections_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.character_fields_sections
+    ADD CONSTRAINT character_fields_sections_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.character_fields_templates(id) ON DELETE CASCADE;
+
+
+--
 -- Name: character_fields_templates character_fields_templates_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5061,4 +5107,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240711084312'),
     ('20240712091231'),
     ('20240716172359'),
-    ('20240723062540');
+    ('20240723062540'),
+    ('20240725152735');

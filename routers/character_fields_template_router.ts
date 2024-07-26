@@ -26,7 +26,7 @@ import {
   UpdateEntityPermissions,
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
-import { getEntityWithOwnerId, groupRelationFiltersByField } from "../utils/utils";
+import { getEntitiesWithOwnerId, getEntityWithOwnerId, groupRelationFiltersByField } from "../utils/utils";
 
 export function character_fields_templates_router(app: Elysia) {
   return app.group("/character_fields_templates", (server) =>
@@ -47,6 +47,21 @@ export function character_fields_templates_router(app: Elysia) {
               .values(getEntityWithOwnerId(body.data, permissions.user_id))
               .returning("id")
               .executeTakeFirstOrThrow();
+
+            if (body.relations?.character_fields_sections) {
+              await tx
+                .insertInto("character_fields_sections")
+                .values(
+                  getEntitiesWithOwnerId(
+                    body.relations.character_fields_sections.map((section) => ({
+                      ...section,
+                      parent_id: newTemplate.id,
+                    })),
+                    permissions.user_id,
+                  ),
+                )
+                .execute();
+            }
 
             if (body.relations?.character_fields) {
               await tx
@@ -131,6 +146,7 @@ export function character_fields_templates_router(app: Elysia) {
                       "character_fields.formula",
                       "character_fields.random_table_id",
                       "character_fields.blueprint_id",
+                      "character_fields.section_id",
                       (eb) =>
                         jsonObjectFrom(
                           eb
@@ -180,6 +196,19 @@ export function character_fields_templates_router(app: Elysia) {
                     ])
                     .orderBy(["character_fields.sort"]),
                 ).as("character_fields"),
+              );
+            }
+            if (body?.relations?.character_fields_sections) {
+              query = query.select((eb) =>
+                jsonArrayFrom(
+                  eb
+                    .selectFrom("character_fields_sections")
+                    .select([
+                      "character_fields_sections.id",
+                      "character_fields_sections.title",
+                      "character_fields_sections.sort",
+                    ]),
+                ).as("character_fields_sections"),
               );
             }
             if (body?.relations?.tags) {
@@ -234,6 +263,7 @@ export function character_fields_templates_router(app: Elysia) {
                     "character_fields.random_table_id",
                     "character_fields.calendar_id",
                     "character_fields.blueprint_id",
+                    "character_fields.section_id",
                     (eb) =>
                       jsonObjectFrom(
                         eb
@@ -259,6 +289,20 @@ export function character_fields_templates_router(app: Elysia) {
 
                   .orderBy("sort"),
               ).as("character_fields"),
+            );
+          }
+
+          if (body?.relations?.character_fields_sections) {
+            query = query.select((eb) =>
+              jsonArrayFrom(
+                eb
+                  .selectFrom("character_fields_sections")
+                  .select([
+                    "character_fields_sections.id",
+                    "character_fields_sections.title",
+                    "character_fields_sections.sort",
+                  ]),
+              ).as("character_fields_sections"),
             );
           }
 
@@ -306,6 +350,50 @@ export function character_fields_templates_router(app: Elysia) {
                     .where("character_fields_templates.id", "=", params.id)
                     .executeTakeFirstOrThrow();
                 }
+
+                if (body.relations?.character_fields_sections) {
+                  const { character_fields_sections } = body.relations;
+                  const existingCharacterFieldsSections = await tx
+                    .selectFrom("character_fields_sections")
+                    .select(["id", "parent_id"])
+                    .where("character_fields_sections.parent_id", "=", params.id)
+                    .execute();
+
+                  const existingIds = existingCharacterFieldsSections.map((field) => field.id);
+
+                  const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+                    existingIds,
+                    character_fields_sections,
+                  );
+
+                  if (idsToRemove.length) {
+                    await tx.deleteFrom("character_fields_sections").where("id", "in", idsToRemove).execute();
+                  }
+                  if (itemsToAdd.length) {
+                    await tx
+                      .insertInto("character_fields_sections")
+                      .values(
+                        // @ts-ignore
+                        getEntitiesWithOwnerId(itemsToAdd, permissions.user_id).map((section) => ({
+                          ...section,
+                          parent_id: params.id,
+                        })),
+                      )
+                      .execute();
+                  }
+                  if (itemsToUpdate.length) {
+                    await Promise.all(
+                      itemsToUpdate.map(async (item) =>
+                        tx
+                          .updateTable("character_fields_sections")
+                          .where("character_fields_sections.id", "=", item.id as string)
+                          .set({ ...omit(item, ["id"]) })
+                          .execute(),
+                      ),
+                    );
+                  }
+                }
+
                 if (body?.relations?.character_fields) {
                   const { character_fields } = body.relations;
                   const existingCharacterFields = await tx

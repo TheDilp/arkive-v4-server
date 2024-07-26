@@ -33,7 +33,13 @@ export const ListCharacterFieldsTemplateSchema = t.Intersect([
   }),
   t.Optional(
     t.Object({
-      relations: t.Optional(t.Object({ character_fields: t.Optional(t.Boolean()), tags: t.Optional(t.Boolean()) })),
+      relations: t.Optional(
+        t.Object({
+          character_fields: t.Optional(t.Boolean()),
+          character_fields_sections: t.Optional(t.Boolean()),
+          tags: t.Optional(t.Boolean()),
+        }),
+      ),
     }),
   ),
 ]);
@@ -42,7 +48,11 @@ export const ReadCharacterFieldsTemplateSchema = t.Intersect([
   RequestBodySchema,
   t.Object({
     data: t.Object({ id: t.String() }),
-    relations: t.Object({ character_fields: t.Optional(t.Boolean()), tags: t.Optional(t.Boolean()) }),
+    relations: t.Object({
+      character_fields: t.Optional(t.Boolean()),
+      character_fields_sections: t.Optional(t.Boolean()),
+      tags: t.Optional(t.Boolean()),
+    }),
   }),
 ]);
 
@@ -54,9 +64,19 @@ export const InsertCharacterFieldsTemplateSchema = t.Object({
   }),
   relations: t.Optional(
     t.Object({
+      character_fields_sections: t.Optional(
+        t.Array(
+          t.Object({
+            id: t.String(),
+            title: t.String(),
+            sort: t.Number(),
+          }),
+        ),
+      ),
       character_fields: t.Array(
         t.Object({
           id: t.Optional(t.String()),
+          section_id: t.Optional(t.Union([t.String(), t.Null()])),
           title: t.String(),
           field_type: FieldTypeSchema,
           sort: t.Optional(t.Number()),
@@ -99,9 +119,19 @@ export const UpdateTemplateSchema = t.Object({
   }),
   relations: t.Optional(
     t.Object({
+      character_fields_sections: t.Optional(
+        t.Array(
+          t.Object({
+            id: t.String(),
+            title: t.String(),
+            sort: t.Number(),
+          }),
+        ),
+      ),
       character_fields: t.Array(
         t.Object({
           id: t.String(),
+          section_id: t.Optional(t.Union([t.String(), t.Null()])),
           title: t.String(),
           field_type: FieldTypeSchema,
           sort: t.Optional(t.Number()),
