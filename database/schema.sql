@@ -1484,7 +1484,9 @@ CREATE TABLE public.manuscripts (
     is_public boolean,
     icon text,
     deleted_at timestamp(3) without time zone,
-    owner_id uuid NOT NULL
+    owner_id uuid NOT NULL,
+    created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 
@@ -5108,4 +5110,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240712091231'),
     ('20240716172359'),
     ('20240723062540'),
-    ('20240725152735');
+    ('20240725152735'),
+    ('20240726104432');

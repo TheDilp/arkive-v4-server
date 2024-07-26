@@ -4,7 +4,7 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertProjectSchema, ReadProjectSchema, UpdateProjectSchema } from "../database/validation/projects";
+import { DashboardSchema, InsertProjectSchema, ReadProjectSchema, UpdateProjectSchema } from "../database/validation/projects";
 import { DefaultProjectFeatureFlags } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { PermissionDecorationType, RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
@@ -180,10 +180,22 @@ export function project_router(app: Elysia) {
           response: ResponseSchema,
         },
       )
-      .get(
+      .post(
         "/:id/dashboard",
-        async ({ params, permissions }) => {
+        async ({ params, permissions, body }) => {
           const requests = [
+            {
+              name: "manuscripts",
+              request: db
+                .selectFrom("manuscripts")
+                .select(["manuscripts.id", "manuscripts.title", "manuscripts.icon"])
+                .where("project_id", "=", params.id)
+                .where("manuscripts.owner_id", "=", permissions.user_id)
+                .where("manuscripts.deleted_at", "is", null)
+                .limit(5)
+                .orderBy("updated_at desc")
+                .execute(),
+            },
             {
               name: "characters",
               request: db
@@ -288,7 +300,12 @@ export function project_router(app: Elysia) {
                 .limit(5)
                 .execute(),
             },
-          ];
+          ].filter(
+            (req) =>
+              body.data.enabled_entities.includes(req.name) ||
+              (req.name === "events" && body.data.enabled_entities.includes("calendars")) ||
+              (req.name === "blueprint_instances" && body.data.enabled_entities.includes("blueprints")),
+          );
 
           const data = await Promise.all(
             requests.map(async (item) => ({
@@ -300,6 +317,7 @@ export function project_router(app: Elysia) {
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
+          body: DashboardSchema,
           response: ResponseWithDataSchema,
         },
       )

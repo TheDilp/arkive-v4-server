@@ -33,3 +33,5 @@ export const UpdateProjectSchema = t.Object({
     show_image_table_view: t.Optional(t.Union([t.Boolean(), t.Null()])),
   }),
 });
+
+export const DashboardSchema = t.Object({ data: t.Object({ enabled_entities: t.Array(t.String()) }) });
