@@ -56,6 +56,7 @@ export const InsertDictionarySchema = t.Object({
 export const UpdateDictionarySchema = t.Object({
   data: t.Object({
     title: t.Optional(t.String()),
+    deleted_at: t.Optional(t.Union([t.String(), t.Null()])),
     icon: t.Optional(t.Union([t.String(), t.Null()])),
     is_folder: t.Optional(t.Union([t.Boolean(), t.Null()])),
     is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),

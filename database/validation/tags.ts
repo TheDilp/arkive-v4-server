@@ -39,6 +39,7 @@ export const InsertTagSchema = t.Object({
 export const UpdateTagSchema = t.Object({
   data: t.Object({
     id: t.String(),
+    deleted_at: t.Optional(t.Union([t.String(), t.Null()])),
     title: t.Optional(t.String()),
     color: t.Optional(t.String()),
     owner_id: t.Optional(t.String()),

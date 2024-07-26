@@ -167,6 +167,7 @@ export const InsertCharacterSchema = t.Object({
 export const UpdateCharacterSchema = t.Object({
   data: t.Optional(
     t.Object({
+      deleted_at: t.Optional(t.Union([t.String(), t.Null()])),
       first_name: t.Optional(t.String()),
       last_name: t.Optional(t.Union([t.String(), t.Null()])),
       nickname: t.Optional(t.Union([t.String(), t.Null()])),

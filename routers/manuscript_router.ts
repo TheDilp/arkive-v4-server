@@ -725,6 +725,50 @@ export function manuscript_router(app: Elysia) {
             body: UpdateManuscriptSchema,
             response: ResponseSchema,
           },
+        )
+        .delete(
+          "/arkive/:id",
+          async ({ params, permissions }) => {
+            const permissionCheck = await getHasEntityPermission("manuscripts", params.id, permissions);
+
+            if (permissionCheck) {
+              await db
+                .updateTable("manuscripts")
+                .where("manuscripts.id", "=", params.id)
+                .set({ deleted_at: new Date().toUTCString(), is_public: false })
+                .execute();
+
+              return { message: `Manuscript ${MessageEnum.successfully_arkived}.`, ok: true, role_access: true };
+            } else {
+              noRoleAccessErrorHandler();
+              return { message: "", ok: false, role_access: false };
+            }
+          },
+          {
+            response: ResponseSchema,
+          },
+        )
+        .delete(
+          "/:id",
+          async ({ params, permissions }) => {
+            const permissionCheck = await getHasEntityPermission("manuscripts", params.id, permissions);
+            if (permissionCheck) {
+              const data = await db
+                .deleteFrom("manuscripts")
+                .where("manuscripts.id", "=", params.id)
+                .where("manuscripts.deleted_at", "is not", null)
+                .returning(["id", "title", "project_id"])
+                .executeTakeFirstOrThrow();
+
+              return { data, message: `Manuscript ${MessageEnum.successfully_deleted}.`, ok: true, role_access: true };
+            } else {
+              noRoleAccessErrorHandler();
+              return { data: {}, message: "", ok: false, role_access: false };
+            }
+          },
+          {
+            response: ResponseWithDataSchema,
+          },
         ),
     );
 }

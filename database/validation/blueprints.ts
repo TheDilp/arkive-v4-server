@@ -106,6 +106,7 @@ export const InsertBlueprintSchema = t.Object({
 });
 export const UpdateBlueprintSchema = t.Object({
   data: t.Object({
+    deleted_at: t.Optional(t.Union([t.String(), t.Null()])),
     title: t.Optional(t.String()),
     title_name: t.Optional(t.String()),
     icon: t.Optional(t.Union([t.String(), t.Null()])),

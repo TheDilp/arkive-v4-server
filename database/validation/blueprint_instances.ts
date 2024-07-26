@@ -153,6 +153,7 @@ export const InsertBlueprintInstanceSchema = t.Object({
 export const UpdateBlueprintInstanceSchema = t.Object({
   data: t.Object({
     id: t.String(),
+    deleted_at: t.Optional(t.Union([t.String(), t.Null()])),
     title: t.Optional(t.String()),
     owner_id: t.Optional(t.String()),
     is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
