@@ -27,6 +27,7 @@ type MentionStatType = Record<
 >;
 
 const mainEntities = [
+  "manuscripts",
   "characters",
   "blueprints",
   "blueprint_instances",
