@@ -1,4 +1,4 @@
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import { SelectExpression } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
@@ -12,6 +12,7 @@ import {
   ReadUserSchema,
   UpdateUserSchema,
 } from "../database/validation";
+import { EmailGateway } from "../emails/EmailGateway";
 import { EmailInvite } from "../emails/EmailInvite";
 import { DefaultProjectFeatureFlags } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
@@ -201,6 +202,53 @@ export function user_router(app: Elysia) {
           body: InviteUserSchema,
           response: ResponseSchema,
           beforeHandle: async (context) => beforeProjectOwnerHandler(context),
+        },
+      )
+      .post(
+        "/gateway/invite",
+        async ({ body }) => {
+          const redis = await redisClient;
+
+          const entity = await db
+            .selectFrom(body.data.type)
+            .select(["id", body.data.type === "characters" ? "full_name as title" : "title"])
+            .where("id", "=", body.data.id)
+            .executeTakeFirst();
+
+          if (entity?.id) {
+            const access_id = crypto.randomUUID();
+
+            await redis.SET(
+              `${body.data.type}_gateway_access_${access_id}`,
+              JSON.stringify({ access_id, entity_id: entity.id, accessed: false }),
+              { EX: 60 * 60 },
+            );
+
+            await resend.emails.send({
+              from: "The Arkive <emails@thearkive.app>",
+              to: [body.data.email],
+              subject: "Arkive project invitation",
+              react: EmailGateway({
+                title: entity?.title || "",
+                type: body.data.type,
+                link: `${access_id}/${entity?.id || ""}`,
+              }),
+            });
+          }
+
+          return {};
+        },
+        {
+          body: t.Object(
+            {
+              data: t.Object({
+                email: t.String(),
+                id: t.String(),
+                type: t.Union([t.Literal("characters"), t.Literal("blueprint_instances")]),
+              }),
+            },
+            { additionalProperties: false },
+          ),
         },
       )
       .post(

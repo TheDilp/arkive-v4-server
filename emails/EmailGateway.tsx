@@ -1,6 +1,15 @@
 import { Body, Button, Container, Head, Hr, Html, Img, Preview, Section, Tailwind, Text } from "@react-email/components";
 
-export const EmailSignUp = ({ user_id }: { user_id: string }) => {
+import { getDateStringOneHourFromNow } from "../utils/utils";
+
+type GatewayType = "characters" | "blueprint_instances";
+
+function getEntity(type: GatewayType) {
+  if (type === "characters") return "character";
+  return "blueprint instance";
+}
+
+export const EmailGateway = ({ type, link, title }: { type: GatewayType; title: string; link: string }) => {
   return (
     <Html>
       <Head />
@@ -19,16 +28,16 @@ export const EmailSignUp = ({ user_id }: { user_id: string }) => {
             </Section>
 
             <Text className="text-white text-[14px] leading-[24px]">
-              Hello, you have successfully signed up for the Arkive. Please click the button below to confirm your account.
+              Hello, you have been granted access to the {getEntity(type)} gateway for the {getEntity(type)} "{title}".
             </Text>
             <Section className="text-center mt-[32px] mb-[32px]">
               <Button
                 className="bg-[#16a34a] rounded text-white text-[12px] font-semibold no-underline text-center p-4"
-                href={`${process.env.ARKIVE_SERVER_URL}/auth/email_confirm/${user_id}`}>
-                Join the Arkive
+                href={`${process.env.GATEWAY_CLIENT_URL}/${type}/${link}`}>
+                Access {getEntity(type)} gateway
               </Button>
             </Section>
-
+            <Text className="text-[12px] leading-[24px]">The access link will expire on {getDateStringOneHourFromNow()}</Text>
             <Hr className="border border-solid border-[#eaeaea] my-[26px] mx-0 w-full" />
             <Text className="text-[#666666] text-[12px] leading-[24px]">
               If you were not expecting this email, you can safely ignore it.
