@@ -1397,6 +1397,7 @@ CREATE TABLE public.gateway_configuration_random_tables (
 
 CREATE TABLE public.gateway_configurations (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
+    project_id uuid NOT NULL,
     title text NOT NULL,
     owner_id uuid NOT NULL,
     gateway_type text NOT NULL,
@@ -4819,6 +4820,14 @@ ALTER TABLE ONLY public.gateway_configuration_random_tables
 
 ALTER TABLE ONLY public.gateway_configurations
     ADD CONSTRAINT gateway_configurations_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: gateway_configurations gateway_configurations_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configurations
+    ADD CONSTRAINT gateway_configurations_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
 
 
 --

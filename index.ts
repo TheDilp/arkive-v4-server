@@ -21,6 +21,7 @@ import {
   document_router,
   edge_router,
   event_router,
+  gateway_configuration_router,
   gateway_router,
   graph_router,
   health_check_router,
@@ -214,7 +215,8 @@ export const app = new Elysia({ name: "Editor.Router" })
           .use(manuscript_router)
           .use(stats_router)
           .use(role_router)
-          .use(permission_router),
+          .use(permission_router)
+          .use(gateway_configuration_router),
     ),
   )
   .use(gateway_router)

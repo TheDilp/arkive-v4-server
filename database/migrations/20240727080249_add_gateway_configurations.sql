@@ -2,6 +2,7 @@
 CREATE TABLE
     IF NOT EXISTS gateway_configurations (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+        project_id UUID NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
         title TEXT NOT NULL,
         owner_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
         gateway_type TEXT NOT NULL CHECK (gateway_type IN ('characters', 'blueprint_instances'))
