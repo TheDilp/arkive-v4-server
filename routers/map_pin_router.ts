@@ -72,6 +72,8 @@ export function map_pin_router(app: Elysia) {
               .selectFrom("map_pins")
               .select(body.fields.map((f) => `map_pins.${f}`) as SelectExpression<DB, "map_pins">[])
               .leftJoin("characters", "characters.id", "map_pins.character_id")
+              // Manually check entity permissions for map pins
+              // due to their specific nature
               .leftJoin("entity_permissions", (join) =>
                 join.on((jb) =>
                   jb.or([
@@ -119,9 +121,6 @@ export function map_pin_router(app: Elysia) {
               ]);
             }
 
-            if (!permissions.is_project_owner) {
-              query = checkEntityLevelPermission(query, permissions, "map_pins");
-            }
             if (!!body.permissions && !permissions.is_project_owner) {
               // @ts-ignore
               query = GetRelatedEntityPermissionsAndRoles(query, permissions, "map_pins");
