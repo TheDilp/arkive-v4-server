@@ -281,10 +281,19 @@ export function groupCharacterFields(originalItems: any[]): any[] {
   const groupedItems: Record<string, any> = {};
 
   originalItems.forEach((item) => {
-    const { id, characters, blueprint_instances, events, images, documents, map_pins } = item;
+    const { id, characters, blueprint_instances, events, images, documents, map_pins, random_table } = item;
 
     if (!groupedItems[id]) {
-      groupedItems[id] = { id, characters: [], blueprint_instances: [], events: [], images: [], documents: [], map_pins: [] };
+      groupedItems[id] = {
+        id,
+        characters: [],
+        blueprint_instances: [],
+        events: [],
+        images: [],
+        documents: [],
+        map_pins: [],
+        random_table: {},
+      };
     }
 
     groupedItems[id].characters.push(...(characters || []));
@@ -293,6 +302,7 @@ export function groupCharacterFields(originalItems: any[]): any[] {
     groupedItems[id].documents.push(...(documents || []));
     groupedItems[id].images.push(...(images || []));
     groupedItems[id].map_pins.push(...(map_pins || []));
+    groupedItems[id].random_table = random_table;
   });
 
   return Object.values(groupedItems);
