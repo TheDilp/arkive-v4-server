@@ -227,7 +227,14 @@ export function user_router(app: Elysia) {
 
             await redis.SET(
               `${body.data.type}_gateway_access_${access_id}`,
-              JSON.stringify({ access_id, entity_id: entity.id, code, accessed: false, project_id: permissions.project_id }),
+              JSON.stringify({
+                access_id,
+                entity_id: entity.id,
+                code,
+                accessed: false,
+                project_id: permissions.project_id,
+                config: body.data.config,
+              }),
               { EX: 60 * 60 },
             );
 
@@ -253,6 +260,7 @@ export function user_router(app: Elysia) {
                 email: t.String(),
                 id: t.String(),
                 type: t.Union([t.Literal("characters"), t.Literal("blueprint_instances")]),
+                config: t.Record(t.String(), t.Array(t.String())),
               }),
             },
             { additionalProperties: false },

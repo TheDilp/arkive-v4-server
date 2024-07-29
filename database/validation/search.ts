@@ -14,3 +14,11 @@ export const TagSearchSchema = t.Object({
   }),
   limit: t.Optional(t.Number()),
 });
+
+export const GatewaySearchSchema = t.Object({
+  data: t.Object({
+    access_id: t.String(),
+    entity_type: t.Union([t.Literal("characters"), t.Literal("blueprint_instances")]),
+    parent_id: t.Optional(t.String()),
+  }),
+});

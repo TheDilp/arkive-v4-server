@@ -1,18 +1,24 @@
 import { Elysia, t } from "elysia";
-import { SelectExpression } from "kysely";
+import { SelectExpression, sql } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
 import { readCharacter, updateCharacter } from "../database/queries";
 import { UploadAssets } from "../database/queries/assetQueries";
-import { ListCharacterFieldsTemplateSchema, ReadCharacterSchema, UpdateCharacterSchema } from "../database/validation";
+import {
+  GatewaySearchSchema,
+  ListCharacterFieldsTemplateSchema,
+  ReadCharacterSchema,
+  UpdateCharacterSchema,
+} from "../database/validation";
 import { MessageEnum } from "../enums";
-import { GatewayResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { GatewayResponseSchema, ResponseWithDataSchema, SearchableEntities } from "../types/requestTypes";
 import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { redisClient } from "../utils/redisClient";
 import { TagQuery } from "../utils/relationalQueryHelpers";
+import { getSearchFields } from "../utils/searchUtils";
 import { verifyGatewayJWT } from "../utils/userUtils";
 import { groupRelationFiltersByField } from "../utils/utils";
 
@@ -31,6 +37,7 @@ export function gateway_access_router(app: Elysia) {
               entity_id: string;
               code: number;
               accessed: boolean;
+              config: Record<string, string[]>;
             };
             if (gateway_access_data.code.toString() !== params.code) {
               set.status = 403;
@@ -591,6 +598,95 @@ export function gateway_access_router(app: Elysia) {
           return { ok: false, message: "There was an error with this request." };
         },
         { body: t.Record(t.String(), t.File({ maxSize: "50m" })), response: GatewayResponseSchema },
+      )
+      .post(
+        "/options/:type",
+        async ({ params, body }) => {
+          const { type } = params;
+          const redis = await redisClient;
+
+          const gateway_access = await redis.GET(`${body.data.entity_type}_gateway_access_${body.data.access_id}`);
+          if (gateway_access) {
+            try {
+              const gateway_access_data = JSON.parse(gateway_access) as {
+                access_id: string;
+                entity_id: string;
+                code: number;
+                accessed: boolean;
+                config: Record<
+                  "characters" | "blueprint_instances" | "documents" | "maps" | "map_pins" | "events" | "images",
+                  string[]
+                >;
+              };
+
+              const entities = Object.entries(gateway_access_data?.config || {});
+              const requests = [];
+              for (let index = 0; index < entities.length; index++) {
+                const entity = entities[index][0] as
+                  | "characters"
+                  | "blueprint_instances"
+                  | "documents"
+                  | "maps"
+                  | "map_pins"
+                  | "events"
+                  | "images";
+                const ids = entities[index][1];
+                if (ids.length) {
+                  const fields = getSearchFields(entity);
+
+                  let query = db
+                    .selectFrom(entity)
+                    // @ts-ignore
+                    .select(fields as SelectExpression<DB, SearchableEntities>[])
+                    .select(sql`${entity}::TEXT`.as("entity_type"));
+                  if (entity === "map_pins") {
+                    query = query.leftJoin("maps", "maps.id", "map_pins.parent_id").select(["maps.title as parent_title"]);
+                  } else if (entity === "events") {
+                    query = query
+                      .leftJoin("calendars", "calendars.id", "events.parent_id")
+                      .select(["calendars.title as parent_title"]);
+                  } else if (entity === "blueprint_instances") {
+                    query = query
+                      .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+                      .select(["blueprints.icon as icon"]);
+                  } else if (entity === "images") {
+                    query = query.where("type", "=", "images");
+                  }
+
+                  query = query.where(`${entity}.id`, "in", ids);
+
+                  requests.push(query.execute());
+                }
+              }
+
+              const result = (await Promise.all(requests)).flat();
+              return {
+                data: result.map((item) => ({
+                  value: item.id,
+                  label: item?.full_name || item.title,
+                  parent_id: "parent_id" in item ? item?.parent_id : null,
+                  image:
+                    type === "characters" || (type === "nodes" && item?.first_name)
+                      ? item.portrait_id || ""
+                      : item?.image_id || "",
+                  icon: item?.icon,
+                  entity_type: item?.entity_type,
+                })),
+                message: MessageEnum.success,
+                ok: true,
+                role_access: true,
+              };
+            } catch (error) {
+              console.error(error);
+              return { data: [], ok: false, message: "There was an error with this request.", role_access: true };
+            }
+          }
+          return { data: [], ok: false, message: "There was an error with this request.", role_access: true };
+        },
+        {
+          response: ResponseWithDataSchema,
+          body: GatewaySearchSchema,
+        },
       ),
   );
 }
