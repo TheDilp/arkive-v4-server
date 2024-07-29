@@ -163,8 +163,17 @@ type JWTClaims = {
   name: string | null;
 };
 
+type JWTGatewayClaims = {
+  access_id: string;
+  project_id: string | null;
+};
+
 export type JWTResponse = {
   access: string;
   refresh: string;
   claims: JWTClaims;
+};
+export type JWTGatewayResponse = {
+  access: string;
+  claims: JWTGatewayClaims;
 };

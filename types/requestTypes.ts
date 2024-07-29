@@ -129,6 +129,10 @@ export const ResponseSchema = t.Object({
   ok: t.Boolean(),
   role_access: t.Boolean(),
 });
+export const GatewayResponseSchema = t.Object({
+  message: t.String(),
+  ok: t.Boolean(),
+});
 export const ResponseWithDataSchema = t.Object({
   data: t.Any(),
   message: t.String(),

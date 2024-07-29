@@ -131,9 +131,10 @@ export const app = new Elysia({ name: "Editor.Router" })
             headers["user-id"] = user_id;
             headers["project-id"] = project_id || undefined;
             headers["user-image-url"] = data.user_id || undefined;
+
             const entity = getEntityFromPath(path);
 
-            if (entity && EntitiesWithPermissionsEnum.includes(entity)) {
+            if (entity && (EntitiesWithPermissionsEnum.includes(entity) || entity === "users")) {
               if (user_id) {
                 const action = getPermissionOperationFromPath(path, request.method as "GET" | "POST" | "DELETE");
 

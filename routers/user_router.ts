@@ -29,6 +29,7 @@ export function user_router(app: Elysia) {
         role_access: false,
         user_id: "",
         role_id: null,
+        project_id: null,
         permission_id: null,
       } as PermissionDecorationType)
       .post(
@@ -206,16 +207,15 @@ export function user_router(app: Elysia) {
       )
       .post(
         "/gateway/invite",
-        async ({ body }) => {
+        async ({ body, permissions }) => {
           const redis = await redisClient;
-
           const entity = await db
             .selectFrom(body.data.type)
             .select(["id", body.data.type === "characters" ? "full_name as title" : "title"])
             .where("id", "=", body.data.id)
             .executeTakeFirst();
 
-          if (entity?.id) {
+          if (entity?.id && permissions.project_id) {
             const access_id = crypto.randomUUID();
 
             let code = "";
@@ -227,7 +227,7 @@ export function user_router(app: Elysia) {
 
             await redis.SET(
               `${body.data.type}_gateway_access_${access_id}`,
-              JSON.stringify({ access_id, entity_id: entity.id, code, accessed: false }),
+              JSON.stringify({ access_id, entity_id: entity.id, code, accessed: false, project_id: permissions.project_id }),
               { EX: 60 * 60 },
             );
 
