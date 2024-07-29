@@ -425,3 +425,7 @@ export function getDateStringOneHourFromNow() {
 
   return `${dateStr} ${timeStr}`;
 }
+
+export function isoToUnix(isoTimestamp: string) {
+  return Math.floor(new Date(isoTimestamp).getTime() / 1000);
+}

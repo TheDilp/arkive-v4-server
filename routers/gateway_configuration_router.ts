@@ -1,5 +1,6 @@
 import { Elysia } from "elysia";
 import { SelectExpression } from "kysely";
+import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
@@ -7,6 +8,17 @@ import { InsertGatewayConfiguration, ListGatewayConfigurationSchema } from "../d
 import { MessageEnum } from "../enums";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { getEntityWithOwnerId } from "../utils/utils";
+
+const relatedEntities = [
+  "gateway_configuration_characters" as const,
+  "gateway_configuration_blueprint_instances" as const,
+  "gateway_configuration_documents" as const,
+  "gateway_configuration_maps" as const,
+  "gateway_configuration_map_pins" as const,
+  "gateway_configuration_events" as const,
+  "gateway_configuration_images" as const,
+  "gateway_configuration_random_tables" as const,
+];
 
 export function gateway_configuration_router(app: Elysia) {
   return app.group("/gateway_configurations", (server) =>
@@ -111,11 +123,24 @@ export function gateway_configuration_router(app: Elysia) {
       .post(
         "/",
         async ({ body }) => {
-          const data = await db
+          let query = db
             .selectFrom("gateway_configurations")
             .select(body.fields as SelectExpression<DB, "gateway_configurations">[])
-            .where("project_id", "=", body.data.project_id)
-            .execute();
+            .where("project_id", "=", body.data.project_id);
+
+          if (body.relations?.entities) {
+            for (let index = 0; index < relatedEntities.length; index++) {
+              query = query.select((eb) =>
+                jsonArrayFrom(
+                  eb
+                    .selectFrom(relatedEntities[index])
+                    .select([`${relatedEntities[index]}.related_id`])
+                    .whereRef(`${relatedEntities[index]}.parent_id`, "=", "gateway_configurations.id"),
+                ).as(relatedEntities[index].replace("gateway_configuration_", "")),
+              );
+            }
+          }
+          const data = await query.execute();
 
           return { data, ok: true, message: MessageEnum.success, role_access: true };
         },

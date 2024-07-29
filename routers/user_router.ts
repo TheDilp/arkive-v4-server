@@ -218,19 +218,27 @@ export function user_router(app: Elysia) {
           if (entity?.id) {
             const access_id = crypto.randomUUID();
 
+            let code = "";
+
+            for (let index = 0; index < 6; index++) {
+              const number = Math.random().toString()[3 + index];
+              code += number;
+            }
+
             await redis.SET(
               `${body.data.type}_gateway_access_${access_id}`,
-              JSON.stringify({ access_id, entity_id: entity.id, accessed: false }),
+              JSON.stringify({ access_id, entity_id: entity.id, code, accessed: false }),
               { EX: 60 * 60 },
             );
 
             await resend.emails.send({
               from: "The Arkive <emails@thearkive.app>",
               to: [body.data.email],
-              subject: "Arkive project invitation",
+              subject: "Arkive gateway access",
               react: EmailGateway({
                 title: entity?.title || "",
                 type: body.data.type,
+                code,
                 link: `${access_id}/${entity?.id || ""}`,
               }),
             });

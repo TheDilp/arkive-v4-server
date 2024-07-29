@@ -23,4 +23,7 @@ export const MessageEnum = {
   successfully_deleted: "successfully deleted.",
   error_image_upload: "There was an error uploading your image(s).",
   error_entity_not_public: "Access forbidden - this entity is not public.",
+  gateway_access_code: "Incorrect access code.",
+  gateway_already_accessed: "Gateway code has already been used. Please request another access code.",
+  gateway_verify: "Error verifying gateway access.",
 };

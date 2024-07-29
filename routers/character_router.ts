@@ -790,7 +790,7 @@ export function character_router(app: Elysia) {
                 if (body?.permissions) {
                   await UpdateEntityPermissions(tx, params.id, body.permissions);
                 }
-                if (body.data)
+                if (body.data && Object.keys(body.data).length > 1)
                   await tx.updateTable("characters").where("characters.id", "=", params.id).set(body.data).execute();
               } else {
                 noRoleAccessErrorHandler();

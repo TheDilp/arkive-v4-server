@@ -45,14 +45,14 @@ export const EmailInvite = ({ project_name, image, isRemoved }: InviteUserEmailP
                 <strong>the Arkive</strong>
               </Heading>
             )}
-            {isRemoved ? null : <Text className="text-white text-[14px] leading-[24px]">Hello,</Text>}
+            {isRemoved ? null : <Text className="text-white text-[18px] leading-[24px]">Hello,</Text>}
             {isRemoved ? (
-              <Text className="text-white text-[14px] leading-[24px]">
+              <Text className="text-white text-[18px] leading-[24px]">
                 You have been removed from the project <strong> {project_name} </strong> on
                 <strong> the Arkive</strong>.
               </Text>
             ) : (
-              <Text className="text-white text-[14px] leading-[24px]">
+              <Text className="text-white text-[18px] leading-[24px]">
                 you have been invited to {project_name ? "the" : "a"} project<strong> {project_name} </strong> on
                 <strong> the Arkive</strong>.
               </Text>
