@@ -4,9 +4,9 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { readCharacter } from "../database/queries";
+import { readCharacter, updateCharacter } from "../database/queries";
 import { UploadAssets } from "../database/queries/assetQueries";
-import { ListCharacterFieldsTemplateSchema, ReadCharacterSchema } from "../database/validation";
+import { ListCharacterFieldsTemplateSchema, ReadCharacterSchema, UpdateCharacterSchema } from "../database/validation";
 import { MessageEnum } from "../enums";
 import { GatewayResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
@@ -415,6 +415,17 @@ export function gateway_access_router(app: Elysia) {
           );
         },
         { body: ReadCharacterSchema, response: ResponseWithDataSchema },
+      )
+      .post(
+        "/characters/update/:id",
+        async ({ params, body }) => {
+          await db.transaction().execute(async (tx) => {
+            await updateCharacter({ tx, params, body, permissions: { user_id: undefined, is_project_owner: true } });
+          });
+
+          return { ok: true, message: `Character ${MessageEnum.successfully_updated}` };
+        },
+        { body: UpdateCharacterSchema, response: GatewayResponseSchema },
       )
       .post(
         "/character_fields_templates",
