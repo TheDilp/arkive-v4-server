@@ -1,11 +1,20 @@
 import { Elysia, t } from "elysia";
+import { SelectExpression } from "kysely";
+import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
+import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
+import { readCharacter } from "../database/queries";
 import { UploadAssets } from "../database/queries/assetQueries";
+import { ListCharacterFieldsTemplateSchema, ReadCharacterSchema } from "../database/validation";
 import { MessageEnum } from "../enums";
-import { GatewayResponseSchema } from "../types/requestTypes";
+import { GatewayResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
+import { constructOrdering } from "../utils/orderByConstructor";
 import { redisClient } from "../utils/redisClient";
+import { TagQuery } from "../utils/relationalQueryHelpers";
 import { verifyGatewayJWT } from "../utils/userUtils";
+import { groupRelationFiltersByField } from "../utils/utils";
 
 export function gateway_access_router(app: Elysia) {
   return app.group("/gateway", (server) =>
@@ -388,6 +397,159 @@ export function gateway_access_router(app: Elysia) {
           }
         },
       })
+      .post(
+        "/characters/:id",
+        async ({ params, body }) => {
+          return readCharacter(
+            body,
+            params,
+            {
+              is_project_owner: true,
+              user_id: "",
+              role_id: null,
+              role_access: false,
+              project_id: null,
+              permission_id: "",
+            },
+            false,
+          );
+        },
+        { body: ReadCharacterSchema, response: ResponseWithDataSchema },
+      )
+      .post(
+        "/character_fields_templates",
+        async ({ body }) => {
+          let query = db
+            .selectFrom("character_fields_templates")
+            .distinctOn(
+              body.orderBy?.length
+                ? (["character_fields_templates.id", ...body.orderBy.map((order) => order.field)] as any)
+                : "character_fields_templates.id",
+            )
+            .where("character_fields_templates.project_id", "=", body.data.project_id)
+            .where("character_fields_templates.deleted_at", body.arkived ? "is not" : "is", null)
+            .select(
+              (body.fields || [])?.map((field) => `character_fields_templates.${field}`) as SelectExpression<
+                DB,
+                "character_fields_templates"
+              >[],
+            );
+
+          if (!!body?.filters?.and?.length || !!body?.filters?.or?.length) {
+            query = constructFilter("character_fields_templates", query, body.filters);
+          }
+          if (!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length) {
+            const { tags } = groupRelationFiltersByField(body.relationFilters || {});
+            if (tags?.filters?.length)
+              query = tagsRelationFilter(
+                "character_fields_templates",
+                "_character_fields_templatesTotags",
+                query,
+                tags?.filters || [],
+                false,
+              );
+          }
+          if (body.orderBy?.length) {
+            query = constructOrdering(body.orderBy, query);
+          }
+          if (body?.relations) {
+            if (body?.relations?.character_fields) {
+              query = query.select((eb) =>
+                jsonArrayFrom(
+                  eb
+                    .selectFrom("character_fields")
+                    .whereRef("character_fields_templates.id", "=", "character_fields.parent_id")
+                    .select([
+                      "character_fields.id",
+                      "character_fields.title",
+                      "character_fields.field_type",
+                      "character_fields.options",
+                      "character_fields.sort",
+                      "character_fields.formula",
+                      "character_fields.random_table_id",
+                      "character_fields.blueprint_id",
+                      "character_fields.section_id",
+                      (eb) =>
+                        jsonObjectFrom(
+                          eb
+                            .selectFrom("calendars")
+                            .select([
+                              "calendars.id",
+                              "calendars.title",
+                              "calendars.days",
+                              (sb) =>
+                                jsonArrayFrom(
+                                  sb
+                                    .selectFrom("months")
+                                    .select(["months.id", "months.title", "months.days"])
+                                    .orderBy("months.sort")
+                                    .whereRef("months.parent_id", "=", "calendars.id"),
+                                ).as("months"),
+                            ])
+                            .whereRef("calendars.id", "=", "character_fields.calendar_id"),
+                        ).as("calendar"),
+                      (eb) =>
+                        jsonObjectFrom(
+                          eb
+                            .selectFrom("random_tables")
+                            .select([
+                              "random_tables.id",
+                              "random_tables.title",
+                              (ebb) =>
+                                jsonArrayFrom(
+                                  ebb
+                                    .selectFrom("random_table_options")
+                                    .whereRef("random_tables.id", "=", "random_table_options.parent_id")
+                                    .select([
+                                      "id",
+                                      "title",
+                                      (ebbb) =>
+                                        jsonArrayFrom(
+                                          ebbb
+                                            .selectFrom("random_table_suboptions")
+                                            .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id")
+                                            .select(["id", "title"]),
+                                        ).as("random_table_suboptions"),
+                                    ]),
+                                ).as("random_table_options"),
+                            ])
+                            .whereRef("random_tables.id", "=", "character_fields.random_table_id"),
+                        ).as("random_table"),
+                    ])
+                    .orderBy(["character_fields.sort"]),
+                ).as("character_fields"),
+              );
+            }
+            if (body?.relations?.character_fields_sections) {
+              query = query.select((eb) =>
+                jsonArrayFrom(
+                  eb
+                    .selectFrom("character_fields_sections")
+                    .select([
+                      "character_fields_sections.id",
+                      "character_fields_sections.title",
+                      "character_fields_sections.sort",
+                    ])
+                    .whereRef("character_fields_sections.parent_id", "=", "character_fields_templates.id")
+                    .orderBy("character_fields_sections.sort asc"),
+                ).as("character_fields_sections"),
+              );
+            }
+            if (body?.relations?.tags) {
+              query = query.select((eb) =>
+                TagQuery(eb, "_character_fields_templatesTotags", "character_fields_templates", true, ""),
+              );
+            }
+          }
+
+          const data = await query.execute();
+          return { data, message: MessageEnum.success, ok: true, role_access: true };
+        },
+        {
+          body: ListCharacterFieldsTemplateSchema,
+          response: ResponseWithDataSchema,
+        },
+      )
       .post(
         "/assets/upload/:entity_id",
         async ({ params, headers, body }) => {

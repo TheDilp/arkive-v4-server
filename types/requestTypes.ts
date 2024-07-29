@@ -147,5 +147,5 @@ export type PermissionDecorationType = {
   role_access: boolean;
   role_id: string | null;
   permission_id: string | null;
-  all_permissions: Record<AvailablePermissions, boolean>;
+  all_permissions?: Record<AvailablePermissions, boolean>;
 };
