@@ -632,7 +632,7 @@ export function gateway_access_router(app: Elysia) {
                   | "images";
                 const ids = entities[index][1];
                 if (ids.length) {
-                  const fields = getSearchFields(entity);
+                  const fields = getSearchFields(entity, true);
 
                   let query = db
                     .selectFrom(entity)
@@ -671,6 +671,7 @@ export function gateway_access_router(app: Elysia) {
                       : item?.image_id || "",
                   icon: item?.icon,
                   entity_type: item?.entity_type,
+                  project_id: item?.project_id,
                 })),
                 message: MessageEnum.success,
                 ok: true,

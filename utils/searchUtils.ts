@@ -3,7 +3,7 @@ import { DB } from "kysely-codegen";
 
 import { SearchableEntities } from "../types/requestTypes";
 
-export function getSearchFields(type: SearchableEntities): string[] {
+export function getSearchFields(type: SearchableEntities, isGateway?: boolean): string[] {
   const fields = type === "map_images" ? ["images.id"] : [`${type}.id`];
   if (type === "characters") fields.push("full_name", "nickname", "portrait_id");
   else if (type === "tags") fields.push("title", "color");
@@ -20,6 +20,12 @@ export function getSearchFields(type: SearchableEntities): string[] {
   if (type === "blueprints") fields.push("blueprints.icon");
   if (type === "dictionaries") fields.push("dictionaries.icon");
   if (type === "blueprint_instances") fields.push("blueprint_instances.parent_id");
+
+  if (isGateway && type !== "blueprint_instances" && type !== "map_pins" && type !== "events") {
+    fields.push(`${type}.project_id`);
+  } else if (type === "blueprint_instances") fields.push("blueprints.project_id");
+  else if (type === "map_pins") fields.push("maps.project_id");
+  else if (type === "events") fields.push("calendars.project_id");
 
   return fields;
 }
