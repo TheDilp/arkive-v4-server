@@ -207,7 +207,9 @@ export function character_fields_templates_router(app: Elysia) {
                       "character_fields_sections.id",
                       "character_fields_sections.title",
                       "character_fields_sections.sort",
-                    ]),
+                    ])
+                    .whereRef("character_fields_sections.parent_id", "=", "character_fields_templates.id")
+                    .orderBy("sort asc"),
                 ).as("character_fields_sections"),
               );
             }
@@ -297,11 +299,9 @@ export function character_fields_templates_router(app: Elysia) {
               jsonArrayFrom(
                 eb
                   .selectFrom("character_fields_sections")
-                  .select([
-                    "character_fields_sections.id",
-                    "character_fields_sections.title",
-                    "character_fields_sections.sort",
-                  ]),
+                  .select(["character_fields_sections.id", "character_fields_sections.title", "character_fields_sections.sort"])
+                  .where("character_fields_sections.parent_id", "=", params.id)
+                  .orderBy("sort asc"),
               ).as("character_fields_sections"),
             );
           }
