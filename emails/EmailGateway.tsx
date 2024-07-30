@@ -1,10 +1,19 @@
 import { Body, Button, Container, Head, Hr, Html, Img, Preview, Section, Tailwind, Text } from "@react-email/components";
 
-export const EmailSignUp = ({ user_id }: { user_id: string }) => {
+import { getDateStringOneHourFromNow } from "../utils/utils";
+
+type GatewayType = "characters" | "blueprint_instances";
+
+function getEntity(type: GatewayType) {
+  if (type === "characters") return "character";
+  return "blueprint instance";
+}
+
+export const EmailGateway = ({ type, link, title, code }: { type: GatewayType; title: string; link: string; code: string }) => {
   return (
     <Html>
       <Head />
-      <Preview>You have signed up for the Arkive</Preview>
+      <Preview>You have been granted gateway access to the Arkive</Preview>
       <Tailwind>
         <Body className="bg-black my-auto mx-auto font-sans text-white">
           <Container className="border border-solid border-zinc-700 rounded my-[40px] mx-auto p-[20px] w-[465px] bg-zinc-900">
@@ -18,17 +27,19 @@ export const EmailSignUp = ({ user_id }: { user_id: string }) => {
               />
             </Section>
 
-            <Text className="text-white text-[14px] leading-[24px]">
-              Hello, you have successfully signed up for the Arkive. Please click the button below to confirm your account.
+            <Text className="text-white text-[18px] leading-[24px]">
+              Hello, you have been granted access to the {getEntity(type)} gateway for the {getEntity(type)} "{title}".
             </Text>
+            <Text className="text-white text-[18px] leading-[24px]">Your access code is:</Text>
+            <Text className="text-white text-[42px] leading-[24px] text-center">{code}</Text>
             <Section className="text-center mt-[32px] mb-[32px]">
               <Button
-                className="bg-[#16a34a] rounded text-white text-[12px] font-semibold no-underline text-center p-4"
-                href={`${process.env.ARKIVE_SERVER_URL}/auth/email_confirm/${user_id}`}>
-                Join the Arkive
+                className="bg-[#16a34a] rounded text-white text-[20px] font-semibold no-underline text-center p-4"
+                href={`${process.env.GATEWAY_CLIENT_URL}/${type}/${link}`}>
+                Access {getEntity(type)} gateway
               </Button>
             </Section>
-
+            <Text className="text-[12px] leading-[24px]">The access link will expire on {getDateStringOneHourFromNow()}</Text>
             <Hr className="border border-solid border-[#eaeaea] my-[26px] mx-0 w-full" />
             <Text className="text-[#666666] text-[12px] leading-[24px]">
               If you were not expecting this email, you can safely ignore it.

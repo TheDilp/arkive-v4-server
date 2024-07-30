@@ -54,7 +54,7 @@ export function getPermissionOperationFromPath(
   return null;
 }
 
-export function getEntityFromPath(path: string): AvailableEntityType | AvailableSubEntityType | null {
+export function getEntityFromPath(path: string): AvailableEntityType | AvailableSubEntityType | "users" | null {
   if (path.includes("bulk")) {
     const entity = path.split("/").at(-1);
 

@@ -129,6 +129,10 @@ export const ResponseSchema = t.Object({
   ok: t.Boolean(),
   role_access: t.Boolean(),
 });
+export const GatewayResponseSchema = t.Object({
+  message: t.String(),
+  ok: t.Boolean(),
+});
 export const ResponseWithDataSchema = t.Object({
   data: t.Any(),
   message: t.String(),
@@ -143,5 +147,5 @@ export type PermissionDecorationType = {
   role_access: boolean;
   role_id: string | null;
   permission_id: string | null;
-  all_permissions: Record<AvailablePermissions, boolean>;
+  all_permissions?: Record<AvailablePermissions, boolean>;
 };

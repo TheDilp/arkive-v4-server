@@ -1304,6 +1304,108 @@ CREATE TABLE public.games (
 
 
 --
+-- Name: gateway_configuration_blueprint_instances; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.gateway_configuration_blueprint_instances (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    parent_id uuid NOT NULL,
+    related_id uuid NOT NULL
+);
+
+
+--
+-- Name: gateway_configuration_characters; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.gateway_configuration_characters (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    parent_id uuid NOT NULL,
+    related_id uuid NOT NULL
+);
+
+
+--
+-- Name: gateway_configuration_documents; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.gateway_configuration_documents (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    parent_id uuid NOT NULL,
+    related_id uuid NOT NULL
+);
+
+
+--
+-- Name: gateway_configuration_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.gateway_configuration_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    parent_id uuid NOT NULL,
+    related_id uuid NOT NULL
+);
+
+
+--
+-- Name: gateway_configuration_images; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.gateway_configuration_images (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    parent_id uuid NOT NULL,
+    related_id uuid NOT NULL
+);
+
+
+--
+-- Name: gateway_configuration_map_pins; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.gateway_configuration_map_pins (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    parent_id uuid NOT NULL,
+    related_id uuid NOT NULL
+);
+
+
+--
+-- Name: gateway_configuration_maps; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.gateway_configuration_maps (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    parent_id uuid NOT NULL,
+    related_id uuid NOT NULL
+);
+
+
+--
+-- Name: gateway_configuration_random_tables; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.gateway_configuration_random_tables (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    parent_id uuid NOT NULL,
+    related_id uuid NOT NULL
+);
+
+
+--
+-- Name: gateway_configurations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.gateway_configurations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    project_id uuid NOT NULL,
+    title text NOT NULL,
+    owner_id uuid NOT NULL,
+    gateway_type text NOT NULL,
+    CONSTRAINT gateway_configurations_gateway_type_check CHECK ((gateway_type = ANY (ARRAY['characters'::text, 'blueprint_instances'::text])))
+);
+
+
+--
 -- Name: graphs; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2341,6 +2443,78 @@ ALTER TABLE ONLY public.game_players
 
 ALTER TABLE ONLY public.games
     ADD CONSTRAINT games_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: gateway_configuration_blueprint_instances gateway_configuration_blueprint_instances_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_blueprint_instances
+    ADD CONSTRAINT gateway_configuration_blueprint_instances_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: gateway_configuration_characters gateway_configuration_characters_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_characters
+    ADD CONSTRAINT gateway_configuration_characters_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: gateway_configuration_documents gateway_configuration_documents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_documents
+    ADD CONSTRAINT gateway_configuration_documents_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: gateway_configuration_events gateway_configuration_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_events
+    ADD CONSTRAINT gateway_configuration_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: gateway_configuration_images gateway_configuration_images_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_images
+    ADD CONSTRAINT gateway_configuration_images_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: gateway_configuration_map_pins gateway_configuration_map_pins_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_map_pins
+    ADD CONSTRAINT gateway_configuration_map_pins_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: gateway_configuration_maps gateway_configuration_maps_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_maps
+    ADD CONSTRAINT gateway_configuration_maps_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: gateway_configuration_random_tables gateway_configuration_random_tables_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_random_tables
+    ADD CONSTRAINT gateway_configuration_random_tables_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: gateway_configurations gateway_configurations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configurations
+    ADD CONSTRAINT gateway_configurations_pkey PRIMARY KEY (id);
 
 
 --
@@ -4513,6 +4687,150 @@ ALTER TABLE ONLY public.games
 
 
 --
+-- Name: gateway_configuration_blueprint_instances gateway_configuration_blueprint_instances_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_blueprint_instances
+    ADD CONSTRAINT gateway_configuration_blueprint_instances_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.gateway_configurations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: gateway_configuration_blueprint_instances gateway_configuration_blueprint_instances_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_blueprint_instances
+    ADD CONSTRAINT gateway_configuration_blueprint_instances_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.blueprint_instances(id) ON DELETE CASCADE;
+
+
+--
+-- Name: gateway_configuration_characters gateway_configuration_characters_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_characters
+    ADD CONSTRAINT gateway_configuration_characters_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.gateway_configurations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: gateway_configuration_characters gateway_configuration_characters_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_characters
+    ADD CONSTRAINT gateway_configuration_characters_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.characters(id) ON DELETE CASCADE;
+
+
+--
+-- Name: gateway_configuration_documents gateway_configuration_documents_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_documents
+    ADD CONSTRAINT gateway_configuration_documents_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.gateway_configurations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: gateway_configuration_documents gateway_configuration_documents_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_documents
+    ADD CONSTRAINT gateway_configuration_documents_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.documents(id) ON DELETE CASCADE;
+
+
+--
+-- Name: gateway_configuration_events gateway_configuration_events_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_events
+    ADD CONSTRAINT gateway_configuration_events_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.gateway_configurations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: gateway_configuration_events gateway_configuration_events_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_events
+    ADD CONSTRAINT gateway_configuration_events_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.events(id) ON DELETE CASCADE;
+
+
+--
+-- Name: gateway_configuration_images gateway_configuration_images_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_images
+    ADD CONSTRAINT gateway_configuration_images_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.gateway_configurations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: gateway_configuration_images gateway_configuration_images_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_images
+    ADD CONSTRAINT gateway_configuration_images_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.images(id) ON DELETE CASCADE;
+
+
+--
+-- Name: gateway_configuration_map_pins gateway_configuration_map_pins_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_map_pins
+    ADD CONSTRAINT gateway_configuration_map_pins_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.gateway_configurations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: gateway_configuration_map_pins gateway_configuration_map_pins_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_map_pins
+    ADD CONSTRAINT gateway_configuration_map_pins_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.map_pins(id) ON DELETE CASCADE;
+
+
+--
+-- Name: gateway_configuration_maps gateway_configuration_maps_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_maps
+    ADD CONSTRAINT gateway_configuration_maps_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.gateway_configurations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: gateway_configuration_maps gateway_configuration_maps_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_maps
+    ADD CONSTRAINT gateway_configuration_maps_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.maps(id) ON DELETE CASCADE;
+
+
+--
+-- Name: gateway_configuration_random_tables gateway_configuration_random_tables_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_random_tables
+    ADD CONSTRAINT gateway_configuration_random_tables_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.gateway_configurations(id) ON DELETE CASCADE;
+
+
+--
+-- Name: gateway_configuration_random_tables gateway_configuration_random_tables_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configuration_random_tables
+    ADD CONSTRAINT gateway_configuration_random_tables_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.random_tables(id) ON DELETE CASCADE;
+
+
+--
+-- Name: gateway_configurations gateway_configurations_owner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configurations
+    ADD CONSTRAINT gateway_configurations_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: gateway_configurations gateway_configurations_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.gateway_configurations
+    ADD CONSTRAINT gateway_configurations_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
+
+
+--
 -- Name: graphs graphs_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5111,4 +5429,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240716172359'),
     ('20240723062540'),
     ('20240725152735'),
-    ('20240726104432');
+    ('20240726104432'),
+    ('20240727080249');

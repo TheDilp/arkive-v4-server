@@ -2,7 +2,7 @@ import { Cookie, StatusMap } from "elysia";
 import { HTTPHeaders } from "elysia/types";
 
 import { db } from "../database/db";
-import { JWTResponse } from "../types/entityTypes";
+import { JWTGatewayResponse, JWTResponse } from "../types/entityTypes";
 import { redisClient } from "./redisClient";
 
 export async function getUserProjectFlags(user_id: string, project_id: string) {
@@ -69,6 +69,47 @@ export async function verifyJWT({
     throw new Error("UNAUTHORIZED");
   }
 }
+
+export async function verifyGatewayJWT({
+  access,
+  set,
+}: {
+  access: Cookie<string | undefined>;
+  set: { headers: HTTPHeaders; status?: number | keyof StatusMap };
+}) {
+  const res = await fetch(`${process.env.ARKIVE_AUTH_URL}/verify/gateway`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      access: access.value,
+    }),
+  });
+
+  if (res.status >= 400) {
+    set.status = 403;
+    return { status: "not_allowed" };
+  }
+
+  try {
+    const data = (await res.json()) as JWTGatewayResponse;
+    const additional_cookie_params =
+      process.env.NODE_ENV === "production" ? "domain=.thearkive.app; Secure; SameSite=None;" : "";
+    set.headers["set-cookie"] = `access=${access}; HttpOnly; Path=/; ${additional_cookie_params} Expires=${getCookieExpiry(
+      "access",
+    )}`;
+
+    return {
+      status: "allowed",
+      project_id: data.claims.project_id,
+      access_id: data.claims.access_id,
+    };
+  } catch (error) {
+    return {
+      status: "not_allowed",
+    };
+  }
+}
+
 export function getCookieExpiry(type: "access" | "refresh"): Date {
   const now = new Date();
 

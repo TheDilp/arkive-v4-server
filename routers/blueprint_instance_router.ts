@@ -220,6 +220,11 @@ export function blueprint_instance_router(app: Elysia) {
             if (body.data?.parent_id) {
               query = query.where("blueprint_instances.parent_id", "=", body.data.parent_id);
             }
+            if (body.data.project_id) {
+              query = query
+                .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+                .where("blueprints.project_id", "=", body.data.project_id);
+            }
             if (body.relations?.blueprint_fields) {
               query = query.select([
                 (eb) => {
@@ -482,6 +487,13 @@ export function blueprint_instance_router(app: Elysia) {
             }
             if (!!body?.filters?.and?.length || !!body?.filters?.or?.length) {
               query = constructFilter("blueprint_instances", query, body.filters);
+            }
+            if (body.relations?.blueprint) {
+              query = query.select((eb) =>
+                jsonObjectFrom(
+                  eb.selectFrom("blueprints").whereRef("id", "=", "blueprint_instances.parent_id").select(["title", "icon"]),
+                ).as("blueprint"),
+              );
             }
             if (!!body?.relationFilters?.and?.length || !!body?.relationFilters?.or?.length) {
               const { characters, documents, map_pins, tags, events, value } = groupRelationFiltersByField(

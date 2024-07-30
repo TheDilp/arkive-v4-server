@@ -21,6 +21,8 @@ import {
   document_router,
   edge_router,
   event_router,
+  gateway_access_router,
+  gateway_configuration_router,
   graph_router,
   health_check_router,
   interaction_router,
@@ -129,9 +131,10 @@ export const app = new Elysia({ name: "Editor.Router" })
             headers["user-id"] = user_id;
             headers["project-id"] = project_id || undefined;
             headers["user-image-url"] = data.user_id || undefined;
+
             const entity = getEntityFromPath(path);
 
-            if (entity && EntitiesWithPermissionsEnum.includes(entity)) {
+            if (entity && (EntitiesWithPermissionsEnum.includes(entity) || entity === "users")) {
               if (user_id) {
                 const action = getPermissionOperationFromPath(path, request.method as "GET" | "POST" | "DELETE");
 
@@ -213,9 +216,11 @@ export const app = new Elysia({ name: "Editor.Router" })
           .use(manuscript_router)
           .use(stats_router)
           .use(role_router)
-          .use(permission_router),
+          .use(permission_router)
+          .use(gateway_configuration_router),
     ),
   )
+  .use(gateway_access_router)
   .use(websocket_router)
   .use(interaction_router)
   .use(health_check_router)

@@ -8,6 +8,7 @@ import sharp from "sharp";
 
 import { db } from "../database/db";
 import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
+import { UploadAssets } from "../database/queries/assetQueries";
 import { DownloadAssetsSchema, ListAssetsSchema, ReadAssetsSchema, UpdateImageSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { noRoleAccessErrorHandler } from "../handlers";
@@ -22,7 +23,7 @@ import {
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
 import { s3Client } from "../utils/s3Utils";
-import { getEntityWithOwnerId, groupRelationFiltersByField } from "../utils/utils";
+import { groupRelationFiltersByField } from "../utils/utils";
 
 async function createFile(data: Blob) {
   const buff = await data.arrayBuffer();
@@ -146,36 +147,7 @@ export function asset_router(app: Elysia) {
         async ({ params, body, permissions }) => {
           const { type, project_id } = params;
 
-          const objectEntries = Object.entries(body);
-          for (let index = 0; index < objectEntries.length; index++) {
-            const [, file] = objectEntries[index];
-            const buffer = await createFile(file);
-            const { id: image_id } = await db
-              .insertInto("images")
-              .values(getEntityWithOwnerId({ title: file.name, project_id, type: type as AssetType }, permissions.user_id))
-              .returning("id")
-              .executeTakeFirstOrThrow();
-            const filePath = `assets/${project_id}/${type}`;
-
-            const command = new PutObjectCommand({
-              Bucket: process.env.DO_SPACES_NAME as string,
-              Key: `${filePath}/${image_id}.webp`,
-              Body: buffer,
-              ACL: "public-read",
-              ContentType: "image/webp",
-              CacheControl: "max-age=600",
-            });
-            const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
-            await fetch(url, {
-              headers: {
-                "Content-Type": "image/webp",
-                "Cache-Control": "max-age=600",
-                "x-amz-acl": "public-read",
-              },
-              method: "PUT",
-              body: buffer,
-            });
-          }
+          await UploadAssets({ type: type as AssetType, project_id, body, permissions });
 
           return { message: "Image(s) uploaded successfully.", ok: true, role_access: true };
         },

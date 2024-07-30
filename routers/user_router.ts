@@ -1,4 +1,4 @@
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import { SelectExpression } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
@@ -12,6 +12,7 @@ import {
   ReadUserSchema,
   UpdateUserSchema,
 } from "../database/validation";
+import { EmailGateway } from "../emails/EmailGateway";
 import { EmailInvite } from "../emails/EmailInvite";
 import { DefaultProjectFeatureFlags } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
@@ -28,6 +29,7 @@ export function user_router(app: Elysia) {
         role_access: false,
         user_id: "",
         role_id: null,
+        project_id: null,
         permission_id: null,
       } as PermissionDecorationType)
       .post(
@@ -201,6 +203,68 @@ export function user_router(app: Elysia) {
           body: InviteUserSchema,
           response: ResponseSchema,
           beforeHandle: async (context) => beforeProjectOwnerHandler(context),
+        },
+      )
+      .post(
+        "/gateway/invite",
+        async ({ body, permissions }) => {
+          const redis = await redisClient;
+          const entity = await db
+            .selectFrom(body.data.type)
+            .select(["id", body.data.type === "characters" ? "full_name as title" : "title"])
+            .where("id", "=", body.data.id)
+            .executeTakeFirst();
+
+          if (entity?.id && permissions.project_id) {
+            const access_id = crypto.randomUUID();
+
+            let code = "";
+
+            for (let index = 0; index < 6; index++) {
+              const number = Math.random().toString()[3 + index];
+              code += number;
+            }
+
+            await redis.SET(
+              `${body.data.type}_gateway_access_${access_id}`,
+              JSON.stringify({
+                access_id,
+                entity_id: entity.id,
+                code,
+                accessed: false,
+                project_id: permissions.project_id,
+                config: body.data.config,
+              }),
+              { EX: 60 * 60 },
+            );
+
+            await resend.emails.send({
+              from: "The Arkive <emails@thearkive.app>",
+              to: [body.data.email],
+              subject: "Arkive gateway access",
+              react: EmailGateway({
+                title: entity?.title || "",
+                type: body.data.type,
+                code,
+                link: `${access_id}/${entity?.id || ""}`,
+              }),
+            });
+          }
+
+          return {};
+        },
+        {
+          body: t.Object(
+            {
+              data: t.Object({
+                email: t.String(),
+                id: t.String(),
+                type: t.Union([t.Literal("characters"), t.Literal("blueprint_instances")]),
+                config: t.Record(t.String(), t.Array(t.String())),
+              }),
+            },
+            { additionalProperties: false },
+          ),
         },
       )
       .post(
