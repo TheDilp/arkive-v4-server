@@ -231,7 +231,6 @@ export function user_router(app: Elysia) {
                 access_id,
                 entity_id: entity.id,
                 code,
-                accessed: false,
                 project_id: permissions.project_id,
                 config: body.data.config,
               }),
