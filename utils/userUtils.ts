@@ -86,6 +86,7 @@ export async function verifyGatewayJWT({
   });
 
   if (res.status >= 400) {
+    console.error(await res.text());
     set.status = 403;
     return { status: "not_allowed" };
   }
@@ -104,6 +105,7 @@ export async function verifyGatewayJWT({
       access_id: data.claims.access_id,
     };
   } catch (error) {
+    console.error(error);
     return {
       status: "not_allowed",
     };
