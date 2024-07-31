@@ -114,9 +114,10 @@ export function search_router(app: Elysia) {
               role_access: true,
             };
           }
-
+          const entity = getSearchTableFromType(type as SearchableEntities);
           let query = db
-            .selectFrom(getSearchTableFromType(type as SearchableEntities | DBKeys))
+            .selectFrom(entity)
+            .distinctOn(`${entity}.id` as ReferenceExpression<DB, keyof DB>)
             // @ts-ignore
             .select(fields as SelectExpression<DB, SearchableEntities>[]);
 
