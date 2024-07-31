@@ -22,3 +22,10 @@ export const GatewaySearchSchema = t.Object({
     parent_id: t.Optional(t.String()),
   }),
 });
+export const GatewayMentionSearchSchema = t.Object({
+  data: t.Object({
+    search_term: t.String(),
+    access_id: t.String(),
+    entity_type: t.Union([t.Literal("characters"), t.Literal("blueprint_instances")]),
+  }),
+});

@@ -140,6 +140,12 @@ export const ResponseWithDataSchema = t.Object({
   role_access: t.Boolean(),
 });
 
+export const GatewayResponseWithDataSchema = t.Object({
+  data: t.Any(),
+  message: t.String(),
+  ok: t.Boolean(),
+});
+
 export type PermissionDecorationType = {
   user_id: string;
   project_id: string | null;
