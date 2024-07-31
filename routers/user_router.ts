@@ -235,7 +235,7 @@ export function user_router(app: Elysia) {
                 project_id: permissions.project_id,
                 config: body.data.config,
               }),
-              { EX: 60 * 60 },
+              { EX: 60 * 60 * 6 },
             );
 
             await resend.emails.send({

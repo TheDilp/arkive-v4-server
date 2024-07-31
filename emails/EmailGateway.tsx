@@ -1,6 +1,6 @@
 import { Body, Button, Container, Head, Hr, Html, Img, Preview, Section, Tailwind, Text } from "@react-email/components";
 
-import { getDateStringOneHourFromNow } from "../utils/utils";
+import { getDateStringHoursFromNow } from "../utils/dateTimeUtils";
 
 type GatewayType = "characters" | "blueprint_instances";
 
@@ -39,7 +39,7 @@ export const EmailGateway = ({ type, link, title, code }: { type: GatewayType; t
                 Access {getEntity(type)} gateway
               </Button>
             </Section>
-            <Text className="text-[12px] leading-[24px]">The access link will expire on {getDateStringOneHourFromNow()}</Text>
+            <Text className="text-[12px] leading-[24px]">The access link will expire on {getDateStringHoursFromNow(6)}</Text>
             <Hr className="border border-solid border-[#eaeaea] my-[26px] mx-0 w-full" />
             <Text className="text-[#666666] text-[12px] leading-[24px]">
               If you were not expecting this email, you can safely ignore it.
