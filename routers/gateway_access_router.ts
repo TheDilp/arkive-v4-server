@@ -581,15 +581,9 @@ export function gateway_access_router(app: Elysia) {
             if (project?.owner_id) {
               const ids = await UploadAssets({ type: "images", project_id, body, permissions: { user_id: project?.owner_id } });
 
-              const requests = [];
-
-              for (let index = 0; index < ids.length; index++) {
-                const id = ids[index];
-
-                requests.push(db.updateTable("characters").where("id", "=", params.entity_id).set("portrait_id", id).execute());
+              if (ids.length === 1) {
+                await db.updateTable("characters").where("id", "=", params.entity_id).set("portrait_id", ids[0]).execute();
               }
-
-              await Promise.all(requests);
 
               return { ok: true, message: MessageEnum.success };
             }
