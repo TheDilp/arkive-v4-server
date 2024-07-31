@@ -36,17 +36,13 @@ export function gateway_access_router(app: Elysia) {
               access_id: string;
               entity_id: string;
               code: number;
-              accessed: boolean;
               config: Record<string, string[]>;
             };
             if (gateway_access_data.code.toString() !== params.code) {
               set.status = 403;
               return { data: {}, ok: false, message: MessageEnum.gateway_access_code };
             }
-            if (gateway_access_data.accessed) {
-              set.status = 403;
-              return { data: {}, ok: false, message: MessageEnum.gateway_already_accessed };
-            }
+
             if (gateway_access_data.access_id === params.access_id) {
               const res = await fetch(
                 `${process.env.ARKIVE_AUTH_URL}/auth/gateway/${params.type}/${params.access_id}/${params.code}`,
@@ -64,7 +60,7 @@ export function gateway_access_router(app: Elysia) {
                 set.headers["set-cookie"] = data;
                 await redis.SET(
                   `${params.type}_gateway_access_${params.access_id}`,
-                  JSON.stringify({ ...gateway_access_data, accessed: true }),
+                  JSON.stringify({ ...gateway_access_data }),
                   { EX: ttl || 60 * 60 },
                 );
 
@@ -581,15 +577,9 @@ export function gateway_access_router(app: Elysia) {
             if (project?.owner_id) {
               const ids = await UploadAssets({ type: "images", project_id, body, permissions: { user_id: project?.owner_id } });
 
-              const requests = [];
-
-              for (let index = 0; index < ids.length; index++) {
-                const id = ids[index];
-
-                requests.push(db.updateTable("characters").where("id", "=", params.entity_id).set("portrait_id", id).execute());
+              if (ids.length === 1) {
+                await db.updateTable("characters").where("id", "=", params.entity_id).set("portrait_id", ids[0]).execute();
               }
-
-              await Promise.all(requests);
 
               return { ok: true, message: MessageEnum.success };
             }
@@ -612,7 +602,6 @@ export function gateway_access_router(app: Elysia) {
                 access_id: string;
                 entity_id: string;
                 code: number;
-                accessed: boolean;
                 config: Record<
                   "characters" | "blueprint_instances" | "documents" | "maps" | "map_pins" | "events" | "images",
                   string[]
