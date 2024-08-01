@@ -129,6 +129,7 @@ export function project_router(app: Elysia) {
                   .select([
                     "users.id",
                     "users.email",
+                    "users.image",
                     (eb) =>
                       jsonObjectFrom(
                         eb
