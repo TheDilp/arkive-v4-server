@@ -12,6 +12,7 @@ import {
 } from "../database/validation/webhooks";
 import { MessageEnum } from "../enums/requestEnums";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { constructOrdering } from "../utils/orderByConstructor";
 import {
   chooseRandomTableItems,
   createEntityURL,
@@ -55,11 +56,15 @@ export function webhook_router(app: Elysia) {
       .post(
         "/",
         async ({ body }) => {
-          const data = await db
+          let query = db
             .selectFrom("webhooks")
             .select(body.fields as SelectExpression<DB, "webhooks">[])
-            .where("user_id", "=", body.data.user_id)
-            .execute();
+            .where("user_id", "=", body.data.user_id);
+
+          if (body.orderBy) {
+            query = constructOrdering(body.orderBy, query);
+          }
+          const data = await query.execute();
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
         {
