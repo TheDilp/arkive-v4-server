@@ -229,7 +229,11 @@ export const app = new Elysia({ name: "Editor.Router" })
       origin:
         process.env.NODE_ENV === "development"
           ? true
-          : [process.env.EDITOR_CLIENT_URL as string, process.env.HOME_CLIENT_URL as string],
+          : [
+              process.env.EDITOR_CLIENT_URL as string,
+              process.env.HOME_CLIENT_URL as string,
+              process.env.GATEWAY_CLIENT_URL as string,
+            ],
       methods: ["GET", "POST", "DELETE"],
     }),
   )
