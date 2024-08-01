@@ -10,6 +10,27 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON SCHEMA public IS '';
+
+
+--
+-- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
+
+
+--
 -- Name: pger; Type: SCHEMA; Schema: -; Owner: -
 --
 
@@ -17,10 +38,17 @@ CREATE SCHEMA pger;
 
 
 --
--- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
+-- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
 --
 
-COMMENT ON SCHEMA public IS '';
+CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
 
 
 --
@@ -295,50 +323,6 @@ END IF;
 
 
 
-    RETURN NEW;
-END;
-$$;
-
-
---
--- Name: notify_character_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.notify_character_trigger_function() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-    payload JSON;
-BEGIN
-    payload = json_build_object(
-        'entity', TG_TABLE_NAME,
-        'operation', TG_OP,
-        'title', NEW.full_name,
-        'id', NEW.id
-    );
-    PERFORM pg_notify('notification_channel', payload::text);
-    RETURN NEW;
-END;
-$$;
-
-
---
--- Name: notify_general_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.notify_general_trigger_function() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-    payload JSON;
-BEGIN
-    payload = json_build_object(
-        'entity', TG_TABLE_NAME,
-        'operation', TG_OP,
-        'title', NEW.title,
-        'id', NEW.id
-    );
-    PERFORM pg_notify('notification_channel', payload::text);
     RETURN NEW;
 END;
 $$;
@@ -1951,7 +1935,7 @@ CREATE TABLE public.users (
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     oauth text,
     password text,
-    image_id text,
+    image text,
     nickname text NOT NULL,
     is_email_confirmed boolean DEFAULT false,
     CONSTRAINT oauth_type CHECK ((oauth = ANY (ARRAY['discord'::text, 'google'::text, 'github'::text, 'facebook'::text, 'twitter'::text, 'notion'::text, 'apple'::text]))),
@@ -5430,4 +5414,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240723062540'),
     ('20240725152735'),
     ('20240726104432'),
-    ('20240727080249');
+    ('20240727080249'),
+    ('20240801144906');

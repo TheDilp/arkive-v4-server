@@ -1,4 +1,4 @@
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import sharp from "sharp";
 
@@ -65,4 +65,63 @@ export async function UploadAssets({
     ids.push(image_id);
   }
   return ids;
+}
+
+export async function UploadUserAsset({
+  body,
+  user_id,
+  image,
+}: {
+  body: {
+    [x: string]: File;
+  };
+  user_id: string;
+  image: string | undefined | null;
+}) {
+  if (image) {
+    try {
+      const filePath = image.replaceAll(
+        `https://${process.env.DO_SPACES_NAME}.${process.env.DO_SPACES_ENDPOINT?.replace("https://", "")}/`,
+        "",
+      );
+
+      await s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: process.env.DO_SPACES_NAME as string,
+          Key: filePath,
+        }),
+      );
+    } catch (error) {
+      //
+    }
+  }
+  const uniqueKey = crypto.randomUUID();
+  const objectEntries = Object.entries(body);
+  for (let index = 0; index < objectEntries.length; index++) {
+    const [, file] = objectEntries[index];
+    const buffer = await createFile(file);
+
+    const command = new PutObjectCommand({
+      Bucket: process.env.DO_SPACES_NAME as string,
+      Key: `assets/avatars/${user_id}-${uniqueKey}.webp`,
+      Body: buffer,
+      ACL: "public-read",
+      ContentType: "image/webp",
+      CacheControl: "max-age=600",
+    });
+    const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
+    await fetch(url, {
+      headers: {
+        "Content-Type": "image/webp",
+        "Cache-Control": "max-age=600",
+        "x-amz-acl": "public-read",
+      },
+      method: "PUT",
+      body: buffer,
+    });
+  }
+  return `https://${process.env.DO_SPACES_NAME}.${process.env.DO_SPACES_ENDPOINT?.replace(
+    "https://",
+    "",
+  )}/assets/avatars/${user_id}-${uniqueKey}.webp`;
 }
