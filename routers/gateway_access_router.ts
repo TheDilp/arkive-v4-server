@@ -9,6 +9,7 @@ import { UploadAssets } from "../database/queries/assetQueries";
 import {
   GatewayMentionSearchSchema,
   GatewaySearchSchema,
+  ListAssetsSchema,
   ListCharacterFieldsTemplateSchema,
   ReadCharacterSchema,
   UpdateCharacterSchema,
@@ -295,6 +296,54 @@ export function gateway_access_router(app: Elysia) {
           return { ok: false, message: "There was an error with this request." };
         },
         { body: t.Record(t.String(), t.File({ maxSize: "50m" })), response: GatewayResponseSchema },
+      )
+      .post(
+        "/assets/:entity_type/:access_id",
+        async ({ params, body }) => {
+          const redis = await redisClient;
+
+          const gateway_access = await redis.GET(`${params.entity_type}_gateway_access_${params.access_id}`);
+
+          if (gateway_access) {
+            try {
+              const gateway_access_data = JSON.parse(gateway_access) as {
+                access_id: string;
+                entity_id: string;
+                code: number;
+                config: Record<
+                  | "characters"
+                  | "blueprint_instances"
+                  | "documents"
+                  | "maps"
+                  | "map_pins"
+                  | "events"
+                  | "images"
+                  | "random_tables",
+                  string[]
+                >;
+              };
+
+              const ids = gateway_access_data.config.images;
+
+              if (ids.length) {
+                const data = await db
+                  .selectFrom("images")
+                  .select(body.fields as SelectExpression<DB, "images">[])
+                  .where("id", "in", ids)
+                  .execute();
+
+                return { data, ok: true, message: MessageEnum.success };
+              }
+
+              return { data: [], ok: false, message: "There was an error with this request." };
+            } catch (error) {
+              console.error(error);
+              return { data: [], ok: false, message: "There was an error with this request." };
+            }
+          }
+          return { data: [], ok: false, message: "There was an error with this request." };
+        },
+        { body: ListAssetsSchema, response: GatewayResponseWithDataSchema },
       )
       .post(
         "/options/:type",
@@ -609,8 +658,6 @@ export function gateway_access_router(app: Elysia) {
         {
           response: GatewayResponseWithDataSchema,
           body: GatewayMentionSearchSchema,
-
-          // beforeHandle: async (context) => beforeRoleHandler(context, undefined, true),
         },
       ),
   );
