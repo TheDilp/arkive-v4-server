@@ -73,7 +73,7 @@ export function constructFilter(
     const groupedFilters = groupFiltersByField(filters || {});
     const allFilters = Object.entries(groupedFilters);
     allFilters.forEach(([field, { filters }]) => {
-      if (field === "is_public" || field === "is_favorite") {
+      if (field === "is_public") {
         const specialFilters: any[] = [];
         filters.forEach((filter) => {
           const dbOperator = FilterEnum[filter.operator];
@@ -85,6 +85,12 @@ export function constructFilter(
         if (specialFilters.length) {
           andFilters.push(eb.or(specialFilters));
         }
+      } else if (field === "is_favorite") {
+        queryBuilder = queryBuilder.leftJoin("favorite_characters.character_id", "=", "characters.id");
+
+        filters.forEach(() => {
+          andFilters.push(eb("favorite_characters.is_favorite", "=", true));
+        });
       } else {
         filters.forEach((filter) => {
           const dbOperator = FilterEnum[filter.operator];
