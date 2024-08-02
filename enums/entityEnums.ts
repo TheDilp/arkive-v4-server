@@ -158,6 +158,10 @@ export const RolePermissionsEnum = [
   "read_manuscripts" as const,
   "update_manuscripts" as const,
   "delete_manuscripts" as const,
+  "create_gateway" as const,
+  "read_gateway" as const,
+  "update_gateway" as const,
+  "delete_gateway" as const,
 ];
 
 export const EntitiesWithPermissionsEnum = [
