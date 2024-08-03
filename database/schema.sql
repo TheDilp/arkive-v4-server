@@ -10,27 +10,6 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON SCHEMA public IS '';
-
-
---
--- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
-
-
---
--- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
-
-
---
 -- Name: pger; Type: SCHEMA; Schema: -; Owner: -
 --
 
@@ -38,17 +17,10 @@ CREATE SCHEMA pger;
 
 
 --
--- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
-
-
---
--- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
+COMMENT ON SCHEMA public IS '';
 
 
 --
@@ -323,6 +295,50 @@ END IF;
 
 
 
+    RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: notify_character_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.notify_character_trigger_function() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    payload JSON;
+BEGIN
+    payload = json_build_object(
+        'entity', TG_TABLE_NAME,
+        'operation', TG_OP,
+        'title', NEW.full_name,
+        'id', NEW.id
+    );
+    PERFORM pg_notify('notification_channel', payload::text);
+    RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: notify_general_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.notify_general_trigger_function() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    payload JSON;
+BEGIN
+    payload = json_build_object(
+        'entity', TG_TABLE_NAME,
+        'operation', TG_OP,
+        'title', NEW.title,
+        'id', NEW.id
+    );
+    PERFORM pg_notify('notification_channel', payload::text);
     RETURN NEW;
 END;
 $$;
@@ -1759,8 +1775,7 @@ CREATE TABLE public.projects (
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     title text DEFAULT 'New Project'::text NOT NULL,
     image_id uuid,
-    owner_id uuid NOT NULL,
-    default_dice_color text
+    owner_id uuid NOT NULL
 );
 
 
@@ -5415,4 +5430,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240725152735'),
     ('20240726104432'),
     ('20240727080249'),
-    ('20240801144906');
+    ('20240801144906'),
+    ('20240803103249');
