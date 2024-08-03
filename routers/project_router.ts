@@ -132,6 +132,7 @@ export function project_router(app: Elysia) {
                     "users.id",
                     "users.email",
                     "users.image",
+                    "users.nickname",
                     (eb) =>
                       jsonObjectFrom(
                         eb
@@ -142,7 +143,7 @@ export function project_router(app: Elysia) {
                           .select(["roles.id", "roles.title", "roles.icon"]),
                       ).as("role"),
                   ])
-                  .orderBy("email", "asc"),
+                  .orderBy("nickname", "asc"),
               ).as("members"),
             );
           }
