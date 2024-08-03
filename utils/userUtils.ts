@@ -54,7 +54,6 @@ export async function verifyJWT({
   try {
     const cookie_data = (await res.json()) as JWTResponse;
     set.headers["set-cookie"] = getCookies(cookie_data.access, cookie_data.refresh);
-
     return {
       status: "authenticated",
       user_id: cookie_data.claims.user_id,

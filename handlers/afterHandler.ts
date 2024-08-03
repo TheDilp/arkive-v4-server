@@ -26,7 +26,8 @@ export async function afterHandler(
   const { is_folder, project_id, title, image_id, parent_id } = data || {};
 
   if (headers) {
-    const name: string = headers["user-name"];
+    // eslint-disable-next-line prefer-destructuring
+    const name: string = headers["name"];
     const user_id: string = headers["user-id"];
     const image_url: string | undefined = headers["user-image-url"];
     if (project_id) {
@@ -45,7 +46,7 @@ export async function afterHandler(
       });
       if (redis) redis.del(`${project_id}_stats`);
     }
-    if (data?.id)
+    if (data?.id && user_id)
       db.insertInto("notifications")
         .values({
           entity_type: entity,
@@ -64,7 +65,8 @@ export async function afterHandler(
 }
 
 async function afterHandlerMany(entity: string, headers: Record<string, string | undefined>, action: AfterHandlerActionType) {
-  const name = headers["user-name"];
+  // eslint-disable-next-line prefer-destructuring
+  const name = headers["name"];
   const user_id = headers["user-id"];
   const image_url = headers["user-image-url"];
   const project_id = headers["project-id"];
@@ -85,15 +87,14 @@ async function afterHandlerMany(entity: string, headers: Record<string, string |
 
 export async function tempAfterHandle(context: any, response: any) {
   const redis = await redisClient;
-  const token = context.request.headers.get("authorization");
-  const action = getOperationFromPath(context.path, context.request.method);
 
-  if (action && token) {
+  const action = getOperationFromPath(context.path, context.request.method);
+  if (action && context.headers) {
     const entity = getEntityFromPath(context.path) as AvailableEntityType | AvailableSubEntityType;
 
     if (UserNotificationEntitiesEnum.includes(entity)) {
       if (context.path.includes("bulk")) {
-        afterHandlerMany(entity, token, action);
+        afterHandlerMany(entity, context.headers, action);
       } else {
         if (action === "create") {
           if (entity === "characters") {
@@ -102,7 +103,7 @@ export async function tempAfterHandle(context: any, response: any) {
             afterHandler(
               { id, project_id, title: getCharacterFullName(first_name, undefined, last_name), image_id },
               entity,
-              token,
+              context.headers,
               action,
               redis,
             );
@@ -113,7 +114,13 @@ export async function tempAfterHandle(context: any, response: any) {
 
             for (let index = 0; index < tags.length; index += 1) {
               if (tags[index].id) {
-                afterHandler({ id: tags[index].id, project_id, title: tags[index].title }, entity, token, action, redis);
+                afterHandler(
+                  { id: tags[index].id, project_id, title: tags[index].title },
+                  entity,
+                  context.headers,
+                  action,
+                  redis,
+                );
               }
             }
           } else {
@@ -121,7 +128,7 @@ export async function tempAfterHandle(context: any, response: any) {
 
             const project_id = context?.body?.data?.project_id || context?.response?.data?.project_id;
             const title = context?.body?.data?.title || context?.response?.data?.title;
-            if (project_id && title) afterHandler({ id, project_id, title }, entity, token, action, redis);
+            if (project_id && title) afterHandler({ id, project_id, title }, entity, context.headers, action, redis);
           }
         } else if (action === "update" || action === "arkive") {
           // @ts-ignore
@@ -148,10 +155,10 @@ export async function tempAfterHandle(context: any, response: any) {
 
           const data: any = await query.executeTakeFirstOrThrow();
 
-          afterHandler(data, entity, token, action, redis);
+          afterHandler(data, entity, context.headers, action, redis);
         } else if (action === "delete") {
           const { data } = context.response;
-          afterHandler(data, entity, token, action, redis);
+          afterHandler(data, entity, context.headers, action, redis);
         }
       }
     }

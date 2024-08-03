@@ -127,10 +127,11 @@ export const app = new Elysia({ name: "Editor.Router" })
           } = context;
           const data = await verifyJWT({ access, refresh, set });
           if (data.status === "authenticated") {
-            const { user_id, project_id } = data;
+            const { user_id, project_id, name } = data;
             headers["user-id"] = user_id;
+            headers["name"] = name || undefined;
             headers["project-id"] = project_id || undefined;
-            headers["user-image-url"] = data.user_id || undefined;
+            headers["user-image-url"] = data.image_url || undefined;
 
             const entity = getEntityFromPath(path);
             if (
