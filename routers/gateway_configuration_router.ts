@@ -4,8 +4,14 @@ import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertGatewayConfiguration, ListGatewayConfigurationSchema } from "../database/validation/gateway_configurations";
+import { getHasEntityPermission } from "../database/queries";
+import {
+  InsertGatewayConfiguration,
+  ListGatewayConfigurationSchema,
+  UpdateGatewayConfiguration,
+} from "../database/validation/gateway_configurations";
 import { MessageEnum } from "../enums";
+import { noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { getEntityWithOwnerId } from "../utils/utils";
 
@@ -145,6 +151,121 @@ export function gateway_configuration_router(app: Elysia) {
           return { data, ok: true, message: MessageEnum.success, role_access: true };
         },
         { body: ListGatewayConfigurationSchema, response: ResponseWithDataSchema },
+      )
+      .post(
+        "/update/:id",
+        async ({ params, body, permissions }) => {
+          const permissionCheck = await getHasEntityPermission("gateway_configurations", params.id, permissions);
+          if (permissionCheck) {
+            await db.transaction().execute(async (tx) => {
+              const config = await tx.updateTable("gateway_configurations").set(body.data).returning("id").executeTakeFirst();
+
+              const deleteRequests = [];
+              const requests = [];
+              if (config?.id) {
+                if (body.relations.characters.length) {
+                  deleteRequests.push(
+                    tx.deleteFrom("gateway_configuration_characters").where("parent_id", "=", params.id).execute(),
+                  );
+
+                  requests.push(
+                    tx
+                      .insertInto("gateway_configuration_characters")
+                      .values(body.relations.characters.map((related_id) => ({ related_id, parent_id: config.id })))
+                      .execute(),
+                  );
+                }
+                if (body.relations.blueprint_instances.length) {
+                  deleteRequests.push(
+                    tx.deleteFrom("gateway_configuration_blueprint_instances").where("parent_id", "=", params.id).execute(),
+                  );
+                  requests.push(
+                    tx
+                      .insertInto("gateway_configuration_blueprint_instances")
+                      .values(body.relations.blueprint_instances.map((related_id) => ({ related_id, parent_id: config.id })))
+                      .execute(),
+                  );
+                }
+                if (body.relations.documents.length) {
+                  deleteRequests.push(
+                    tx.deleteFrom("gateway_configuration_documents").where("parent_id", "=", params.id).execute(),
+                  );
+                  requests.push(
+                    tx
+                      .insertInto("gateway_configuration_documents")
+                      .values(body.relations.documents.map((related_id) => ({ related_id, parent_id: config.id })))
+                      .execute(),
+                  );
+                }
+                if (body.relations.maps.length) {
+                  deleteRequests.push(tx.deleteFrom("gateway_configuration_maps").where("parent_id", "=", params.id).execute());
+                  requests.push(
+                    tx
+                      .insertInto("gateway_configuration_maps")
+                      .values(body.relations.maps.map((related_id) => ({ related_id, parent_id: config.id })))
+                      .execute(),
+                  );
+                }
+                if (body.relations.map_pins.length) {
+                  deleteRequests.push(
+                    tx.deleteFrom("gateway_configuration_map_pins").where("parent_id", "=", params.id).execute(),
+                  );
+                  requests.push(
+                    tx
+                      .insertInto("gateway_configuration_map_pins")
+                      .values(body.relations.map_pins.map((related_id) => ({ related_id, parent_id: config.id })))
+                      .execute(),
+                  );
+                }
+                if (body.relations.events.length) {
+                  deleteRequests.push(
+                    tx.deleteFrom("gateway_configuration_events").where("parent_id", "=", params.id).execute(),
+                  );
+                  requests.push(
+                    tx
+                      .insertInto("gateway_configuration_events")
+                      .values(body.relations.events.map((related_id) => ({ related_id, parent_id: config.id })))
+                      .execute(),
+                  );
+                }
+                if (body.relations.images.length) {
+                  deleteRequests.push(
+                    tx.deleteFrom("gateway_configuration_images").where("parent_id", "=", params.id).execute(),
+                  );
+                  requests.push(
+                    tx
+                      .insertInto("gateway_configuration_images")
+                      .values(body.relations.images.map((related_id) => ({ related_id, parent_id: config.id })))
+                      .execute(),
+                  );
+                }
+                if (body.relations.random_tables.length) {
+                  deleteRequests.push(
+                    tx.deleteFrom("gateway_configuration_random_tables").where("parent_id", "=", params.id).execute(),
+                  );
+                  requests.push(
+                    tx
+                      .insertInto("gateway_configuration_random_tables")
+                      .values(body.relations.random_tables.map((related_id) => ({ related_id, parent_id: config.id })))
+                      .execute(),
+                  );
+                }
+
+                await Promise.all(deleteRequests);
+                await Promise.all(requests);
+              } else {
+                noRoleAccessErrorHandler();
+                return { message: "", ok: false, role_access: false };
+              }
+            });
+          }
+
+          return { ok: true, role_access: true, message: `Gateway configuration ${MessageEnum.successfully_created}` };
+        },
+        {
+          body: UpdateGatewayConfiguration,
+          response: ResponseSchema,
+        },
       ),
   );
 }

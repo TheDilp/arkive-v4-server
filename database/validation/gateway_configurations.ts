@@ -20,6 +20,22 @@ export const InsertGatewayConfiguration = t.Object({
   }),
 });
 
+export const UpdateGatewayConfiguration = t.Object({
+  data: t.Object({
+    title: t.Optional(t.String()),
+  }),
+  relations: t.Object({
+    characters: t.Array(t.String()),
+    blueprint_instances: t.Array(t.String()),
+    documents: t.Array(t.String()),
+    maps: t.Array(t.String()),
+    map_pins: t.Array(t.String()),
+    events: t.Array(t.String()),
+    images: t.Array(t.String()),
+    random_tables: t.Array(t.String()),
+  }),
+});
+
 export const ListGatewayConfigurationSchema = t.Intersect([
   RequestBodySchema,
   t.Object({
