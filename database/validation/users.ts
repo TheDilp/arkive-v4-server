@@ -27,6 +27,8 @@ export const InsertUserSchema = t.Object({});
 export const UpdateUserSchema = t.Object({
   data: t.Optional(
     t.Object({
+      email: t.Optional(t.String()),
+      nickname: t.Optional(t.String()),
       feature_flags: t.Optional(t.Union([t.Any(), t.Null()])),
     }),
   ),

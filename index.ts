@@ -4,7 +4,14 @@ import { Elysia } from "elysia";
 
 import { db } from "./database/db";
 // Accepts the same connection config object that the "pg" package would take
-import { EntitiesWithPermissionsEnum, ErrorEnums, NoPublicAccess, NoRoleAccess, UnauthorizedError } from "./enums";
+import {
+  EntitiesWithPermissionsEnum,
+  ErrorEnums,
+  NicknameInUse,
+  NoPublicAccess,
+  NoRoleAccess,
+  UnauthorizedError,
+} from "./enums";
 import { tempAfterHandle } from "./handlers";
 import {
   asset_router,
@@ -56,12 +63,12 @@ export const app = new Elysia({ name: "Editor.Router" })
     UNAUTHORIZED: UnauthorizedError,
     NO_PUBLIC_ACCESS: NoPublicAccess,
     NO_ROLE_ACCESS: NoRoleAccess,
+    NICKNAME_IN_USE: NicknameInUse,
   })
   .onError(({ code, error, set, cookie }) => {
     if (code === "UNAUTHORIZED") {
       const environment = process.env.NODE_ENV;
       set.status = 401;
-
       cookie.access.set({
         value: "None",
         httpOnly: true,
@@ -97,6 +104,10 @@ export const app = new Elysia({ name: "Editor.Router" })
       set.status = 400;
       console.error(error);
       return { message: "There was an error with your request.", ok: false, role_access: false };
+    }
+    if (code === "NICKNAME_IN_USE") {
+      set.status = 400;
+      return { message: "Nickname already taken.", ok: false, role_access: true };
     }
     if (code === "NO_ROLE_ACCESS") {
       set.status = 200;
@@ -166,7 +177,7 @@ export const app = new Elysia({ name: "Editor.Router" })
                 }
               } else {
                 set.status = 403;
-                throw new Error(ErrorEnums.no_role_access);
+                throw new NoRoleAccess(ErrorEnums.no_role_access);
               }
             } else {
               // @ts-ignore
@@ -174,7 +185,7 @@ export const app = new Elysia({ name: "Editor.Router" })
             }
           } else {
             set.status = 401;
-            throw new Error(ErrorEnums.unauthorized);
+            throw new UnauthorizedError(ErrorEnums.unauthorized);
           }
         },
         // @ts-ignore

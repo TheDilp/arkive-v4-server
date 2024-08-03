@@ -1,7 +1,7 @@
 import { Elysia } from "elysia";
 
 import { db } from "../database/db";
-import { ErrorEnums } from "../enums";
+import { ErrorEnums, UnauthorizedError } from "../enums";
 import { WebsocketConversationMessage } from "../types/websocketTypes";
 import { verifyJWT } from "../utils/userUtils";
 
@@ -14,7 +14,7 @@ export function websocket_router(server: Elysia) {
 
         if (verified) return;
 
-        throw new Error(ErrorEnums.unauthorized);
+        throw new UnauthorizedError(ErrorEnums.unauthorized);
       },
     },
     (app) =>

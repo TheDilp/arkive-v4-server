@@ -8,7 +8,7 @@ import { UploadUserAsset } from "../database/queries/assetQueries";
 import { InsertUserSchema, InviteUserSchema, KickUserSchema, ReadUserSchema, UpdateUserSchema } from "../database/validation";
 import { EmailGateway } from "../emails/EmailGateway";
 import { EmailInvite } from "../emails/EmailInvite";
-import { DefaultProjectFeatureFlags } from "../enums";
+import { DefaultProjectFeatureFlags, ErrorEnums, NicknameInUse } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeProjectOwnerHandler } from "../handlers";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
@@ -86,8 +86,14 @@ export function user_router(app: Elysia) {
           await db.transaction().execute(async (tx) => {
             let user;
             if (body.data) {
-              user = await tx.updateTable("users").where("id", "=", params.id).set(body.data).returning("id").execute();
-
+              try {
+                user = await tx.updateTable("users").where("id", "=", params.id).set(body.data).returning("id").execute();
+              } catch (error) {
+                // @ts-ignore
+                if (error.code === "23505" && body.data?.nickname) {
+                  throw new NicknameInUse(ErrorEnums.nickname_in_use);
+                }
+              }
               // Clear cached
               if (user?.[0]) {
                 await redis.del(`notification_flags_${params.id}`);
