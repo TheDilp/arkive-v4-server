@@ -6,6 +6,7 @@ import { InsertRoleSchema, ListRoleSchema, ReadRoleSchema, UpdateRoleSchema } fr
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeProjectOwnerHandler } from "../handlers";
 import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { constructOrdering } from "../utils/orderByConstructor";
 import { sendNotification } from "../utils/websocketUtils";
 
 export function role_router(app: Elysia) {
@@ -74,26 +75,26 @@ export function role_router(app: Elysia) {
         .post(
           "/",
           async ({ body }) => {
-            const data = await db
-              .selectFrom("roles")
-              .where("project_id", "=", body.data.project_id)
-              .select(["id", "title", "icon"])
-              .$if(!!body.relations?.permissions, (qb) => {
-                qb = qb.select([
-                  (eb) =>
-                    jsonArrayFrom(
-                      eb
-                        .selectFrom("role_permissions")
-                        .whereRef("role_id", "=", "roles.id")
-                        .leftJoin("permissions", "role_permissions.permission_id", "permissions.id")
-                        .select(["permissions.id", "permissions.title", "permissions.code"]),
-                    ).as("permissions"),
-                ]);
+            let query = db.selectFrom("roles").where("project_id", "=", body.data.project_id).select(["id", "title", "icon"]);
 
-                return qb;
-              })
-              .execute();
+            if (body.relations?.permissions) {
+              query = query.select([
+                (eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("role_permissions")
+                      .whereRef("role_id", "=", "roles.id")
+                      .leftJoin("permissions", "role_permissions.permission_id", "permissions.id")
+                      .select(["permissions.id", "permissions.title", "permissions.code"]),
+                  ).as("permissions"),
+              ]);
+            }
 
+            if (body.orderBy) {
+              query = constructOrdering(body.orderBy, query);
+            }
+
+            const data = await query.execute();
             return { data, message: MessageEnum.success, ok: true, role_access: true };
           },
           {
