@@ -8,6 +8,7 @@ import { getHasEntityPermission } from "../database/queries";
 import {
   InsertGatewayConfiguration,
   ListGatewayConfigurationSchema,
+  ReadGatewayConfigurationSchema,
   UpdateGatewayConfiguration,
 } from "../database/validation/gateway_configurations";
 import { MessageEnum } from "../enums";
@@ -132,7 +133,8 @@ export function gateway_configuration_router(app: Elysia) {
           let query = db
             .selectFrom("gateway_configurations")
             .select(body.fields as SelectExpression<DB, "gateway_configurations">[])
-            .where("project_id", "=", body.data.project_id);
+            .where("project_id", "=", body.data.project_id)
+            .orderBy("title");
 
           if (body.relations?.entities) {
             for (let index = 0; index < relatedEntities.length; index++) {
@@ -153,12 +155,43 @@ export function gateway_configuration_router(app: Elysia) {
         { body: ListGatewayConfigurationSchema, response: ResponseWithDataSchema },
       )
       .post(
+        "/:id",
+        async ({ params, body }) => {
+          let query = db
+            .selectFrom("gateway_configurations")
+            .select(body.fields as SelectExpression<DB, "gateway_configurations">[])
+            .where("gateway_configurations.id", "=", params.id);
+
+          if (body.relations?.entities) {
+            for (let index = 0; index < relatedEntities.length; index++) {
+              query = query.select((eb) =>
+                jsonArrayFrom(
+                  eb
+                    .selectFrom(relatedEntities[index])
+                    .select([`${relatedEntities[index]}.related_id`])
+                    .whereRef(`${relatedEntities[index]}.parent_id`, "=", "gateway_configurations.id"),
+                ).as(relatedEntities[index].replace("gateway_configuration_", "")),
+              );
+            }
+          }
+          const data = await query.executeTakeFirst();
+
+          return { data, ok: true, message: MessageEnum.success, role_access: true };
+        },
+        { body: ReadGatewayConfigurationSchema, response: ResponseWithDataSchema },
+      )
+      .post(
         "/update/:id",
         async ({ params, body, permissions }) => {
           const permissionCheck = await getHasEntityPermission("gateway_configurations", params.id, permissions);
           if (permissionCheck) {
             await db.transaction().execute(async (tx) => {
-              const config = await tx.updateTable("gateway_configurations").set(body.data).returning("id").executeTakeFirst();
+              const config = await tx
+                .updateTable("gateway_configurations")
+                .set(body.data)
+                .where("gateway_configurations.id", "=", params.id)
+                .returning("id")
+                .executeTakeFirst();
 
               const deleteRequests = [];
               const requests = [];
@@ -266,6 +299,21 @@ export function gateway_configuration_router(app: Elysia) {
           body: UpdateGatewayConfiguration,
           response: ResponseSchema,
         },
-      ),
+      )
+      .delete("/:id", async ({ params, permissions }) => {
+        const permissionCheck = await getHasEntityPermission("gateway_configurations", params.id, permissions);
+        if (permissionCheck) {
+          const data = await db
+            .deleteFrom("gateway_configurations")
+            .where("gateway_configurations.id", "=", params.id)
+            .returning(["id", "title", "project_id"])
+            .executeTakeFirstOrThrow();
+
+          return { data, message: `Gateway configuration ${MessageEnum.successfully_deleted}.`, ok: true, role_access: true };
+        } else {
+          noRoleAccessErrorHandler();
+          return { data: {}, message: "", ok: false, role_access: false };
+        }
+      }),
   );
 }

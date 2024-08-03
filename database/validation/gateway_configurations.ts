@@ -43,3 +43,10 @@ export const ListGatewayConfigurationSchema = t.Intersect([
     relations: t.Optional(t.Object({ entities: t.Optional(t.Boolean()) })),
   }),
 ]);
+
+export const ReadGatewayConfigurationSchema = t.Intersect([
+  RequestBodySchema,
+  t.Object({
+    relations: t.Optional(t.Object({ entities: t.Optional(t.Boolean()) })),
+  }),
+]);
