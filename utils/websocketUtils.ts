@@ -16,7 +16,8 @@ export function sendNotification(
         notification_type: string;
       }
     | {
-        event_type: "ROLE_UPDATED";
+        entity_id: string;
+        event_type: "ROLE_UPDATED" | "ROLE_ASSIGNED";
       },
 ) {
   app.server.publish(`notifications/${room}`, JSON.stringify(notification));

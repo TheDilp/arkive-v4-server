@@ -5,14 +5,7 @@ import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
 import { UploadUserAsset } from "../database/queries/assetQueries";
-import {
-  AssignRoleSchema,
-  InsertUserSchema,
-  InviteUserSchema,
-  KickUserSchema,
-  ReadUserSchema,
-  UpdateUserSchema,
-} from "../database/validation";
+import { InsertUserSchema, InviteUserSchema, KickUserSchema, ReadUserSchema, UpdateUserSchema } from "../database/validation";
 import { EmailGateway } from "../emails/EmailGateway";
 import { EmailInvite } from "../emails/EmailInvite";
 import { DefaultProjectFeatureFlags } from "../enums";
@@ -148,27 +141,7 @@ export function user_router(app: Elysia) {
           response: ResponseSchema,
         },
       )
-      .post(
-        "/assign_role",
-        async ({ body, headers }) => {
-          const project_id = headers?.["project-id"];
-          await db
-            .insertInto("user_roles")
-            .values({
-              user_id: body.data.user_id,
-              role_id: body.data.role_id,
-              project_id: project_id as string,
-            })
-            .onConflict((oc) => oc.columns(["user_id", "project_id"]).doUpdateSet({ role_id: body.data.role_id }))
-            .execute();
-          return { message: MessageEnum.success, ok: true, role_access: true };
-        },
-        {
-          body: AssignRoleSchema,
-          response: ResponseSchema,
-          beforeHandle: async (context) => beforeProjectOwnerHandler(context),
-        },
-      )
+
       .post(
         "/invite",
         async ({ body }) => {

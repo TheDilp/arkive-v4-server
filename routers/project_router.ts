@@ -4,11 +4,13 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
+import { AssignRoleSchema } from "../database/validation";
 import { DashboardSchema, InsertProjectSchema, ReadProjectSchema, UpdateProjectSchema } from "../database/validation/projects";
 import { DefaultProjectFeatureFlags } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { PermissionDecorationType, RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { deleteFolder } from "../utils/s3Utils";
+import { sendNotification } from "../utils/websocketUtils";
 
 export function project_router(app: Elysia) {
   return app.group("/projects", (server) =>
@@ -320,6 +322,40 @@ export function project_router(app: Elysia) {
         {
           body: DashboardSchema,
           response: ResponseWithDataSchema,
+        },
+      )
+      .post(
+        "/assign_role",
+        async ({ body, headers }) => {
+          const user_id = headers?.["user-id"];
+          const project_id = headers?.["project-id"];
+
+          const project = await db
+            .selectFrom("projects")
+            .select(["owner_id"])
+            .where("projects.id", "=", project_id as string)
+            .executeTakeFirst();
+
+          if (project?.owner_id !== user_id) {
+            return { message: "There was an error with this request.", ok: true, role_access: false };
+          }
+
+          await db
+            .insertInto("user_roles")
+            .values({
+              user_id: body.data.user_id,
+              role_id: body.data.role_id,
+              project_id: project_id as string,
+            })
+            .onConflict((oc) => oc.columns(["user_id", "project_id"]).doUpdateSet({ role_id: body.data.role_id }))
+            .execute();
+          sendNotification(project_id as string, { entity_id: body.data.user_id, event_type: "ROLE_ASSIGNED" });
+
+          return { message: MessageEnum.success, ok: true, role_access: true };
+        },
+        {
+          body: AssignRoleSchema,
+          response: ResponseSchema,
         },
       )
       .delete(
