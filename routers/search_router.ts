@@ -763,7 +763,7 @@ export function search_router(app: Elysia) {
               return !!formattedPermissions[entity_name];
             }).map((tb) => {
               const entity_name = newTagTables.includes(tb)
-                ? tb.replace("_tags", "")
+                ? `${tb.replace("_tags", "")}s`
                 : (tb.replace("_", "").replace("Totags", "") as EntitiesWithTags);
 
               const fields = [`${entity_name}.id`];

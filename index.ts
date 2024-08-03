@@ -133,8 +133,10 @@ export const app = new Elysia({ name: "Editor.Router" })
             headers["user-image-url"] = data.user_id || undefined;
 
             const entity = getEntityFromPath(path);
-
-            if (entity && (EntitiesWithPermissionsEnum.includes(entity) || (entity === "users" && !!project_id))) {
+            if (
+              entity &&
+              (EntitiesWithPermissionsEnum.includes(entity) || entity === "search" || (entity === "users" && !!project_id))
+            ) {
               if (user_id) {
                 const action = getPermissionOperationFromPath(path, request.method as "GET" | "POST" | "DELETE");
 
