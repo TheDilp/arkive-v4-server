@@ -29,6 +29,7 @@ export const SendWebhookSchema = t.Object({
       type: t.Union([t.Literal("random_table_roll")]),
     }),
     t.Object({ id: t.String(), title: t.String(), type: t.Literal("roll_btn") }),
+    t.Object({ id: t.String(), body: t.String(), type: t.Literal("document_pdf") }),
     t.Object({
       id: t.String(),
       type: t.Union([
