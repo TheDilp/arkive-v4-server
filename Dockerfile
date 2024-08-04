@@ -5,7 +5,7 @@ ENV HUSKY=0
 ENV NODE_ENV=production
 COPY . .
 RUN bun install --production --force
-RUN bun build ./index.ts --outdir ./dist --target bun --external 'sharp'
+RUN bun build ./index.ts --outdir ./dist --target node --external 'sharp'
 
 # Stage 2: Production stage
 FROM oven/bun:1.1.20 AS sharp
@@ -20,7 +20,6 @@ RUN bun install --include=optional sharp
 FROM oven/bun:1.1.20
 WORKDIR /usr/src/app
 ENV NODE_ENV=production
-COPY --from=sharp /usr/src/app ./
 COPY --from=sharp /usr/src/app ./
 
 USER bun
