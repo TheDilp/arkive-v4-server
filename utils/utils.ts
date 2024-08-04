@@ -1,5 +1,3 @@
-import { readFile } from "fs";
-
 import { FromTemplateRandomCountSchema } from "../database/validation";
 import { MentionTypeEnum } from "../enums";
 import { baseURLS } from "../enums/baseEnums";
@@ -411,17 +409,4 @@ export function getRandomTemplateCount(random_count: typeof FromTemplateRandomCo
   const count = Number(random_count.replace("max_", ""));
   if (typeof count === "number") return generateRandomNumber(1, count);
   return 1;
-}
-
-// Used for Discord bot avatar
-export function imageToBase64(filePath: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    readFile(filePath, (err, data) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(data.toString("base64"));
-      }
-    });
-  });
 }

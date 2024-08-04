@@ -1,4 +1,5 @@
 import { Elysia } from "elysia";
+import fs from "fs";
 import { SelectExpression } from "kysely";
 import { DB } from "kysely-codegen";
 
@@ -20,7 +21,6 @@ import {
   getDefaultEntityIcon,
   getIconUrlFromIconEnum,
   getImageURL,
-  imageToBase64,
 } from "../utils/utils";
 
 export function webhook_router(app: Elysia) {
@@ -29,7 +29,7 @@ export function webhook_router(app: Elysia) {
       .post(
         "/create",
         async ({ body }) => {
-          const webhook_avatar = await imageToBase64("public/Logo.webp");
+          const webhook_avatar = fs.readFileSync("public/Logo.webp", "base64");
           const res = await fetch(`https://discordapp.com/api/channels/${body.data.channel_id}/webhooks`, {
             method: "POST",
             headers: {

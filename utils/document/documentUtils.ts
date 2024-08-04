@@ -5,7 +5,6 @@ function createHTML(body: string) {
   const css = fs.readFileSync("./public/output.css").toString();
 
   const finalHtml = `
-
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -30,6 +29,8 @@ function createHTML(body: string) {
 
 export async function createPDF(body: string) {
   const html = createHTML(body);
+  const logoBase64 = fs.readFileSync("./public/Logo.webp", "base64");
+  const logoDataUrl = `data:image/png;base64,${logoBase64}`;
   // const outputPath = "output.pdf";
 
   // Launch a headless browser
@@ -38,7 +39,19 @@ export async function createPDF(body: string) {
 
   await page.setContent(html);
 
-  const buffer = await page.pdf({ format: "A4" });
+  const buffer = await page.pdf({
+    format: "A4",
+    preferCSSPageSize: true,
+    displayHeaderFooter: true,
+    outline: true,
+    headerTemplate: "<span></span>",
+    footerTemplate: `
+      <footer style='border-top: solid lightgrey 1px; color:grey; width:95%; margin: 0 5%; display:flex; align-items:center;'>
+        <img style='width: 32x; height:24px;' src="${logoDataUrl}" alt="Logo">
+        <span style='font-size:14px;'>This document was generated with <a href="https://thearkive.app"> The Arkive <a/></span>
+      </footer>
+    `,
+  });
 
   // Close the browser
   await browser.close();

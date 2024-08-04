@@ -1,9 +1,11 @@
+/* ======================= EDITOR ========================= */
+
 @page {
-  margin-left: 2in;
+  margin: 10mm;
+}
 
-  margin-right: 2in;
-
-  margin-bottom: 2in;
+@page :first {
+  margin-top: 0;
 }
 
 .remirror-editor-wrapper {
@@ -81,6 +83,9 @@
     @apply font-mono text-white underline decoration-dashed underline-offset-2 !important;
   } */
   :is(h1, h2, h3, h4, h5, h6) {
+    margin: 0px;
+  }
+  :is(h1, h2, h3, h4, h5, h6) {
     font-weight: 700;
   }
   h1 {
@@ -88,8 +93,8 @@
     line-height: 2rem !important;
   }
   h2 {
-    font-size: 1.25rem;
-    line-height: 1.75rem;
+    font-size: 1.25rem !important;
+    line-height: 1.75rem !important;
   }
   h3 {
     font-size: 1.125rem;
@@ -106,6 +111,14 @@
   h6 {
     font-size: 0.75rem;
     line-height: 1rem;
+  }
+  hr {
+    margin: 0;
+    margin-block-start: 0;
+    margin-block-end: 0;
+  }
+  hr {
+    margin: 0px !important;
   }
   hr {
     --tw-border-opacity: 1 !important;
