@@ -1,5 +1,5 @@
 # Stage 1: Build stage
-FROM oven/bun:1.1.20 as builder
+FROM oven/bun:1.1.20 AS builder
 WORKDIR /usr/src/app
 ENV HUSKY=0
 ENV NODE_ENV=production
@@ -8,7 +8,7 @@ RUN bun install --production --force
 RUN bun build ./index.ts --outdir ./dist --target bun --external 'sharp'
 
 # Stage 2: Production stage
-FROM oven/bun:1.1.20 as sharp
+FROM oven/bun:1.1.20 AS sharp
 WORKDIR /usr/src/app
 ENV NODE_ENV=production
 COPY --from=builder /usr/src/app/dist ./dist
@@ -21,9 +21,8 @@ FROM oven/bun:1.1.20
 WORKDIR /usr/src/app
 ENV NODE_ENV=production
 COPY --from=sharp /usr/src/app ./
-RUN bun build --entrypoints ./dist/index.js --outfile ./app --compile --sourcemap --target=bun-linux-x64-modern
-
+COPY --from=sharp /usr/src/app ./
 
 USER bun
 EXPOSE 5174/tcp
-CMD [ "./app" ]
+ENTRYPOINT [ "bun", "run", "./dist/index.js" ]
