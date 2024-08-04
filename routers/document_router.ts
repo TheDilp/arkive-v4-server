@@ -32,7 +32,6 @@ import {
   ResponseWithDataSchema,
   SearchableMentionEntities,
 } from "../types/requestTypes";
-import { createPDF } from "../utils/document/documentUtils";
 import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import {
@@ -583,12 +582,13 @@ export function document_router(app: Elysia) {
       .post(
         "/generate/pdf",
         async ({ body, set }) => {
-          const pdfBuffer = await createPDF(body.data.body);
+          // const pdfBuffer = await createPDF(body.data.body);
 
           set.headers["content-disposition"] = `attachment; filename="${body.data.title}.pdf"`;
           set.headers["content-type"] = "application/pdf";
 
-          return new Response(pdfBuffer);
+          return "ok";
+          // return new Response(pdfBuffer);
         },
         { body: GeneratePDFSchema },
       )
