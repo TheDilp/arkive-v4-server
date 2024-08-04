@@ -269,3 +269,5 @@ export const FromTemplateSchema = t.Object({
     ),
   }),
 });
+
+export const GeneratePDFSchema = t.Object({ data: t.Object({ title: t.String(), body: t.String() }) });

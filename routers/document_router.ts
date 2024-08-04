@@ -15,6 +15,7 @@ import {
   DocumentTemplateEntityTypes,
   FromTemplateSchema,
   GenerateDocumentSchema,
+  GeneratePDFSchema,
   InsertDocumentSchema,
   ListDocumentSchema,
   MentionsInDocumentSchema,
@@ -31,6 +32,7 @@ import {
   ResponseWithDataSchema,
   SearchableMentionEntities,
 } from "../types/requestTypes";
+import { createPDF } from "../utils/document/documentUtils";
 import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
 import {
@@ -522,7 +524,7 @@ export function document_router(app: Elysia) {
         },
       )
       .post(
-        "/generate/:type",
+        "/generate_from/:type",
         async ({ params, body, permissions }) => {
           if (body.data.content) {
             const { id } = await db
@@ -577,6 +579,18 @@ export function document_router(app: Elysia) {
           body: GenerateDocumentSchema,
           response: ResponseWithDataSchema,
         },
+      )
+      .post(
+        "/generate/pdf",
+        async ({ body, set }) => {
+          const pdfBuffer = await createPDF(body.data.body);
+
+          set.headers["content-disposition"] = `attachment; filename="${body.data.title}.pdf"`;
+          set.headers["content-type"] = "application/pdf";
+
+          return new Response(pdfBuffer);
+        },
+        { body: GeneratePDFSchema },
       )
       .post(
         "/automention",

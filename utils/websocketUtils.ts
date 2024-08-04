@@ -20,5 +20,5 @@ export function sendNotification(
         event_type: "ROLE_UPDATED" | "ROLE_ASSIGNED";
       },
 ) {
-  app.server.publish(`notifications/${room}`, JSON.stringify(notification));
+  if (app?.server) app?.server?.publish(`notifications/${room}`, JSON.stringify(notification));
 }

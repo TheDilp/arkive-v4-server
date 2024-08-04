@@ -54,7 +54,7 @@ import {
   websocket_router,
   word_router,
 } from "./routers";
-import { PermissionDecorationType } from "./types/requestTypes";
+import type { PermissionDecorationType } from "./types/requestTypes";
 import { getEntityFromPath, getPermissionOperationFromPath } from "./utils/requestUtils";
 import { getCookieExpiry, verifyJWT } from "./utils/userUtils";
 
@@ -240,6 +240,7 @@ export const app = new Elysia({ name: "Editor.Router" })
   .use(health_check_router)
   .use(
     cors({
+      exposeHeaders: ["content-disposition"],
       origin:
         process.env.NODE_ENV === "development"
           ? true

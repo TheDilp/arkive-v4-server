@@ -19,6 +19,9 @@
     "ecmaVersion": "latest",
     "sourceType": "module"
   },
+  "globals": {
+    "Bun": "readonly"
+  },
   "root": true,
   "plugins": ["prettier", "simple-import-sort", "import", "@typescript-eslint", "eslint-plugin-import"],
   "rules": {

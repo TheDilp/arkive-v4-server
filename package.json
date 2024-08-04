@@ -33,6 +33,7 @@
     "lodash.uniq": "^4.5.0",
     "lodash.uniqby": "^4.7.0",
     "pg": "^8.11.1",
+    "puppeteer": "^22.15.0",
     "react": "^18.2.0",
     "react-email": "^2.0.0",
     "redis": "^4.6.13",
@@ -47,6 +48,7 @@
   "devDependencies": {
     "@commitlint/cli": "^18.4.3",
     "@commitlint/config-conventional": "^18.4.3",
+    "@types/bun": "^1.1.6",
     "@types/lodash.groupby": "^4.6.7",
     "@types/lodash.merge": "^4.6.8",
     "@types/lodash.omit": "^4.5.7",
