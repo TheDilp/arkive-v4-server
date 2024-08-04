@@ -4,7 +4,7 @@ WORKDIR /usr/src/app
 ENV HUSKY=0
 ENV NODE_ENV=production
 COPY . .
-RUN bun install --production --force
+RUN bun install --force
 RUN bun build ./index.ts --outdir ./dist --target node --external 'sharp'
 
 # Stage 2: Production stage
