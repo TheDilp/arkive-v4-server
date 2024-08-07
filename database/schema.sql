@@ -737,7 +737,6 @@ CREATE TABLE public.blueprint_instances (
     updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     parent_id uuid NOT NULL,
     title text NOT NULL,
-    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
     is_public boolean,
     owner_id uuid NOT NULL,
     deleted_at timestamp(3) without time zone
@@ -995,7 +994,6 @@ CREATE TABLE public.characters (
     nickname text,
     age integer,
     portrait_id uuid,
-    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, ((COALESCE(first_name, ''::text) || ' '::text) || COALESCE(last_name, ''::text)))) STORED,
     full_name text GENERATED ALWAYS AS (((COALESCE(first_name, ''::text) || ' '::text) || COALESCE(last_name, ''::text))) STORED,
     is_public boolean,
     biography jsonb,
@@ -1067,7 +1065,6 @@ CREATE TABLE public.document_mentions (
 
 CREATE TABLE public.document_template_fields (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    parent_id uuid NOT NULL,
     key text NOT NULL,
     value text,
     formula text,
@@ -1076,10 +1073,113 @@ CREATE TABLE public.document_template_fields (
     is_randomized boolean,
     entity_type text NOT NULL,
     sort integer DEFAULT 0 NOT NULL,
-    related_id uuid,
     random_count text,
+    parent_id uuid NOT NULL,
+    blueprint_id uuid,
+    calendar_id uuid,
+    map_id uuid,
+    dictionary_id uuid,
     CONSTRAINT document_template_fields_entity_type_check CHECK ((entity_type = ANY (ARRAY['characters'::text, 'blueprint_instances'::text, 'documents'::text, 'maps'::text, 'map_pins'::text, 'graphs'::text, 'dictionaries'::text, 'events'::text, 'calendars'::text, 'words'::text, 'random_tables'::text, 'dice_roll'::text, 'derived'::text, 'custom'::text]))),
     CONSTRAINT document_template_fields_random_count_check CHECK ((random_count = ANY (ARRAY['single'::text, 'max_2'::text, 'max_3'::text, 'max_4'::text, 'max_5'::text, 'max_6'::text, 'max_7'::text, 'max_8'::text, 'max_9'::text, 'max_10'::text, 'max_11'::text, 'max_12'::text, 'max_13'::text, 'max_14'::text, 'max_15'::text, 'max_16'::text, 'max_17'::text, 'max_18'::text, 'max_19'::text, 'max_20'::text])))
+);
+
+
+--
+-- Name: document_template_fields_blueprint_instances; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.document_template_fields_blueprint_instances (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    field_id uuid NOT NULL
+);
+
+
+--
+-- Name: document_template_fields_characters; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.document_template_fields_characters (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    field_id uuid NOT NULL
+);
+
+
+--
+-- Name: document_template_fields_documents; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.document_template_fields_documents (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    field_id uuid NOT NULL
+);
+
+
+--
+-- Name: document_template_fields_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.document_template_fields_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    field_id uuid NOT NULL
+);
+
+
+--
+-- Name: document_template_fields_graphs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.document_template_fields_graphs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    field_id uuid NOT NULL
+);
+
+
+--
+-- Name: document_template_fields_map_pins; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.document_template_fields_map_pins (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    field_id uuid NOT NULL
+);
+
+
+--
+-- Name: document_template_fields_maps; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.document_template_fields_maps (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    field_id uuid NOT NULL
+);
+
+
+--
+-- Name: document_template_fields_random_tables; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.document_template_fields_random_tables (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    field_id uuid NOT NULL
+);
+
+
+--
+-- Name: document_template_fields_words; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.document_template_fields_words (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    field_id uuid NOT NULL
 );
 
 
@@ -1233,8 +1333,7 @@ CREATE TABLE public.events (
     end_hours integer,
     end_minutes integer,
     deleted_at timestamp(3) without time zone,
-    owner_id uuid NOT NULL,
-    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED
+    owner_id uuid NOT NULL
 );
 
 
@@ -1422,7 +1521,6 @@ CREATE TABLE public.graphs (
     default_edge_color text DEFAULT '#595959'::text NOT NULL,
     project_id uuid NOT NULL,
     parent_id uuid,
-    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
     owner_id uuid NOT NULL,
     deleted_at timestamp(3) without time zone,
     CONSTRAINT id_cannot_equal_parent_id_graphs CHECK ((id <> parent_id))
@@ -1640,7 +1738,6 @@ CREATE TABLE public.map_pins (
     image_id uuid,
     character_id uuid,
     map_pin_type_id uuid,
-    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
     deleted_at timestamp(3) without time zone,
     owner_id uuid NOT NULL
 );
@@ -1662,7 +1759,6 @@ CREATE TABLE public.maps (
     project_id uuid NOT NULL,
     parent_id uuid,
     image_id uuid,
-    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
     owner_id uuid NOT NULL,
     deleted_at timestamp(3) without time zone,
     CONSTRAINT id_cannot_equal_parent_id_maps CHECK ((id <> parent_id))
@@ -1981,7 +2077,6 @@ CREATE TABLE public.words (
     description text,
     translation text NOT NULL,
     parent_id uuid NOT NULL,
-    ts tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, title)) STORED,
     deleted_at timestamp(3) without time zone,
     owner_id uuid NOT NULL,
     is_public boolean
@@ -2333,11 +2428,83 @@ ALTER TABLE ONLY public.document_mentions
 
 
 --
+-- Name: document_template_fields_blueprint_instances document_template_fields_blueprint_instances_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_blueprint_instances
+    ADD CONSTRAINT document_template_fields_blueprint_instances_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: document_template_fields_characters document_template_fields_characters_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_characters
+    ADD CONSTRAINT document_template_fields_characters_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: document_template_fields_documents document_template_fields_documents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_documents
+    ADD CONSTRAINT document_template_fields_documents_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: document_template_fields_events document_template_fields_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_events
+    ADD CONSTRAINT document_template_fields_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: document_template_fields_graphs document_template_fields_graphs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_graphs
+    ADD CONSTRAINT document_template_fields_graphs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: document_template_fields_map_pins document_template_fields_map_pins_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_map_pins
+    ADD CONSTRAINT document_template_fields_map_pins_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: document_template_fields_maps document_template_fields_maps_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_maps
+    ADD CONSTRAINT document_template_fields_maps_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: document_template_fields document_template_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.document_template_fields
     ADD CONSTRAINT document_template_fields_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: document_template_fields_random_tables document_template_fields_random_tables_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_random_tables
+    ADD CONSTRAINT document_template_fields_random_tables_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: document_template_fields_words document_template_fields_words_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_words
+    ADD CONSTRAINT document_template_fields_words_pkey PRIMARY KEY (id);
 
 
 --
@@ -3136,13 +3303,6 @@ CREATE UNIQUE INDEX blueprint_instance_random_tables_blueprint_instance_id_blue_
 
 
 --
--- Name: bpi_ts_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX bpi_ts_index ON public.blueprint_instances USING gin (ts);
-
-
---
 -- Name: character_calendar_fields_character_id_key; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3161,13 +3321,6 @@ CREATE UNIQUE INDEX character_random_table_fields_character_id_blue_key ON publi
 --
 
 CREATE UNIQUE INDEX character_relationship_types_project_id_title_key ON public.character_relationship_types USING btree (project_id, title);
-
-
---
--- Name: character_ts_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX character_ts_index ON public.characters USING gin (ts);
 
 
 --
@@ -3192,13 +3345,6 @@ CREATE UNIQUE INDEX event_map_pin_unique ON public.event_map_pins USING btree (e
 
 
 --
--- Name: graphs_ts_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX graphs_ts_index ON public.graphs USING gin (ts);
-
-
---
 -- Name: idx_characters_full_name_ilike; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3217,13 +3363,6 @@ CREATE INDEX idx_documents_title_ilike ON public.documents USING gin (title publ
 --
 
 CREATE UNIQUE INDEX images_project_image_id_key ON public.images USING btree (project_image_id);
-
-
---
--- Name: maps_ts_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX maps_ts_index ON public.maps USING gin (ts);
 
 
 --
@@ -3259,13 +3398,6 @@ CREATE UNIQUE INDEX webhooks_id_user_id_key ON public.webhooks USING btree (id, 
 --
 
 CREATE UNIQUE INDEX words_title_translation_parent_id_key ON public.words USING btree (title, translation, parent_id);
-
-
---
--- Name: words_ts_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX words_ts_index ON public.words USING gin (ts);
 
 
 --
@@ -4438,6 +4570,54 @@ ALTER TABLE ONLY public.dictionaries
 
 
 --
+-- Name: document_template_fields document_template_fields_blueprint_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields
+    ADD CONSTRAINT document_template_fields_blueprint_id_fkey FOREIGN KEY (blueprint_id) REFERENCES public.blueprints(id) ON DELETE SET NULL;
+
+
+--
+-- Name: document_template_fields_blueprint_instances document_template_fields_blueprint_instances_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_blueprint_instances
+    ADD CONSTRAINT document_template_fields_blueprint_instances_field_id_fkey FOREIGN KEY (field_id) REFERENCES public.document_template_fields(id) ON DELETE CASCADE;
+
+
+--
+-- Name: document_template_fields_blueprint_instances document_template_fields_blueprint_instances_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_blueprint_instances
+    ADD CONSTRAINT document_template_fields_blueprint_instances_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.blueprint_instances(id) ON DELETE CASCADE;
+
+
+--
+-- Name: document_template_fields document_template_fields_calendar_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields
+    ADD CONSTRAINT document_template_fields_calendar_id_fkey FOREIGN KEY (calendar_id) REFERENCES public.calendars(id) ON DELETE SET NULL;
+
+
+--
+-- Name: document_template_fields_characters document_template_fields_characters_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_characters
+    ADD CONSTRAINT document_template_fields_characters_field_id_fkey FOREIGN KEY (field_id) REFERENCES public.document_template_fields(id) ON DELETE CASCADE;
+
+
+--
+-- Name: document_template_fields_characters document_template_fields_characters_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_characters
+    ADD CONSTRAINT document_template_fields_characters_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.characters(id) ON DELETE CASCADE;
+
+
+--
 -- Name: document_template_fields document_template_fields_derive_from_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4446,11 +4626,131 @@ ALTER TABLE ONLY public.document_template_fields
 
 
 --
--- Name: document_template_fields document_template_fields_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: document_template_fields document_template_fields_dictionary_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.document_template_fields
-    ADD CONSTRAINT document_template_fields_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.documents(id) ON DELETE CASCADE;
+    ADD CONSTRAINT document_template_fields_dictionary_id_fkey FOREIGN KEY (dictionary_id) REFERENCES public.dictionaries(id) ON DELETE SET NULL;
+
+
+--
+-- Name: document_template_fields_documents document_template_fields_documents_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_documents
+    ADD CONSTRAINT document_template_fields_documents_field_id_fkey FOREIGN KEY (field_id) REFERENCES public.document_template_fields(id) ON DELETE CASCADE;
+
+
+--
+-- Name: document_template_fields_documents document_template_fields_documents_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_documents
+    ADD CONSTRAINT document_template_fields_documents_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.documents(id) ON DELETE CASCADE;
+
+
+--
+-- Name: document_template_fields_events document_template_fields_events_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_events
+    ADD CONSTRAINT document_template_fields_events_field_id_fkey FOREIGN KEY (field_id) REFERENCES public.document_template_fields(id) ON DELETE CASCADE;
+
+
+--
+-- Name: document_template_fields_events document_template_fields_events_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_events
+    ADD CONSTRAINT document_template_fields_events_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.events(id) ON DELETE CASCADE;
+
+
+--
+-- Name: document_template_fields_graphs document_template_fields_graphs_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_graphs
+    ADD CONSTRAINT document_template_fields_graphs_field_id_fkey FOREIGN KEY (field_id) REFERENCES public.document_template_fields(id) ON DELETE CASCADE;
+
+
+--
+-- Name: document_template_fields_graphs document_template_fields_graphs_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_graphs
+    ADD CONSTRAINT document_template_fields_graphs_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.graphs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: document_template_fields document_template_fields_map_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields
+    ADD CONSTRAINT document_template_fields_map_id_fkey FOREIGN KEY (map_id) REFERENCES public.maps(id) ON DELETE SET NULL;
+
+
+--
+-- Name: document_template_fields_map_pins document_template_fields_map_pins_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_map_pins
+    ADD CONSTRAINT document_template_fields_map_pins_field_id_fkey FOREIGN KEY (field_id) REFERENCES public.document_template_fields(id) ON DELETE CASCADE;
+
+
+--
+-- Name: document_template_fields_map_pins document_template_fields_map_pins_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_map_pins
+    ADD CONSTRAINT document_template_fields_map_pins_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.map_pins(id) ON DELETE CASCADE;
+
+
+--
+-- Name: document_template_fields_maps document_template_fields_maps_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_maps
+    ADD CONSTRAINT document_template_fields_maps_field_id_fkey FOREIGN KEY (field_id) REFERENCES public.document_template_fields(id) ON DELETE CASCADE;
+
+
+--
+-- Name: document_template_fields_maps document_template_fields_maps_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_maps
+    ADD CONSTRAINT document_template_fields_maps_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.maps(id) ON DELETE CASCADE;
+
+
+--
+-- Name: document_template_fields_random_tables document_template_fields_random_tables_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_random_tables
+    ADD CONSTRAINT document_template_fields_random_tables_field_id_fkey FOREIGN KEY (field_id) REFERENCES public.document_template_fields(id) ON DELETE CASCADE;
+
+
+--
+-- Name: document_template_fields_random_tables document_template_fields_random_tables_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_random_tables
+    ADD CONSTRAINT document_template_fields_random_tables_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.random_tables(id) ON DELETE CASCADE;
+
+
+--
+-- Name: document_template_fields_words document_template_fields_words_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_words
+    ADD CONSTRAINT document_template_fields_words_field_id_fkey FOREIGN KEY (field_id) REFERENCES public.document_template_fields(id) ON DELETE CASCADE;
+
+
+--
+-- Name: document_template_fields_words document_template_fields_words_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields_words
+    ADD CONSTRAINT document_template_fields_words_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.words(id) ON DELETE CASCADE;
 
 
 --
@@ -5431,4 +5731,7 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240726104432'),
     ('20240727080249'),
     ('20240801144906'),
-    ('20240803103249');
+    ('20240803103249'),
+    ('20240803133144'),
+    ('20240805080236'),
+    ('20240807090427');

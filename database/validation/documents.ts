@@ -74,14 +74,19 @@ export const InsertDocumentSchema = t.Object({
         t.Array(
           t.Object({
             key: t.String(),
+            blueprint_id: t.Optional(t.Union([t.Null(), t.String()])),
+            map_id: t.Optional(t.Union([t.Null(), t.String()])),
+            calendar_id: t.Optional(t.Union([t.Null(), t.String()])),
+            dictionary_id: t.Optional(t.Union([t.Null(), t.String()])),
             value: t.Union([t.Null(), t.String()]),
             formula: t.Union([t.Null(), t.String()]),
             derive_from: t.Union([t.Null(), t.String()]),
             derive_formula: t.Union([t.Null(), t.String()]),
             entity_type: DocumentTemplateEntityTypes,
             is_randomized: t.Union([t.Boolean(), t.Null()]),
-            related_id: t.Union([t.String(), t.Null()]),
-            sort: t.Number(),
+            random_count: t.Optional(t.Union([t.String(), t.Null()])),
+            sort: t.Number({ default: 0 }),
+            related: t.Array(t.String()),
           }),
         ),
       ),
@@ -151,13 +156,18 @@ export const UpdateDocumentSchema = t.Object({
             id: t.String(),
             key: t.String(),
             value: t.Union([t.Null(), t.String()]),
+            blueprint_id: t.Optional(t.Union([t.Null(), t.String()])),
+            map_id: t.Optional(t.Union([t.Null(), t.String()])),
+            calendar_id: t.Optional(t.Union([t.Null(), t.String()])),
+            dictionary_id: t.Optional(t.Union([t.Null(), t.String()])),
             formula: t.Union([t.Null(), t.String()]),
             derive_from: t.Union([t.Null(), t.String()]),
             derive_formula: t.Union([t.Null(), t.String()]),
             entity_type: DocumentTemplateEntityTypes,
             is_randomized: t.Union([t.Boolean(), t.Null()]),
-            related_id: t.Union([t.String(), t.Null()]),
-            sort: t.Number(),
+            random_count: t.Optional(t.Union([t.String(), t.Null()])),
+            related: t.Array(t.String()),
+            sort: t.Number({ default: 0 }),
           }),
         ),
       ),
@@ -252,7 +262,7 @@ export const FromTemplateRandomCountSchema = t.Union([
 ]);
 
 export const FromTemplateSchema = t.Object({
-  data: t.Object({ project_id: t.String(), title: t.String(), content: t.Any() }),
+  data: t.Object({ title: t.String(), content: t.Any() }),
   relations: t.Object({
     template_fields: t.Array(
       t.Object(
@@ -262,7 +272,7 @@ export const FromTemplateSchema = t.Object({
           entity_type: DocumentTemplateEntityTypes,
           is_randomized: t.Union([t.Boolean(), t.Null()]),
           random_count: t.Optional(FromTemplateRandomCountSchema),
-          related_id: t.Union([t.String(), t.Null()]),
+          related: t.Union([t.Array(t.String()), t.Null()]),
         },
         { additionalProperties: true },
       ),

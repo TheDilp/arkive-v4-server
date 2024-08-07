@@ -1,18 +1,18 @@
 import { Elysia } from "elysia";
-import { SelectExpression, SelectQueryBuilder, sql } from "kysely";
+import { SelectExpression } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
-import { DB } from "kysely-codegen";
+import { DB, DocumentTemplateFields } from "kysely-codegen";
 import merge from "lodash.merge";
-import omit from "lodash.omit";
 import uniq from "lodash.uniq";
 import uniqBy from "lodash.uniqby";
 
 import { db } from "../database/db";
-import { checkEntityLevelPermission, getHasEntityPermission, getNestedReadPermission } from "../database/queries";
-import { DBKeys, EntitiesWithChildren } from "../database/types";
+import { checkEntityLevelPermission, getHasEntityPermission, getNestedReadPermission, readDocument } from "../database/queries";
+import { DBKeys } from "../database/types";
 import {
   AutolinkerSchema,
   DocumentTemplateEntityTypes,
+  FromTemplateRandomCountSchema,
   FromTemplateSchema,
   GenerateDocumentSchema,
   GeneratePDFSchema,
@@ -22,7 +22,7 @@ import {
   ReadDocumentSchema,
   UpdateDocumentSchema,
 } from "../database/validation/documents";
-import { DocumentTemplateEntities } from "../enums";
+import { DocumentTemplateEntities, DocumentTemplateFieldEntitiesWithRelated } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { noRoleAccessErrorHandler } from "../handlers";
 import { EntitiesWithPermissionCheck, MentionType } from "../types/entityTypes";
@@ -37,17 +37,13 @@ import { constructOrdering } from "../utils/orderByConstructor";
 import {
   CreateEntityPermissions,
   CreateTagRelations,
-  GetEntityChildren,
-  GetParents,
   GetRelatedEntityPermissionsAndRoles,
-  GetRelationsForUpdating,
   TagQuery,
   UpdateEntityPermissions,
   UpdateTagRelations,
 } from "../utils/relationalQueryHelpers";
 import { getAutomentionFields } from "../utils/requestUtils";
 import {
-  buildTSQueryString,
   findObjectsByType,
   getCharacterFullName,
   getEntityWithOwnerId,
@@ -125,24 +121,54 @@ export function document_router(app: Elysia) {
               .returning("id")
               .executeTakeFirstOrThrow();
 
-            if (body.relations?.alter_names?.length) {
-              const { alter_names } = body.relations;
-              await tx
-                .insertInto("alter_names")
-                .values(
-                  alter_names.map((alter_name) => ({
-                    title: alter_name.title,
-                    project_id: body.data.project_id,
-                    parent_id: document.id,
-                  })),
-                )
-                .execute();
-            }
-            if (body.relations?.template_fields?.length) {
-              await tx
-                .insertInto("document_template_fields")
-                .values(body.relations.template_fields.map((f) => ({ ...f, parent_id: document.id })))
-                .execute();
+            if (body.relations?.template_fields) {
+              for (let index = 0; index < body.relations.template_fields.length; index++) {
+                const field = body.relations.template_fields[index];
+                const template_field = {
+                  key: field.key,
+                  value: field.value,
+                  formula: field.formula,
+                  derive_from: field.derive_from,
+                  derive_formula: field.derive_formula,
+                  is_randomized: field.is_randomized,
+                  entity_type: field.entity_type,
+                  sort: field.sort,
+                  random_count: field.random_count,
+                  parent_id: document.id,
+                  blueprint_id: field.blueprint_id || null,
+                  map_id: field.map_id || null,
+                  calendar_id: field.calendar_id || null,
+                  dictionary_id: field.dictionary_id || null,
+                };
+                const new_field = await tx
+                  .insertInto("document_template_fields")
+                  .values(template_field)
+                  .returning("id")
+                  .executeTakeFirst();
+
+                if (DocumentTemplateFieldEntitiesWithRelated.includes(template_field.entity_type)) {
+                  const related = body.relations.template_fields[index].related.filter((r) => !!r);
+                  if (related.length && new_field) {
+                    await tx
+                      .insertInto(
+                        `document_template_fields_${
+                          template_field.entity_type as
+                            | "characters"
+                            | "blueprint_instances"
+                            | "documents"
+                            | "maps"
+                            | "map_pins"
+                            | "graphs"
+                            | "events"
+                            | "words"
+                            | "random_tables"
+                        }`,
+                      )
+                      .values(related.map((related_id) => ({ related_id, field_id: new_field.id })))
+                      .execute();
+                  }
+                }
+              }
             }
             if (body.relations?.tags?.length) {
               const { tags } = body.relations;
@@ -150,7 +176,7 @@ export function document_router(app: Elysia) {
             }
           });
 
-          return { message: `Document ${MessageEnum.successfully_created}`, ok: true, role_access: true };
+          return { data: { id: "" }, message: `Document ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
           body: InsertDocumentSchema,
@@ -159,100 +185,135 @@ export function document_router(app: Elysia) {
       )
       .post(
         "/create/from_template/:id",
-        async ({ body, permissions }) => {
+        async ({ params, body, permissions }) => {
           let content = JSON.stringify(body.data.content);
-          await db.transaction().execute(async (tx) => {
-            for (let index = 0; index < body.relations.template_fields.length; index += 1) {
-              const field = body.relations.template_fields[index];
+          // @ts-ignore
+          const template = (await readDocument(
+            {
+              relations: { template_fields: true },
+              fields: [],
+            },
+            { id: params.id },
+            permissions,
+            false,
+          )) as {
+            template_fields: (DocumentTemplateFields & {
+              random_count: typeof FromTemplateRandomCountSchema.static;
+              entity_type: typeof DocumentTemplateEntityTypes.static;
+              related: string[];
+            })[];
+          };
+          console.log(template?.template_fields);
+          if (template) {
+            await db.transaction().execute(async (tx) => {
+              for (let index = 0; index < (template?.template_fields?.length || 0); index += 1) {
+                const field = template.template_fields[index];
 
-              if (
-                (field.is_randomized || field.entity_type === "random_tables") &&
-                DocumentTemplateEntities.includes(field.entity_type)
-              ) {
-                const limit = getRandomTemplateCount(field.random_count || "single");
+                if (
+                  (field.is_randomized || field.entity_type === "random_tables") &&
+                  DocumentTemplateEntities.includes(field.entity_type)
+                ) {
+                  const limit = getRandomTemplateCount(field.random_count || "single");
 
-                if (field.entity_type === "random_tables" && field.value) {
-                  let query = tx
-                    .selectFrom("random_tables")
-                    .select([
-                      (eb) =>
-                        jsonArrayFrom(
-                          eb
-                            .selectFrom("random_table_options")
-                            .select(["title"])
-                            .whereRef("parent_id", "=", "random_tables.id")
-                            .limit(limit),
-                        ).as("random_table_options"),
-                    ])
-                    .where("id", "=", field.related_id)
-                    .where("project_id", "=", body.data.project_id);
+                  if (field.entity_type === "random_tables" && field.value) {
+                    let query = tx
+                      .selectFrom("random_tables")
+                      .select([
+                        (eb) =>
+                          jsonArrayFrom(
+                            eb
+                              .selectFrom("random_table_options")
+                              .select(["title"])
+                              .whereRef("parent_id", "=", "random_tables.id")
+                              .limit(limit),
+                          ).as("random_table_options"),
+                      ])
+                      .where("id", "in", field.related)
+                      .where("project_id", "=", permissions.project_id);
 
-                  const related = await query.executeTakeFirst();
+                    const related = await query.executeTakeFirst();
 
-                  if (related && related.random_table_options.length > 0) {
-                    const result_string = related.random_table_options.map((r) => r.title).join(", ");
-                    content = content.replaceAll(`%{${field.key}}%`, result_string);
+                    if (related && related.random_table_options.length > 0) {
+                      const result_string = related.random_table_options.map((r) => r.title).join(", ");
+                      content = content.replaceAll(`%{${field.key}}%`, result_string);
+                    }
+                  } else {
+                    let query = tx
+                      .selectFrom(field.entity_type as DBKeys)
+                      .select(getDocumentTemplateEntityFields(field.entity_type) as ["title"])
+                      .orderBy((ob) => ob.fn("random"))
+                      .limit(limit);
+
+                    if (field.entity_type === "blueprint_instances")
+                      // @ts-ignore
+                      query = query
+                        .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+                        .where("blueprints.project_id", "=", permissions.project_id)
+                        .where("parent_id", "=", field.blueprint_id);
+                    else if (field.entity_type === "events")
+                      // @ts-ignore
+                      query = query
+                        .leftJoin("calendars", "calendars.id", "events.parent_id")
+                        .where("calendars.project_id", "=", permissions.project_id)
+                        .where("calendars.id", "=", field.calendar_id);
+                    else if (field.entity_type === "map_pins")
+                      // @ts-ignore
+                      query = query
+                        .leftJoin("maps", "maps.id", "map_pins.parent_id")
+                        .where("maps.project_id", "=", permissions.project_id)
+                        .where("maps.id", "=", field.map_id)
+                        .where("map_pins.title", "is not", null);
+                    else if (field.entity_type === "words")
+                      // @ts-ignore
+                      query = query
+                        .leftJoin("dictionaries", "dictionaries.id", "words.parent_id")
+                        .where("dictionaries.project_id", "=", permissions.project_id)
+                        .where("dictionaries.id", "=", field.dictionary_id);
+                    else {
+                      query = query.where("project_id", "=", permissions.project_id);
+                    }
+
+                    const result = await query.execute();
+
+                    if (result && result.length > 0) {
+                      const result_string = result.map((r) => r.title).join(", ");
+                      content = content.replaceAll(`%{${field.key}}%`, result_string);
+                    }
                   }
-                } else {
-                  let query = tx
-                    .selectFrom(field.entity_type as DBKeys)
-                    .select(getDocumentTemplateEntityFields(field.entity_type) as ["title"])
-                    .orderBy((ob) => ob.fn("random"))
-                    .limit(limit);
+                } else if (!field.is_randomized) {
+                  if (DocumentTemplateFieldEntitiesWithRelated.includes(field.entity_type) && field.related.length) {
+                    let query = tx
+                      .selectFrom(field.entity_type as DBKeys)
+                      .select(getDocumentTemplateEntityFields(field.entity_type) as ["title"])
+                      .where("id", "in", field.related);
 
-                  if (field.entity_type === "blueprint_instances")
-                    // @ts-ignore
-                    query = query
-                      .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
-                      .where("blueprints.project_id", "=", body.data.project_id)
-                      .where("parent_id", "=", field.related_id);
-                  else if (field.entity_type === "events")
-                    // @ts-ignore
-                    query = query
-                      .leftJoin("calendars", "calendars.id", "events.parent_id")
-                      .where("calendars.project_id", "=", body.data.project_id)
-                      .where("calendars.id", "=", field.related_id);
-                  else if (field.entity_type === "map_pins")
-                    // @ts-ignore
-                    query = query
-                      .leftJoin("maps", "maps.id", "map_pins.parent_id")
-                      .where("maps.project_id", "=", body.data.project_id)
-                      .where("maps.id", "=", field.related_id)
-                      .where("map_pins.title", "is not", null);
-                  else if (field.entity_type === "words")
-                    // @ts-ignore
-                    query = query
-                      .leftJoin("dictionaries", "dictionaries.id", "words.parent_id")
-                      .where("dictionaries.project_id", "=", body.data.project_id)
-                      .where("dictionaries.id", "=", field.related_id);
-                  else {
-                    query = query.where("project_id", "=", body.data.project_id);
-                  }
+                    const result = await query.execute();
 
-                  const related = await query.execute();
-
-                  if (related && related.length > 0) {
-                    const result_string = related.map((r) => r.title).join(", ");
-                    content = content.replaceAll(`%{${field.key}}%`, result_string);
+                    if (result && result.length > 0) {
+                      const result_string = result.map((r) => r.title).join(", ");
+                      content = content.replaceAll(`%{${field.key}}%`, result_string);
+                    }
+                  } else if (DocumentTemplateFieldEntitiesWithRelated.includes(field.entity_type) && !!field.value) {
+                    content = content.replaceAll(`%{${field.key}}%`, field.value);
                   }
                 }
-              } else if (!field.is_randomized && !!field.value) {
-                content = content.replaceAll(`%{${field.key}}%`, field.value);
               }
+            });
+
+            try {
+              const data = {
+                title: body.data.title,
+                content: JSON.parse(content),
+                owner_id: permissions.user_id,
+                project_id: permissions.project_id as string,
+              };
+              return { data, message: "Document successfully generated.", ok: true, role_access: true };
+            } catch (error) {
+              console.error("COULD NOT GENERATE TEMPLATE - ERROR: ", error);
+              return { data: {}, message: "Document could not be generated.", ok: false, role_access: true };
             }
-          });
-          try {
-            const data = {
-              title: body.data.title,
-              content: JSON.parse(content),
-              owner_id: permissions.user_id,
-              project_id: permissions.project_id as string,
-            };
-            return { data, message: "Document successfully generated.", ok: true, role_access: true };
-          } catch (error) {
-            console.error("COULD NOT GENERATE TEMPLATE - ERROR: ", error);
-            return { data: {}, message: "Document could not be generated.", ok: false, role_access: true };
           }
+          return { data: {}, message: "Document could not be generated.", ok: false, role_access: true };
         },
         {
           body: FromTemplateSchema,
@@ -324,85 +385,10 @@ export function document_router(app: Elysia) {
           response: ResponseWithDataSchema,
         },
       )
-      .post(
-        "/:id",
-        async ({ params, body, permissions }) => {
-          let query = db
-            .selectFrom("documents")
-            .where("documents.id", "=", params.id)
-            .select(body.fields.map((f) => `documents.${f}`) as SelectExpression<DB, "documents">[]);
-          if (body?.relations) {
-            if (body?.relations?.tags && permissions.all_permissions?.read_tags) {
-              query = query.select((eb) =>
-                TagQuery(eb, "_documentsTotags", "documents", permissions.is_project_owner, permissions.user_id),
-              );
-            }
-            if (body?.relations?.alter_names) {
-              query = query.select((eb) => {
-                return jsonArrayFrom(
-                  eb
-                    .selectFrom("alter_names")
-                    .select(["alter_names.id", "alter_names.title"])
-                    .where("parent_id", "=", params.id),
-                ).as("alter_names");
-              });
-            }
-            if (body?.relations?.image) {
-              query = query.select((eb) => {
-                let image_query = eb
-                  .selectFrom("images")
-                  .select(["images.id", "images.title"])
-                  .whereRef("images.id", "=", "documents.image_id");
-                image_query = getNestedReadPermission(
-                  image_query,
-                  permissions.is_project_owner,
-                  permissions.user_id,
-                  "documents.image_id",
-                  "read_assets",
-                );
-
-                return jsonObjectFrom(image_query).as("image");
-              });
-            }
-            if (body?.relations?.template_fields) {
-              query = query.select((eb) => {
-                let template_fields_query = eb
-                  .selectFrom("document_template_fields")
-                  .selectAll()
-                  .orderBy("sort asc")
-                  .where("document_template_fields.parent_id", "=", params.id);
-
-                return jsonArrayFrom(template_fields_query).as("template_fields");
-              });
-            }
-          }
-
-          if (body?.relations?.children) {
-            GetEntityChildren(query as SelectQueryBuilder<DB, EntitiesWithChildren, {}>, "documents");
-          }
-
-          if (permissions.is_project_owner) {
-            query = query.leftJoin("entity_permissions", (join) => join.on("entity_permissions.related_id", "=", params.id));
-          } else {
-            query = checkEntityLevelPermission(query, permissions, "documents", params.id);
-          }
-          if (body.permissions) {
-            query = GetRelatedEntityPermissionsAndRoles(query, permissions, "documents", params.id);
-          }
-
-          const data = await query.executeTakeFirst();
-          if (body?.relations?.parents && !!data) {
-            const parents = await GetParents({ db, id: params.id, table_name: "documents" });
-            data.parents = parents;
-            return { data, message: MessageEnum.success, ok: true, role_access: true };
-          }
-          return { data, message: MessageEnum.success, ok: true, role_access: true };
-        },
-        {
-          body: ReadDocumentSchema,
-          response: ResponseWithDataSchema,
-        },
-      )
+      .post("/:id", async ({ params, body, permissions }) => readDocument(body, params, permissions, false), {
+        body: ReadDocumentSchema,
+        response: ResponseWithDataSchema,
+      })
       .post(
         "/update/:id",
         async ({ params, body, permissions }) => {
@@ -433,39 +419,103 @@ export function document_router(app: Elysia) {
                   .execute();
               }
               if (body.relations?.template_fields) {
-                const existingTemplateFields = await tx
-                  .selectFrom("document_template_fields")
-                  .select(["document_template_fields.id"])
-                  .where("parent_id", "=", params.id)
+                await tx
+                  .deleteFrom("document_template_fields")
+                  .where(
+                    "id",
+                    "in",
+                    body.relations.template_fields.map((f) => f.id),
+                  )
                   .execute();
 
-                const existingIds = existingTemplateFields.map((field) => field.id);
-
-                const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
-                  existingIds,
-                  body.relations?.template_fields || [],
-                );
-                if (idsToRemove.length) {
-                  await tx.deleteFrom("document_template_fields").where("id", "in", idsToRemove).execute();
-                }
-                if (itemsToAdd.length) {
-                  await tx
+                for (let index = 0; index < body.relations.template_fields.length; index++) {
+                  const field = body.relations.template_fields[index];
+                  const template_field = {
+                    key: field.key,
+                    value: field.value,
+                    formula: field.formula,
+                    derive_from: field.derive_from,
+                    derive_formula: field.derive_formula,
+                    is_randomized: field.is_randomized,
+                    entity_type: field.entity_type,
+                    sort: field.sort,
+                    random_count: field.random_count,
+                    blueprint_id: field.blueprint_id || null,
+                    map_id: field.map_id || null,
+                    calendar_id: field.calendar_id || null,
+                    dictionary_id: field.dictionary_id || null,
+                    parent_id: params.id,
+                  };
+                  const new_field = await tx
                     .insertInto("document_template_fields")
-                    .values(itemsToAdd.map((i) => ({ ...i, key: i.key, entity_type: i.entity_type, parent_id: params.id })))
-                    .execute();
+                    .values(template_field)
+                    .returning("id")
+                    .executeTakeFirst();
+
+                  if (DocumentTemplateFieldEntitiesWithRelated.includes(template_field.entity_type)) {
+                    const related = body.relations.template_fields[index].related.filter((r) => !!r);
+                    if (related.length && new_field) {
+                      await tx
+                        .insertInto(
+                          `document_template_fields_${
+                            template_field.entity_type as
+                              | "characters"
+                              | "blueprint_instances"
+                              | "documents"
+                              | "maps"
+                              | "map_pins"
+                              | "graphs"
+                              | "events"
+                              | "words"
+                              | "random_tables"
+                          }`,
+                        )
+                        .values(related.map((related_id) => ({ related_id, field_id: new_field.id })))
+                        .execute();
+                    }
+                  }
                 }
-                if (itemsToUpdate.length) {
-                  await Promise.all(
-                    itemsToUpdate.map(async (item) =>
-                      tx
-                        .updateTable("document_template_fields")
-                        .where("parent_id", "=", params.id)
-                        .where("id", "=", item.id)
-                        .set({ ...omit(item, ["id"]), parent_id: params.id })
-                        .execute(),
-                    ),
-                  );
-                }
+
+                // const existingTemplateFields = await tx
+                //   .selectFrom("document_template_fields")
+                //   .select(["document_template_fields.id"])
+                //   .where("parent_id", "=", params.id)
+                //   .execute();
+
+                // const existingIds = existingTemplateFields.map((field) => field.id);
+
+                // const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
+                //   existingIds,
+                //   body.relations?.template_fields || [],
+                // );
+                // if (idsToRemove.length) {
+                //   await tx.deleteFrom("document_template_fields").where("id", "in", idsToRemove).execute();
+                // }
+                // if (itemsToAdd.length) {
+                //   await tx
+                //     .insertInto("document_template_fields")
+                //     .values(
+                //       itemsToAdd.map((i) => ({
+                //         ...omit(i, "related"),
+                //         key: i.key,
+                //         entity_type: i.entity_type,
+                //         parent_id: params.id,
+                //       })),
+                //     )
+                //     .execute();
+                // }
+                // if (itemsToUpdate.length) {
+                //   await Promise.all(
+                //     itemsToUpdate.map(async (item) =>
+                //       tx
+                //         .updateTable("document_template_fields")
+                //         .where("parent_id", "=", params.id)
+                //         .where("id", "=", item.id)
+                //         .set({ ...omit(item, ["id"]), parent_id: params.id })
+                //         .execute(),
+                //     ),
+                //   );
+                // }
               }
               if (body?.data?.content) {
                 const mentions = findObjectsByType(body.data.content, "mentionAtom");
@@ -600,13 +650,13 @@ export function document_router(app: Elysia) {
       .post(
         "/automention",
         async ({ body, permissions }) => {
-          const splitWords = uniq(`${body.data.text}`.split(" ")).filter(
-            (word) => !!word && word.length > 1 && !["the", "a", "an", "and", "or", "of", "in", "out", "at"].includes(word),
-          );
+          // const splitWords = uniq(`${body.data.text}`.split(" ")).filter(
+          //   (word) => !!word && word.length > 1 && !["the", "a", "an", "and", "or", "of", "in", "out", "at"].includes(word),
+          // );
 
-          const string = buildTSQueryString(splitWords);
+          // const string = buildTSQueryString(splitWords);
 
-          const formattedString = `(${string}) ${body.data.ignore ? `& ! '${body.data.ignore}'` : ""}`;
+          // const formattedString = `(${string}) ${body.data.ignore ? `& ! '${body.data.ignore}'` : ""}`;
           const fields = getAutomentionFields(body.data.type);
           let query = db
             .selectFrom(body.data.type)
@@ -637,11 +687,14 @@ export function document_router(app: Elysia) {
             query = checkEntityLevelPermission(query, permissions, body.data.type as EntitiesWithPermissionCheck);
           }
 
-          const res = await query
-            .where(`${body.data.type}.ts`, "@@", sql<string>`to_tsquery(${sql.lit("english")}, ${formattedString})`)
-            .execute();
+          if (body.data.type === "characters") {
+            const res = await query.where("full_name", "ilike", `%${body.data.text}%`).execute();
 
-          return { data: res, message: MessageEnum.success, ok: true, role_access: true };
+            return { data: res, message: MessageEnum.success, ok: true, role_access: true };
+          } else {
+            const res = await query.where("title", "ilike", `%${body.data.text}%`).execute();
+            return { data: res, message: MessageEnum.success, ok: true, role_access: true };
+          }
         },
         {
           body: AutolinkerSchema,

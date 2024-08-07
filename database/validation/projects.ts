@@ -20,7 +20,7 @@ export const ReadProjectSchema = t.Intersect([
 ]);
 
 export const InsertProjectSchema = t.Object({
-  data: t.Object({ owner_id: t.String(), title: t.String(), image: t.Optional(t.String()) }),
+  data: t.Object({ title: t.String() }),
 });
 
 export const UpdateProjectSchema = t.Object({

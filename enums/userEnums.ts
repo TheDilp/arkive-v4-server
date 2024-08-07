@@ -1,9 +1,10 @@
 export const DefaultProjectFeatureFlags = {
+  manuscripts_enabled: true,
+  documents_enabled: true,
+  blueprints_enabled: true,
   maps_enabled: true,
   graphs_enabled: true,
   calendars_enabled: true,
-  documents_enabled: true,
-  blueprints_enabled: true,
   characters_enabled: true,
   dictionaries_enabled: true,
   random_tables_enabled: true,

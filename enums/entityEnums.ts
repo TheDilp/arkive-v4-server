@@ -25,6 +25,18 @@ export const MentionTypeEnum = [
   "map_pins",
 ];
 
+export const DocumentTemplateFieldEntitiesWithRelated = [
+  "characters",
+  "blueprint_instances",
+  "documents",
+  "maps",
+  "map_pins",
+  "graphs",
+  "events",
+  "words",
+  "random_tables",
+];
+
 export const EntitiesWithTagsTablesEnum: TagsRelationTables[] = [
   "_charactersTotags",
   "_documentsTotags",

@@ -939,7 +939,6 @@ export function blueprint_instance_router(app: Elysia) {
                           );
                         }
                       }
-
                       if (field.documents) {
                         let query = tx.deleteFrom("blueprint_instance_documents");
 
@@ -965,7 +964,6 @@ export function blueprint_instance_router(app: Elysia) {
                           );
                         }
                       }
-
                       // ! PERMISSIONS
                       if (field.map_pins) {
                         await tx
@@ -986,7 +984,6 @@ export function blueprint_instance_router(app: Elysia) {
                           );
                         }
                       }
-
                       if (field.events) {
                         let query = tx.deleteFrom("blueprint_instance_events");
 

@@ -256,7 +256,7 @@ export function character_router(app: Elysia) {
                   ? (["characters.id", ...body.orderBy.map((order) => order.field)] as any)
                   : "characters.id",
               )
-              .where("characters.project_id", "=", body?.data?.project_id)
+              .where("characters.project_id", "=", permissions?.project_id)
               .where("characters.deleted_at", body.arkived ? "is not" : "is", null)
               .limit(body?.pagination?.limit || 10)
               .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))

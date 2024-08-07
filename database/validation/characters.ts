@@ -4,7 +4,6 @@ import { RequestBodySchema } from "../../types/requestTypes";
 
 export const ListCharacterSchema = t.Intersect([
   RequestBodySchema,
-  t.Object({ data: t.Object({ project_id: t.String() }) }),
   t.Optional(
     t.Object({
       relations: t.Optional(

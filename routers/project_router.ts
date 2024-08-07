@@ -10,6 +10,7 @@ import { DefaultProjectFeatureFlags } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { PermissionDecorationType, RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { deleteFolder } from "../utils/s3Utils";
+import { getEntityWithOwnerId } from "../utils/utils";
 import { sendNotification } from "../utils/websocketUtils";
 
 export function project_router(app: Elysia) {
@@ -24,15 +25,19 @@ export function project_router(app: Elysia) {
       } as PermissionDecorationType)
       .post(
         "/create",
-        async ({ body }) => {
+        async ({ body, permissions }) => {
           await db.transaction().execute(async (tx) => {
-            const project = await tx.insertInto("projects").values(body.data).returning("id").executeTakeFirst();
+            const project = await tx
+              .insertInto("projects")
+              .values(getEntityWithOwnerId(body.data, permissions.user_id))
+              .returning("id")
+              .executeTakeFirst();
             if (project) {
               await tx
                 .insertInto("user_project_feature_flags")
                 .values({
                   project_id: project?.id,
-                  user_id: body.data.owner_id,
+                  user_id: permissions.user_id,
                   feature_flags: JSON.stringify(DefaultProjectFeatureFlags),
                 })
                 .execute();

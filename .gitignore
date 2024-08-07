@@ -8,3 +8,4 @@ dumpfile_data.sql
 backup.dump
 dist
 .vscode
+!vscode/settings.json
