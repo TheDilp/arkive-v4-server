@@ -197,17 +197,18 @@ export function document_router(app: Elysia) {
             permissions,
             false,
           )) as {
-            template_fields: (DocumentTemplateFields & {
-              random_count: typeof FromTemplateRandomCountSchema.static;
-              entity_type: typeof DocumentTemplateEntityTypes.static;
-              related: string[];
-            })[];
+            data: {
+              template_fields: (DocumentTemplateFields & {
+                random_count: typeof FromTemplateRandomCountSchema.static;
+                entity_type: typeof DocumentTemplateEntityTypes.static;
+                related: string[];
+              })[];
+            };
           };
-          console.log(template?.template_fields);
-          if (template) {
+          if (template?.data) {
             await db.transaction().execute(async (tx) => {
-              for (let index = 0; index < (template?.template_fields?.length || 0); index += 1) {
-                const field = template.template_fields[index];
+              for (let index = 0; index < (template?.data?.template_fields?.length || 0); index += 1) {
+                const field = template?.data.template_fields[index];
 
                 if (
                   (field.is_randomized || field.entity_type === "random_tables") &&
