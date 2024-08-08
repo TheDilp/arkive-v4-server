@@ -1,5 +1,5 @@
 import { Elysia } from "elysia";
-import { SelectExpression } from "kysely";
+import { SelectExpression, sql } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 import merge from "lodash.merge";
@@ -43,6 +43,7 @@ import {
 } from "../utils/relationalQueryHelpers";
 import { getAutomentionFields } from "../utils/requestUtils";
 import {
+  buildTSQueryString,
   findObjectsByType,
   getCharacterFullName,
   getEntityWithOwnerId,
@@ -638,13 +639,13 @@ export function document_router(app: Elysia) {
       .post(
         "/automention",
         async ({ body, permissions }) => {
-          // const splitWords = uniq(`${body.data.text}`.split(" ")).filter(
-          //   (word) => !!word && word.length > 1 && !["the", "a", "an", "and", "or", "of", "in", "out", "at"].includes(word),
-          // );
+          const splitWords = uniq(`${body.data.text}`.split(" ")).filter(
+            (word) => !!word && word.length > 1 && !["the", "a", "an", "and", "or", "of", "in", "out", "at"].includes(word),
+          );
 
-          // const string = buildTSQueryString(splitWords);
+          const string = buildTSQueryString(splitWords);
 
-          // const formattedString = `(${string}) ${body.data.ignore ? `& ! '${body.data.ignore}'` : ""}`;
+          const formattedString = `(${string}) ${body.data.ignore ? `& ! '${body.data.ignore}'` : ""}`;
           const fields = getAutomentionFields(body.data.type);
           let query = db
             .selectFrom(body.data.type)
@@ -676,11 +677,23 @@ export function document_router(app: Elysia) {
           }
 
           if (body.data.type === "characters") {
-            const res = await query.where("full_name", "ilike", `%${body.data.text}%`).execute();
+            query = query.where(
+              sql`to_tsvector('english', characters.full_name)`,
+              "@@",
+              sql<string>`to_tsquery(${sql.lit("english")}, ${formattedString})`,
+            );
+            const data = await query.execute();
 
-            return { data: res, message: MessageEnum.success, ok: true, role_access: true };
+            return { data, message: MessageEnum.success, ok: true, role_access: true };
           } else {
-            const res = await query.where("title", "ilike", `%${body.data.text}%`).execute();
+            const res = await query
+              .where(
+                sql`to_tsvector('english', ${sql.ref(`${body.data.type}.title`)})`,
+                "@@",
+                sql<string>`to_tsquery(${sql.lit("english")}, ${formattedString})`,
+              )
+              .execute();
+
             return { data: res, message: MessageEnum.success, ok: true, role_access: true };
           }
         },
