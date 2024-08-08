@@ -1,7 +1,7 @@
 import { Elysia } from "elysia";
 import { SelectExpression } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
-import { DB, DocumentTemplateFields } from "kysely-codegen";
+import { DB } from "kysely-codegen";
 import merge from "lodash.merge";
 import uniq from "lodash.uniq";
 import uniqBy from "lodash.uniqby";
@@ -12,7 +12,6 @@ import { DBKeys } from "../database/types";
 import {
   AutolinkerSchema,
   DocumentTemplateEntityTypes,
-  FromTemplateRandomCountSchema,
   FromTemplateSchema,
   GenerateDocumentSchema,
   GeneratePDFSchema,
@@ -185,30 +184,17 @@ export function document_router(app: Elysia) {
       )
       .post(
         "/create/from_template/:id",
-        async ({ params, body, permissions }) => {
+        async ({ body, permissions }) => {
           let content = JSON.stringify(body.data.content);
-          // @ts-ignore
-          const template = (await readDocument(
-            {
-              relations: { template_fields: true },
-              fields: [],
-            },
-            { id: params.id },
-            permissions,
-            false,
-          )) as {
-            data: {
-              template_fields: (DocumentTemplateFields & {
-                random_count: typeof FromTemplateRandomCountSchema.static;
-                entity_type: typeof DocumentTemplateEntityTypes.static;
-                related: string[];
-              })[];
-            };
-          };
+
+          // needs to be sent by the frontend
+          // so that manual entry fields are
+          // present
+          const template = body;
           if (template?.data) {
             await db.transaction().execute(async (tx) => {
-              for (let index = 0; index < (template?.data?.template_fields?.length || 0); index += 1) {
-                const field = template?.data.template_fields[index];
+              for (let index = 0; index < (template?.relations?.template_fields?.length || 0); index += 1) {
+                const field = template?.relations?.template_fields?.[index];
 
                 if (
                   (field.is_randomized || field.entity_type === "random_tables") &&
@@ -245,26 +231,26 @@ export function document_router(app: Elysia) {
                       .orderBy((ob) => ob.fn("random"))
                       .limit(limit);
 
-                    if (field.entity_type === "blueprint_instances")
+                    if (field.entity_type === "blueprint_instances" && field.blueprint_id)
                       // @ts-ignore
                       query = query
                         .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
                         .where("blueprints.project_id", "=", permissions.project_id)
                         .where("parent_id", "=", field.blueprint_id);
-                    else if (field.entity_type === "events")
+                    else if (field.entity_type === "events" && field.calendar_id)
                       // @ts-ignore
                       query = query
                         .leftJoin("calendars", "calendars.id", "events.parent_id")
                         .where("calendars.project_id", "=", permissions.project_id)
                         .where("calendars.id", "=", field.calendar_id);
-                    else if (field.entity_type === "map_pins")
+                    else if (field.entity_type === "map_pins" && field.map_id)
                       // @ts-ignore
                       query = query
                         .leftJoin("maps", "maps.id", "map_pins.parent_id")
                         .where("maps.project_id", "=", permissions.project_id)
                         .where("maps.id", "=", field.map_id)
                         .where("map_pins.title", "is not", null);
-                    else if (field.entity_type === "words")
+                    else if (field.entity_type === "words" && field.dictionary_id)
                       // @ts-ignore
                       query = query
                         .leftJoin("dictionaries", "dictionaries.id", "words.parent_id")
@@ -282,7 +268,7 @@ export function document_router(app: Elysia) {
                     }
                   }
                 } else if (!field.is_randomized) {
-                  if (DocumentTemplateFieldEntitiesWithRelated.includes(field.entity_type) && field.related.length) {
+                  if (DocumentTemplateFieldEntitiesWithRelated.includes(field.entity_type) && field?.related?.length) {
                     let query = tx
                       .selectFrom(field.entity_type as DBKeys)
                       .select(getDocumentTemplateEntityFields(field.entity_type) as ["title"])
@@ -432,6 +418,7 @@ export function document_router(app: Elysia) {
                 for (let index = 0; index < body.relations.template_fields.length; index++) {
                   const field = body.relations.template_fields[index];
                   const template_field = {
+                    id: field.id,
                     key: field.key,
                     value: field.value,
                     formula: field.formula,
