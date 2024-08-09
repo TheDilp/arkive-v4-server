@@ -139,6 +139,7 @@ export function document_router(app: Elysia) {
                   map_id: field.map_id || null,
                   calendar_id: field.calendar_id || null,
                   dictionary_id: field.dictionary_id || null,
+                  additional_data: field.additional_data || null,
                 };
                 const new_field = await tx
                   .insertInto("document_template_fields")
@@ -427,13 +428,14 @@ export function document_router(app: Elysia) {
                     derive_formula: field.derive_formula,
                     is_randomized: field.is_randomized,
                     entity_type: field.entity_type,
+                    parent_id: params.id,
                     sort: field.sort,
                     random_count: field.random_count,
                     blueprint_id: field.blueprint_id || null,
                     map_id: field.map_id || null,
                     calendar_id: field.calendar_id || null,
                     dictionary_id: field.dictionary_id || null,
-                    parent_id: params.id,
+                    additional_data: field.additional_data || null,
                   };
                   const new_field = await tx
                     .insertInto("document_template_fields")
