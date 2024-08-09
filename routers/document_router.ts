@@ -44,6 +44,7 @@ import {
 import { getAutomentionFields } from "../utils/requestUtils";
 import {
   buildTSQueryString,
+  clamp,
   findObjectsByType,
   getCharacterFullName,
   getEntityWithOwnerId,
@@ -198,12 +199,13 @@ export function document_router(app: Elysia) {
               for (let index = 0; index < (template?.relations?.template_fields?.length || 0); index += 1) {
                 const field = template?.relations?.template_fields?.[index];
 
+                // Generate randomized fields
                 if (
                   (field.is_randomized || field.entity_type === "random_tables") &&
                   DocumentTemplateEntities.includes(field.entity_type)
                 ) {
-                  const limit = getRandomTemplateCount(field.random_count || "single");
-
+                  const max = getRandomTemplateCount(field.random_count || "single");
+                  const limit = clamp(field?.related?.length || 0, max - (field?.related?.length || 0), max);
                   if (field.entity_type === "random_tables" && field.value) {
                     let query = tx
                       .selectFrom("random_tables")
@@ -226,12 +228,17 @@ export function document_router(app: Elysia) {
                       const result_string = related.random_table_options.map((r) => r.title).join(", ");
                       content = content.replaceAll(`%{${field.key}}%`, result_string);
                     }
-                  } else {
+                  } else if (limit > 0) {
                     let query = tx
                       .selectFrom(field.entity_type as DBKeys)
                       .select(getDocumentTemplateEntityFields(field.entity_type) as ["title"])
                       .orderBy((ob) => ob.fn("random"))
                       .limit(limit);
+
+                    if (field?.related?.length) {
+                      // @ts-ignore
+                      query = query.where(`${field.entity_type as DBKeys}.id`, "not in", field?.related);
+                    }
 
                     if (field.entity_type === "blueprint_instances" && field.blueprint_id)
                       // @ts-ignore
@@ -264,12 +271,28 @@ export function document_router(app: Elysia) {
 
                     const result = await query.execute();
 
+                    const preselectedResults = field?.related?.length
+                      ? await tx
+                          .selectFrom(field.entity_type as DBKeys)
+                          .select(getDocumentTemplateEntityFields(field.entity_type) as ["title"])
+                          .where("id", "in", field.related)
+                          .execute()
+                      : [];
+
                     if (result && result.length > 0) {
                       const result_string = result.map((r) => r.title).join(", ");
-                      content = content.replaceAll(`%{${field.key}}%`, result_string);
+                      const preselected_result_string = preselectedResults.map((r) => r.title).join(", ");
+
+                      content = content.replaceAll(
+                        `%{${field.key}}%`,
+                        `${preselected_result_string.length ? `${preselected_result_string}, ` : ""}${result_string}`,
+                      );
                     }
                   }
-                } else if (!field.is_randomized) {
+                }
+
+                // Generate non-randomized fields
+                else if (!field.is_randomized) {
                   if (DocumentTemplateFieldEntitiesWithRelated.includes(field.entity_type) && field?.related?.length) {
                     let query = tx
                       .selectFrom(field.entity_type as DBKeys)
@@ -466,47 +489,6 @@ export function document_router(app: Elysia) {
                     }
                   }
                 }
-
-                // const existingTemplateFields = await tx
-                //   .selectFrom("document_template_fields")
-                //   .select(["document_template_fields.id"])
-                //   .where("parent_id", "=", params.id)
-                //   .execute();
-
-                // const existingIds = existingTemplateFields.map((field) => field.id);
-
-                // const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
-                //   existingIds,
-                //   body.relations?.template_fields || [],
-                // );
-                // if (idsToRemove.length) {
-                //   await tx.deleteFrom("document_template_fields").where("id", "in", idsToRemove).execute();
-                // }
-                // if (itemsToAdd.length) {
-                //   await tx
-                //     .insertInto("document_template_fields")
-                //     .values(
-                //       itemsToAdd.map((i) => ({
-                //         ...omit(i, "related"),
-                //         key: i.key,
-                //         entity_type: i.entity_type,
-                //         parent_id: params.id,
-                //       })),
-                //     )
-                //     .execute();
-                // }
-                // if (itemsToUpdate.length) {
-                //   await Promise.all(
-                //     itemsToUpdate.map(async (item) =>
-                //       tx
-                //         .updateTable("document_template_fields")
-                //         .where("parent_id", "=", params.id)
-                //         .where("id", "=", item.id)
-                //         .set({ ...omit(item, ["id"]), parent_id: params.id })
-                //         .execute(),
-                //     ),
-                //   );
-                // }
               }
               if (body?.data?.content) {
                 const mentions = findObjectsByType(body.data.content, "mentionAtom");

@@ -410,5 +410,11 @@ export function getRandomTemplateCount(random_count: typeof FromTemplateRandomCo
   if (random_count === null || random_count === "single") return 1;
   const count = Number(random_count.replace("max_", ""));
   if (typeof count === "number") return generateRandomNumber(1, count);
-  return 1;
+  return 0;
+}
+
+export function clamp(min: number, value: number, max: number): number {
+  if (value < min) return min;
+  if (value > max) return max;
+  return value;
 }
