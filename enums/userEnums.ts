@@ -8,7 +8,6 @@ export const DefaultProjectFeatureFlags = {
   characters_enabled: true,
   dictionaries_enabled: true,
   random_tables_enabled: true,
-  character_fields_templates_enabled: true,
   document_templates_enabled: true,
   show_eras_in_calendars: false,
   show_eras_in_timelines: true,
