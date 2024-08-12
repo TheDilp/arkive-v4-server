@@ -124,7 +124,7 @@ export async function tempAfterHandle(context: any, response: any) {
               }
             }
           } else {
-            const { id } = context.response.data;
+            const { id } = context?.response?.data || {};
 
             const project_id = context?.body?.data?.project_id || context?.response?.data?.project_id;
             const title = context?.body?.data?.title || context?.response?.data?.title;
