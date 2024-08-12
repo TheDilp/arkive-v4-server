@@ -41,13 +41,15 @@ export function character_fields_templates_router(app: Elysia) {
       .post(
         "/create",
         async ({ body, permissions }) => {
+          let id = "";
           await db.transaction().execute(async (tx) => {
             const newTemplate = await tx
               .insertInto("character_fields_templates")
               .values(getEntityWithOwnerId(body.data, permissions.user_id))
               .returning("id")
               .executeTakeFirstOrThrow();
-
+            // eslint-disable-next-line prefer-destructuring
+            id = newTemplate.id;
             if (body.relations?.character_fields_sections) {
               await tx
                 .insertInto("character_fields_sections")
@@ -87,7 +89,7 @@ export function character_fields_templates_router(app: Elysia) {
               await CreateEntityPermissions(tx, newTemplate.id, body.permissions);
             }
           });
-          return { message: `Template ${MessageEnum.successfully_created}`, ok: true, role_access: true };
+          return { data: { id }, message: `Template ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
           body: InsertCharacterFieldsTemplateSchema,
