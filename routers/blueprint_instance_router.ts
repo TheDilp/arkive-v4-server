@@ -560,7 +560,7 @@ export function blueprint_instance_router(app: Elysia) {
                     eb
                       .selectFrom("blueprints")
                       .whereRef("blueprints.id", "=", "blueprint_instances.parent_id")
-                      .select(["blueprints.title", "blueprints.title_name"]),
+                      .select(["blueprints.title", "blueprints.title_name", "blueprints.icon"]),
                   ).as("blueprint"),
 
                 (eb) => {
