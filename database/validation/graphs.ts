@@ -49,7 +49,7 @@ export const ReadGraphSchema = t.Intersect([
 export const InsertGraphSchema = t.Object({
   data: t.Object({
     project_id: t.String(),
-    parent_id: t.Optional(t.String()),
+    parent_id: t.Optional(t.Union([t.String(), t.Null()])),
     title: t.Optional(t.String()),
     is_folder: t.Optional(t.Union([t.Boolean(), t.Null()])),
     is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
