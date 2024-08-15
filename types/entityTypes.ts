@@ -101,6 +101,17 @@ export type EntitiesWithPermissionCheck =
   | "manuscripts"
   | "gateway_configurations";
 
+export type GatewayConfigEntityTypes =
+  | "characters"
+  | "blueprint_instances"
+  | "documents"
+  | "maps"
+  | "map_pins"
+  | "events"
+  | "images"
+  | "random_tables"
+  | "tags";
+
 export type MentionType = {
   type: "mentionAtom";
   attrs: {
@@ -178,3 +189,37 @@ export type JWTGatewayResponse = {
   access: string;
   claims: JWTGatewayClaims;
 };
+
+export type GatewayAccessType = {
+  access_id: string;
+  project_id: string;
+  code: string;
+  config: Record<GatewayConfigEntityTypes, string[]>;
+} & (
+  | {
+      gateway_type: "create";
+      create_config:
+        | ({
+            is_locked: true;
+          } & (
+            | {
+                first_name: string;
+                last_name: string;
+              }
+            | {
+                title: string;
+              }
+          ))
+        | ({
+            is_locked: false;
+          } & {
+            first_name?: string;
+            last_name?: string;
+            title?: string;
+          });
+    }
+  | {
+      gateway_type: "update";
+      entity_id: string;
+    }
+);
