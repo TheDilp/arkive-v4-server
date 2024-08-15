@@ -6,6 +6,7 @@ import { DB } from "kysely-codegen";
 import { db } from "../database/db";
 import {
   checkEntityLevelPermission,
+  createCharacter,
   getCharacterFamily,
   getHasEntityPermission,
   getNestedReadPermission,
@@ -24,13 +25,8 @@ import {
   tagsRelationFilter,
 } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import {
-  CreateEntityPermissions,
-  CreateTagRelations,
-  GetRelatedEntityPermissionsAndRoles,
-  TagQuery,
-} from "../utils/relationalQueryHelpers";
-import { getEntityWithOwnerId, groupCharacterResourceFiltersByField, groupRelationFiltersByField } from "../utils/utils";
+import { GetRelatedEntityPermissionsAndRoles, TagQuery } from "../utils/relationalQueryHelpers";
+import { groupCharacterResourceFiltersByField, groupRelationFiltersByField } from "../utils/utils";
 
 export function character_router(app: Elysia) {
   return app
@@ -45,205 +41,10 @@ export function character_router(app: Elysia) {
     } as PermissionDecorationType)
     .group("/characters", (server) =>
       server
-        .post(
-          "/create",
-          async ({ body, permissions }) => {
-            const id = await db.transaction().execute(async (tx) => {
-              const character = await tx
-                .insertInto("characters")
-                .values(getEntityWithOwnerId(body.data, permissions.user_id))
-                .returning("id")
-                .executeTakeFirstOrThrow();
-              if (body?.relations) {
-                if (typeof body.relations?.is_favorite === "boolean") {
-                  await tx
-                    .insertInto("favorite_characters")
-                    .values({
-                      user_id: permissions.user_id,
-                      is_favorite: body.relations.is_favorite,
-                      character_id: character.id,
-                    })
-                    .onConflict((oc) =>
-                      oc.columns(["user_id", "character_id"]).doUpdateSet({ is_favorite: body.relations?.is_favorite }),
-                    )
-                    .execute();
-                }
-
-                if (body.relations?.images) {
-                  const { images } = body.relations;
-                  await tx
-                    .insertInto("_charactersToimages")
-                    .values(images.map((img) => ({ A: character.id, B: img.id })))
-                    .execute();
-                }
-                if (body.relations?.character_fields?.length) {
-                  await Promise.all(
-                    body.relations.character_fields.map(async (field) => {
-                      if (field?.value) {
-                        await tx
-                          .insertInto("character_value_fields")
-                          .values({
-                            character_field_id: field.id,
-                            character_id: character.id,
-                            value: JSON.stringify(field.value),
-                          })
-                          .execute();
-                      }
-                      if (field?.characters?.length) {
-                        const { characters } = field;
-                        await tx
-                          .insertInto("character_characters_fields")
-                          .values(
-                            characters.map((doc) => ({
-                              character_field_id: field.id,
-                              character_id: character.id,
-                              related_id: doc.related_id,
-                            })),
-                          )
-                          .execute();
-                        return;
-                      }
-                      if (field?.documents?.length) {
-                        const { documents } = field;
-                        await tx
-                          .insertInto("character_documents_fields")
-                          .values(
-                            documents.map((doc) => ({
-                              character_field_id: field.id,
-                              character_id: character.id,
-                              related_id: doc.related_id,
-                            })),
-                          )
-                          .execute();
-                        return;
-                      }
-                      if (field?.map_pins?.length) {
-                        const { map_pins } = field;
-                        await tx
-                          .insertInto("character_locations_fields")
-                          .values(
-                            map_pins.map((map_pin) => ({
-                              character_field_id: field.id,
-                              character_id: character.id,
-                              related_id: map_pin.related_id,
-                            })),
-                          )
-                          .execute();
-                        return;
-                      }
-                      if (field?.images?.length) {
-                        const { images } = field;
-                        await tx
-                          .insertInto("character_images_fields")
-                          .values(
-                            images.map((image) => ({
-                              character_field_id: field.id,
-                              character_id: character.id,
-                              related_id: image.related_id,
-                            })),
-                          )
-                          .execute();
-                        return;
-                      }
-                      if (field?.events?.length) {
-                        const { events } = field;
-                        await tx
-                          .insertInto("character_events_fields")
-                          .values(
-                            events.map((image) => ({
-                              character_field_id: field.id,
-                              character_id: character.id,
-                              related_id: image.related_id,
-                            })),
-                          )
-                          .execute();
-                        return;
-                      }
-                      if (field?.blueprint_instances?.length) {
-                        const { blueprint_instances } = field;
-                        await tx
-                          .insertInto("character_blueprint_instance_fields")
-                          .values(
-                            blueprint_instances.map((instance) => ({
-                              character_field_id: field.id,
-                              character_id: character.id,
-                              related_id: instance.related_id,
-                            })),
-                          )
-                          .execute();
-                        return;
-                      }
-                    }),
-                  );
-                }
-
-                if (body.relations?.tags?.length) {
-                  const { tags } = body.relations;
-                  await CreateTagRelations({ tx, relationalTable: "_charactersTotags", id: character.id, tags });
-                }
-
-                if (body.relations?.documents?.length) {
-                  const { documents } = body.relations;
-                  await tx
-                    .insertInto("_charactersTodocuments")
-                    .values(
-                      documents.map((doc) => ({
-                        A: character.id,
-                        B: doc.id,
-                      })),
-                    )
-                    .execute();
-                }
-                if (body.relations?.related_from?.length) {
-                  await tx
-                    .insertInto("characters_relationships")
-                    .values(
-                      body.relations.related_from.map((item) => ({
-                        character_a_id: item.id,
-                        character_b_id: character.id,
-                        relation_type_id: item.relation_type_id,
-                      })),
-                    )
-                    .execute();
-                }
-                if (body.relations?.related_to?.length) {
-                  await tx
-                    .insertInto("characters_relationships")
-                    .values(
-                      body.relations.related_to.map((item) => ({
-                        character_a_id: character.id,
-                        character_b_id: item.id,
-                        relation_type_id: item.relation_type_id,
-                      })),
-                    )
-                    .execute();
-                }
-                if (body.relations?.related_other?.length) {
-                  await tx
-                    .insertInto("characters_relationships")
-                    .values(
-                      body.relations.related_other.map((item) => ({
-                        character_a_id: character.id,
-                        character_b_id: item.id,
-                        relation_type_id: item.relation_type_id,
-                      })),
-                    )
-                    .execute();
-                }
-                if (body.permissions?.length) {
-                  await CreateEntityPermissions(tx, character.id, body.permissions);
-                }
-              }
-              return character.id;
-            });
-
-            return { data: { id }, message: `Character ${MessageEnum.successfully_created}`, ok: true, role_access: true };
-          },
-          {
-            body: InsertCharacterSchema,
-            response: ResponseWithDataSchema,
-          },
-        )
+        .post("/create", createCharacter, {
+          body: InsertCharacterSchema,
+          response: ResponseWithDataSchema,
+        })
 
         .post(
           "/",
@@ -381,6 +182,8 @@ export function character_router(app: Elysia) {
           "/update/:id",
           async ({ params, body, permissions }) => {
             await db.transaction().execute(async (tx) => {
+              // Seperate permission check out of the update function itself
+              // since the gateway routes do not need to check them
               const permissionCheck = await getHasEntityPermission("characters", params.id, permissions);
 
               if (permissionCheck) {

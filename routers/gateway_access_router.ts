@@ -4,11 +4,12 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { readCharacter, updateCharacter } from "../database/queries";
+import { createCharacter, readCharacter, updateCharacter } from "../database/queries";
 import { UploadAssets } from "../database/queries/assetQueries";
 import {
   GatewayMentionSearchSchema,
   GatewaySearchSchema,
+  InsertCharacterSchema,
   ListAssetsSchema,
   ListCharacterFieldsTemplateSchema,
   ReadCharacterSchema,
@@ -84,9 +85,9 @@ export function gateway_access_router(app: Elysia) {
       .guard({
         beforeHandle: async ({ cookie: { access }, set, headers }) => {
           const data = await verifyGatewayJWT({ access, set });
-
           if (data.status === "allowed") {
             if (data.project_id) headers["project-id"] = data.project_id;
+            if (data.access_id) headers["access-id"] = data.access_id;
             return;
           } else {
             set.status = 403;
@@ -114,13 +115,41 @@ export function gateway_access_router(app: Elysia) {
         { body: ReadCharacterSchema, response: ResponseWithDataSchema },
       )
       .post(
-        "/characters/update/:id",
-        async ({ params, body }) => {
-          await db.transaction().execute(async (tx) => {
-            await updateCharacter({ tx, params, body, permissions: { user_id: undefined, is_project_owner: true } });
-          });
+        "/characters/create",
+        async ({ body, headers }) => {
+          const project = await db
+            .selectFrom("projects")
+            .select("owner_id")
+            .where("id", "=", body.data.project_id)
+            .executeTakeFirst();
 
-          return { ok: true, message: `Character ${MessageEnum.successfully_updated}` };
+          if (project?.owner_id && !!headers?.["access-id"]) {
+            const redis = await redisClient;
+            const res = await createCharacter({ body, permissions: { user_id: project?.owner_id, is_project_owner: true } });
+
+            redis.del(`characters_gateway_access_${headers["access-id"]}`);
+
+            return res;
+          }
+          return { data: {}, message: "There was an error with your request.", ok: false };
+        },
+        { body: InsertCharacterSchema, response: GatewayResponseWithDataSchema },
+      )
+      .post(
+        "/characters/update/:id",
+        async ({ params, body, headers }) => {
+          if (headers?.["access-id"]) {
+            await db.transaction().execute(async (tx) => {
+              await updateCharacter({ tx, params, body, permissions: { user_id: undefined, is_project_owner: true } });
+            });
+            const redis = await redisClient;
+
+            redis.del(`characters_gateway_access_${headers["access-id"]}`);
+
+            return { ok: true, message: `Character ${MessageEnum.successfully_updated}` };
+          } else {
+            return { ok: false, message: "There was an error with your request." };
+          }
         },
         { body: UpdateCharacterSchema, response: GatewayResponseSchema },
       )

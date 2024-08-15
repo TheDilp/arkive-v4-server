@@ -9,6 +9,8 @@ import uniqBy from "lodash.uniqby";
 import { MessageEnum } from "../../enums";
 import { PermissionDecorationType, ResponseWithDataSchema } from "../../types/requestTypes";
 import {
+  CreateEntityPermissions,
+  CreateTagRelations,
   GetRelatedEntityPermissionsAndRoles,
   GetRelationsForUpdating,
   TagQuery,
@@ -16,16 +18,214 @@ import {
   UpdateEntityPermissions,
   UpdateTagRelations,
 } from "../../utils/relationalQueryHelpers";
-import { groupCharacterFields } from "../../utils/utils";
+import { getEntityWithOwnerId, groupCharacterFields } from "../../utils/utils";
 import { db } from "../db";
-import { ReadCharacterSchema, UpdateCharacterSchema } from "../validation";
+import { InsertCharacterSchema, ReadCharacterSchema, UpdateCharacterSchema } from "../validation";
 import { checkEntityLevelPermission, getNestedReadPermission } from ".";
 
-type bodyTp = (typeof ReadCharacterSchema)["static"];
-type updateBodyTp = (typeof UpdateCharacterSchema)["static"];
+type ReadBodyType = (typeof ReadCharacterSchema)["static"];
+type CreateBodyType = (typeof InsertCharacterSchema)["static"];
+type UpdateBodyType = (typeof UpdateCharacterSchema)["static"];
+
+export async function createCharacter({
+  body,
+  permissions,
+}: {
+  body: CreateBodyType;
+  permissions: { user_id: string; is_project_owner: boolean };
+}) {
+  const id = await db.transaction().execute(async (tx) => {
+    const character = await tx
+      .insertInto("characters")
+      .values(getEntityWithOwnerId(body.data, permissions.user_id))
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    if (body?.relations) {
+      if (typeof body.relations?.is_favorite === "boolean") {
+        await tx
+          .insertInto("favorite_characters")
+          .values({
+            user_id: permissions.user_id,
+            is_favorite: body.relations.is_favorite,
+            character_id: character.id,
+          })
+          .onConflict((oc) => oc.columns(["user_id", "character_id"]).doUpdateSet({ is_favorite: body.relations?.is_favorite }))
+          .execute();
+      }
+
+      if (body.relations?.images) {
+        const { images } = body.relations;
+        await tx
+          .insertInto("_charactersToimages")
+          .values(images.map((img) => ({ A: character.id, B: img.id })))
+          .execute();
+      }
+      if (body.relations?.character_fields?.length) {
+        await Promise.all(
+          body.relations.character_fields.map(async (field) => {
+            if (field?.value) {
+              await tx
+                .insertInto("character_value_fields")
+                .values({
+                  character_field_id: field.id,
+                  character_id: character.id,
+                  value: JSON.stringify(field.value),
+                })
+                .execute();
+            }
+            if (field?.characters?.length) {
+              const { characters } = field;
+              await tx
+                .insertInto("character_characters_fields")
+                .values(
+                  characters.map((doc) => ({
+                    character_field_id: field.id,
+                    character_id: character.id,
+                    related_id: doc.related_id,
+                  })),
+                )
+                .execute();
+              return;
+            }
+            if (field?.documents?.length) {
+              const { documents } = field;
+              await tx
+                .insertInto("character_documents_fields")
+                .values(
+                  documents.map((doc) => ({
+                    character_field_id: field.id,
+                    character_id: character.id,
+                    related_id: doc.related_id,
+                  })),
+                )
+                .execute();
+              return;
+            }
+            if (field?.map_pins?.length) {
+              const { map_pins } = field;
+              await tx
+                .insertInto("character_locations_fields")
+                .values(
+                  map_pins.map((map_pin) => ({
+                    character_field_id: field.id,
+                    character_id: character.id,
+                    related_id: map_pin.related_id,
+                  })),
+                )
+                .execute();
+              return;
+            }
+            if (field?.images?.length) {
+              const { images } = field;
+              await tx
+                .insertInto("character_images_fields")
+                .values(
+                  images.map((image) => ({
+                    character_field_id: field.id,
+                    character_id: character.id,
+                    related_id: image.related_id,
+                  })),
+                )
+                .execute();
+              return;
+            }
+            if (field?.events?.length) {
+              const { events } = field;
+              await tx
+                .insertInto("character_events_fields")
+                .values(
+                  events.map((image) => ({
+                    character_field_id: field.id,
+                    character_id: character.id,
+                    related_id: image.related_id,
+                  })),
+                )
+                .execute();
+              return;
+            }
+            if (field?.blueprint_instances?.length) {
+              const { blueprint_instances } = field;
+              await tx
+                .insertInto("character_blueprint_instance_fields")
+                .values(
+                  blueprint_instances.map((instance) => ({
+                    character_field_id: field.id,
+                    character_id: character.id,
+                    related_id: instance.related_id,
+                  })),
+                )
+                .execute();
+              return;
+            }
+          }),
+        );
+      }
+
+      if (body.relations?.tags?.length) {
+        const { tags } = body.relations;
+        await CreateTagRelations({ tx, relationalTable: "_charactersTotags", id: character.id, tags });
+      }
+
+      if (body.relations?.documents?.length) {
+        const { documents } = body.relations;
+        await tx
+          .insertInto("_charactersTodocuments")
+          .values(
+            documents.map((doc) => ({
+              A: character.id,
+              B: doc.id,
+            })),
+          )
+          .execute();
+      }
+      if (body.relations?.related_from?.length) {
+        await tx
+          .insertInto("characters_relationships")
+          .values(
+            body.relations.related_from.map((item) => ({
+              character_a_id: item.id,
+              character_b_id: character.id,
+              relation_type_id: item.relation_type_id,
+            })),
+          )
+          .execute();
+      }
+      if (body.relations?.related_to?.length) {
+        await tx
+          .insertInto("characters_relationships")
+          .values(
+            body.relations.related_to.map((item) => ({
+              character_a_id: character.id,
+              character_b_id: item.id,
+              relation_type_id: item.relation_type_id,
+            })),
+          )
+          .execute();
+      }
+      if (body.relations?.related_other?.length) {
+        await tx
+          .insertInto("characters_relationships")
+          .values(
+            body.relations.related_other.map((item) => ({
+              character_a_id: character.id,
+              character_b_id: item.id,
+              relation_type_id: item.relation_type_id,
+            })),
+          )
+          .execute();
+      }
+      if (body.permissions?.length) {
+        await CreateEntityPermissions(tx, character.id, body.permissions);
+      }
+    }
+    return character.id;
+  });
+
+  return { data: { id }, message: `Character ${MessageEnum.successfully_created}`, ok: true, role_access: true };
+}
 
 export async function readCharacter(
-  body: bodyTp,
+  body: ReadBodyType,
   params: { id: string },
   permissions: PermissionDecorationType,
   isPublic: boolean,
@@ -811,7 +1011,7 @@ export async function updateCharacter({
 }: {
   tx: Transaction<any>;
   params: { id: string };
-  body: updateBodyTp;
+  body: UpdateBodyType;
   permissions: { user_id: string | undefined; is_project_owner: boolean };
 }) {
   let deletedTags: string[] | null = null;

@@ -41,6 +41,7 @@ export const ReadCharacterSchema = t.Intersect([
 export const InsertCharacterSchema = t.Object({
   data: t.Object({
     first_name: t.String(),
+    // must exist for gateway creation
     project_id: t.String(),
     biography: t.Optional(t.Union([t.Any(), t.Null()])),
     last_name: t.Optional(t.Union([t.String(), t.Null()])),
