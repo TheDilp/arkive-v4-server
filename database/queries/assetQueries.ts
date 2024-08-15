@@ -48,7 +48,7 @@ export async function UploadAssets({
       Bucket: process.env.DO_SPACES_NAME as string,
       Key: `${filePath}/${image_id}.webp`,
       Body: buffer,
-      ACL: "public-read",
+      ACL: "private",
       ContentType: "image/webp",
       CacheControl: "max-age=600",
     });
@@ -57,7 +57,7 @@ export async function UploadAssets({
       headers: {
         "Content-Type": "image/webp",
         "Cache-Control": "max-age=600",
-        "x-amz-acl": "public-read",
+        "x-amz-acl": "private",
       },
       method: "PUT",
       body: buffer,

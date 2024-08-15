@@ -199,7 +199,7 @@ export function asset_router(app: Elysia) {
                         Bucket: process.env.DO_SPACES_NAME as string,
                         Key: `${filePath}/${params.id}.webp`,
                         Body: buffer,
-                        ACL: "public-read",
+                        ACL: "private",
                         ContentType: "image/webp",
                         CacheControl: "max-age=600",
                       });
@@ -208,7 +208,7 @@ export function asset_router(app: Elysia) {
                         headers: {
                           "Content-Type": "image/webp",
                           "Cache-Control": "max-age=600",
-                          "x-amz-acl": "public-read",
+                          "x-amz-acl": "private",
                         },
                         method: "PUT",
                         body: buffer,
