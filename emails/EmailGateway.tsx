@@ -2,14 +2,27 @@ import { Body, Button, Container, Head, Hr, Html, Img, Preview, Section, Tailwin
 
 import { getDateStringHoursFromNow } from "../utils/dateTimeUtils";
 
-type GatewayType = "characters" | "blueprint_instances";
+type GatewayType = "create" | "update";
+type GatewayEntityType = "characters" | "blueprint_instances";
 
-function getEntity(type: GatewayType) {
+function getEntity(type: GatewayEntityType) {
   if (type === "characters") return "character";
   return "blueprint instance";
 }
 
-export const EmailGateway = ({ type, link, title, code }: { type: GatewayType; title: string; link: string; code: string }) => {
+export const EmailGateway = ({
+  type,
+  link,
+  title,
+  code,
+  gateway_type,
+}: {
+  type: GatewayEntityType;
+  title: string;
+  link: string;
+  code: string;
+  gateway_type: GatewayType;
+}) => {
   return (
     <Html>
       <Head />
@@ -28,7 +41,9 @@ export const EmailGateway = ({ type, link, title, code }: { type: GatewayType; t
             </Section>
 
             <Text className="text-white text-[18px] leading-[24px]">
-              Hello, you have been granted access to the {getEntity(type)} gateway for the {getEntity(type)} "{title}".
+              {gateway_type === "create"
+                ? "Hello, you have been granted access to create a character in an Arkive project."
+                : `Hello, you have been granted access to the {getEntity(type)} gateway for the {getEntity(type)} ${title}.`}
             </Text>
             <Text className="text-white text-[18px] leading-[24px]">Your access code is:</Text>
             <Text className="text-white text-[42px] leading-[24px] text-center">{code}</Text>

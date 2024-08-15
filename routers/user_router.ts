@@ -11,6 +11,7 @@ import { EmailInvite } from "../emails/EmailInvite";
 import { DefaultProjectFeatureFlags, ErrorEnums, NicknameInUse } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeProjectOwnerHandler } from "../handlers";
+import { GatewayAccessType } from "../types/entityTypes";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { resend } from "../utils/emailClient";
 import { redisClient } from "../utils/redisClient";
@@ -203,59 +204,129 @@ export function user_router(app: Elysia) {
       .post(
         "/gateway/invite",
         async ({ body, permissions }) => {
-          const redis = await redisClient;
-          const entity = await db
-            .selectFrom(body.data.type)
-            .select(["id", body.data.type === "characters" ? "full_name as title" : "title"])
-            .where("id", "=", body.data.id)
-            .executeTakeFirst();
-
-          if (entity?.id && permissions.project_id) {
-            const access_id = crypto.randomUUID();
-
+          if (permissions.project_id) {
+            const redis = await redisClient;
             let code = "";
+            const access_id = crypto.randomUUID();
 
             for (let index = 0; index < 6; index++) {
               const number = Math.random().toString()[3 + index];
               code += number;
             }
 
-            await redis.SET(
-              `${body.data.type}_gateway_access_${access_id}`,
-              JSON.stringify({
-                access_id,
-                entity_id: entity.id,
-                code,
-                project_id: permissions.project_id,
-                config: body.data.config,
-              }),
-              { EX: 60 * 60 * 6 },
-            );
+            const data = {
+              access_id,
+              code,
+              project_id: permissions.project_id,
+              config: body.data.config,
+            };
 
-            await resend.emails.send({
-              from: "The Arkive <emails@thearkive.app>",
-              to: [body.data.email],
-              subject: "Arkive gateway access",
-              react: EmailGateway({
-                title: entity?.title || "",
-                type: body.data.type,
-                code,
-                link: `${access_id}/${entity?.id || ""}`,
-              }),
-            });
+            if (body.data.id && body.data.gateway_type === "update") {
+              const entity = await db
+                .selectFrom(body.data.type)
+                .select(["id", body.data.type === "characters" ? "full_name as title" : "title"])
+                .where("id", "=", body.data.id)
+                .executeTakeFirst();
+
+              if (entity?.id) {
+                const config: GatewayAccessType = { ...data, gateway_type: body.data.gateway_type, entity_id: entity?.id };
+
+                await redis.SET(`${body.data.type}_gateway_access_${access_id}`, JSON.stringify(config), { EX: 60 * 60 * 6 });
+
+                await resend.emails.send({
+                  from: "The Arkive <emails@thearkive.app>",
+                  to: [body.data.email],
+                  subject: "Arkive gateway access",
+                  react: EmailGateway({
+                    title: entity?.title || "",
+                    type: body.data.type,
+                    code,
+                    gateway_type: body.data.gateway_type,
+                    link: `${access_id}/${entity?.id || ""}/${body.data.gateway_type}`,
+                  }),
+                });
+              }
+            } else if (!body.data.id && body.data.gateway_type === "create") {
+              const config: GatewayAccessType = {
+                ...data,
+                create_config: body.data.create_config,
+                gateway_type: body.data.gateway_type,
+              };
+
+              await redis.SET(`${body.data.type}_gateway_access_${access_id}`, JSON.stringify(config), { EX: 60 * 60 * 6 });
+
+              await resend.emails.send({
+                from: "The Arkive <emails@thearkive.app>",
+                to: [body.data.email],
+                subject: "Arkive gateway access",
+                react: EmailGateway({
+                  title: "Create character",
+                  type: body.data.type,
+                  code,
+                  gateway_type: body.data.gateway_type,
+                  link: `${access_id}/${body.data.gateway_type}`,
+                }),
+              });
+            }
+            return {};
+          } else {
+            return { ok: false, message: "No permission for project" };
           }
-
-          return {};
         },
         {
           body: t.Object(
             {
-              data: t.Object({
-                email: t.String(),
-                id: t.String(),
-                type: t.Union([t.Literal("characters"), t.Literal("blueprint_instances")]),
-                config: t.Record(t.String(), t.Array(t.String())),
-              }),
+              data: t.Intersect([
+                t.Object({
+                  email: t.String(),
+                  id: t.Optional(t.String()),
+                  type: t.Union([t.Literal("characters"), t.Literal("blueprint_instances")]),
+                  config: t.Record(
+                    t.Union([
+                      t.Literal("characters"),
+                      t.Literal("blueprint_instances"),
+                      t.Literal("documents"),
+                      t.Literal("maps"),
+                      t.Literal("map_pins"),
+                      t.Literal("events"),
+                      t.Literal("images"),
+                      t.Literal("random_tables"),
+                      t.Literal("tags"),
+                    ]),
+                    t.Array(t.String()),
+                  ),
+                }),
+                t.Union([
+                  t.Object({
+                    gateway_type: t.Literal("update"),
+                    entity_id: t.String(),
+                  }),
+                  t.Object({
+                    gateway_type: t.Literal("create"),
+                    create_config: t.Union([
+                      t.Intersect([
+                        t.Object({
+                          is_locked: t.Literal(true),
+                        }),
+                        t.Union([
+                          t.Object({
+                            first_name: t.String(),
+                            last_name: t.String(),
+                          }),
+                          t.Object({ title: t.String() }),
+                        ]),
+                      ]),
+
+                      t.Object({
+                        is_locked: t.Literal(false),
+                        first_name: t.Optional(t.String()),
+                        last_name: t.Optional(t.String()),
+                        title: t.Optional(t.String()),
+                      }),
+                    ]),
+                  }),
+                ]),
+              ]),
             },
             { additionalProperties: false },
           ),

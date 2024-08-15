@@ -15,6 +15,7 @@ import {
   UpdateCharacterSchema,
 } from "../database/validation";
 import { MessageEnum } from "../enums";
+import { GatewayAccessType, GatewayConfigEntityTypes } from "../types/entityTypes";
 import {
   GatewayResponseSchema,
   GatewayResponseWithDataSchema,
@@ -39,22 +40,7 @@ export function gateway_access_router(app: Elysia) {
         const ttl = await redis.TTL(`${params.type}_gateway_access_${params.access_id}`);
         if (gateway_access) {
           try {
-            const gateway_access_data = JSON.parse(gateway_access) as {
-              access_id: string;
-              entity_id: string;
-              code: number;
-              config: Record<
-                | "characters"
-                | "blueprint_instances"
-                | "documents"
-                | "maps"
-                | "map_pins"
-                | "events"
-                | "images"
-                | "random_tables",
-                string[]
-              >;
-            };
+            const gateway_access_data = JSON.parse(gateway_access) as GatewayAccessType;
             if (gateway_access_data.code.toString() !== params.code) {
               set.status = 403;
               return { data: {}, ok: false, message: MessageEnum.gateway_access_code };
@@ -306,22 +292,7 @@ export function gateway_access_router(app: Elysia) {
 
           if (gateway_access) {
             try {
-              const gateway_access_data = JSON.parse(gateway_access) as {
-                access_id: string;
-                entity_id: string;
-                code: number;
-                config: Record<
-                  | "characters"
-                  | "blueprint_instances"
-                  | "documents"
-                  | "maps"
-                  | "map_pins"
-                  | "events"
-                  | "images"
-                  | "random_tables",
-                  string[]
-                >;
-              };
+              const gateway_access_data = JSON.parse(gateway_access) as GatewayAccessType;
 
               const ids = gateway_access_data.config.images;
 
@@ -354,27 +325,12 @@ export function gateway_access_router(app: Elysia) {
           const gateway_access = await redis.GET(`${body.data.entity_type}_gateway_access_${body.data.access_id}`);
           if (gateway_access) {
             try {
-              const gateway_access_data = JSON.parse(gateway_access) as {
-                access_id: string;
-                entity_id: string;
-                code: number;
-                config: Record<
-                  "characters" | "blueprint_instances" | "documents" | "maps" | "map_pins" | "events" | "images",
-                  string[]
-                >;
-              };
+              const gateway_access_data = JSON.parse(gateway_access) as GatewayAccessType;
 
               const entities = Object.entries(gateway_access_data?.config || {});
               const requests = [];
               for (let index = 0; index < entities.length; index++) {
-                const entity = entities[index][0] as
-                  | "characters"
-                  | "blueprint_instances"
-                  | "documents"
-                  | "maps"
-                  | "map_pins"
-                  | "events"
-                  | "images";
+                const entity = entities[index][0] as GatewayConfigEntityTypes;
                 const ids = entities[index][1];
                 if (ids.length) {
                   const fields = getSearchFields(entity, true);
@@ -406,18 +362,21 @@ export function gateway_access_router(app: Elysia) {
 
               const result = (await Promise.all(requests)).flat();
               return {
-                data: result.map((item) => ({
-                  value: item.id,
-                  label: item?.full_name || item.title,
-                  parent_id: "parent_id" in item ? item?.parent_id : null,
-                  image:
-                    type === "characters" || (type === "nodes" && item?.first_name)
-                      ? item.portrait_id || ""
-                      : item?.image_id || "",
-                  icon: item?.icon,
-                  entity_type: item?.entity_type,
-                  project_id: item?.project_id,
-                })),
+                data: {
+                  create_config: gateway_access_data.gateway_type === "create" ? gateway_access_data.create_config : undefined,
+                  project_id: gateway_access_data.project_id,
+                  entities: result.map((item) => ({
+                    value: item.id,
+                    label: item?.full_name || item.title,
+                    parent_id: "parent_id" in item ? item?.parent_id : null,
+                    image:
+                      type === "characters" || (type === "nodes" && item?.first_name)
+                        ? item.portrait_id || ""
+                        : item?.image_id || "",
+                    icon: item?.icon,
+                    entity_type: item?.entity_type,
+                  })),
+                },
                 message: MessageEnum.success,
                 ok: true,
                 role_access: true,
@@ -445,22 +404,7 @@ export function gateway_access_router(app: Elysia) {
 
           if (gateway_access) {
             try {
-              const gateway_access_data = JSON.parse(gateway_access) as {
-                access_id: string;
-                entity_id: string;
-                code: number;
-                config: Record<
-                  | "characters"
-                  | "blueprint_instances"
-                  | "documents"
-                  | "maps"
-                  | "map_pins"
-                  | "events"
-                  | "images"
-                  | "random_tables",
-                  string[]
-                >;
-              };
+              const gateway_access_data = JSON.parse(gateway_access) as GatewayAccessType;
 
               const ids =
                 gateway_access_data.config[
