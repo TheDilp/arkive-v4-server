@@ -6,7 +6,6 @@ import { DB } from "kysely-codegen";
 import { db } from "../database/db";
 import { UploadUserAsset } from "../database/queries/assetQueries";
 import { InsertUserSchema, InviteUserSchema, KickUserSchema, ReadUserSchema, UpdateUserSchema } from "../database/validation";
-import { EmailGateway } from "../emails/EmailGateway";
 import { EmailInvite } from "../emails/EmailInvite";
 import { DefaultProjectFeatureFlags, ErrorEnums, NicknameInUse } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
@@ -233,18 +232,18 @@ export function user_router(app: Elysia) {
 
                 await redis.SET(`${body.data.type}_gateway_access_${access_id}`, JSON.stringify(config), { EX: 60 * 60 * 6 });
 
-                await resend.emails.send({
-                  from: "The Arkive <emails@thearkive.app>",
-                  to: [body.data.email],
-                  subject: "Arkive gateway access",
-                  react: EmailGateway({
-                    title: entity?.title || "",
-                    type: body.data.type,
-                    code,
-                    gateway_type: body.data.gateway_type,
-                    link: `${access_id}/${entity?.id || ""}/${body.data.gateway_type}`,
-                  }),
-                });
+                // await resend.emails.send({
+                //   from: "The Arkive <emails@thearkive.app>",
+                //   to: [body.data.email],
+                //   subject: "Arkive gateway access",
+                //   react: EmailGateway({
+                //     title: entity?.title || "",
+                //     type: body.data.type,
+                //     code,
+                //     gateway_type: body.data.gateway_type,
+                //     link: `${access_id}/${entity?.id || ""}/${body.data.gateway_type}`,
+                //   }),
+                // });
               }
             } else if (!body.data.id && body.data.gateway_type === "create") {
               const config: GatewayAccessType = {
@@ -254,21 +253,20 @@ export function user_router(app: Elysia) {
               };
 
               await redis.SET(`${body.data.type}_gateway_access_${access_id}`, JSON.stringify(config), { EX: 60 * 60 * 6 });
-
-              await resend.emails.send({
-                from: "The Arkive <emails@thearkive.app>",
-                to: [body.data.email],
-                subject: "Arkive gateway access",
-                react: EmailGateway({
-                  title: "Create character",
-                  type: body.data.type,
-                  code,
-                  gateway_type: body.data.gateway_type,
-                  link: `${access_id}/${body.data.gateway_type}`,
-                }),
-              });
+              // await resend.emails.send({
+              //   from: "The Arkive <emails@thearkive.app>",
+              //   to: [body.data.email],
+              //   subject: "Arkive gateway access",
+              //   react: EmailGateway({
+              //     title: "Create character",
+              //     type: body.data.type,
+              //     code,
+              //     gateway_type: body.data.gateway_type,
+              //     link: `${access_id}/${body.data.gateway_type}`,
+              //   }),
+              // });
             }
-            return {};
+            return { code, link: `${process.env.GATEWAY_CLIENT_URL}/${body.data.type}/${access_id}/${body.data.gateway_type}` };
           } else {
             return { ok: false, message: "No permission for project" };
           }
@@ -278,7 +276,6 @@ export function user_router(app: Elysia) {
             {
               data: t.Intersect([
                 t.Object({
-                  email: t.String(),
                   id: t.Optional(t.String()),
                   type: t.Union([t.Literal("characters"), t.Literal("blueprint_instances")]),
                   config: t.Record(
