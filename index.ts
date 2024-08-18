@@ -152,7 +152,7 @@ export const app = new Elysia({ name: "Editor.Router" })
               if (user_id) {
                 const action = getPermissionOperationFromPath(path, request.method as "GET" | "POST" | "DELETE");
 
-                const res = await fetch(`${process.env.AUTH_SERVICE}/auth/permission/${action}_${entity}`, {
+                const res = await fetch(`${process.env.AUTH_SERVICE_URL}/auth/permission/${action}_${entity}`, {
                   method: "GET",
                   //  @ts-ignore
                   headers: {

@@ -49,7 +49,7 @@ export function gateway_access_router(app: Elysia) {
 
             if (gateway_access_data.access_id === params.access_id) {
               const res = await fetch(
-                `${process.env.AUTH_SERVICE}/auth/gateway/${params.type}/${params.access_id}/${params.code}`,
+                `${process.env.AUTH_SERVICE_URL}/auth/gateway/${params.type}/${params.access_id}/${params.code}`,
               );
 
               if (res.status >= 400) {
