@@ -36,7 +36,7 @@ export async function verifyJWT({
   access: Cookie<string | undefined>;
   set: { headers: HTTPHeaders; status?: number | keyof StatusMap };
 }) {
-  const res = await fetch(`${process.env.ARKIVE_AUTH_URL}/verify`, {
+  const res = await fetch(`${process.env.AUTH_SERVICE}/verify`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -76,7 +76,7 @@ export async function verifyGatewayJWT({
   access: Cookie<string | undefined>;
   set: { headers: HTTPHeaders; status?: number | keyof StatusMap };
 }) {
-  const res = await fetch(`${process.env.ARKIVE_AUTH_URL}/verify/gateway`, {
+  const res = await fetch(`${process.env.AUTH_SERVICE}/verify/gateway`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
