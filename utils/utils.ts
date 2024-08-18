@@ -1,3 +1,5 @@
+import { Cookie } from "elysia";
+
 import { FromTemplateRandomCountSchema } from "../database/validation";
 import { MentionTypeEnum } from "../enums";
 import { baseURLS } from "../enums/baseEnums";
@@ -113,11 +115,28 @@ export function findObjectsByType(obj: Record<string, any>, targetType: string):
   return foundObjects;
 }
 
-export function getImageURL(project_id: string, type: AssetType, image_id?: string | null, isGraphImage?: boolean): string {
+export async function getImageURL(
+  project_id: string,
+  type: AssetType,
+  image_id?: string | null,
+  dimensions?: { width: number; height: number },
+  access?: Cookie<string | undefined>,
+  refresh?: Cookie<string | undefined>,
+): Promise<string> {
   if (!image_id) return "";
-  return `https://${process.env.DO_SPACES_NAME}.${
-    isGraphImage ? process.env.DO_SPACES_ENDPOINT : process.env.DO_SPACES_CDN_ENDPOINT
-  }/assets/${project_id}/${type}/${image_id}.webp`;
+  const url = `${process.env.ASSET_SERVICE_URL}/${project_id}/${type}/${image_id}`;
+  const formatted_url = dimensions ? `${url}?width=${dimensions.width}&height=${dimensions.height}` : url;
+  const res = await fetch(formatted_url, {
+    headers: {
+      cookie: `access=${access}; refresh=${refresh}`,
+    },
+  });
+
+  if (res.status >= 400) return "";
+
+  const link = await res.text();
+
+  return link;
 }
 
 export function createEntityURL(project_id: string, type: string, id: string): string {

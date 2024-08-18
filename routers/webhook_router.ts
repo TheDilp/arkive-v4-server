@@ -97,7 +97,7 @@ export function webhook_router(app: Elysia) {
       )
       .post(
         "/send/:id",
-        async ({ params, body }) => {
+        async ({ params, body, cookie: { access, refresh } }) => {
           const { url } = await db
             .selectFrom("webhooks")
             .select(["url"])
@@ -116,7 +116,10 @@ export function webhook_router(app: Elysia) {
             content.url = `${createEntityURL(data.project_id, "characters", data.id)}`;
             content.title = `${data.full_name} (Character)`;
             content.description = extractDocumentText(data.biography) || "";
-            if (data?.portrait_id) content.image = { url: getImageURL(data.project_id, "images", data.portrait_id) };
+            if (data?.portrait_id)
+              content.image = {
+                url: await getImageURL(data.project_id, "images", data.portrait_id, undefined, access, refresh),
+              };
           } else if (body.data.type === "document_text") {
             content.title = body.data.title;
             content.description = body.data.description;
@@ -138,7 +141,8 @@ export function webhook_router(app: Elysia) {
             content.url = `${createEntityURL(data.project_id, "documents", data.id)}`;
             content.title = `${data.title} (Document)`;
             content.description = extractDocumentText(data.content) || "";
-            if (data?.image_id) content.image = { url: getImageURL(data.project_id, "images", data.image_id) };
+            if (data?.image_id)
+              content.image = { url: await getImageURL(data.project_id, "images", data.image_id, undefined, access, refresh) };
             else content.thumbnail = { url: getIconUrlFromIconEnum(data.icon || getDefaultEntityIcon("documents")) };
           } else if (body.data.type === "maps") {
             const data = await db
@@ -151,7 +155,10 @@ export function webhook_router(app: Elysia) {
             content.url = `${createEntityURL(data.project_id, "maps", data.id)}`;
             content.thumbnail = { url: getIconUrlFromIconEnum(data.icon || getDefaultEntityIcon("maps")) };
 
-            if (data?.image_id) content.image = { url: getImageURL(data.project_id, "map_images", data.image_id) };
+            if (data?.image_id)
+              content.image = {
+                url: await getImageURL(data.project_id, "map_images", data.image_id, undefined, access, refresh),
+              };
           } else if (body.data.type === "images") {
             const data = await db
               .selectFrom("images")
@@ -161,7 +168,7 @@ export function webhook_router(app: Elysia) {
             content.title = data.title;
 
             if (data.project_id) {
-              content.image = { url: getImageURL(data.project_id, "images", data.id) };
+              content.image = { url: await getImageURL(data.project_id, "images", data.id, undefined, access, refresh) };
             }
           } else if (body.data.type === "random_table_roll") {
             content.title = body.data.title;
