@@ -21,13 +21,11 @@ export function getSearchFields(type: SearchableEntities, isGateway?: boolean): 
   if (type === "dictionaries") fields.push("dictionaries.icon");
   if (type === "blueprint_instances") fields.push("blueprint_instances.parent_id");
 
-  if (!isGateway) {
-    if (type !== "blueprint_instances" && type !== "map_pins" && type !== "events") {
-      fields.push(`${type}.project_id`);
-    } else if (type === "blueprint_instances") fields.push("blueprints.project_id");
-    else if (type === "map_pins") fields.push("maps.project_id");
-    else if (type === "events") fields.push("calendars.project_id");
-  }
+  if (isGateway && type !== "blueprint_instances" && type !== "map_pins" && type !== "events") {
+    fields.push(`${type}.project_id`);
+  } else if (type === "blueprint_instances") fields.push("blueprints.project_id");
+  else if (type === "map_pins") fields.push("maps.project_id");
+  else if (type === "events") fields.push("calendars.project_id");
 
   return fields;
 }
