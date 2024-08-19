@@ -69,12 +69,12 @@ export function node_router(app: Elysia) {
         "/:id",
         async ({ params, body, permissions }) => {
           let query = db.selectFrom("nodes").selectAll().where("nodes.id", "=", params.id);
-          if (body?.relations?.tags && permissions.all_permissions?.read_tags) {
+          if (body?.relations?.tags && (permissions.all_permissions?.read_tags || permissions.is_project_owner)) {
             query = query.select((eb) =>
               TagQuery(eb, "_nodesTotags", "nodes", permissions.is_project_owner, permissions.user_id),
             );
           }
-          if (body?.relations?.image && permissions.all_permissions?.read_assets) {
+          if (body?.relations?.image && (permissions.all_permissions?.read_assets || permissions.is_project_owner)) {
             query = query.select((eb) => {
               let image_query = eb
                 .selectFrom("images")
@@ -92,7 +92,7 @@ export function node_router(app: Elysia) {
               return jsonObjectFrom(image_query).as("image");
             });
           }
-          if (body?.relations?.character && permissions.all_permissions?.read_characters) {
+          if (body?.relations?.character && (permissions.all_permissions?.read_characters || permissions.is_project_owner)) {
             query = query.select((eb) => {
               let character_query = eb
                 .selectFrom("characters")
@@ -110,7 +110,7 @@ export function node_router(app: Elysia) {
               return jsonObjectFrom(character_query).as("character");
             });
           }
-          if (body?.relations?.document && permissions.all_permissions?.read_documents) {
+          if (body?.relations?.document && (permissions.all_permissions?.read_documents || permissions.is_project_owner)) {
             query = query.select((eb) => {
               let document_query = eb
                 .selectFrom("documents")
@@ -137,7 +137,7 @@ export function node_router(app: Elysia) {
               return jsonObjectFrom(map_pin_query).as("map_pin");
             });
           }
-          if (body?.relations?.event && permissions.all_permissions?.read_events) {
+          if (body?.relations?.event && (permissions.all_permissions?.read_events || permissions.is_project_owner)) {
             query = query.select((eb) => {
               let event_query = eb
                 .selectFrom("events")

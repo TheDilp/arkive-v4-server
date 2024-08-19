@@ -63,6 +63,7 @@ export function getEntityFromPath(path: string): AvailableEntityType | Available
     return (path.split("/").at(-1) as AvailableEntityType | AvailableSubEntityType | undefined) || null;
   }
   const entity = path.split("/")[3];
+  if (entity === "nodes" || entity === "edges") return "graphs";
   if (entity === "character_map_pins") return "map_pins";
   return entity as AvailableEntityType | AvailableSubEntityType;
 }
