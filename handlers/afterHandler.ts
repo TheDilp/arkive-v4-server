@@ -86,6 +86,7 @@ async function afterHandlerMany(entity: string, headers: Record<string, string |
 }
 
 export async function tempAfterHandle(context: any, response: any) {
+  if (context.path.includes("/nodes/") || context.path.includes("/edges/")) return;
   const redis = await redisClient;
 
   const action = getOperationFromPath(context.path, context.request.method);
