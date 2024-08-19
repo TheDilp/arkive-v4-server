@@ -90,36 +90,25 @@ export function bulk_router(app: Elysia) {
               .where("entity_permissions.user_id", "=", permissions.user_id)
               .execute();
 
-            const ids = permissions.is_project_owner ? sent_ids : d.map((item) => item.id);
-
-            if (ids.length)
-              await Promise.all(
-                body.data
-                  .filter((item) => ids.includes(item.data.id))
-                  .map((item) =>
-                    tx
-
-                      .updateTable(params.type as DBKeys)
-                      // @ts-ignore
-                      .set(omit(item.data, "id"))
-                      .where("id", "in", ids)
-                      .execute(),
-                  ),
-              );
-
             if (params.type === "nodes") {
               const nodesWithTagsToUpdate = body.data.filter((n) => !!n?.relations?.tags);
               if (nodesWithTagsToUpdate.length)
                 await Promise.all(
-                  nodesWithTagsToUpdate.map((n) =>
-                    UpdateTagRelations({
-                      relationalTable: "_nodesTotags",
-                      id: n.data.id,
-                      newTags: n.relations?.tags as { id: string }[],
-                      tx,
-                      is_project_owner: permissions.is_project_owner,
-                    }),
-                  ),
+                  nodesWithTagsToUpdate
+                    .map((n) =>
+                      UpdateTagRelations({
+                        relationalTable: "_nodesTotags",
+                        id: n.data.id,
+                        newTags: n.relations?.tags as { id: string }[],
+                        tx,
+                        is_project_owner: permissions.is_project_owner,
+                      }),
+                    )
+                    .concat(
+                      body.data.map((node) =>
+                        tx.updateTable("nodes").where("id", "=", node.data.id).set(omit(node.data, "id")).execute(),
+                      ),
+                    ),
                 );
             } else if (params.type === "edges") {
               const edgesWithTagsToUpdate = body.data.filter((n) => !!n?.relations?.tags);
@@ -135,6 +124,22 @@ export function bulk_router(app: Elysia) {
                     }),
                   ),
                 );
+            } else {
+              const ids = permissions.is_project_owner ? sent_ids : d.map((item) => item.id);
+
+              await Promise.all(
+                body.data
+                  .filter((item) => ids.includes(item.data.id))
+                  .map((item) =>
+                    tx
+
+                      .updateTable(params.type as DBKeys)
+                      // @ts-ignore
+                      .set(omit(item.data, "id"))
+                      .where("id", "in", ids)
+                      .execute(),
+                  ),
+              );
             }
           });
 
