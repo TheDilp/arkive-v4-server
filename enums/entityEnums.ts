@@ -88,7 +88,6 @@ export const BulkDeleteEntitiesEnum = [
   "random_tables",
   "random_table_options",
   "tags",
-  "images",
   "character_fields_templates",
 ];
 export const BulkArkiveEntitiesEnum = [

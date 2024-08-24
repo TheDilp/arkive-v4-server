@@ -9,7 +9,6 @@ import { DashboardSchema, InsertProjectSchema, ReadProjectSchema, UpdateProjectS
 import { DefaultProjectFeatureFlags } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { PermissionDecorationType, RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { deleteFolder } from "../utils/s3Utils";
 import { getEntityWithOwnerId } from "../utils/utils";
 import { sendNotification } from "../utils/websocketUtils";
 
@@ -367,9 +366,12 @@ export function project_router(app: Elysia) {
       .delete(
         "/:id",
         async ({ params }) => {
-          const filePath = `assets/${params.id}`;
           try {
-            await deleteFolder(filePath);
+            const res = await fetch(`${process.env.ASSET_SERVICE_URL}/assets/folder/${params.id}`, { method: "DELETE" });
+
+            if (res.status !== 200) {
+              console.error("SOME PROJECT IMAGES WERE NOT DELETED");
+            }
           } catch (error) {
             return { message: "Could not delete images.", ok: false, role_access: true };
           }

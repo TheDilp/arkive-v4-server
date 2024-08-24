@@ -4,7 +4,6 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { UploadUserAsset } from "../database/queries/assetQueries";
 import { InsertUserSchema, InviteUserSchema, KickUserSchema, ReadUserSchema, UpdateUserSchema } from "../database/validation";
 import { EmailInvite } from "../emails/EmailInvite";
 import { DefaultProjectFeatureFlags, ErrorEnums, NicknameInUse } from "../enums";
@@ -129,21 +128,6 @@ export function user_router(app: Elysia) {
         },
         {
           body: UpdateUserSchema,
-          response: ResponseSchema,
-        },
-      )
-      .post(
-        "/update/avatar/:id",
-        async ({ params, body }) => {
-          const user = await db.selectFrom("users").where("users.id", "=", params.id).select("image").executeTakeFirst();
-          const image = await UploadUserAsset({ user_id: params.id, body, image: user?.image });
-
-          await db.updateTable("users").set({ image }).where("users.id", "=", params.id).execute();
-
-          return { message: `User ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
-        },
-        {
-          body: t.Record(t.String(), t.File({ maxSize: "1m" })),
           response: ResponseSchema,
         },
       )

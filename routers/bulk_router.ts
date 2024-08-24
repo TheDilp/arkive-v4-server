@@ -1,4 +1,3 @@
-import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { Elysia, t } from "elysia";
 import { SelectExpression } from "kysely";
 import { DB } from "kysely-codegen";
@@ -27,7 +26,6 @@ import {
 import { PermissionDecorationType, ResponseSchema } from "../types/requestTypes";
 import { UpdateTagRelations } from "../utils/relationalQueryHelpers";
 import { getEntityTagTable } from "../utils/requestUtils";
-import { s3Client } from "../utils/s3Utils";
 
 export function bulk_router(app: Elysia) {
   return app.group("/bulk", (server) =>
@@ -341,45 +339,7 @@ export function bulk_router(app: Elysia) {
               console.error("ATTEMPTED BULK DELETE FOR IMAGES WITH NO PROJECT ID", params.type);
               throw new Error("INTERNAL_SERVER_ERROR");
             }
-            if (params.type === "images" && body.data.project_id) {
-              const sent_ids = body.data.ids;
 
-              const d = await db
-
-                // @ts-ignore
-                .selectFrom(params.type as DBKeys)
-                // @ts-ignore
-                .select([`${params.type}.id`])
-                // @ts-ignore
-                .leftJoin("entity_permissions", "entity_permissions.related_id", `${params.type}.id`)
-                .leftJoin("permissions", "permissions.id", "entity_permissions.permission_id")
-                // @ts-ignore
-                .where(`${params.type}.id`, "in", sent_ids)
-                .where("permissions.code", "like", `delete_${params.type}`)
-                .where("entity_permissions.user_id", "=", permissions.user_id)
-                .execute();
-
-              const ids = permissions.is_project_owner ? sent_ids : d.map((item) => item.id);
-
-              try {
-                const filePath = `assets/${body.data.project_id}/${params.type}`;
-                const deleteCommand = new DeleteObjectsCommand({
-                  Bucket: process.env.DO_SPACES_NAME as string,
-                  Delete: {
-                    Objects: (ids || []).map((id) => ({ Key: `${filePath}/${id}.webp` })),
-                    Quiet: false,
-                  },
-                });
-                await s3Client.send(deleteCommand);
-                await db
-                  .deleteFrom(params.type as BulkDeleteEntitiesType)
-                  .where("id", "in", ids)
-                  .execute();
-              } catch (error) {
-                console.error("ERROR BULK DELETING S3 IMAGES ");
-                throw new Error("INTERNAL_SERVER_ERROR");
-              }
-            }
             if (BulkDeleteEntitiesEnum.includes(params.type)) {
               const sent_ids = body.data.ids;
 

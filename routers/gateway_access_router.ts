@@ -1,11 +1,10 @@
-import { Elysia, t } from "elysia";
+import { Elysia } from "elysia";
 import { SelectExpression, sql } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
 import { createCharacter, readCharacter, updateCharacter } from "../database/queries";
-import { UploadAssets } from "../database/queries/assetQueries";
 import {
   GatewayMentionSearchSchema,
   GatewaySearchSchema,
@@ -287,31 +286,7 @@ export function gateway_access_router(app: Elysia) {
           response: ResponseWithDataSchema,
         },
       )
-      .post(
-        "/assets/upload/:entity_id",
-        async ({ params, headers, body }) => {
-          const project_id = headers?.["project-id"];
-          if (project_id) {
-            const project = await db
-              .selectFrom("projects")
-              .where("id", "=", project_id)
-              .select(["owner_id"])
-              .executeTakeFirst();
-            if (project?.owner_id) {
-              const ids = await UploadAssets({ type: "images", project_id, body, permissions: { user_id: project?.owner_id } });
 
-              if (ids.length === 1) {
-                await db.updateTable("characters").where("id", "=", params.entity_id).set("portrait_id", ids[0]).execute();
-              }
-
-              return { ok: true, message: MessageEnum.success };
-            }
-            return { ok: false, message: "There was an error with this request." };
-          }
-          return { ok: false, message: "There was an error with this request." };
-        },
-        { body: t.Record(t.String(), t.File({ maxSize: "50m" })), response: GatewayResponseSchema },
-      )
       .post(
         "/assets/:entity_type/:access_id",
         async ({ params, body }) => {

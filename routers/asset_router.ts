@@ -1,55 +1,17 @@
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { StreamingBlobPayloadOutputTypes } from "@smithy/types";
-import { Elysia, t } from "elysia";
+import { Elysia } from "elysia";
 import { SelectExpression } from "kysely";
 import { DB } from "kysely-codegen";
-import sharp from "sharp";
 
 import { db } from "../database/db";
-import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
-import { UploadAssets } from "../database/queries/assetQueries";
-import { DownloadAssetsSchema, ListAssetsSchema, ReadAssetsSchema, UpdateImageSchema } from "../database/validation";
+import { checkEntityLevelPermission } from "../database/queries";
+import { ListAssetsSchema, ReadAssetsSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
-import { noRoleAccessErrorHandler } from "../handlers";
 import { AssetType } from "../types/entityTypes";
-import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { PermissionDecorationType, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter, tagsRelationFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
-import {
-  GetRelatedEntityPermissionsAndRoles,
-  TagQuery,
-  UpdateEntityPermissions,
-  UpdateTagRelations,
-} from "../utils/relationalQueryHelpers";
-import { s3Client } from "../utils/s3Utils";
+import { GetRelatedEntityPermissionsAndRoles, TagQuery } from "../utils/relationalQueryHelpers";
 import { groupRelationFiltersByField } from "../utils/utils";
-
-async function createFile(data: Blob) {
-  const buff = await data.arrayBuffer();
-
-  // @ts-ignore
-  if (data.name.endsWith(".gif")) {
-    const sharpData = sharp(buff, { pages: -1 });
-    return sharpData.toFormat("webp").toBuffer();
-  }
-  const sharpData = sharp(buff);
-  return sharpData.toFormat("webp").toBuffer();
-}
-
-// Function to turn the file's body into a string.
-const streamToString = (stream: StreamingBlobPayloadOutputTypes | undefined) => {
-  const chunks: Buffer[] = [];
-  if (!stream) return chunks;
-  return new Promise((resolve, reject) => {
-    // @ts-ignore
-    stream.on("data", (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
-    // @ts-ignore
-    stream.on("error", (err) => reject(err));
-    // @ts-ignore
-    stream.on("end", () => resolve(Buffer.concat(chunks).toString("base64")));
-  });
-};
 
 export function asset_router(app: Elysia) {
   return app.group("/assets", (server) =>
@@ -140,176 +102,6 @@ export function asset_router(app: Elysia) {
         {
           body: ReadAssetsSchema,
           response: ResponseWithDataSchema,
-        },
-      )
-      .post(
-        "/upload/:project_id/:type",
-        async ({ params, body, permissions }) => {
-          const { type, project_id } = params;
-
-          await UploadAssets({ type: type as AssetType, project_id, body, permissions });
-
-          return { message: "Image(s) uploaded successfully.", ok: true, role_access: true };
-        },
-        {
-          body: t.Record(t.String(), t.File({ maxSize: "100m" })),
-          response: ResponseSchema,
-        },
-      )
-      .post(
-        "/update/:id",
-        async ({ params, body, permissions }) => {
-          const permissionCheck = await getHasEntityPermission("images", params.id, permissions);
-          if (permissionCheck) {
-            await db.transaction().execute(async (tx) => {
-              let update_data: Record<string, any> = {};
-              if ("data" in body) {
-                if (body.data.title) {
-                  update_data.title = body.data.title;
-                }
-                if (body.data.owner_id) {
-                  update_data.owner_id = body.data.owner_id;
-                }
-              } else {
-                if (body.title) {
-                  update_data.title = body.title;
-                }
-                if (body.owner_id) {
-                  update_data.owner_id = body.owner_id;
-                }
-                if (body.file) {
-                  const image_data = await tx
-                    .selectFrom("images")
-                    .where("images.id", "=", params.id)
-                    .select(["id", "project_id", "type"])
-                    .executeTakeFirst();
-
-                  if (image_data) {
-                    try {
-                      const filePath = `assets/${image_data.project_id}/${image_data.type}`;
-                      await s3Client.send(
-                        new DeleteObjectCommand({
-                          Bucket: process.env.DO_SPACES_NAME as string,
-                          Key: `${filePath}/${params.id}.webp`,
-                        }),
-                      );
-                      const buffer = await createFile(body.file as File);
-
-                      const command = new PutObjectCommand({
-                        Bucket: process.env.DO_SPACES_NAME as string,
-                        Key: `${filePath}/${params.id}.webp`,
-                        Body: buffer,
-                        ACL: "private",
-                        ContentType: "image/webp",
-                        CacheControl: "max-age=600",
-                      });
-                      const url = await getSignedUrl(s3Client, command, { expiresIn: 600 });
-                      await fetch(url, {
-                        headers: {
-                          "Content-Type": "image/webp",
-                          "Cache-Control": "max-age=600",
-                          "x-amz-acl": "private",
-                        },
-                        method: "PUT",
-                        body: buffer,
-                      });
-
-                      fetch("https://api.digitalocean.com/v2/cdn/endpoints/2d4f9376-7445-4c59-b4fd-58e758acd06d/cache", {
-                        method: "DELETE",
-                        headers: {
-                          "Content-Type": "application/json",
-                          Authorization: `Bearer ${process.env.DO_CDN_PURGE_ACCESS_KEY}`,
-                        },
-                        body: JSON.stringify({
-                          files: ["*"],
-                        }),
-                      });
-                    } catch (error) {
-                      return { message: "Could not delete image.", ok: false, role_access: true };
-                    }
-                  }
-                }
-              }
-
-              await tx.updateTable("images").where("id", "=", params.id).set(update_data).execute();
-              if ("permissions" in body && body?.permissions) {
-                await UpdateEntityPermissions(tx, params.id, body.permissions);
-              }
-
-              if ("relations" in body && body.relations?.tags) {
-                await UpdateTagRelations({
-                  relationalTable: "image_tags",
-                  id: params.id,
-                  newTags: body.relations.tags,
-                  tx,
-                  is_project_owner: permissions.is_project_owner,
-                });
-              }
-            });
-            return { message: `Image ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
-          } else {
-            noRoleAccessErrorHandler();
-            return { message: "", ok: false, role_access: false };
-          }
-        },
-        {
-          body: UpdateImageSchema,
-          response: ResponseSchema,
-        },
-      )
-      .post(
-        "/download/:project_id/:type",
-        async ({ body, params }) => {
-          const { project_id, type } = params;
-          const filePath = `assets/${project_id}/${type}`;
-          const responseFiles = [];
-          for (let index = 0; index < body.data.length; index++) {
-            const bucketParams = {
-              Bucket: process.env.DO_SPACES_NAME as string,
-              Key: `${filePath}/${body.data[index].id}.webp`,
-            };
-            try {
-              const response = await s3Client.send(new GetObjectCommand(bucketParams));
-              const data = await streamToString(response.Body);
-
-              responseFiles.push(data);
-            } catch (err) {
-              console.error(err);
-              responseFiles.push(null);
-            }
-          }
-          return { data: responseFiles, message: MessageEnum.success, ok: true, role_access: true };
-        },
-        {
-          body: DownloadAssetsSchema,
-        },
-      )
-      .delete(
-        "/:project_id/:type/:id",
-        async ({ params, permissions }) => {
-          const permissionCheck = await getHasEntityPermission("images", params.id, permissions);
-          if (permissionCheck) {
-            const filePath = `assets/${params.project_id}/${params.type}`;
-
-            try {
-              await s3Client.send(
-                new DeleteObjectCommand({
-                  Bucket: process.env.DO_SPACES_NAME as string,
-                  Key: `${filePath}/${params.id}.webp`,
-                }),
-              );
-              await db.deleteFrom("images").where("id", "=", params.id).execute();
-              return { message: `Image ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
-            } catch (error) {
-              return { message: "Could not delete image.", ok: false, role_access: true };
-            }
-          } else {
-            noRoleAccessErrorHandler();
-            return { message: "", ok: false, role_access: false };
-          }
-        },
-        {
-          response: ResponseSchema,
         },
       ),
   );
