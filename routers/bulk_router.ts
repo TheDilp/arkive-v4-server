@@ -5,6 +5,7 @@ import omit from "lodash.omit";
 import uniq from "lodash.uniq";
 
 import { db } from "../database/db";
+import { checkEntityLevelPermission } from "../database/queries";
 import { DBKeys } from "../database/types";
 import {
   InsertNodeSchema,
@@ -236,31 +237,77 @@ export function bulk_router(app: Elysia) {
         "/tags/:type",
         async ({ params, body, permissions }) => {
           const entityTagTable = getEntityTagTable(params.type as AvailableEntityType | AvailableSubEntityType);
-          if (entityTagTable) {
+          const entity_ids = Array.from(new Set([body.data.add, body.data.remove].flat().map((i) => i.A)));
+          const permittedEntities: string[] = [];
+
+          if (permissions.is_project_owner) {
+            for (let index = 0; index < entity_ids.length; index++) {
+              permittedEntities.push(entity_ids[index]);
+            }
+          } else {
+            const entities = await db
+              .selectFrom(
+                params.type as
+                  | "manuscripts"
+                  | "characters"
+                  | "documents"
+                  | "maps"
+                  | "graphs"
+                  | "calendars"
+                  | "dictionaries"
+                  | "tags",
+              )
+              .$if(!permissions.is_project_owner, (qb) => {
+                return checkEntityLevelPermission(qb, permissions, "characters");
+              })
+              .select("id")
+              .where("id", "in", entity_ids)
+              .execute();
+
+            for (let index = 0; index < entities.length; index++) {
+              permittedEntities.push(entities[index].id);
+            }
+          }
+
+          if (entityTagTable && permittedEntities.length) {
             await db.transaction().execute(async (tx) => {
-              if (body.data.add.length)
-                await tx
-                  .insertInto(entityTagTable)
-                  .values(
-                    newTagTables.includes(entityTagTable)
-                      ? body.data.add.map((t) => ({ related_id: t.A, tag_id: t.B }))
-                      : body.data.add,
-                  )
-                  .execute();
-              if (body.data.remove.length)
-                await tx
-                  .deleteFrom(entityTagTable)
-                  .where((eb) =>
-                    eb.or(
-                      body.data.remove.map((r) =>
-                        eb.and([
-                          eb(newTagTables.includes(entityTagTable) ? "related_id" : "A", "=", r.A),
-                          eb(newTagTables.includes(entityTagTable) ? "tag_id" : "B", "=", r.B),
-                        ]),
+              const toAdd = permissions.is_project_owner
+                ? body.data.add
+                : body.data.add.filter((item) => permittedEntities.includes(item.A));
+
+              const toRemove = permissions.is_project_owner
+                ? body.data.remove
+                : body.data.remove.filter((item) => permittedEntities.includes(item.A));
+              const actions = [];
+
+              if (toAdd.length) {
+                actions.push(
+                  tx
+                    .insertInto(entityTagTable)
+                    .values(
+                      newTagTables.includes(entityTagTable) ? toAdd.map((t) => ({ related_id: t.A, tag_id: t.B })) : toAdd,
+                    )
+                    .execute(),
+                );
+              }
+              if (toRemove.length) {
+                actions.push(
+                  tx
+                    .deleteFrom(entityTagTable)
+                    .where((eb) =>
+                      eb.or(
+                        toRemove.map((r) =>
+                          eb.and([
+                            eb(newTagTables.includes(entityTagTable) ? "related_id" : "A", "=", r.A),
+                            eb(newTagTables.includes(entityTagTable) ? "tag_id" : "B", "=", r.B),
+                          ]),
+                        ),
                       ),
-                    ),
-                  )
-                  .execute();
+                    )
+                    .execute(),
+                );
+              }
+              await Promise.all([actions]);
             });
           }
           return { ok: true, message: MessageEnum.success, role_access: true };
