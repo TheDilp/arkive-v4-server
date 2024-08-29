@@ -146,8 +146,11 @@ export const app = new Elysia({ name: "Editor.Router" })
 
             const entity = getEntityFromPath(path);
             if (
-              entity &&
-              (EntitiesWithPermissionsEnum.includes(entity) || entity === "search" || (entity === "users" && !!project_id))
+              (entity &&
+                (EntitiesWithPermissionsEnum.includes(entity) ||
+                  entity === "search" ||
+                  (entity === "users" && !!project_id))) ||
+              path.includes("/bulk/")
             ) {
               if (user_id) {
                 const action = getPermissionOperationFromPath(path, request.method as "GET" | "POST" | "DELETE");

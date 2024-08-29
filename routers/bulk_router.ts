@@ -1,5 +1,5 @@
 import { Elysia, t } from "elysia";
-import { SelectExpression } from "kysely";
+import { ReferenceExpression, SelectExpression } from "kysely";
 import { DB } from "kysely-codegen";
 import omit from "lodash.omit";
 import uniq from "lodash.uniq";
@@ -152,24 +152,31 @@ export function bulk_router(app: Elysia) {
         "/update/access/:type",
         async ({ params, body, permissions }) => {
           const relatedIds = uniq(body.data.permissions.map((p) => p.related_id));
-
           const sent_ids = relatedIds;
+          const ids: string[] = [];
+          if (permissions.is_project_owner) {
+            for (let index = 0; index < sent_ids.length; index++) {
+              ids.push(sent_ids[index]);
+            }
+          } else {
+            const permitted_ids = await db
 
-          const d = await db
+              // @ts-ignore
+              .selectFrom(params.type as DBKeys)
+              .select([`${params.type}.id`] as SelectExpression<DB, DBKeys>[])
+              // @ts-ignore
+              .leftJoin("entity_permissions", "entity_permissions.related_id", `${params.type}.id`)
+              .leftJoin("permissions", "permissions.id", "entity_permissions.permission_id")
+              // @ts-ignore
+              .where(`${params.type}.id`, "in", sent_ids)
+              // @ts-ignore
+              .where((wb) => wb(`${params.type}.owner_id`, "=", permissions.user_id))
+              .execute();
 
-            // @ts-ignore
-            .selectFrom(params.type as DBKeys)
-            .select([`${params.type}.id`] as SelectExpression<DB, DBKeys>[])
-            // @ts-ignore
-            .leftJoin("entity_permissions", "entity_permissions.related_id", `${params.type}.id`)
-            .leftJoin("permissions", "permissions.id", "entity_permissions.permission_id")
-            // @ts-ignore
-            .where(`${params.type}.id`, "in", sent_ids)
-            // @ts-ignore
-            .where((wb) => wb(`${params.type}.owner_id`, "=", permissions.user_id))
-            .execute();
-
-          const ids = permissions.is_project_owner ? sent_ids : d.map((item) => item.id);
+            for (let index = 0; index < permitted_ids.length; index++) {
+              ids.push(permitted_ids[index].id);
+            }
+          }
 
           if (ids.length) {
             // If there is an entry with actual permission changes
@@ -227,7 +234,7 @@ export function bulk_router(app: Elysia) {
       )
       .post(
         "/tags/:type",
-        async ({ params, body }) => {
+        async ({ params, body, permissions }) => {
           const entityTagTable = getEntityTagTable(params.type as AvailableEntityType | AvailableSubEntityType);
           if (entityTagTable) {
             await db.transaction().execute(async (tx) => {
@@ -279,36 +286,46 @@ export function bulk_router(app: Elysia) {
 
             if (BulkArkiveEntitiesEnum.includes(params.type) && params.type !== "images") {
               const sent_ids = body.data.ids;
+              const ids = [];
 
-              const d = await db
+              if (permissions.is_project_owner) {
+                for (let index = 0; index < sent_ids.length; index++) {
+                  ids.push(sent_ids[index]);
+                }
+              } else {
+                const permitted_ids = await db
 
-                // @ts-ignore
-                .selectFrom(params.type as DBKeys)
-                .select([`${params.type}.id`] as SelectExpression<DB, DBKeys>[])
-                // @ts-ignore
-                .leftJoin("entity_permissions", "entity_permissions.related_id", `${params.type}.id`)
-                .leftJoin("permissions", "permissions.id", "entity_permissions.permission_id")
-                // @ts-ignore
-                .where(`${params.type}.id`, "in", sent_ids)
-                .where("permissions.code", "like", `delete_${params.type}`)
-                .where("entity_permissions.user_id", "=", permissions.user_id)
-                .execute();
+                  // @ts-ignore
+                  .selectFrom(params.type as DBKeys)
+                  .select([`${params.type}.id`] as SelectExpression<DB, DBKeys>[])
+                  // @ts-ignore
+                  .leftJoin("entity_permissions", "entity_permissions.related_id", `${params.type}.id`)
+                  .leftJoin("permissions", "permissions.id", "entity_permissions.permission_id")
+                  // @ts-ignore
+                  .where(`${params.type}.id`, "in", sent_ids)
+                  .where("permissions.code", "like", `delete_${params.type}`)
+                  .where("entity_permissions.user_id", "=", permissions.user_id)
+                  .execute();
 
-              const ids = permissions.is_project_owner ? sent_ids : d.map((item) => item.id);
-
-              await db
-                .updateTable(params.type as BulkArkiveEntitiesType)
-                .set(
-                  params.type === "characteres" ||
-                    params.type === "tags" ||
-                    params.type === "blueprints" ||
-                    params.type === "character_fields_templates"
-                    ? { deleted_at: new Date().toUTCString() }
-                    : // @ts-ignore
-                      { deleted_at: new Date().toUTCString(), is_public: false },
-                )
-                .where("id", "in", ids)
-                .execute();
+                for (let index = 0; index < permitted_ids.length; index++) {
+                  ids.push(permitted_ids[index]);
+                }
+              }
+              if (ids.length) {
+                await db
+                  .updateTable(params.type as BulkArkiveEntitiesType)
+                  .set(
+                    params.type === "characters" ||
+                      params.type === "tags" ||
+                      params.type === "blueprints" ||
+                      params.type === "character_fields_templates"
+                      ? { deleted_at: new Date().toUTCString() }
+                      : // @ts-ignore
+                        { deleted_at: new Date().toUTCString(), is_public: false },
+                  )
+                  .where(`${params.type}.id` as ReferenceExpression<DB, BulkArkiveEntitiesType>, "in", ids)
+                  .execute();
+              }
             }
           }
           return {

@@ -73,6 +73,7 @@ export const UserNotificationEntitiesEnum = [
 ];
 
 export const BulkDeleteEntitiesEnum = [
+  "manuscripts",
   "characters",
   "blueprints",
   "blueprint_instances",
@@ -91,6 +92,7 @@ export const BulkDeleteEntitiesEnum = [
   "character_fields_templates",
 ];
 export const BulkArkiveEntitiesEnum = [
+  "manuscripts",
   "characters",
   "blueprints",
   "blueprint_instances",
