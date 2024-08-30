@@ -94,7 +94,6 @@ export function asset_router(app: Elysia) {
               TagQuery(eb, "image_tags", "images", permissions.is_project_owner, permissions.user_id),
             );
           }
-
           const data = await query.executeTakeFirstOrThrow();
 
           return { data, message: MessageEnum.success, ok: true, role_access: true };

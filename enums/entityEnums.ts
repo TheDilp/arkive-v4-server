@@ -188,6 +188,7 @@ export const EntitiesWithPermissionsEnum = [
   "dictionaries",
   "random_tables",
   "images",
+  "assets",
   "tags",
   "character_fields_templates",
 ];

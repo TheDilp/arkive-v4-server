@@ -145,6 +145,7 @@ export const app = new Elysia({ name: "Editor.Router" })
             headers["user-image-url"] = data.image_url || undefined;
 
             const entity = getEntityFromPath(path);
+
             if (
               (entity &&
                 (EntitiesWithPermissionsEnum.includes(entity) ||
@@ -154,7 +155,6 @@ export const app = new Elysia({ name: "Editor.Router" })
             ) {
               if (user_id) {
                 const action = getPermissionOperationFromPath(path, request.method as "GET" | "POST" | "DELETE");
-
                 const res = await fetch(`${process.env.AUTH_SERVICE_URL}/auth/permission/${action}_${entity}`, {
                   method: "GET",
                   //  @ts-ignore
