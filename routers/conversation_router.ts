@@ -86,15 +86,15 @@ export function conversation_router(app: Elysia) {
                     .leftJoin("characters", "characters.id", "_charactersToconversations.A")
                     .select(["characters.id", "characters.full_name", "characters.portrait_id"]);
 
-                    // @ts-ignore
-                    char_subquery = getNestedReadPermission(
-                      char_subquery,
-                      permissions?.is_project_owner,
-                      permissions?.user_id,
-                      "_charactersToconversations.A",
-                      "read_characters",
-                      false,
-                    );
+                  // @ts-ignore
+                  char_subquery = getNestedReadPermission(
+                    char_subquery,
+                    permissions?.is_project_owner,
+                    permissions?.user_id,
+                    "_charactersToconversations.A",
+                    "read_characters",
+                    false,
+                  );
                   return jsonArrayFrom(char_subquery).as("characters");
                 });
               }
@@ -127,42 +127,52 @@ export function conversation_router(app: Elysia) {
         )
         .post(
           "/:id",
-          async ({ params, body }) => {
+          async ({ params, body, permissions }) => {
             let query = db
               .selectFrom("conversations")
               .where("id", "=", params.id)
-              .select(body.fields as SelectExpression<DB, "conversations">[])
+              .select(body.fields as SelectExpression<DB, "conversations">[]);
 
-              if(!!body?.relations)  {
+            if (body?.relations) {
+              if (body?.relations?.characters) {
+                query = query.select((eb) => {
+                  let char_subquery = eb
+                    .selectFrom("_charactersToconversations")
+                    .whereRef("conversations.id", "=", "_charactersToconversations.B")
+                    .leftJoin("characters", "characters.id", "_charactersToconversations.A")
+                    .select(["characters.id", "characters.full_name", "characters.portrait_id"]);
 
-                if (body?.relations?.characters) {
-                  query = query.select((eb) =>
-                    jsonArrayFrom(
-                      eb
-                        .selectFrom("_charactersToconversations")
-                        .whereRef("conversations.id", "=", "_charactersToconversations.B")
-                        .leftJoin("characters", "characters.id", "_charactersToconversations.A")
-                        .select(["characters.id", "characters.full_name", "characters.portrait_id"]),
-                    ).as("characters"),
+                  // @ts-ignore
+                  char_subquery = getNestedReadPermission(
+                    char_subquery,
+                    permissions?.is_project_owner,
+                    permissions?.user_id,
+                    "_charactersToconversations.A",
+                    "read_characters",
+                    false,
                   );
-                }
-                if (body?.relations?.messages) {
-                  query = query.select((eb) =>
-                    jsonArrayFrom(
-                      eb
-                        .selectFrom("messages")
-                        .whereRef("messages.parent_id", "=", "conversations.id")
-                        .select(["messages.id", "messages.content", "messages.sender_id", "messages.type"])
-                        .limit(5)
-                        .orderBy("messages.created_at", "desc"),
-                    ).as("messages"),
-                  );
-                }
 
+                  return jsonArrayFrom(char_subquery).as("characters");
+                });
+              }
+              if (body?.relations?.messages) {
+                query = query.select((eb) =>
+                  jsonArrayFrom(
+                    eb
+                      .selectFrom("messages")
+                      .whereRef("messages.parent_id", "=", "conversations.id")
+                      .select(["messages.id", "messages.content", "messages.sender_id", "messages.type"])
+                      .limit(5)
+                      .orderBy("messages.created_at", "desc"),
+                  ).as("messages"),
+                );
+              }
+            }
 
+            if (body.orderBy?.length) {
+              query = constructOrdering(body.orderBy, query);
+            }
 
-              };
-              .$if(!!body.orderBy?.length, (qb) => constructOrdering(body.orderBy, qb));
             const data = await query.executeTakeFirst();
 
             if (data) {
