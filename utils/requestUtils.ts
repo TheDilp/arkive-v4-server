@@ -54,7 +54,9 @@ export function getPermissionOperationFromPath(
   return null;
 }
 
-export function getEntityFromPath(path: string): AvailableEntityType | AvailableSubEntityType | "search" | "users" | null {
+export function getEntityFromPath(
+  path: string,
+): AvailableEntityType | AvailableSubEntityType | "search" | "users" | "assets" | null {
   if (path.includes("bulk")) {
     const entity = path.split("/").at(-1);
 
@@ -62,9 +64,12 @@ export function getEntityFromPath(path: string): AvailableEntityType | Available
 
     return (path.split("/").at(-1) as AvailableEntityType | AvailableSubEntityType | undefined) || null;
   }
+  if (path.includes("assets")) return "assets";
   const entity = path.split("/")[3];
+
   if (entity === "nodes" || entity === "edges") return "graphs";
   if (entity === "character_map_pins") return "map_pins";
+  if (entity === "conversations" || entity === "messages") return "characters";
   return entity as AvailableEntityType | AvailableSubEntityType;
 }
 
