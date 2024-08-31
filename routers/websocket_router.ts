@@ -1,5 +1,6 @@
 import { Elysia } from "elysia";
 
+import { app as mainApp } from "..";
 import { db } from "../database/db";
 import { ErrorEnums, UnauthorizedError } from "../enums";
 import { WebsocketConversationMessage } from "../types/websocketTypes";
@@ -31,14 +32,21 @@ export function websocket_router(server: Elysia) {
           async message(ws, message) {
             const { conversation_id } = ws.data.params;
             const typedMessage = message as WebsocketConversationMessage;
-            if (conversation_id && app.server) {
+            if (conversation_id && mainApp.server) {
               try {
                 if (typedMessage.data.content.length === 0) {
                   return;
                 }
-                // @ts-ignore
-                await db.insertInto("messages").values(typedMessage.data).execute();
-                app.server.publish(
+                await db
+                  .insertInto("messages")
+                  .values({
+                    content: typedMessage.data.content,
+                    sender_id: typedMessage.data.sender_id,
+                    parent_id: typedMessage.data.parent_id,
+                    type: typedMessage.data.type,
+                  })
+                  .execute();
+                mainApp.server.publish(
                   conversation_id,
                   JSON.stringify({
                     event_type: "NEW_MESSAGE",

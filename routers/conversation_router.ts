@@ -1,5 +1,5 @@
 import { Elysia } from "elysia";
-import { SelectExpression, sql } from "kysely";
+import { SelectExpression } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
@@ -98,16 +98,6 @@ export function conversation_router(app: Elysia) {
                   return jsonArrayFrom(char_subquery).as("characters");
                 });
               }
-              if (body?.relations?.messages) {
-                query = query.select((eb) =>
-                  jsonArrayFrom(
-                    eb
-                      .selectFrom("messages")
-                      .whereRef("messages.parent_id", "=", "conversations.id")
-                      .select(["messages.id", "messages.content", "messages.sender_id"]),
-                  ).as("messages"),
-                );
-              }
             }
 
             if (body.orderBy?.length) {
@@ -134,42 +124,25 @@ export function conversation_router(app: Elysia) {
               .select(body.fields as SelectExpression<DB, "conversations">[]);
 
             if (body?.relations) {
-              if (body?.relations?.messages) {
-                query = query.select((eb) =>
-                  jsonArrayFrom(
-                    eb
-                      .selectFrom("messages")
-                      .whereRef("messages.parent_id", "=", "conversations.id")
-                      .leftJoin("characters", "characters.id", "messages.sender_id")
-                      .leftJoin("entity_permissions", "entity_permissions.related_id", "characters.id")
-                      .leftJoin("permissions", "entity_permissions.permission_id", "permissions.id")
-                      // @ts-ignore
-                      .select([
-                        "messages.id",
-                        "messages.content",
-                        "messages.sender_id",
-                        "messages.type",
-                        sql<string>`
-                          CASE
-                            WHEN ${sql.lit(permissions.is_project_owner)} THEN characters.full_name
-                            WHEN entity_permissions.user_id = ${sql.lit(
-                              permissions.user_id,
-                            )} AND permissions.code = 'read_characters' THEN full_name
-                            ELSE '???'
-                          END AS full_name`,
-                        sql<string | null>`
-                        CASE
-                            WHEN ${sql.lit(permissions.is_project_owner)} THEN characters.portrait_id
-                            WHEN entity_permissions.user_id = ${sql.lit(
-                              permissions.user_id,
-                            )} AND permissions.code = 'read_assets' THEN portrait_id
-                            ELSE NULL
-                          END AS portrait_id`,
-                      ])
-                      .limit(5)
-                      .orderBy("messages.created_at", "desc"),
-                  ).as("messages"),
-                );
+              if (body?.relations?.characters) {
+                query = query.select((eb) => {
+                  let char_subquery = eb
+                    .selectFrom("_charactersToconversations")
+                    .whereRef("conversations.id", "=", "_charactersToconversations.B")
+                    .leftJoin("characters", "characters.id", "_charactersToconversations.A")
+                    .select(["characters.id", "characters.full_name", "characters.portrait_id"]);
+
+                  // @ts-ignore
+                  char_subquery = getNestedReadPermission(
+                    char_subquery,
+                    permissions?.is_project_owner,
+                    permissions?.user_id,
+                    "_charactersToconversations.A",
+                    "read_characters",
+                    false,
+                  );
+                  return jsonArrayFrom(char_subquery).as("characters");
+                });
               }
             }
 

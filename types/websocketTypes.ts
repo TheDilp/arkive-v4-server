@@ -4,8 +4,16 @@ export interface WebsocketConversationMessage {
     parent_id: string;
     sender_id?: string;
     content: string;
-    type: "character" | "narration" | "place";
-  };
+  } & (
+    | {
+        type: "character";
+        full_name: string;
+        portrait_id: string | null;
+      }
+    | {
+        type: "narration" | "place";
+      }
+  );
   project_id: string;
   conversation: { id?: string; title?: string };
 }
