@@ -12,6 +12,7 @@ export const ReadProjectSchema = t.Intersect([
           map_pin_types: t.Optional(t.Boolean()),
           character_relationship_types: t.Optional(t.Boolean()),
           members: t.Optional(t.Boolean()),
+          owner: t.Optional(t.Boolean()),
           feature_flags: t.Optional(t.Boolean()),
         }),
       ),
