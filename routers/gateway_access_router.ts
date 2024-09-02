@@ -5,12 +5,14 @@ import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
 import { createCharacter, readCharacter, updateCharacter } from "../database/queries";
+import { readBlueprintInstance } from "../database/queries/blueprintInstanceQueries";
 import {
   GatewayMentionSearchSchema,
   GatewaySearchSchema,
   InsertCharacterSchema,
   ListAssetsSchema,
   ListCharacterFieldsTemplateSchema,
+  ReadBlueprintInstanceSchema,
   ReadCharacterSchema,
   UpdateCharacterSchema,
 } from "../database/validation";
@@ -112,6 +114,22 @@ export function gateway_access_router(app: Elysia) {
           );
         },
         { body: ReadCharacterSchema, response: ResponseWithDataSchema },
+      )
+      .post(
+        "/:id",
+        async ({ params, body }) =>
+          readBlueprintInstance(body, params, {
+            is_project_owner: true,
+            user_id: "",
+            role_id: null,
+            role_access: false,
+            project_id: null,
+            permission_id: "",
+          }),
+        {
+          body: ReadBlueprintInstanceSchema,
+          response: ResponseWithDataSchema,
+        },
       )
       .post(
         "/characters/create",
@@ -286,7 +304,6 @@ export function gateway_access_router(app: Elysia) {
           response: ResponseWithDataSchema,
         },
       )
-
       .post(
         "/assets/:entity_type/:access_id",
         async ({ params, body }) => {
