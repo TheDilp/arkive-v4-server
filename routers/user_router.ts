@@ -204,11 +204,11 @@ export function user_router(app: Elysia) {
               config: body.data.config,
             };
 
-            if (body.data.id && body.data.gateway_type === "update") {
+            if (body.data.gateway_type === "update" && body.data.entity_id) {
               const entity = await db
                 .selectFrom(body.data.type)
                 .select(["id", body.data.type === "characters" ? "full_name as title" : "title"])
-                .where("id", "=", body.data.id)
+                .where("id", "=", body.data.entity_id)
                 .executeTakeFirst();
 
               if (entity?.id) {
@@ -229,7 +229,7 @@ export function user_router(app: Elysia) {
                 //   }),
                 // });
               }
-            } else if (!body.data.id && body.data.gateway_type === "create") {
+            } else if (body.data.gateway_type === "create") {
               const config: GatewayAccessType = {
                 ...data,
                 create_config: body.data.create_config,
@@ -250,7 +250,12 @@ export function user_router(app: Elysia) {
               //   }),
               // });
             }
-            return { code, link: `${process.env.GATEWAY_CLIENT_URL}/${body.data.type}/${access_id}/${body.data.gateway_type}` };
+            return {
+              code,
+              link: `${process.env.GATEWAY_CLIENT_URL}/${body.data.type}/${access_id}/${body.data.gateway_type}${
+                body.data.gateway_type === "update" ? `/${body.data.entity_id}` : ""
+              }`,
+            };
           } else {
             return { ok: false, message: "No permission for project" };
           }
@@ -260,7 +265,6 @@ export function user_router(app: Elysia) {
             {
               data: t.Intersect([
                 t.Object({
-                  id: t.Optional(t.String()),
                   type: t.Union([t.Literal("characters"), t.Literal("blueprint_instances")]),
                   config: t.Record(
                     t.Union([
