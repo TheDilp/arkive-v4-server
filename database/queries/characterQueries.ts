@@ -466,12 +466,12 @@ export async function readCharacter(
               .select([
                 "character_field_id as id",
                 "character_calendar_fields.related_id",
-                "start_day",
-                "start_month_id",
-                "start_year",
-                "end_day",
-                "end_month_id",
-                "end_year",
+                "character_calendar_fields.start_day",
+                "character_calendar_fields.start_month_id",
+                "character_calendar_fields.start_year",
+                "character_calendar_fields.end_day",
+                "character_calendar_fields.end_month_id",
+                "character_calendar_fields.end_year",
               ]);
 
             calendar_query = getNestedReadPermission(
@@ -982,6 +982,7 @@ export async function readCharacter(
       },
     })),
   ]);
+
   rest.character_fields.push(...(field_values || []));
   if (isPublic) {
     if (data?.is_public)
@@ -1000,6 +1001,7 @@ export async function readCharacter(
       role_access: true,
     };
   }
+
   return { data: rest, message: MessageEnum.success, ok: true, role_access: true };
 }
 
@@ -1182,7 +1184,11 @@ export async function updateCharacter({
             option_id: field.random_table.option_id,
             suboption_id: field.random_table.suboption_id,
           })
-          .onConflict((oc) => oc.doNothing())
+          .onConflict((oc) =>
+            oc
+              .columns(["character_field_id", "character_id", "related_id"])
+              .doUpdateSet({ option_id: field.random_table?.option_id, suboption_id: field.random_table?.suboption_id }),
+          )
           .execute();
       }
       if (field.calendar) {
@@ -1199,7 +1205,20 @@ export async function updateCharacter({
             end_month_id: field.calendar.end_month_id,
             end_year: field.calendar.end_year,
           })
-          .onConflict((oc) => oc.doNothing())
+          .onConflict((oc) =>
+            oc
+              .columns(["character_field_id", "character_id", "related_id"])
+
+              .doUpdateSet({
+                start_day: field.calendar?.start_day,
+                start_month_id: field.calendar?.start_month_id,
+                start_year: field.calendar?.start_year,
+                end_day: field.calendar?.end_day,
+                end_month_id: field.calendar?.end_month_id,
+                end_year: field.calendar?.end_year,
+              }),
+          )
+
           .execute();
       }
     });
