@@ -11,7 +11,7 @@ export function websocket_router(server: Elysia) {
     {
       type: "none",
       beforeHandle: async ({ set, cookie: { access, refresh } }) => {
-        const verified = await verifyJWT({ access, refresh, set });
+        const verified = await verifyJWT({ access, refresh, set, module: "editor" });
 
         if (verified) return;
 
@@ -56,7 +56,7 @@ export function websocket_router(server: Elysia) {
             }),
           ]),
           async beforeHandle({ cookie: { access, refresh }, set }) {
-            const data = await verifyJWT({ access, refresh, set });
+            const data = await verifyJWT({ access, refresh, set, module: "editor" });
             if (data.status !== "authenticated") return false;
           },
 

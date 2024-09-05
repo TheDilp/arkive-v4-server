@@ -31,14 +31,17 @@ export async function verifyJWT({
   refresh,
   access,
   set,
+  module = null,
 }: {
+  module: "editor" | "dyce_vtt" | null;
   refresh: Cookie<string | undefined>;
   access: Cookie<string | undefined>;
   set: { headers: HTTPHeaders; status?: number | keyof StatusMap };
 }) {
   const res = await fetch(`${process.env.AUTH_SERVICE_URL}/verify`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    // @ts-ignore
+    headers: { "Content-Type": "application/json", module },
     body: JSON.stringify({
       access: access.value,
       refresh: refresh.value,
