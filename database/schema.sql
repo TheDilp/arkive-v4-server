@@ -155,21 +155,6 @@ CREATE TYPE public."MentionTypeEnum" AS ENUM (
 
 
 --
--- Name: add_game_player(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.add_game_player() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-    INSERT INTO game_players (user_id, game_id, role)
-    VALUES (NEW.owner_id, NEW.id, 'gamemaster');
-    RETURN NEW;
-END;
-$$;
-
-
---
 -- Name: handle_bp_field_type_change(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1356,9 +1341,11 @@ CREATE TABLE public.favorite_characters (
 
 CREATE TABLE public.game_character_permissions (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    user_id uuid NOT NULL,
     related_id uuid NOT NULL,
-    game_id uuid NOT NULL
+    game_id uuid NOT NULL,
+    player_id uuid,
+    permission text DEFAULT 'none'::text NOT NULL,
+    CONSTRAINT game_character_permissions_permission_check CHECK ((permission = ANY (ARRAY['none'::text, 'view'::text, 'read'::text, 'own'::text])))
 );
 
 
@@ -1379,9 +1366,10 @@ CREATE TABLE public.game_characters (
 
 CREATE TABLE public.game_players (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    user_id uuid NOT NULL,
     game_id uuid NOT NULL,
     role text DEFAULT 'player'::text NOT NULL,
+    nickname text NOT NULL,
+    password text NOT NULL,
     CONSTRAINT game_players_role_check CHECK ((role = ANY (ARRAY['player'::text, 'gamemaster'::text])))
 );
 
@@ -1551,7 +1539,9 @@ CREATE TABLE public.images (
     character_id uuid,
     type public."ImageType" DEFAULT 'images'::public."ImageType" NOT NULL,
     is_public boolean,
-    owner_id uuid NOT NULL
+    owner_id uuid NOT NULL,
+    extension text,
+    CONSTRAINT extension_check CHECK ((extension = ANY (ARRAY['jpeg'::text, 'jpg'::text, 'png'::text, 'webp'::text, 'avif'::text, 'gif'::text])))
 );
 
 
@@ -2949,6 +2939,14 @@ ALTER TABLE ONLY public.entity_permissions
 
 
 --
+-- Name: game_players unique_game_id_nickname; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.game_players
+    ADD CONSTRAINT unique_game_id_nickname UNIQUE (game_id, nickname);
+
+
+--
 -- Name: manuscript_tags unique_manuscript_tags; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3399,13 +3397,6 @@ CREATE UNIQUE INDEX webhooks_id_user_id_key ON public.webhooks USING btree (id, 
 --
 
 CREATE UNIQUE INDEX words_title_translation_parent_id_key ON public.words USING btree (title, translation, parent_id);
-
-
---
--- Name: games after_game_insert; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER after_game_insert AFTER INSERT ON public.games FOR EACH ROW EXECUTE FUNCTION public.add_game_player();
 
 
 --
@@ -4915,19 +4906,19 @@ ALTER TABLE ONLY public.game_character_permissions
 
 
 --
+-- Name: game_character_permissions game_character_permissions_player_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.game_character_permissions
+    ADD CONSTRAINT game_character_permissions_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.game_players(id) ON DELETE CASCADE;
+
+
+--
 -- Name: game_character_permissions game_character_permissions_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.game_character_permissions
     ADD CONSTRAINT game_character_permissions_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.characters(id) ON DELETE CASCADE;
-
-
---
--- Name: game_character_permissions game_character_permissions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_character_permissions
-    ADD CONSTRAINT game_character_permissions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -4952,14 +4943,6 @@ ALTER TABLE ONLY public.game_characters
 
 ALTER TABLE ONLY public.game_players
     ADD CONSTRAINT game_players_game_id_fkey FOREIGN KEY (game_id) REFERENCES public.games(id) ON DELETE CASCADE;
-
-
---
--- Name: game_players game_players_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_players
-    ADD CONSTRAINT game_players_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -5737,4 +5720,10 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240805080236'),
     ('20240807090427'),
     ('20240809072046'),
-    ('20240809074715');
+    ('20240809074715'),
+    ('20240821074150'),
+    ('20240906120623'),
+    ('20240906143112'),
+    ('20240906150551'),
+    ('20240907083541'),
+    ('20240907104211');
