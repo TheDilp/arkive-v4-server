@@ -144,10 +144,10 @@ export const UpdateCalendarSchema = t.Object({
     starts_on_day: t.Optional(t.Union([t.Number(), t.Null()])),
   }),
   relations: t.Object({
-    eras: t.Union([t.Array(InsertEraSchema), t.Array(UpdateEraSchema)]),
-    months: t.Union([t.Array(InsertMonthSchema, { minItems: 1 }), t.Array(UpdateMonthSchema, { minItems: 1 })]),
+    eras: t.Union([t.Array(UpdateEraSchema)]),
+    months: t.Union([t.Array(UpdateMonthSchema, { minItems: 1 })]),
     tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
-    leap_days: t.Optional(t.Union([t.Array(InsertLeapDaySchema), t.Array(UpdateLeapDaySchema)])),
+    leap_days: t.Optional(t.Union([t.Array(UpdateLeapDaySchema)])),
   }),
   permissions: t.Optional(
     t.Array(
