@@ -2,21 +2,21 @@ import { Elysia, t } from "elysia";
 
 import { app as mainApp } from "..";
 import { db } from "../database/db";
-import { ErrorEnums, UnauthorizedError } from "../enums";
+// import { ErrorEnums, UnauthorizedError } from "../enums";
 import { redisClient } from "../utils/redisClient";
-import { verifyJWT } from "../utils/userUtils";
+// import { verifyJWT } from "../utils/userUtils";
 
 export function websocket_router(server: Elysia) {
   return server.guard(
     {
       type: "none",
-      beforeHandle: async ({ set, cookie: { access, refresh } }) => {
-        const verified = await verifyJWT({ access, refresh, set, module: "editor" });
+      // beforeHandle: async ({ set, cookie: { access, refresh } }) => {
+      //    const verified = await verifyJWT({ access, refresh, set, module: "editor" });
 
-        if (verified) return;
+      //    if (verified) return;
 
-        throw new UnauthorizedError(ErrorEnums.unauthorized);
-      },
+      //   throw new UnauthorizedError(ErrorEnums.unauthorized);
+      // },
     },
     (app) =>
       app
@@ -55,10 +55,10 @@ export function websocket_router(server: Elysia) {
               }),
             }),
           ]),
-          async beforeHandle({ cookie: { access, refresh }, set }) {
-            const data = await verifyJWT({ access, refresh, set, module: "editor" });
-            if (data.status !== "authenticated") return false;
-          },
+          // async beforeHandle({ cookie: { access, refresh }, set }) {
+          //   const data = await verifyJWT({ access, refresh, set, module: "editor" });
+          //   if (data.status !== "authenticated") return false;
+          // },
 
           async open(ws) {
             const { user_id, character_id } = ws.data.query;
