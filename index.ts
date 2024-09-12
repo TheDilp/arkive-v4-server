@@ -138,6 +138,7 @@ export const app = new Elysia({ name: "Editor.Router" })
           } = context;
           // @ts-ignore
           const data = await verifyJWT({ module: headers?.["module"] as "editor" | "dyce_vtt" | null, access, refresh, set });
+          console.info(data);
           if (data.status === "authenticated") {
             const { user_id, project_id, name } = data;
             headers["user-id"] = user_id;
