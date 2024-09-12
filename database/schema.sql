@@ -1343,7 +1343,7 @@ CREATE TABLE public.game_character_permissions (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     related_id uuid NOT NULL,
     game_id uuid NOT NULL,
-    player_id uuid,
+    player_id uuid NOT NULL,
     permission text DEFAULT 'none'::text NOT NULL,
     CONSTRAINT game_character_permissions_permission_check CHECK ((permission = ANY (ARRAY['none'::text, 'view'::text, 'read'::text, 'own'::text])))
 );
@@ -2944,6 +2944,14 @@ ALTER TABLE ONLY public.entity_permissions
 
 ALTER TABLE ONLY public.game_players
     ADD CONSTRAINT unique_game_id_nickname UNIQUE (game_id, nickname);
+
+
+--
+-- Name: game_character_permissions unique_game_player_character_permission; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.game_character_permissions
+    ADD CONSTRAINT unique_game_player_character_permission UNIQUE (game_id, related_id, player_id);
 
 
 --
@@ -5726,4 +5734,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240906143112'),
     ('20240906150551'),
     ('20240907083541'),
-    ('20240907104211');
+    ('20240907104211'),
+    ('20240911111433');
