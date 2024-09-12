@@ -136,8 +136,7 @@ export const app = new Elysia({ name: "Editor.Router" })
             path,
             request,
           } = context;
-          console.info(headers);
-          console.info(headers?.["module"], access, refresh);
+
           // @ts-ignore
           const data = await verifyJWT({ module: headers?.["module"] as "editor" | "dyce_vtt" | null, access, refresh, set });
           if (data.status === "authenticated") {
