@@ -38,7 +38,6 @@ export async function verifyJWT({
   access: Cookie<string | undefined>;
   set: { headers: HTTPHeaders; status?: number | keyof StatusMap };
 }) {
-  console.info(module, access.value, refresh.value);
   const res = await fetch(`${process.env.AUTH_SERVICE_URL}/verify`, {
     method: "POST",
     // @ts-ignore
@@ -48,7 +47,6 @@ export async function verifyJWT({
       refresh: refresh.value,
     }),
   });
-  console.info(res.status);
   if (res.status >= 400) {
     // console.error(await res.text());
     set.status = 401;
