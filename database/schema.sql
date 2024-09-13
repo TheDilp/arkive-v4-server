@@ -4926,7 +4926,7 @@ ALTER TABLE ONLY public.game_character_permissions
 --
 
 ALTER TABLE ONLY public.game_character_permissions
-    ADD CONSTRAINT game_character_permissions_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.characters(id) ON DELETE CASCADE;
+    ADD CONSTRAINT game_character_permissions_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.game_characters(id) ON DELETE CASCADE;
 
 
 --
@@ -5735,4 +5735,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240906150551'),
     ('20240907083541'),
     ('20240907104211'),
-    ('20240911111433');
+    ('20240911111433'),
+    ('20240913061710');
