@@ -1367,9 +1367,7 @@ CREATE TABLE public.game_characters (
 CREATE TABLE public.game_journal_entries (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     title text NOT NULL,
-    game_id uuid NOT NULL,
-    created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    game_id uuid NOT NULL
 );
 
 

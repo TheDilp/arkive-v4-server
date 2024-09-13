@@ -3,9 +3,7 @@ CREATE TABLE
     IF NOT EXISTS game_journal_entries (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid () NOT NULL,
         title text NOT NULL,
-        game_id uuid NOT NULL REFERENCES games (id) ON DELETE CASCADE,
-        created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-        updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+        game_id uuid NOT NULL REFERENCES games (id) ON DELETE CASCADE
     );
 
 CREATE TABLE
