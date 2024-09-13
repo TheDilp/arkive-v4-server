@@ -383,6 +383,7 @@ export function project_router(app: Elysia) {
               console.error("SOME PROJECT IMAGES WERE NOT DELETED");
             }
           } catch (error) {
+            console.error(error);
             return { message: "Could not delete images.", ok: false, role_access: true };
           }
 
