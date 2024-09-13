@@ -12,6 +12,7 @@ export * from "./dictionary_router";
 export * from "./document_router";
 export * from "./edge_router";
 export * from "./event_router";
+export * from "./game_router";
 export * from "./gateway_access_router";
 export * from "./gateway_configuration_router";
 export * from "./graph_router";

@@ -78,7 +78,6 @@ export function character_router(app: Elysia) {
                   tags: resourceTags,
                   images,
                 } = groupCharacterResourceFiltersByField(body.relationFilters || { and: [], or: [] });
-
                 if (tags?.filters?.length || resourceTags?.filters?.length)
                   qb = tagsRelationFilter(
                     "characters",

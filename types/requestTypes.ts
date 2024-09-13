@@ -155,3 +155,9 @@ export type PermissionDecorationType = {
   permission_id: string | null;
   all_permissions?: Record<AvailablePermissions, boolean>;
 };
+
+export type GamePermissionDecorationType = {
+  user_id: string;
+  game_id: string | null;
+  is_game_owner: boolean;
+};

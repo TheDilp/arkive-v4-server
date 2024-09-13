@@ -100,7 +100,6 @@ export async function verifyGatewayJWT({
     set.headers["set-cookie"] = `access=${access}; HttpOnly; Path=/; ${additional_cookie_params} Expires=${getCookieExpiry(
       "access",
     )}`;
-
     return {
       status: "allowed",
       project_id: data.claims.project_id,
