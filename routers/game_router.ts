@@ -48,7 +48,7 @@ export function game_router(app: Elysia) {
                 jsonArrayFrom(
                   eb
                     .selectFrom("game_players")
-                    .select(["game_players.id", "game_players.nickname", "game_players.role"])
+                    .select(["game_players.id", "game_players.nickname"])
                     .where("game_players.game_id", "=", params.id),
                 ).as("game_players"),
               );
