@@ -12,6 +12,7 @@ export const ReadGameSchema = t.Intersect([
       relations: t.Optional(
         t.Object({
           game_players: t.Optional(t.Boolean()),
+          project: t.Optional(t.Boolean()),
         }),
       ),
     }),

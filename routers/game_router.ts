@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
 import { SelectExpression } from "kysely";
-import { jsonArrayFrom } from "kysely/helpers/postgres";
+import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
@@ -51,6 +51,16 @@ export function game_router(app: Elysia) {
                     .select(["game_players.id", "game_players.nickname"])
                     .where("game_players.game_id", "=", params.id),
                 ).as("game_players"),
+              );
+            }
+            if (body.relations?.project) {
+              query = query.select((eb) =>
+                jsonObjectFrom(
+                  eb
+                    .selectFrom("projects")
+                    .select(["projects.id", "projects.title", "projects.owner_id"])
+                    .whereRef("projects.id", "=", "games.project_id"),
+                ).as("project"),
               );
             }
 
