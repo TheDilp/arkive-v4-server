@@ -73,8 +73,6 @@ export function stats_router(app: Elysia) {
       server.get("/:project_id/:user_id", async ({ params, permissions }) => {
         const redis = await redisClient;
         const project_stats: string | null = await redis.get(`${params.project_id}_${params.user_id}_stats`);
-
-        // await redis.del(`${params.project_id}_${params.user_id}_stats`);
         if (!project_stats) {
           const queries = mainEntities.map((ent) => {
             if (ent === "blueprint_instances")
@@ -240,7 +238,7 @@ export function stats_router(app: Elysia) {
           project_stats["tag_entities"] = tag_entity_stats;
           project_stats["mentions"] = mention_res_with_count;
 
-          redis.set(`${params.project_id}_stats`, JSON.stringify(project_stats), { EX: 60 * 60 });
+          redis.set(`${params.project_id}_${params.user_id}_stats`, JSON.stringify(project_stats), { EX: 60 * 60 });
           return { data: project_stats, message: MessageEnum.success, ok: true };
         } else {
           try {

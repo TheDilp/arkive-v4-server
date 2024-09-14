@@ -44,7 +44,8 @@ export async function afterHandler(
         userImageUrl: image_url,
         notification_type: `${entity}_${action}_notification`,
       });
-      if (redis) redis.del(`${project_id}_stats`);
+      // Reset stats when CRUD happens
+      if (redis) redis.del(`${project_id}_${user_id}_stats`);
     }
     if (data?.id && user_id)
       db.insertInto("notifications")
