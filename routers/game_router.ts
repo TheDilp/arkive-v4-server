@@ -4,8 +4,8 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { ListGameSchema, ReadGameSchema } from "../database/validation";
-import { PermissionDecorationType, ResponseWithDataSchema } from "../types/requestTypes";
+import { AddToGameSchema, ListGameSchema, ReadGameSchema } from "../database/validation";
+import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 
 export function game_router(app: Elysia) {
   return app
@@ -71,6 +71,20 @@ export function game_router(app: Elysia) {
           {
             body: ReadGameSchema,
             response: ResponseWithDataSchema,
+          },
+        )
+        .post(
+          "/add/:type",
+          async ({ params, body }) => {
+            if (params.type === "characters") {
+              await db.insertInto("game_characters").values(body.data).execute();
+            }
+
+            return { role_access: true, message: "Success", ok: true };
+          },
+          {
+            body: AddToGameSchema,
+            response: ResponseSchema,
           },
         ),
     );

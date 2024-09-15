@@ -18,3 +18,11 @@ export const ReadGameSchema = t.Intersect([
     }),
   ),
 ]);
+
+export const AddToGameSchema = t.Object({
+  data: t.Object({
+    game_id: t.String(),
+    related_id: t.String(),
+    parent_id: t.Optional(t.String()),
+  }),
+});
