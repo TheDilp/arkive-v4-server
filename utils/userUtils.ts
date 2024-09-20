@@ -49,7 +49,7 @@ export async function verifyJWT({
   });
 
   if (res.status >= 400) {
-    // console.error(await res.text());
+    console.error(await res.text());
     set.status = 401;
     return { status: "unauthenticated" };
   }
