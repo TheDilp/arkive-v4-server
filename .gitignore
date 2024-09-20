@@ -7,5 +7,6 @@ schema.prisma
 dumpfile_data.sql
 backup.dump
 dist
+database/migrations/*
 .vscode
 !vscode/settings.json
