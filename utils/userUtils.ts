@@ -123,10 +123,10 @@ export function getCookieExpiry(type: "access" | "refresh"): Date {
 
   if (type === "access") {
     // Add 5 minutes for access token
-    now.setMinutes(now.getMinutes() + 5);
+    now.setMinutes(now.getHours() + 12);
   } else if (type === "refresh") {
     // Add 6 hours for refresh token
-    now.setHours(now.getHours() + 6);
+    now.setHours(now.getHours() + 24);
   }
 
   return now;

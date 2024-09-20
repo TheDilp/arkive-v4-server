@@ -57,7 +57,7 @@ import {
 } from "./routers";
 import type { PermissionDecorationType } from "./types/requestTypes";
 import { getEntityFromPath, getPermissionOperationFromPath } from "./utils/requestUtils";
-import { getCookieExpiry, verifyJWT } from "./utils/userUtils";
+import { verifyJWT } from "./utils/userUtils";
 
 export const app = new Elysia({ name: "Editor.Router" })
   .error({
@@ -76,7 +76,6 @@ export const app = new Elysia({ name: "Editor.Router" })
         secure: environment === "production",
         sameSite: environment === "production",
         path: "/",
-        expires: getCookieExpiry("access"),
       });
       cookie.refresh.set({
         value: "None",
@@ -84,7 +83,6 @@ export const app = new Elysia({ name: "Editor.Router" })
         secure: environment === "production",
         sameSite: environment === "production",
         path: "/",
-        expires: getCookieExpiry("refresh"),
       });
 
       return { message: "UNAUTHORIZED", ok: false, role_access: false };
