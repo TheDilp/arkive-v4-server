@@ -56,6 +56,7 @@ export async function verifyJWT({
 
   try {
     const cookie_data = (await res.json()) as JWTResponse;
+    console.info(cookie_data.access, cookie_data.refresh, cookie_data.claims);
     if (cookie_data.access !== "None" && cookie_data.refresh !== "None") {
       set.headers["set-cookie"] = getCookies(cookie_data.access, cookie_data.refresh);
       return {
@@ -134,6 +135,7 @@ export function getCookieExpiry(type: "access" | "refresh"): Date {
 
 function getCookies(access: string, refresh: string) {
   const additional_cookie_params = process.env.NODE_ENV === "production" ? "domain=.thearkive.app; Secure; SameSite=None;" : "";
+  console.info(access, refresh);
   if (access === "None" || refresh === "None") return [];
   return [
     `access=${access}; HttpOnly; Path=/; ${additional_cookie_params} Expires=${getCookieExpiry("access")}`,
