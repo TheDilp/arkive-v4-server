@@ -38,7 +38,6 @@ export async function verifyJWT({
   access: Cookie<string | undefined>;
   set: { headers: HTTPHeaders; status?: number | keyof StatusMap };
 }) {
-  console.info(access, refresh);
   const res = await fetch(`${process.env.AUTH_SERVICE_URL}/verify`, {
     method: "POST",
     // @ts-ignore
@@ -50,7 +49,6 @@ export async function verifyJWT({
   });
 
   if (res.status >= 400) {
-    console.error(await res.text());
     set.status = 401;
     return { status: "unauthenticated" };
   }
@@ -136,7 +134,6 @@ export function getCookieExpiry(type: "access" | "refresh"): Date {
 
 function getCookies(access: string, refresh: string) {
   const additional_cookie_params = process.env.NODE_ENV === "production" ? "domain=.thearkive.app; Secure; SameSite=None;" : "";
-  console.info(access, refresh);
   if (access === "None" || refresh === "None") return [];
   return [
     `access=${access}; HttpOnly; Path=/; ${additional_cookie_params} Expires=${getCookieExpiry("access")}`,
