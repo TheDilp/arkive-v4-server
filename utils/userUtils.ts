@@ -47,6 +47,7 @@ export async function verifyJWT({
       refresh: refresh.value,
     }),
   });
+
   if (res.status >= 400) {
     // console.error(await res.text());
     set.status = 401;
@@ -55,16 +56,20 @@ export async function verifyJWT({
 
   try {
     const cookie_data = (await res.json()) as JWTResponse;
-    set.headers["set-cookie"] = getCookies(cookie_data.access, cookie_data.refresh);
-    return {
-      status: "authenticated",
-      user_id: cookie_data.claims.user_id,
-      project_id: cookie_data.claims.project_id,
-      game_id: null,
-      image_url: cookie_data.claims.image_url,
-      is_email_confirmed: cookie_data.claims.is_email_confirmed,
-      name: cookie_data.claims.name,
-    };
+    if (cookie_data.access !== "None" && cookie_data.refresh !== "None") {
+      set.headers["set-cookie"] = getCookies(cookie_data.access, cookie_data.refresh);
+      return {
+        status: "authenticated",
+        user_id: cookie_data.claims.user_id,
+        project_id: cookie_data.claims.project_id,
+        game_id: null,
+        image_url: cookie_data.claims.image_url,
+        is_email_confirmed: cookie_data.claims.is_email_confirmed,
+        name: cookie_data.claims.name,
+      };
+    } else {
+      throw Error("COOKIES ARE NONE");
+    }
   } catch (error) {
     // console.error(error);
     // set.status = 401;
@@ -129,7 +134,7 @@ export function getCookieExpiry(type: "access" | "refresh"): Date {
 
 function getCookies(access: string, refresh: string) {
   const additional_cookie_params = process.env.NODE_ENV === "production" ? "domain=.thearkive.app; Secure; SameSite=None;" : "";
-
+  if (access === "None" || refresh === "None") return [];
   return [
     `access=${access}; HttpOnly; Path=/; ${additional_cookie_params} Expires=${getCookieExpiry("access")}`,
     `refresh=${refresh}; HttpOnly; Path=/; ${additional_cookie_params} Expires=${getCookieExpiry("refresh")}`,
