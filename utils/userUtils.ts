@@ -55,7 +55,6 @@ export async function verifyJWT({
 
   try {
     const cookie_data = (await res.json()) as JWTResponse;
-    console.info(cookie_data.access, cookie_data.refresh, cookie_data.claims);
     if (cookie_data.access !== "None" && cookie_data.refresh !== "None") {
       set.headers["set-cookie"] = getCookies(cookie_data.access, cookie_data.refresh);
       return {
@@ -102,9 +101,7 @@ export async function verifyGatewayJWT({
     const data = (await res.json()) as JWTGatewayResponse;
     const additional_cookie_params =
       process.env.NODE_ENV === "production" ? "domain=.thearkive.app; Secure; SameSite=None;" : "";
-    set.headers["set-cookie"] = `access=${access}; HttpOnly; Path=/; ${additional_cookie_params} Expires=${getCookieExpiry(
-      "access",
-    )}`;
+    set.headers["set-cookie"] = `access=${access}; HttpOnly; Path=/; ${additional_cookie_params} Max-Age=43200`;
     return {
       status: "allowed",
       project_id: data.claims.project_id,
@@ -118,25 +115,11 @@ export async function verifyGatewayJWT({
   }
 }
 
-export function getCookieExpiry(type: "access" | "refresh"): Date {
-  const now = new Date();
-
-  if (type === "access") {
-    // Add 5 minutes for access token
-    now.setMinutes(now.getHours() + 12);
-  } else if (type === "refresh") {
-    // Add 6 hours for refresh token
-    now.setHours(now.getHours() + 24);
-  }
-
-  return now;
-}
-
 function getCookies(access: string, refresh: string) {
   const additional_cookie_params = process.env.NODE_ENV === "production" ? "domain=.thearkive.app; Secure; SameSite=None;" : "";
   if (access === "None" || refresh === "None") return [];
   return [
-    `access=${access}; HttpOnly; Path=/; ${additional_cookie_params} Expires=${getCookieExpiry("access")}`,
-    `refresh=${refresh}; HttpOnly; Path=/; ${additional_cookie_params} Expires=${getCookieExpiry("refresh")}`,
+    `access=${access}; HttpOnly; Path=/; ${additional_cookie_params} Max-Age=43200`,
+    `refresh=${refresh}; HttpOnly; Path=/; ${additional_cookie_params} Max-Age=86400`,
   ];
 }
