@@ -10,27 +10,6 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON SCHEMA public IS '';
-
-
---
--- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
-
-
---
--- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
-
-
---
 -- Name: pger; Type: SCHEMA; Schema: -; Owner: -
 --
 
@@ -38,17 +17,10 @@ CREATE SCHEMA pger;
 
 
 --
--- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
-
-
---
--- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
+COMMENT ON SCHEMA public IS '';
 
 
 --
@@ -308,6 +280,50 @@ END IF;
 
 
 
+    RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: notify_character_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.notify_character_trigger_function() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    payload JSON;
+BEGIN
+    payload = json_build_object(
+        'entity', TG_TABLE_NAME,
+        'operation', TG_OP,
+        'title', NEW.full_name,
+        'id', NEW.id
+    );
+    PERFORM pg_notify('notification_channel', payload::text);
+    RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: notify_general_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.notify_general_trigger_function() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    payload JSON;
+BEGIN
+    payload = json_build_object(
+        'entity', TG_TABLE_NAME,
+        'operation', TG_OP,
+        'title', NEW.title,
+        'id', NEW.id
+    );
+    PERFORM pg_notify('notification_channel', payload::text);
     RETURN NEW;
 END;
 $$;
@@ -1034,7 +1050,6 @@ CREATE TABLE public.document_mentions (
 
 CREATE TABLE public.document_template_fields (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    parent_id uuid NOT NULL,
     key text NOT NULL,
     value text,
     formula text,
@@ -1044,6 +1059,7 @@ CREATE TABLE public.document_template_fields (
     entity_type text NOT NULL,
     sort integer DEFAULT 0 NOT NULL,
     random_count text,
+    parent_id uuid NOT NULL,
     blueprint_id uuid,
     calendar_id uuid,
     map_id uuid,
@@ -1329,6 +1345,7 @@ CREATE TABLE public.filters (
     project_id uuid NOT NULL,
     content jsonb NOT NULL,
     type text NOT NULL,
+    owner_id uuid NOT NULL,
     CONSTRAINT filters_type_check CHECK ((type = ANY (ARRAY['characters'::text, 'blueprint_instances'::text])))
 );
 
@@ -1643,7 +1660,9 @@ CREATE TABLE public.images (
     character_id uuid,
     type public."ImageType" DEFAULT 'images'::public."ImageType" NOT NULL,
     is_public boolean,
-    owner_id uuid NOT NULL
+    owner_id uuid NOT NULL,
+    extension text,
+    CONSTRAINT extension_check CHECK ((extension = ANY (ARRAY['jpeg'::text, 'jpg'::text, 'png'::text, 'webp'::text, 'avif'::text, 'gif'::text])))
 );
 
 
@@ -1656,6 +1675,130 @@ CREATE TABLE public.leap_days (
     parent_id uuid NOT NULL,
     month_id uuid NOT NULL,
     conditions jsonb
+);
+
+
+--
+-- Name: manuscript_blueprint_instances; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscript_blueprint_instances (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    parent_id uuid NOT NULL,
+    sort integer
+);
+
+
+--
+-- Name: manuscript_characters; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscript_characters (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    parent_id uuid NOT NULL,
+    sort integer
+);
+
+
+--
+-- Name: manuscript_documents; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscript_documents (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    parent_id uuid NOT NULL,
+    sort integer
+);
+
+
+--
+-- Name: manuscript_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscript_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    parent_id uuid NOT NULL,
+    sort integer
+);
+
+
+--
+-- Name: manuscript_graphs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscript_graphs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    parent_id uuid NOT NULL,
+    sort integer
+);
+
+
+--
+-- Name: manuscript_images; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscript_images (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    parent_id uuid NOT NULL,
+    sort integer
+);
+
+
+--
+-- Name: manuscript_pins; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscript_pins (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    parent_id uuid NOT NULL,
+    sort integer
+);
+
+
+--
+-- Name: manuscript_tags; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscript_tags (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tag_id uuid NOT NULL,
+    related_id uuid NOT NULL
+);
+
+
+--
+-- Name: manuscripts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscripts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    deleted_at timestamp(3) without time zone,
+    title text NOT NULL,
+    owner_id uuid NOT NULL,
+    project_id uuid NOT NULL,
+    is_public boolean,
+    icon text
+);
+
+
+--
+-- Name: manuscripts_maps; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscripts_maps (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    parent_id uuid NOT NULL,
+    sort integer
 );
 
 
@@ -2754,6 +2897,22 @@ ALTER TABLE ONLY public.images
 
 ALTER TABLE ONLY public.leap_days
     ADD CONSTRAINT leap_days_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: manuscript_tags manuscript_tags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_tags
+    ADD CONSTRAINT manuscript_tags_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: manuscripts manuscripts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscripts
+    ADD CONSTRAINT manuscripts_pkey PRIMARY KEY (id);
 
 
 --
@@ -4756,14 +4915,6 @@ ALTER TABLE ONLY public.document_template_fields_maps
 
 
 --
--- Name: document_template_fields document_template_fields_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.document_template_fields
-    ADD CONSTRAINT document_template_fields_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.documents(id) ON DELETE CASCADE;
-
-
---
 -- Name: document_template_fields_random_tables document_template_fields_random_tables_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4945,6 +5096,14 @@ ALTER TABLE ONLY public.favorite_characters
 
 ALTER TABLE ONLY public.favorite_characters
     ADD CONSTRAINT favorite_characters_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: filters filters_owner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.filters
+    ADD CONSTRAINT filters_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -5380,6 +5539,158 @@ ALTER TABLE ONLY public.leap_days
 
 
 --
+-- Name: manuscript_blueprint_instances manuscript_blueprint_instances_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_blueprint_instances
+    ADD CONSTRAINT manuscript_blueprint_instances_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.manuscripts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_blueprint_instances manuscript_blueprint_instances_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_blueprint_instances
+    ADD CONSTRAINT manuscript_blueprint_instances_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.blueprint_instances(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_characters manuscript_characters_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_characters
+    ADD CONSTRAINT manuscript_characters_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.manuscripts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_characters manuscript_characters_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_characters
+    ADD CONSTRAINT manuscript_characters_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.characters(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_documents manuscript_documents_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_documents
+    ADD CONSTRAINT manuscript_documents_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.manuscripts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_documents manuscript_documents_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_documents
+    ADD CONSTRAINT manuscript_documents_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.documents(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_events manuscript_events_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_events
+    ADD CONSTRAINT manuscript_events_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.manuscripts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_events manuscript_events_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_events
+    ADD CONSTRAINT manuscript_events_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.events(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_graphs manuscript_graphs_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_graphs
+    ADD CONSTRAINT manuscript_graphs_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.manuscripts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_graphs manuscript_graphs_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_graphs
+    ADD CONSTRAINT manuscript_graphs_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.graphs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_images manuscript_images_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_images
+    ADD CONSTRAINT manuscript_images_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.manuscripts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_images manuscript_images_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_images
+    ADD CONSTRAINT manuscript_images_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.images(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_pins manuscript_pins_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_pins
+    ADD CONSTRAINT manuscript_pins_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.manuscripts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_pins manuscript_pins_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_pins
+    ADD CONSTRAINT manuscript_pins_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.map_pins(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_tags manuscript_tags_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_tags
+    ADD CONSTRAINT manuscript_tags_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.manuscripts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscript_tags manuscript_tags_tag_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscript_tags
+    ADD CONSTRAINT manuscript_tags_tag_id_fkey FOREIGN KEY (tag_id) REFERENCES public.tags(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscripts_maps manuscripts_maps_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscripts_maps
+    ADD CONSTRAINT manuscripts_maps_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.maps(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscripts manuscripts_owner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscripts
+    ADD CONSTRAINT manuscripts_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: manuscripts manuscripts_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscripts
+    ADD CONSTRAINT manuscripts_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
+
+
+--
 -- Name: map_layers map_layers_image_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5763,6 +6074,7 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240807090427'),
     ('20240809072046'),
     ('20240809074715'),
+    ('20240821074150'),
     ('20240906120623'),
     ('20240906143112'),
     ('20240906150551'),
@@ -5774,4 +6086,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240914061432'),
     ('20240915081034'),
     ('20240920072529'),
-    ('20240920073212');
+    ('20240920073212'),
+    ('20240920073825'),
+    ('20240920074421');
