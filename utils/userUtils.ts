@@ -38,6 +38,7 @@ export async function verifyJWT({
   access: Cookie<string | undefined>;
   set: { headers: HTTPHeaders; status?: number | keyof StatusMap };
 }) {
+  console.info(access, refresh);
   const res = await fetch(`${process.env.AUTH_SERVICE_URL}/verify`, {
     method: "POST",
     // @ts-ignore
