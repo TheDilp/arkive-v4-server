@@ -3,9 +3,11 @@ import { SelectExpression } from "kysely";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { InsertFilterSchema, ListFilterSchema, ReadFilterSchema } from "../database/validation/filters";
+import { InsertFilterSchema, ListFilterSchema, ReadFilterSchema, UpdateFilterSchema } from "../database/validation/filters";
 import { MessageEnum } from "../enums";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { constructFilter } from "../utils/filterConstructor";
+import { constructOrdering } from "../utils/orderByConstructor";
 
 export function filter_router(app: Elysia) {
   return app
@@ -47,6 +49,14 @@ export function filter_router(app: Elysia) {
               .limit(body.pagination?.limit || 10)
               .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10));
 
+            if (body.orderBy) {
+              query = constructOrdering(body.orderBy, query);
+            }
+
+            if (!!body?.filters?.and?.length || !!body?.filters?.or?.length) {
+              query = constructFilter("filters", query, body.filters);
+            }
+
             const data = await query.execute();
             return { data, message: "Success", ok: true, role_access: true };
           },
@@ -70,6 +80,20 @@ export function filter_router(app: Elysia) {
           {
             body: ReadFilterSchema,
             response: ResponseWithDataSchema,
+          },
+        )
+        .post(
+          "/update/:id",
+          async ({ params, body }) => {
+            let query = db.updateTable("filters").where("filters.id", "=", params.id).set(body.data);
+
+            await query.execute();
+
+            return { role_access: true, message: `Filter ${MessageEnum.successfully_updated}`, ok: true };
+          },
+          {
+            body: UpdateFilterSchema,
+            response: ResponseSchema,
           },
         )
         .delete(
