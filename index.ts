@@ -4,14 +4,7 @@ import { Elysia } from "elysia";
 
 import { db } from "./database/db";
 // Accepts the same connection config object that the "pg" package would take
-import {
-  EntitiesWithPermissionsEnum,
-  ErrorEnums,
-  NicknameInUse,
-  NoPublicAccess,
-  NoRoleAccess,
-  UnauthorizedError,
-} from "./enums";
+import { ErrorEnums, NicknameInUse, NoPublicAccess, NoRoleAccess, UnauthorizedError } from "./enums";
 import { tempAfterHandle } from "./handlers";
 import {
   asset_router,
@@ -147,45 +140,34 @@ export const app = new Elysia({ name: "Editor.Router" })
 
             const entity = getEntityFromPath(path);
 
-            if (
-              (entity &&
-                (EntitiesWithPermissionsEnum.includes(entity) ||
-                  entity === "search" ||
-                  (entity === "users" && !!project_id))) ||
-              path.includes("/bulk/")
-            ) {
-              if (user_id) {
-                const action = getPermissionOperationFromPath(path, request.method as "GET" | "POST" | "DELETE");
-                const res = await fetch(`${process.env.AUTH_SERVICE_URL}/auth/permission/${action}_${entity}`, {
-                  method: "GET",
-                  //  @ts-ignore
-                  headers: {
-                    "Content-Type": "application/json",
-                    "user-id": user_id,
-                    "project-id": project_id,
-                  },
-                });
+            if (user_id) {
+              const action = getPermissionOperationFromPath(path, request.method as "GET" | "POST" | "DELETE");
+              const res = await fetch(`${process.env.AUTH_SERVICE_URL}/auth/permission/${action}_${entity}`, {
+                method: "GET",
+                //  @ts-ignore
+                headers: {
+                  "Content-Type": "application/json",
+                  "user-id": user_id,
+                  "project-id": project_id,
+                },
+              });
 
-                try {
-                  const permissions = (await res.json()) as Pick<
-                    PermissionDecorationType,
-                    "is_project_owner" | "all_permissions" | "role_access" | "role_id" | "permission_id"
-                  > & { user_id: string; project_id: string };
+              try {
+                const permissions = (await res.json()) as Pick<
+                  PermissionDecorationType,
+                  "is_project_owner" | "all_permissions" | "role_access" | "role_id" | "permission_id"
+                > & { user_id: string; project_id: string };
 
-                  permissions.user_id = user_id;
-                  permissions.project_id = project_id || "";
-                  // @ts-ignore
-                  context.permissions = permissions;
-                } catch (error) {
-                  console.error(error);
-                }
-              } else {
-                set.status = 403;
-                throw new NoRoleAccess(ErrorEnums.no_role_access);
+                permissions.user_id = user_id;
+                permissions.project_id = project_id || "";
+                // @ts-ignore
+                context.permissions = permissions;
+              } catch (error) {
+                console.error(error);
               }
             } else {
-              // @ts-ignore
-              context.permissions.user_id = user_id;
+              set.status = 403;
+              throw new NoRoleAccess(ErrorEnums.no_role_access);
             }
           } else {
             set.status = 401;

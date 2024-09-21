@@ -22,8 +22,13 @@ export function filter_router(app: Elysia) {
       server
         .post(
           "/create",
-          async ({ body }) => {
-            await db.insertInto("filters").values(body.data).execute();
+          async ({ body, permissions }) => {
+            if (permissions.project_id) {
+              await db
+                .insertInto("filters")
+                .values({ ...body.data, project_id: permissions.project_id, owner_id: permissions.user_id })
+                .execute();
+            }
 
             return { role_access: true, message: "Success", ok: true };
           },
@@ -35,11 +40,14 @@ export function filter_router(app: Elysia) {
         .post(
           "/",
           async ({ body, permissions }) => {
-            const data = await db
+            let query = db
               .selectFrom("filters")
               .where("owner_id", "=", permissions.user_id)
               .select(body.fields as SelectExpression<DB, "filters">[])
-              .execute();
+              .limit(body.pagination?.limit || 10)
+              .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10));
+
+            const data = await query.execute();
             return { data, message: "Success", ok: true, role_access: true };
           },
           {
