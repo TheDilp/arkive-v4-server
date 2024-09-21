@@ -31,7 +31,7 @@ function getBPValue(value: string | number | boolean | null) {
     return sql<number>`
       CASE
       WHEN jsonb_typeof(blueprint_instance_value.value) = 'number' THEN blueprint_instance_value.value::INT
-      ELSE NULL 
+      ELSE NULL
       END `;
   if (typeof value === "boolean")
     return sql<number>`CASE
@@ -48,7 +48,7 @@ function getCharacterValue(value: string | number | boolean | null) {
     return sql<number>`
       CASE
       WHEN jsonb_typeof(character_value_fields.value) = 'number' THEN character_value_fields.value::INT
-      ELSE NULL 
+      ELSE NULL
       END `;
   if (typeof value === "boolean")
     return sql<number>`CASE
@@ -85,7 +85,7 @@ export function constructFilter(
         if (specialFilters.length) {
           andFilters.push(eb.or(specialFilters));
         }
-      } else if (field === "is_favorite") {
+      } else if (field === "is_favorite" && table === "characters") {
         queryBuilder = queryBuilder.leftJoin("favorite_characters.character_id", "=", "characters.id");
 
         filters.forEach(() => {
