@@ -25,11 +25,11 @@ export function asset_router(app: Elysia) {
         permission_id: null,
       } as PermissionDecorationType)
       .post(
-        "/:project_id/:type",
+        "/:type",
         async ({ params, body, permissions }) => {
           let query = db
             .selectFrom("images")
-            .where("images.project_id", "=", params.project_id)
+            .where("images.project_id", "=", permissions.project_id)
             .where("images.type", "=", params.type as AssetType)
             .limit(body?.pagination?.limit || 10)
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10));
@@ -70,15 +70,12 @@ export function asset_router(app: Elysia) {
         },
       )
       .post(
-        "/:project_id/:type/:id",
+        "/:type/:id",
         async ({ params, body, permissions }) => {
           let query = db
             .selectFrom("images")
             .where("images.id", "=", params.id)
-            .$if(!body.fields?.length, (qb) => qb.selectAll())
-            .$if(!!body.fields?.length, (qb) =>
-              qb.clearSelect().select(body.fields.map((f) => `images.${f}`) as SelectExpression<DB, "images">[]),
-            );
+            .select(body.fields.map((f) => `images.${f}`) as SelectExpression<DB, "images">[]);
 
           if (permissions.is_project_owner) {
             query = query.leftJoin("entity_permissions", (join) => join.on("entity_permissions.related_id", "=", params.id));
