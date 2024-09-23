@@ -188,8 +188,13 @@ export function project_router(app: Elysia) {
       )
       .post(
         "/update/:id",
-        async ({ params, body }) => {
-          await db.updateTable("projects").where("projects.id", "=", params.id).set(body.data).execute();
+        async ({ params, body, permissions }) => {
+          await db
+            .updateTable("projects")
+            .where("projects.id", "=", params.id)
+            .where("projects.owner_id", "=", permissions.user_id)
+            .set(body.data)
+            .execute();
 
           return { message: `Project ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
         },
