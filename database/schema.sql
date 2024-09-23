@@ -1330,6 +1330,7 @@ CREATE TABLE public.filters (
     content jsonb NOT NULL,
     type text NOT NULL,
     owner_id uuid NOT NULL,
+    is_favorite boolean,
     CONSTRAINT filters_type_check CHECK ((type = ANY (ARRAY['characters'::text, 'blueprint_instances'::text])))
 );
 
@@ -6085,4 +6086,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240920072529'),
     ('20240920073212'),
     ('20240920073825'),
-    ('20240920074421');
+    ('20240920074421'),
+    ('20240921073851');
