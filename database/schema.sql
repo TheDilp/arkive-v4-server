@@ -1966,7 +1966,9 @@ CREATE TABLE public.projects (
     created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     title text DEFAULT 'New Project'::text NOT NULL,
     image_id uuid,
-    owner_id uuid NOT NULL
+    owner_id uuid NOT NULL,
+    is_public boolean DEFAULT false,
+    description text
 );
 
 
@@ -6087,4 +6089,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240920073212'),
     ('20240920073825'),
     ('20240920074421'),
-    ('20240921073851');
+    ('20240921073851'),
+    ('20240923094029'),
+    ('20240923095158');
