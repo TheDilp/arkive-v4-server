@@ -21,7 +21,7 @@ export const ReadProjectSchema = t.Intersect([
 ]);
 
 export const InsertProjectSchema = t.Object({
-  data: t.Object({ title: t.String() }),
+  data: t.Object({ title: t.String(), description: t.Optional(t.Union([t.Null(), t.String()])) }),
 });
 
 export const UpdateProjectSchema = t.Object({
@@ -29,6 +29,8 @@ export const UpdateProjectSchema = t.Object({
     id: t.Optional(t.String()),
     title: t.Optional(t.String()),
     image_id: t.Optional(t.Union([t.String(), t.Null()])),
+    is_public: t.Optional(t.Union([t.Null(), t.Boolean()])),
+    description: t.Optional(t.Union([t.Null(), t.String()])),
     default_dice_color: t.Optional(t.Union([t.String(), t.Null()])),
     show_image_folder_view: t.Optional(t.Union([t.Boolean(), t.Null()])),
     show_image_table_view: t.Optional(t.Union([t.Boolean(), t.Null()])),
