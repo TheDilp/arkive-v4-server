@@ -378,6 +378,38 @@ export function project_router(app: Elysia) {
           response: ResponseSchema,
         },
       )
+      .get(
+        "/api_key",
+        async ({ permissions }) => {
+          if (permissions.is_project_owner) {
+            const response = await fetch(`${process.env.AUTH_SERVICE_URL}/api_key`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ project_id: permissions.project_id }),
+            });
+            if (response.ok) {
+              const data = (await response.json()) as { ok: boolean; data: string };
+
+              if (data.ok) {
+                return { data: data.data, ok: data.ok, message: MessageEnum.success, role_access: true };
+              } else {
+                return {
+                  data: null,
+                  ok: false,
+                  role_access: false,
+                  message: "You do not have permission to perform this action.",
+                };
+              }
+            }
+          } else {
+            return { data: null, ok: false, role_access: false, message: "You do not have permission to perform this action." };
+          }
+          return { data: null, ok: false, role_access: false, message: "You do not have permission to perform this action." };
+        },
+        { response: ResponseWithDataSchema },
+      )
       .delete(
         "/:id",
         async ({ params }) => {

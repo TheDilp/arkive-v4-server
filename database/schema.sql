@@ -1968,7 +1968,8 @@ CREATE TABLE public.projects (
     image_id uuid,
     owner_id uuid NOT NULL,
     is_public boolean DEFAULT false,
-    description text
+    description text,
+    api_key text
 );
 
 
@@ -6091,4 +6092,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240920074421'),
     ('20240921073851'),
     ('20240923094029'),
-    ('20240923095158');
+    ('20240923095158'),
+    ('20241004072425');
