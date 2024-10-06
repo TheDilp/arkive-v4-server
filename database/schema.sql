@@ -1645,7 +1645,8 @@ CREATE TABLE public.images (
     character_id uuid,
     type public."ImageType" DEFAULT 'images'::public."ImageType" NOT NULL,
     is_public boolean,
-    owner_id uuid NOT NULL
+    owner_id uuid NOT NULL,
+    description text
 );
 
 
@@ -6093,4 +6094,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240921073851'),
     ('20240923094029'),
     ('20240923095158'),
-    ('20241004072425');
+    ('20241004072425'),
+    ('20241006131359');
