@@ -25,6 +25,7 @@ import {
   PublicEntities,
 } from "../types/entityTypes";
 import { PermissionDecorationType, ResponseSchema } from "../types/requestTypes";
+import { redisClient } from "../utils/redisClient";
 import { UpdateTagRelations } from "../utils/relationalQueryHelpers";
 import { getEntityTagTable } from "../utils/requestUtils";
 
@@ -141,6 +142,9 @@ export function bulk_router(app: Elysia) {
               );
             }
           });
+          const redis = await redisClient;
+
+          if (redis) redis.del(`${permissions.project_id}_${permissions.user_id}_stats`);
 
           return { message: MessageEnum.success, ok: true, role_access: true };
         },
@@ -310,6 +314,11 @@ export function bulk_router(app: Elysia) {
               await Promise.all([actions]);
             });
           }
+
+          const redis = await redisClient;
+
+          if (redis) redis.del(`${permissions.project_id}_${permissions.user_id}_stats`);
+
           return { ok: true, message: MessageEnum.success, role_access: true };
         },
         {
@@ -375,8 +384,11 @@ export function bulk_router(app: Elysia) {
               }
             }
           }
+          const redis = await redisClient;
+
+          if (redis) redis.del(`${permissions.project_id}_${permissions.user_id}_stats`);
           return {
-            message: `Many ${params.type.replaceAll("_", " ")} ${MessageEnum.successfully_deleted}`,
+            message: `Many ${params.type.replaceAll("_", " ")} ${MessageEnum.successfully_arkived}`,
             ok: true,
             role_access: true,
           };
@@ -429,6 +441,9 @@ export function bulk_router(app: Elysia) {
                 .execute();
             }
           }
+          const redis = await redisClient;
+
+          if (redis) redis.del(`${permissions.project_id}_${permissions.user_id}_stats`);
           return {
             message: MessageEnum.success,
             ok: true,
