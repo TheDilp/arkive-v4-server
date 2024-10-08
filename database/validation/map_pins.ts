@@ -6,7 +6,7 @@ export const ListMapPinSchema = t.Intersect([
   RequestBodySchema,
   t.Optional(
     t.Object({
-      relations: t.Optional(t.Object({ character: t.Optional(t.Boolean()) })),
+      relations: t.Optional(t.Object({ map: t.Optional(t.Boolean()), character: t.Optional(t.Boolean()) })),
     }),
   ),
 ]);

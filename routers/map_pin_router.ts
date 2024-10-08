@@ -120,6 +120,17 @@ export function map_pin_router(app: Elysia) {
                   ).as("character"),
               ]);
             }
+            if (body?.relations?.map) {
+              query = query.select([
+                (eb) =>
+                  jsonObjectFrom(
+                    eb
+                      .selectFrom("maps")
+                      .select(["maps.id", "maps.title", "maps.image_id"])
+                      .whereRef("map_pins.parent_id", "=", "maps.id"),
+                  ).as("map"),
+              ]);
+            }
 
             if (!!body.permissions && !permissions.is_project_owner) {
               // @ts-ignore
