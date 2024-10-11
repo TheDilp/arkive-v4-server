@@ -122,7 +122,7 @@ export function game_router(app: Elysia) {
                 await db
                   .deleteFrom("game_characters")
                   .where("game_characters.game_id", "=", permissions.game_id)
-                  .where("game_characters.related_id", "=", params.id)
+                  .where("game_characters.id", "=", params.id)
                   .execute();
               } else {
                 console.error(`UNSUPPORTED TYPE - ${params.type}`);
