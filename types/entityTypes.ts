@@ -170,6 +170,7 @@ export type DiscordUser = {
 type JWTClaims = {
   user_id: string;
   project_id: string | null;
+  game_id?: string;
   image_url: string | null;
   is_email_confirmed: boolean | null;
   name: string | null;

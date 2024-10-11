@@ -149,6 +149,7 @@ export const GatewayResponseWithDataSchema = t.Object({
 export type PermissionDecorationType = {
   user_id: string;
   project_id: string | null;
+  game_id?: string | null;
   is_project_owner: boolean;
   role_access: boolean;
   role_id: string | null;

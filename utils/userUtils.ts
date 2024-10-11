@@ -61,7 +61,7 @@ export async function verifyJWT({
         status: "authenticated",
         user_id: cookie_data.claims.user_id,
         project_id: cookie_data.claims.project_id,
-        game_id: null,
+        game_id: cookie_data.claims?.game_id || null,
         image_url: cookie_data.claims.image_url,
         is_email_confirmed: cookie_data.claims.is_email_confirmed,
         name: cookie_data.claims.name,
