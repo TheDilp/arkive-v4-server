@@ -4,12 +4,19 @@ import { DB } from "kysely-codegen";
 
 import { MessageEnum } from "../../enums";
 import { PermissionDecorationType } from "../../types/requestTypes";
-import { GetRelatedEntityPermissionsAndRoles, TagQuery } from "../../utils/relationalQueryHelpers";
+import {
+  CreateEntityPermissions,
+  CreateTagRelations,
+  GetRelatedEntityPermissionsAndRoles,
+  TagQuery,
+} from "../../utils/relationalQueryHelpers";
+import { getEntityWithOwnerId } from "../../utils/utils";
 import { db } from "../db";
-import { ReadBlueprintInstanceSchema } from "../validation";
+import { InsertBlueprintInstanceSchema, ReadBlueprintInstanceSchema } from "../validation";
 import { checkEntityLevelPermission, getNestedReadPermission } from "./ownershipCheck";
 
 type ReadBodyType = (typeof ReadBlueprintInstanceSchema)["static"];
+type InsertBodyType = (typeof InsertBlueprintInstanceSchema)["static"];
 
 export async function readBlueprintInstance(body: ReadBodyType, params: { id: string }, permissions: PermissionDecorationType) {
   let query = db
@@ -313,4 +320,154 @@ export async function readBlueprintInstance(body: ReadBodyType, params: { id: st
   const data = await query.executeTakeFirstOrThrow();
 
   return { data, message: MessageEnum.success, ok: true, role_access: true };
+}
+
+export async function createBlueprintInstance(body: InsertBodyType, permissions: PermissionDecorationType) {
+  const id = await db.transaction().execute(async (tx) => {
+    const newInstance = await tx
+      .insertInto("blueprint_instances")
+      .values(getEntityWithOwnerId(body.data, permissions.user_id))
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    if (body.relations?.blueprint_fields?.length) {
+      await Promise.all(
+        body.relations.blueprint_fields.map(async (field) => {
+          if (field?.characters?.length) {
+            const { characters } = field;
+            await tx
+              .insertInto("blueprint_instance_characters")
+              .values(
+                characters.map((char) => ({
+                  blueprint_field_id: field.id,
+                  blueprint_instance_id: newInstance.id,
+                  related_id: char.related_id,
+                })),
+              )
+              .execute();
+            return;
+          }
+          if (field?.blueprint_instances?.length) {
+            const { blueprint_instances } = field;
+            await tx
+              .insertInto("blueprint_instance_blueprint_instances")
+              .values(
+                blueprint_instances.map((char) => ({
+                  blueprint_field_id: field.id,
+                  blueprint_instance_id: newInstance.id,
+                  related_id: char.related_id,
+                })),
+              )
+              .execute();
+            return;
+          }
+          if (field?.documents?.length) {
+            const { documents } = field;
+            await tx
+              .insertInto("blueprint_instance_documents")
+              .values(
+                documents.map((doc) => ({
+                  blueprint_field_id: field.id,
+                  blueprint_instance_id: newInstance.id,
+                  related_id: doc.related_id,
+                })),
+              )
+              .execute();
+            return;
+          }
+          if (field?.map_pins?.length) {
+            const { map_pins } = field;
+            await tx
+              .insertInto("blueprint_instance_map_pins")
+              .values(
+                map_pins.map((map_pin) => ({
+                  blueprint_field_id: field.id,
+                  blueprint_instance_id: newInstance.id,
+                  related_id: map_pin.related_id,
+                })),
+              )
+              .execute();
+            return;
+          }
+          if (field.images?.length) {
+            const { images } = field;
+            await tx
+              .insertInto("blueprint_instance_images")
+              .values(
+                images.map((image) => ({
+                  blueprint_field_id: field.id,
+                  blueprint_instance_id: newInstance.id,
+                  related_id: image.related_id,
+                })),
+              )
+              .execute();
+            return;
+          }
+          if (field?.random_table) {
+            const { random_table } = field;
+            await tx
+              .insertInto("blueprint_instance_random_tables")
+              .values({
+                blueprint_field_id: field.id,
+                blueprint_instance_id: newInstance.id,
+                related_id: random_table.related_id,
+                option_id: random_table?.option_id,
+                suboption_id: random_table?.suboption_id,
+              })
+              .execute();
+            return;
+          }
+          if (field?.calendar) {
+            await tx
+              .insertInto("blueprint_instance_calendars")
+              .values({
+                blueprint_field_id: field.id,
+                blueprint_instance_id: newInstance.id,
+                related_id: field.calendar.related_id,
+                start_day: field.calendar?.start_day,
+                start_month_id: field.calendar?.start_month_id,
+                start_year: field.calendar?.start_year,
+                end_day: field.calendar?.end_day,
+                end_month_id: field.calendar?.end_month_id,
+                end_year: field.calendar?.end_year,
+              })
+              .execute();
+          }
+          if (field?.value || typeof field?.value === "boolean") {
+            await tx
+              .insertInto("blueprint_instance_value")
+              .values({
+                blueprint_field_id: field.id,
+                blueprint_instance_id: newInstance.id,
+                value: JSON.stringify(field.value),
+              })
+              .execute();
+          }
+        }),
+      );
+    }
+    if (body.relations?.tags?.length) {
+      await CreateTagRelations({
+        tx,
+        relationalTable: "_blueprint_instancesTotags",
+        id: newInstance.id,
+        tags: body.relations.tags,
+      });
+    }
+    if (body.permissions?.length) {
+      await CreateEntityPermissions(tx, newInstance.id, body.permissions);
+    }
+    return newInstance.id;
+  });
+  const data = await db
+    .selectFrom("blueprints")
+    .select(["project_id"])
+    .where("id", "=", body.data.parent_id)
+    .executeTakeFirstOrThrow();
+
+  return {
+    data: { id, project_id: data.project_id, title: body.data.title },
+    message: `Blueprint instance ${MessageEnum.successfully_created}`,
+    ok: true,
+    role_access: true,
+  };
 }

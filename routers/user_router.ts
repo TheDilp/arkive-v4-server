@@ -307,6 +307,7 @@ export function user_router(app: Elysia) {
                         first_name: t.Optional(t.String()),
                         last_name: t.Optional(t.String()),
                         title: t.Optional(t.String()),
+                        parent_id: t.Optional(t.String()),
                       }),
                     ]),
                   }),

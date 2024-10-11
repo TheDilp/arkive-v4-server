@@ -1,18 +1,21 @@
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import { SelectExpression, sql } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
 import { createCharacter, readCharacter, updateCharacter } from "../database/queries";
-import { readBlueprintInstance } from "../database/queries/blueprintInstanceQueries";
+import { createBlueprintInstance, readBlueprintInstance } from "../database/queries/blueprintInstanceQueries";
+import { readBlueprint } from "../database/queries/blueprintQueries";
 import {
   GatewayMentionSearchSchema,
   GatewaySearchSchema,
+  InsertBlueprintInstanceSchema,
   InsertCharacterSchema,
   ListAssetsSchema,
   ListCharacterFieldsTemplateSchema,
   ReadBlueprintInstanceSchema,
+  ReadBlueprintSchema,
   ReadCharacterSchema,
   UpdateCharacterSchema,
 } from "../database/validation";
@@ -151,6 +154,37 @@ export function gateway_access_router(app: Elysia) {
           return { data: {}, message: "There was an error with your request.", ok: false };
         },
         { body: InsertCharacterSchema, response: GatewayResponseWithDataSchema },
+      )
+      .post(
+        "/blueprint_instances/create",
+        async ({ body, headers }) => {
+          const project = await db
+            .selectFrom("projects")
+            .select("owner_id")
+            .where("id", "=", body.data.project_id)
+            .executeTakeFirst();
+
+          if (project?.owner_id && !!headers?.["access-id"]) {
+            const redis = await redisClient;
+            const res = await createBlueprintInstance(body, {
+              user_id: project?.owner_id,
+              is_project_owner: true,
+              project_id: body.data.project_id,
+              role_access: true,
+              role_id: null,
+              permission_id: null,
+            });
+
+            redis.del(`characters_gateway_access_${headers["access-id"]}`);
+
+            return res;
+          }
+          return { data: {}, message: "There was an error with your request.", ok: false };
+        },
+        {
+          body: t.Intersect([InsertBlueprintInstanceSchema, t.Object({ data: t.Object({ project_id: t.String() }) })]),
+          response: GatewayResponseWithDataSchema,
+        },
       )
       .post(
         "/characters/update/:id",
@@ -305,6 +339,22 @@ export function gateway_access_router(app: Elysia) {
         },
       )
       .post(
+        "/blueprints/:id",
+        async ({ params, body }) =>
+          readBlueprint(body, params, {
+            is_project_owner: true,
+            user_id: "",
+            role_id: null,
+            role_access: false,
+            project_id: null,
+            permission_id: "",
+          }),
+        {
+          body: ReadBlueprintSchema,
+          response: GatewayResponseWithDataSchema,
+        },
+      )
+      .post(
         "/assets/:entity_type/:access_id",
         async ({ params, body }) => {
           const redis = await redisClient;
@@ -339,8 +389,7 @@ export function gateway_access_router(app: Elysia) {
       )
       .post(
         "/options/:type",
-        async ({ params, body }) => {
-          const { type } = params;
+        async ({ body }) => {
           const redis = await redisClient;
 
           const gateway_access = await redis.GET(`${body.data.entity_type}_gateway_access_${body.data.access_id}`);
@@ -355,7 +404,6 @@ export function gateway_access_router(app: Elysia) {
                 const ids = entities[index][1];
                 if (ids.length) {
                   const fields = getSearchFields(entity, true);
-
                   let query = db
                     .selectFrom(entity)
                     // @ts-ignore
@@ -390,10 +438,11 @@ export function gateway_access_router(app: Elysia) {
                     value: item.id,
                     label: item?.full_name || item.title,
                     parent_id: "parent_id" in item ? item?.parent_id : null,
+                    project_id: gateway_access_data.project_id || item?.project_id || null,
                     image:
-                      type === "characters" || (type === "nodes" && item?.first_name)
-                        ? item.portrait_id || ""
-                        : item?.image_id || "",
+                      item?.entity_type === "characters" || (item?.entity_type === "nodes" && item?.first_name)
+                        ? item.portrait_id || null
+                        : item?.image_id || null,
                     icon: item?.icon,
                     entity_type: item?.entity_type,
                   })),
