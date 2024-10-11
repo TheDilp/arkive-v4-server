@@ -11,6 +11,7 @@ export const ListCharacterSchema = t.Intersect([
           portrait: t.Optional(t.Boolean()),
           tags: t.Optional(t.Boolean()),
           is_favorite: t.Optional(t.Union([t.Boolean(), t.Null()])),
+          game_permissions: t.Optional(t.Union([t.Boolean(), t.Null()])),
         }),
       ),
     }),

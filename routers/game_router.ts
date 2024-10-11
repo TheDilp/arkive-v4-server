@@ -4,7 +4,7 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { AddToGameSchema, ListGameSchema, ReadGameSchema } from "../database/validation";
+import { AddToGameSchema, ListGameSchema, ReadGameSchema, UpdateGamePermissionsSchema } from "../database/validation";
 import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 
 export function game_router(app: Elysia) {
@@ -84,6 +84,33 @@ export function game_router(app: Elysia) {
           },
           {
             body: AddToGameSchema,
+            response: ResponseSchema,
+          },
+        )
+        .post(
+          "/update/:type/permissions",
+          async ({ params, body, permissions }) => {
+            if (permissions?.game_id) {
+              if (params.type === "character") {
+                await db
+                  .insertInto("game_character_permissions")
+
+                  .values({ ...body.data, game_id: permissions.game_id })
+                  .onConflict((cb) =>
+                    cb.constraint("unique_game_player_character_permission").doUpdateSet({ permission: body.data.permission }),
+                  )
+                  .execute();
+              } else {
+                console.error(`UNSUPPORTED TYPE - ${params.type}`);
+
+                return { role_access: true, message: "There was an error with your request.", ok: false };
+              }
+            }
+
+            return { role_access: true, message: "Success", ok: true };
+          },
+          {
+            body: UpdateGamePermissionsSchema,
             response: ResponseSchema,
           },
         )
