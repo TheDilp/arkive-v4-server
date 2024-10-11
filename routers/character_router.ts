@@ -68,7 +68,7 @@ export function character_router(app: Elysia) {
                 GetRelatedEntityPermissionsAndRoles(qb, permissions, "characters"),
               )
               .$if(!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length, (qb) => {
-                const { characters, blueprint_instances, documents, map_pins, events, tags, value } =
+                const { game, characters, blueprint_instances, documents, map_pins, events, tags, value } =
                   groupRelationFiltersByField(body.relationFilters || { and: [], or: [] });
 
                 const {
@@ -92,6 +92,11 @@ export function character_router(app: Elysia) {
                 if (resourceEvents?.filters?.length)
                   qb = characterResourceFilter("event_characters", qb, resourceEvents?.filters || []);
                 if (resourceMaps?.filters?.length) qb = characterResourceFilter("maps", qb, resourceMaps?.filters || []);
+                if (game?.filters?.length && permissions?.game_id) {
+                  qb = qb
+                    .innerJoin("game_characters", "game_characters.related_id", "characters.id")
+                    .where("game_characters.game_id", "=", permissions.game_id);
+                }
                 if (characters?.filters?.length)
                   qb = characterRelationFilter("character_characters_fields", qb, characters?.filters || []);
                 if (documents?.filters?.length)
