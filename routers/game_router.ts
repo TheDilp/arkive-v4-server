@@ -76,7 +76,7 @@ export function game_router(app: Elysia) {
         .post(
           "/add/:type",
           async ({ params, body }) => {
-            if (params.type === "characters") {
+            if (params.type === "character") {
               await db.insertInto("game_characters").values(body.data).execute();
             }
 
@@ -84,6 +84,31 @@ export function game_router(app: Elysia) {
           },
           {
             body: AddToGameSchema,
+            response: ResponseSchema,
+          },
+        )
+        .delete(
+          "/remove/:type/:id",
+          async ({ params, permissions }) => {
+            if (permissions?.game_id) {
+              if (params.type === "character") {
+                await db
+                  .deleteFrom("game_characters")
+                  .where("game_characters.game_id", "=", permissions.game_id)
+                  .where("game_characters.related_id", "=", params.id)
+                  .execute();
+              } else {
+                console.error(`UNSUPPORTED TYPE - ${params.type}`);
+
+                return { role_access: true, message: "There was an error with your request.", ok: false };
+              }
+            } else {
+              console.error(`GAME ID NOT PRESENT - ${permissions.project_id}`);
+            }
+
+            return { role_access: true, message: "Success", ok: true };
+          },
+          {
             response: ResponseSchema,
           },
         ),
