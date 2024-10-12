@@ -12,7 +12,6 @@ export * from "./documents";
 export * from "./edges";
 export * from "./events";
 export * from "./filters";
-export * from "./games";
 export * from "./gateway_configurations";
 export * from "./generic";
 export * from "./graphs";

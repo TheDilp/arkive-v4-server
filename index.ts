@@ -22,7 +22,6 @@ import {
   edge_router,
   event_router,
   filter_router,
-  game_router,
   gateway_access_router,
   gateway_configuration_router,
   graph_router,
@@ -115,7 +114,6 @@ export const app = new Elysia({ name: "Editor.Router" })
         role_access: false,
       };
     }
-    console.error(error);
     return { message: "There was an error with your request.", ok: false, role_access: false };
   })
   .group("/api/v1" as any, (server) =>
@@ -130,12 +128,19 @@ export const app = new Elysia({ name: "Editor.Router" })
             request,
           } = context;
           // @ts-ignore
-          const data = await verifyJWT({ module: headers?.["module"] as "editor" | "dyce_vtt" | null, access, refresh, set });
+          const data = await verifyJWT({
+            module: headers?.["module"] as "editor" | null,
+            api_key: headers?.["x-api-key"] as string | undefined | null,
+            access,
+            refresh,
+            set,
+          });
           if (data.status === "authenticated") {
-            const { user_id, project_id, name } = data;
+            const { user_id, project_id, name, game_id } = data;
             headers["user-id"] = user_id;
             headers["name"] = name || undefined;
             headers["project-id"] = project_id || undefined;
+            headers["game-id"] = project_id || undefined;
             headers["user-image-url"] = data.image_url || undefined;
 
             const entity = getEntityFromPath(path);
@@ -155,11 +160,12 @@ export const app = new Elysia({ name: "Editor.Router" })
               try {
                 const permissions = (await res.json()) as Pick<
                   PermissionDecorationType,
-                  "is_project_owner" | "all_permissions" | "role_access" | "role_id" | "permission_id"
+                  "is_project_owner" | "all_permissions" | "role_access" | "role_id" | "permission_id" | "game_id"
                 > & { user_id: string; project_id: string };
 
                 permissions.user_id = user_id;
                 permissions.project_id = project_id || "";
+                permissions.game_id = game_id;
                 // @ts-ignore
                 context.permissions = permissions;
               } catch (error) {
@@ -218,7 +224,6 @@ export const app = new Elysia({ name: "Editor.Router" })
           .use(role_router)
           .use(permission_router)
           .use(gateway_configuration_router)
-          .use(game_router)
           .use(filter_router),
     ),
   )

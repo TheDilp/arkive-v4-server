@@ -32,21 +32,31 @@ export async function verifyJWT({
   access,
   set,
   module = null,
+  api_key = null,
 }: {
-  module: "editor" | "dyce_vtt" | null;
+  module: "editor" | null;
+  api_key: string | undefined | null;
   refresh: Cookie<string | undefined>;
   access: Cookie<string | undefined>;
   set: { headers: HTTPHeaders; status?: number | keyof StatusMap };
 }) {
-  const res = await fetch(`${process.env.AUTH_SERVICE_URL}/verify`, {
-    method: "POST",
+  const res = await fetch(
+    `${process.env.AUTH_SERVICE_URL}${api_key ? "/api_key" : ""}/verify`,
     // @ts-ignore
-    headers: { "Content-Type": "application/json", module },
-    body: JSON.stringify({
-      access: access.value,
-      refresh: refresh.value,
-    }),
-  });
+    api_key
+      ? {
+          method: "GET",
+          headers: { module: "editor", "x-api-key": api_key },
+        }
+      : {
+          method: "POST",
+          headers: { "Content-Type": "application/json", module },
+          body: JSON.stringify({
+            access: access.value,
+            refresh: refresh.value,
+          }),
+        },
+  );
 
   if (res.status >= 400) {
     set.status = 401;

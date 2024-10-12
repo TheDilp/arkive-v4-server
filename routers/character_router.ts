@@ -56,15 +56,7 @@ export function character_router(app: Elysia) {
             }
 
             result = result
-              .select(
-                body.fields.map((field) => {
-                  // game_characters.id is the relation used when interacting via Dyce_VTT
-                  if (permissions?.game_id && field === "id") {
-                    return "game_characters.id";
-                  }
-                  return `characters.${field}`;
-                }) as SelectExpression<DB, "characters">[],
-              )
+              .select(body.fields.map((field) => `characters.${field}`) as SelectExpression<DB, "characters">[])
               .distinctOn(
                 body.orderBy?.length
                   ? (["characters.id", ...body.orderBy.map((order) => order.field)] as any)

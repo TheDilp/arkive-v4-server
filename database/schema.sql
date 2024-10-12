@@ -10,6 +10,27 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON SCHEMA public IS '';
+
+
+--
+-- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
+
+
+--
 -- Name: pger; Type: SCHEMA; Schema: -; Owner: -
 --
 
@@ -17,10 +38,17 @@ CREATE SCHEMA pger;
 
 
 --
--- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
+-- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
 --
 
-COMMENT ON SCHEMA public IS '';
+CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
 
 
 --
@@ -280,50 +308,6 @@ END IF;
 
 
 
-    RETURN NEW;
-END;
-$$;
-
-
---
--- Name: notify_character_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.notify_character_trigger_function() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-    payload JSON;
-BEGIN
-    payload = json_build_object(
-        'entity', TG_TABLE_NAME,
-        'operation', TG_OP,
-        'title', NEW.full_name,
-        'id', NEW.id
-    );
-    PERFORM pg_notify('notification_channel', payload::text);
-    RETURN NEW;
-END;
-$$;
-
-
---
--- Name: notify_general_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.notify_general_trigger_function() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-    payload JSON;
-BEGIN
-    payload = json_build_object(
-        'entity', TG_TABLE_NAME,
-        'operation', TG_OP,
-        'title', NEW.title,
-        'id', NEW.id
-    );
-    PERFORM pg_notify('notification_channel', payload::text);
     RETURN NEW;
 END;
 $$;
@@ -1050,6 +1034,7 @@ CREATE TABLE public.document_mentions (
 
 CREATE TABLE public.document_template_fields (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
+    parent_id uuid NOT NULL,
     key text NOT NULL,
     value text,
     formula text,
@@ -1059,7 +1044,6 @@ CREATE TABLE public.document_template_fields (
     entity_type text NOT NULL,
     sort integer DEFAULT 0 NOT NULL,
     random_count text,
-    parent_id uuid NOT NULL,
     blueprint_id uuid,
     calendar_id uuid,
     map_id uuid,
@@ -1352,168 +1336,6 @@ CREATE TABLE public.filters (
 
 
 --
--- Name: game_character_permissions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.game_character_permissions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    game_id uuid NOT NULL,
-    player_id uuid NOT NULL,
-    permission text DEFAULT 'none'::text NOT NULL,
-    CONSTRAINT game_character_permissions_permission_check CHECK ((permission = ANY (ARRAY['none'::text, 'view'::text, 'read'::text, 'own'::text])))
-);
-
-
---
--- Name: game_characters; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.game_characters (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    game_id uuid NOT NULL,
-    parent_id uuid
-);
-
-
---
--- Name: game_journal_entries; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.game_journal_entries (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    title text NOT NULL,
-    game_id uuid NOT NULL
-);
-
-
---
--- Name: game_journal_entry_blueprint_instances; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.game_journal_entry_blueprint_instances (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    parent_id uuid NOT NULL,
-    sort integer
-);
-
-
---
--- Name: game_journal_entry_characters; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.game_journal_entry_characters (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    parent_id uuid NOT NULL,
-    sort integer
-);
-
-
---
--- Name: game_journal_entry_documents; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.game_journal_entry_documents (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    parent_id uuid NOT NULL,
-    sort integer
-);
-
-
---
--- Name: game_journal_entry_events; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.game_journal_entry_events (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    parent_id uuid NOT NULL,
-    sort integer
-);
-
-
---
--- Name: game_journal_entry_graphs; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.game_journal_entry_graphs (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    parent_id uuid NOT NULL,
-    sort integer
-);
-
-
---
--- Name: game_journal_entry_images; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.game_journal_entry_images (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    parent_id uuid NOT NULL,
-    sort integer
-);
-
-
---
--- Name: game_journal_entry_map_pins; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.game_journal_entry_map_pins (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    parent_id uuid NOT NULL,
-    sort integer
-);
-
-
---
--- Name: game_journal_entry_maps; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.game_journal_entry_maps (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    parent_id uuid NOT NULL,
-    sort integer
-);
-
-
---
--- Name: game_players; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.game_players (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    game_id uuid NOT NULL,
-    nickname text NOT NULL,
-    password text NOT NULL
-);
-
-
---
--- Name: games; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.games (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    created_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    title text NOT NULL,
-    owner_id uuid NOT NULL,
-    project_id uuid NOT NULL,
-    background_image uuid,
-    next_session_date timestamp(3) with time zone,
-    description jsonb
-);
-
-
---
 -- Name: gateway_configuration_blueprint_instances; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1662,9 +1484,7 @@ CREATE TABLE public.images (
     type public."ImageType" DEFAULT 'images'::public."ImageType" NOT NULL,
     is_public boolean,
     owner_id uuid NOT NULL,
-    extension text,
-    description text,
-    CONSTRAINT extension_check CHECK ((extension = ANY (ARRAY['jpeg'::text, 'jpg'::text, 'png'::text, 'webp'::text, 'avif'::text, 'gif'::text])))
+    description text
 );
 
 
@@ -1801,18 +1621,6 @@ CREATE TABLE public.manuscripts (
     project_id uuid NOT NULL,
     is_public boolean,
     icon text
-);
-
-
---
--- Name: manuscripts_maps; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.manuscripts_maps (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    related_id uuid NOT NULL,
-    parent_id uuid NOT NULL,
-    sort integer
 );
 
 
@@ -2717,110 +2525,6 @@ ALTER TABLE ONLY public.filters
 
 
 --
--- Name: game_character_permissions game_character_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_character_permissions
-    ADD CONSTRAINT game_character_permissions_pkey PRIMARY KEY (id);
-
-
---
--- Name: game_characters game_characters_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_characters
-    ADD CONSTRAINT game_characters_pkey PRIMARY KEY (id);
-
-
---
--- Name: game_journal_entries game_journal_entries_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entries
-    ADD CONSTRAINT game_journal_entries_pkey PRIMARY KEY (id);
-
-
---
--- Name: game_journal_entry_blueprint_instances game_journal_entry_blueprint_instances_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_blueprint_instances
-    ADD CONSTRAINT game_journal_entry_blueprint_instances_pkey PRIMARY KEY (id);
-
-
---
--- Name: game_journal_entry_characters game_journal_entry_characters_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_characters
-    ADD CONSTRAINT game_journal_entry_characters_pkey PRIMARY KEY (id);
-
-
---
--- Name: game_journal_entry_documents game_journal_entry_documents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_documents
-    ADD CONSTRAINT game_journal_entry_documents_pkey PRIMARY KEY (id);
-
-
---
--- Name: game_journal_entry_events game_journal_entry_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_events
-    ADD CONSTRAINT game_journal_entry_events_pkey PRIMARY KEY (id);
-
-
---
--- Name: game_journal_entry_graphs game_journal_entry_graphs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_graphs
-    ADD CONSTRAINT game_journal_entry_graphs_pkey PRIMARY KEY (id);
-
-
---
--- Name: game_journal_entry_images game_journal_entry_images_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_images
-    ADD CONSTRAINT game_journal_entry_images_pkey PRIMARY KEY (id);
-
-
---
--- Name: game_journal_entry_map_pins game_journal_entry_map_pins_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_map_pins
-    ADD CONSTRAINT game_journal_entry_map_pins_pkey PRIMARY KEY (id);
-
-
---
--- Name: game_journal_entry_maps game_journal_entry_maps_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_maps
-    ADD CONSTRAINT game_journal_entry_maps_pkey PRIMARY KEY (id);
-
-
---
--- Name: game_players game_players_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_players
-    ADD CONSTRAINT game_players_pkey PRIMARY KEY (id);
-
-
---
--- Name: games games_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.games
-    ADD CONSTRAINT games_pkey PRIMARY KEY (id);
-
-
---
 -- Name: gateway_configuration_blueprint_instances gateway_configuration_blueprint_instances_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3154,22 +2858,6 @@ ALTER TABLE ONLY public.entity_permissions
 
 ALTER TABLE ONLY public.entity_permissions
     ADD CONSTRAINT unique_entity_user_permission_combination UNIQUE (related_id, user_id, permission_id);
-
-
---
--- Name: game_players unique_game_id_nickname; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_players
-    ADD CONSTRAINT unique_game_id_nickname UNIQUE (game_id, nickname);
-
-
---
--- Name: game_character_permissions unique_game_player_character_permission; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_character_permissions
-    ADD CONSTRAINT unique_game_player_character_permission UNIQUE (game_id, related_id, player_id);
 
 
 --
@@ -4932,6 +4620,14 @@ ALTER TABLE ONLY public.document_template_fields_maps
 
 
 --
+-- Name: document_template_fields document_template_fields_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_template_fields
+    ADD CONSTRAINT document_template_fields_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.documents(id) ON DELETE CASCADE;
+
+
+--
 -- Name: document_template_fields_random_tables document_template_fields_random_tables_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5129,222 +4825,6 @@ ALTER TABLE ONLY public.filters
 
 ALTER TABLE ONLY public.filters
     ADD CONSTRAINT filters_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
-
-
---
--- Name: game_character_permissions game_character_permissions_game_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_character_permissions
-    ADD CONSTRAINT game_character_permissions_game_id_fkey FOREIGN KEY (game_id) REFERENCES public.games(id) ON DELETE CASCADE;
-
-
---
--- Name: game_character_permissions game_character_permissions_player_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_character_permissions
-    ADD CONSTRAINT game_character_permissions_player_id_fkey FOREIGN KEY (player_id) REFERENCES public.game_players(id) ON DELETE CASCADE;
-
-
---
--- Name: game_character_permissions game_character_permissions_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_character_permissions
-    ADD CONSTRAINT game_character_permissions_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.game_characters(id) ON DELETE CASCADE;
-
-
---
--- Name: game_characters game_characters_game_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_characters
-    ADD CONSTRAINT game_characters_game_id_fkey FOREIGN KEY (game_id) REFERENCES public.games(id) ON DELETE CASCADE;
-
-
---
--- Name: game_characters game_characters_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_characters
-    ADD CONSTRAINT game_characters_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.game_characters(id) ON DELETE CASCADE;
-
-
---
--- Name: game_characters game_characters_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_characters
-    ADD CONSTRAINT game_characters_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.characters(id) ON DELETE CASCADE;
-
-
---
--- Name: game_journal_entries game_journal_entries_game_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entries
-    ADD CONSTRAINT game_journal_entries_game_id_fkey FOREIGN KEY (game_id) REFERENCES public.games(id) ON DELETE CASCADE;
-
-
---
--- Name: game_journal_entry_blueprint_instances game_journal_entry_blueprint_instances_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_blueprint_instances
-    ADD CONSTRAINT game_journal_entry_blueprint_instances_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.game_journal_entries(id) ON DELETE CASCADE;
-
-
---
--- Name: game_journal_entry_blueprint_instances game_journal_entry_blueprint_instances_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_blueprint_instances
-    ADD CONSTRAINT game_journal_entry_blueprint_instances_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.blueprint_instances(id) ON DELETE CASCADE;
-
-
---
--- Name: game_journal_entry_characters game_journal_entry_characters_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_characters
-    ADD CONSTRAINT game_journal_entry_characters_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.game_journal_entries(id) ON DELETE CASCADE;
-
-
---
--- Name: game_journal_entry_characters game_journal_entry_characters_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_characters
-    ADD CONSTRAINT game_journal_entry_characters_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.characters(id) ON DELETE CASCADE;
-
-
---
--- Name: game_journal_entry_documents game_journal_entry_documents_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_documents
-    ADD CONSTRAINT game_journal_entry_documents_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.game_journal_entries(id) ON DELETE CASCADE;
-
-
---
--- Name: game_journal_entry_documents game_journal_entry_documents_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_documents
-    ADD CONSTRAINT game_journal_entry_documents_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.documents(id) ON DELETE CASCADE;
-
-
---
--- Name: game_journal_entry_events game_journal_entry_events_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_events
-    ADD CONSTRAINT game_journal_entry_events_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.game_journal_entries(id) ON DELETE CASCADE;
-
-
---
--- Name: game_journal_entry_events game_journal_entry_events_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_events
-    ADD CONSTRAINT game_journal_entry_events_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.events(id) ON DELETE CASCADE;
-
-
---
--- Name: game_journal_entry_graphs game_journal_entry_graphs_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_graphs
-    ADD CONSTRAINT game_journal_entry_graphs_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.game_journal_entries(id) ON DELETE CASCADE;
-
-
---
--- Name: game_journal_entry_graphs game_journal_entry_graphs_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_graphs
-    ADD CONSTRAINT game_journal_entry_graphs_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.graphs(id) ON DELETE CASCADE;
-
-
---
--- Name: game_journal_entry_images game_journal_entry_images_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_images
-    ADD CONSTRAINT game_journal_entry_images_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.game_journal_entries(id) ON DELETE CASCADE;
-
-
---
--- Name: game_journal_entry_images game_journal_entry_images_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_images
-    ADD CONSTRAINT game_journal_entry_images_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.images(id) ON DELETE CASCADE;
-
-
---
--- Name: game_journal_entry_map_pins game_journal_entry_map_pins_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_map_pins
-    ADD CONSTRAINT game_journal_entry_map_pins_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.game_journal_entries(id) ON DELETE CASCADE;
-
-
---
--- Name: game_journal_entry_map_pins game_journal_entry_map_pins_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_map_pins
-    ADD CONSTRAINT game_journal_entry_map_pins_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.map_pins(id) ON DELETE CASCADE;
-
-
---
--- Name: game_journal_entry_maps game_journal_entry_maps_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_maps
-    ADD CONSTRAINT game_journal_entry_maps_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.game_journal_entries(id) ON DELETE CASCADE;
-
-
---
--- Name: game_journal_entry_maps game_journal_entry_maps_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_journal_entry_maps
-    ADD CONSTRAINT game_journal_entry_maps_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.maps(id) ON DELETE CASCADE;
-
-
---
--- Name: game_players game_players_game_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.game_players
-    ADD CONSTRAINT game_players_game_id_fkey FOREIGN KEY (game_id) REFERENCES public.games(id) ON DELETE CASCADE;
-
-
---
--- Name: games games_background_image_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.games
-    ADD CONSTRAINT games_background_image_fkey FOREIGN KEY (background_image) REFERENCES public.images(id) ON DELETE SET NULL;
-
-
---
--- Name: games games_owner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.games
-    ADD CONSTRAINT games_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.users(id) ON DELETE CASCADE;
-
-
---
--- Name: games games_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.games
-    ADD CONSTRAINT games_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
 
 
 --
@@ -5697,14 +5177,6 @@ ALTER TABLE ONLY public.manuscript_tags
 
 ALTER TABLE ONLY public.manuscript_tags
     ADD CONSTRAINT manuscript_tags_tag_id_fkey FOREIGN KEY (tag_id) REFERENCES public.tags(id) ON DELETE CASCADE;
-
-
---
--- Name: manuscripts_maps manuscripts_maps_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.manuscripts_maps
-    ADD CONSTRAINT manuscripts_maps_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.maps(id) ON DELETE CASCADE;
 
 
 --
@@ -6107,7 +5579,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240807090427'),
     ('20240809072046'),
     ('20240809074715'),
-    ('20240821074150'),
     ('20240906120623'),
     ('20240906143112'),
     ('20240906150551'),
@@ -6127,4 +5598,4 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240923095158'),
     ('20241004072425'),
     ('20241006131359'),
-    ('20241011092538');
+    ('20241012100432');
