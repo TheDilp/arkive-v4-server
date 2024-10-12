@@ -214,7 +214,7 @@ export function gateway_access_router(app: Elysia) {
                 ? (["character_fields_templates.id", ...body.orderBy.map((order) => order.field)] as any)
                 : "character_fields_templates.id",
             )
-            .where("character_fields_templates.project_id", "=", body.data.project_id)
+            .where("character_fields_templates.project_id", "=", body?.data?.project_id || null)
             .where("character_fields_templates.deleted_at", body.arkived ? "is not" : "is", null)
             .select(
               (body.fields || [])?.map((field) => `character_fields_templates.${field}`) as SelectExpression<

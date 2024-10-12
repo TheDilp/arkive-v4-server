@@ -28,9 +28,7 @@ const FieldTypeSchema = t.Union([
 
 export const ListCharacterFieldsTemplateSchema = t.Intersect([
   RequestBodySchema,
-  t.Object({
-    data: t.Object({ project_id: t.String() }),
-  }),
+  t.Optional(t.Object({ data: t.Object({ project_id: t.String() }) })),
   t.Optional(
     t.Object({
       relations: t.Optional(
