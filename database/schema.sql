@@ -10,27 +10,6 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON SCHEMA public IS '';
-
-
---
--- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
-
-
---
--- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
-
-
---
 -- Name: pger; Type: SCHEMA; Schema: -; Owner: -
 --
 
@@ -38,17 +17,10 @@ CREATE SCHEMA pger;
 
 
 --
--- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
-
-
---
--- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
+COMMENT ON SCHEMA public IS '';
 
 
 --
@@ -183,6 +155,24 @@ CREATE TYPE public."MentionTypeEnum" AS ENUM (
 
 
 --
+-- Name: erase_character_game_data(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.erase_character_game_data() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  -- Update game_data for characters linked to the project
+  UPDATE characters
+  SET game_data = NULL
+  WHERE project_id = OLD.id;
+
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: handle_bp_field_type_change(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -308,6 +298,50 @@ END IF;
 
 
 
+    RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: notify_character_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.notify_character_trigger_function() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    payload JSON;
+BEGIN
+    payload = json_build_object(
+        'entity', TG_TABLE_NAME,
+        'operation', TG_OP,
+        'title', NEW.full_name,
+        'id', NEW.id
+    );
+    PERFORM pg_notify('notification_channel', payload::text);
+    RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: notify_general_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.notify_general_trigger_function() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    payload JSON;
+BEGIN
+    payload = json_build_object(
+        'entity', TG_TABLE_NAME,
+        'operation', TG_OP,
+        'title', NEW.title,
+        'id', NEW.id
+    );
+    PERFORM pg_notify('notification_channel', payload::text);
     RETURN NEW;
 END;
 $$;
@@ -967,7 +1001,8 @@ CREATE TABLE public.characters (
     is_public boolean,
     biography jsonb,
     owner_id uuid NOT NULL,
-    deleted_at timestamp(3) without time zone
+    deleted_at timestamp(3) without time zone,
+    game_data jsonb
 );
 
 
@@ -1034,7 +1069,6 @@ CREATE TABLE public.document_mentions (
 
 CREATE TABLE public.document_template_fields (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    parent_id uuid NOT NULL,
     key text NOT NULL,
     value text,
     formula text,
@@ -1044,6 +1078,7 @@ CREATE TABLE public.document_template_fields (
     entity_type text NOT NULL,
     sort integer DEFAULT 0 NOT NULL,
     random_count text,
+    parent_id uuid NOT NULL,
     blueprint_id uuid,
     calendar_id uuid,
     map_id uuid,
@@ -1336,6 +1371,18 @@ CREATE TABLE public.filters (
 
 
 --
+-- Name: game_systems; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.game_systems (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    title text NOT NULL,
+    code text NOT NULL,
+    configuration jsonb NOT NULL
+);
+
+
+--
 -- Name: gateway_configuration_blueprint_instances; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1484,7 +1531,9 @@ CREATE TABLE public.images (
     type public."ImageType" DEFAULT 'images'::public."ImageType" NOT NULL,
     is_public boolean,
     owner_id uuid NOT NULL,
-    description text
+    extension text,
+    description text,
+    CONSTRAINT extension_check CHECK ((extension = ANY (ARRAY['jpeg'::text, 'jpg'::text, 'png'::text, 'webp'::text, 'avif'::text, 'gif'::text])))
 );
 
 
@@ -1621,6 +1670,18 @@ CREATE TABLE public.manuscripts (
     project_id uuid NOT NULL,
     is_public boolean,
     icon text
+);
+
+
+--
+-- Name: manuscripts_maps; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscripts_maps (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    parent_id uuid NOT NULL,
+    sort integer
 );
 
 
@@ -1808,7 +1869,8 @@ CREATE TABLE public.projects (
     owner_id uuid NOT NULL,
     is_public boolean DEFAULT false,
     description text,
-    api_key text
+    api_key text,
+    game_system_id uuid
 );
 
 
@@ -2522,6 +2584,22 @@ ALTER TABLE ONLY public.favorite_characters
 
 ALTER TABLE ONLY public.filters
     ADD CONSTRAINT filters_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: game_systems game_systems_code_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.game_systems
+    ADD CONSTRAINT game_systems_code_key UNIQUE (code);
+
+
+--
+-- Name: game_systems game_systems_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.game_systems
+    ADD CONSTRAINT game_systems_pkey PRIMARY KEY (id);
 
 
 --
@@ -3317,6 +3395,13 @@ CREATE TRIGGER bp_field_type_change_trigger AFTER UPDATE OF field_type ON public
 --
 
 CREATE TRIGGER char_field_type_change_trigger AFTER UPDATE OF field_type ON public.character_fields FOR EACH ROW EXECUTE FUNCTION public.handle_char_field_type_change();
+
+
+--
+-- Name: projects erase_game_data_on_system_change; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER erase_game_data_on_system_change AFTER UPDATE OF game_system_id ON public.projects FOR EACH ROW WHEN ((old.game_system_id IS DISTINCT FROM new.game_system_id)) EXECUTE FUNCTION public.erase_character_game_data();
 
 
 --
@@ -4620,14 +4705,6 @@ ALTER TABLE ONLY public.document_template_fields_maps
 
 
 --
--- Name: document_template_fields document_template_fields_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.document_template_fields
-    ADD CONSTRAINT document_template_fields_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.documents(id) ON DELETE CASCADE;
-
-
---
 -- Name: document_template_fields_random_tables document_template_fields_random_tables_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5180,6 +5257,14 @@ ALTER TABLE ONLY public.manuscript_tags
 
 
 --
+-- Name: manuscripts_maps manuscripts_maps_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscripts_maps
+    ADD CONSTRAINT manuscripts_maps_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.maps(id) ON DELETE CASCADE;
+
+
+--
 -- Name: manuscripts manuscripts_owner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5361,6 +5446,14 @@ ALTER TABLE ONLY public.notifications
 
 ALTER TABLE ONLY public.notifications
     ADD CONSTRAINT notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: projects projects_game_system_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_game_system_id_fkey FOREIGN KEY (game_system_id) REFERENCES public.game_systems(id) ON DELETE SET NULL;
 
 
 --
@@ -5579,6 +5672,7 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240807090427'),
     ('20240809072046'),
     ('20240809074715'),
+    ('20240821074150'),
     ('20240906120623'),
     ('20240906143112'),
     ('20240906150551'),
@@ -5598,4 +5692,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240923095158'),
     ('20241004072425'),
     ('20241006131359'),
-    ('20241012100432');
+    ('20241011092538'),
+    ('20241012100432'),
+    ('20241012103819');

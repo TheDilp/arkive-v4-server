@@ -161,6 +161,16 @@ export function project_router(app: Elysia) {
               ).as("owner"),
             );
           }
+          if (body?.relations?.game_system) {
+            query = query.select((eb) =>
+              jsonObjectFrom(
+                eb
+                  .selectFrom("game_systems")
+                  .whereRef("projects.game_system_id", "=", "game_systems.id")
+                  .select(["game_systems.id", "game_systems.title", "game_systems.configuration", "game_systems.code"]),
+              ).as("game_system"),
+            );
+          }
 
           if (body?.relations?.roles) {
             query = query.select((eb) =>

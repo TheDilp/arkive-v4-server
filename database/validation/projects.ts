@@ -14,6 +14,7 @@ export const ReadProjectSchema = t.Intersect([
           members: t.Optional(t.Boolean()),
           owner: t.Optional(t.Boolean()),
           feature_flags: t.Optional(t.Boolean()),
+          game_system: t.Optional(t.Boolean()),
         }),
       ),
     }),
@@ -27,6 +28,7 @@ export const InsertProjectSchema = t.Object({
 export const UpdateProjectSchema = t.Object({
   data: t.Object({
     id: t.Optional(t.String()),
+    game_system_id: t.Optional(t.String()),
     title: t.Optional(t.String()),
     image_id: t.Optional(t.Union([t.String(), t.Null()])),
     is_public: t.Optional(t.Union([t.Null(), t.Boolean()])),

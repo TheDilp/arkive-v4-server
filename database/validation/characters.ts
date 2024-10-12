@@ -178,6 +178,7 @@ export const UpdateCharacterSchema = t.Object({
       is_public: t.Optional(t.Union([t.Boolean(), t.Null()])),
       biography: t.Optional(t.Union([t.Any(), t.Null()])),
       owner_id: t.Optional(t.String()),
+      game_data: t.Optional(t.Any()),
     }),
   ),
   relations: t.Optional(
