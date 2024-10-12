@@ -136,11 +136,10 @@ export const app = new Elysia({ name: "Editor.Router" })
             set,
           });
           if (data.status === "authenticated") {
-            const { user_id, project_id, name, game_id } = data;
+            const { user_id, project_id, name } = data;
             headers["user-id"] = user_id;
             headers["name"] = name || undefined;
             headers["project-id"] = project_id || undefined;
-            headers["game-id"] = project_id || undefined;
             headers["user-image-url"] = data.image_url || undefined;
 
             const entity = getEntityFromPath(path);
@@ -160,12 +159,11 @@ export const app = new Elysia({ name: "Editor.Router" })
               try {
                 const permissions = (await res.json()) as Pick<
                   PermissionDecorationType,
-                  "is_project_owner" | "all_permissions" | "role_access" | "role_id" | "permission_id" | "game_id"
+                  "is_project_owner" | "all_permissions" | "role_access" | "role_id" | "permission_id"
                 > & { user_id: string; project_id: string };
 
                 permissions.user_id = user_id;
                 permissions.project_id = project_id || "";
-                permissions.game_id = game_id;
                 // @ts-ignore
                 context.permissions = permissions;
               } catch (error) {

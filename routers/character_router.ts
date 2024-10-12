@@ -1,5 +1,5 @@
 import { Elysia } from "elysia";
-import { SelectExpression, sql } from "kysely";
+import { SelectExpression } from "kysely";
 import { jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
@@ -49,13 +49,8 @@ export function character_router(app: Elysia) {
         .post(
           "/",
           async ({ body, permissions }) => {
-            let result = db.selectFrom(permissions?.game_id ? "game_characters" : "characters");
-
-            if (permissions?.game_id) {
-              result = result.innerJoin("characters", "characters.id", "game_characters.related_id");
-            }
-
-            result = result
+            let result = db
+              .selectFrom("characters")
               .select(body.fields.map((field) => `characters.${field}`) as SelectExpression<DB, "characters">[])
               .distinctOn(
                 body.orderBy?.length
@@ -73,7 +68,7 @@ export function character_router(app: Elysia) {
                 GetRelatedEntityPermissionsAndRoles(qb, permissions, "characters"),
               )
               .$if(!!body.relationFilters?.and?.length || !!body.relationFilters?.or?.length, (qb) => {
-                const { game, characters, blueprint_instances, documents, map_pins, events, tags, value } =
+                const { characters, blueprint_instances, documents, map_pins, events, tags, value } =
                   groupRelationFiltersByField(body.relationFilters || { and: [], or: [] });
 
                 const {
@@ -97,9 +92,7 @@ export function character_router(app: Elysia) {
                 if (resourceEvents?.filters?.length)
                   qb = characterResourceFilter("event_characters", qb, resourceEvents?.filters || []);
                 if (resourceMaps?.filters?.length) qb = characterResourceFilter("maps", qb, resourceMaps?.filters || []);
-                if (game?.filters?.length && permissions?.game_id) {
-                  qb = qb.where("game_characters.game_id", "=", permissions.game_id);
-                }
+
                 if (characters?.filters?.length)
                   qb = characterRelationFilter("character_characters_fields", qb, characters?.filters || []);
                 if (documents?.filters?.length)
@@ -149,23 +142,6 @@ export function character_router(app: Elysia) {
                     }
                     return jsonObjectFrom(portrait_query).as("portrait");
                   });
-                }
-                if (body?.relations?.game_permissions && permissions?.game_id) {
-                  // @ts-expect-error type too complex to be infered
-                  qb = qb.select((eb) =>
-                    eb
-                      .selectFrom("game_character_permissions")
-                      .select(
-                        sql<
-                          Record<string, string>
-                        >`COALESCE(JSONB_OBJECT_AGG_STRICT(game_character_permissions.player_id, game_character_permissions.permission)
-                            FILTER (WHERE game_character_permissions.player_id IS NOT NULL), '{}'::JSONB)`.as(
-                          "player_permissions",
-                        ),
-                      )
-                      .whereRef("game_character_permissions.related_id", "=", "game_characters.id")
-                      .where("game_character_permissions.game_id", "=", permissions?.game_id as string),
-                  );
                 }
 
                 if (body?.relations?.tags) {
