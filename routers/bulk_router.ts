@@ -73,7 +73,7 @@ export function bulk_router(app: Elysia) {
       .post(
         "/update/:type",
         async ({ params, body, permissions }) => {
-          db.transaction().execute(async (tx) => {
+          await db.transaction().execute(async (tx) => {
             const sent_ids = body.data.map((item) => item.data.id);
 
             const d = await db

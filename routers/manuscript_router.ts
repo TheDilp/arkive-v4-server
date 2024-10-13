@@ -701,7 +701,7 @@ export function manuscript_router(app: Elysia) {
                   }
                 }
 
-                if (body.relations?.tags?.length) {
+                if (body.relations?.tags) {
                   const { tags } = body.relations;
                   await UpdateTagRelations({
                     tx,
