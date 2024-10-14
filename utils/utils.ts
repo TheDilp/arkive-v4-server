@@ -56,7 +56,6 @@ export function getCharacterFullName(first_name: string, nickname?: string | nul
 }
 
 export function getSingularEntityType(type: string): string {
-  if (type === "alter_names") return "alter name";
   if (type === "character_fields") return "character field";
   if (type === "character_fields_templates") return "character field template";
   if (type === "map_layers") return "map layer";

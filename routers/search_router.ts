@@ -156,7 +156,7 @@ export function search_router(app: Elysia) {
 
           query = query.where((eb) => getSearchWhere(eb, type as SearchableEntities, body.data.search_term, params.project_id));
 
-          if (!SubEntityEnum.includes(type) || type === "alter_names") {
+          if (!SubEntityEnum.includes(type)) {
             query = query.where("project_id", "=", params.project_id);
           }
 
@@ -262,18 +262,8 @@ export function search_router(app: Elysia) {
 
             const documents = await document_query.execute();
 
-            const alter_names = await db
-              .selectFrom("alter_names")
-              .leftJoin("documents", "alter_names.parent_id", "documents.id")
-              .select(["documents.id as id", "alter_names.id as alterId", "alter_names.title", "alter_names.parent_id"])
-              .where("alter_names.title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
-              .where("alter_names.project_id", "=", params.project_id)
-              .limit(body.limit || 10)
-              .execute();
-
-            const combinedResult = [...documents, ...alter_names];
             return {
-              data: combinedResult,
+              data: documents,
               message: MessageEnum.success,
               ok: true,
               role_access: true,
@@ -457,16 +447,7 @@ export function search_router(app: Elysia) {
               .where("project_id", "=", project_id)
               .limit(5),
           };
-          const alterNameSearch = {
-            name: "alter_names",
-            request: db
-              .selectFrom("alter_names")
-              .select(["id", "title", "parent_id"])
-              .select(["id as alterId", "alter_names.title", "parent_id"])
-              .where("title", "ilike", `%${body.data.search_term.toLowerCase()}%`)
-              .where("project_id", "=", project_id)
-              .limit(5),
-          };
+
           const mapSearch = {
             name: "maps",
             request: db
@@ -643,7 +624,6 @@ export function search_router(app: Elysia) {
               ? [
                   charactersSearch,
                   documentSearch,
-                  alterNameSearch,
                   mapSearch,
                   characterMapPinSearch,
                   mapPinSearch,
@@ -676,7 +656,7 @@ export function search_router(app: Elysia) {
               requests.push(blueprintInstancesSearch);
             }
             if (formattedPermissions.documents) {
-              requests.push(documentSearch, alterNameSearch);
+              requests.push(documentSearch);
             }
             if (formattedPermissions.maps) {
               requests.push(mapSearch);

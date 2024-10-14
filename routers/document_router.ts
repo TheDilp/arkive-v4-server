@@ -79,19 +79,6 @@ export function document_router(app: Elysia) {
               .returning("id")
               .executeTakeFirstOrThrow();
 
-            if (body.relations?.alter_names?.length) {
-              const { alter_names } = body.relations;
-              await tx
-                .insertInto("alter_names")
-                .values(
-                  alter_names.map((alter_name) => ({
-                    title: alter_name.title,
-                    project_id: body.data.project_id,
-                    parent_id: document.id,
-                  })),
-                )
-                .execute();
-            }
             if (body.relations?.tags?.length) {
               const { tags } = body.relations;
               await CreateTagRelations({ tx, relationalTable: "_documentsTotags", id: document.id, tags });
@@ -416,19 +403,7 @@ export function document_router(app: Elysia) {
                   is_project_owner: permissions.is_project_owner,
                 });
               }
-              if (body.relations?.alter_names) {
-                await tx.deleteFrom("alter_names").where("parent_id", "=", params.id).execute();
-                await tx
-                  .insertInto("alter_names")
-                  .values(
-                    body.relations.alter_names.map((alter) => ({
-                      title: alter.title,
-                      parent_id: params.id,
-                      project_id: permissions.project_id as string,
-                    })),
-                  )
-                  .execute();
-              }
+
               if (body.relations?.template_fields) {
                 await tx
                   .deleteFrom("document_template_fields")

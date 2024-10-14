@@ -59,7 +59,6 @@ export type PublicEntities =
   | "calendars"
   | "dictionaries";
 export type AvailableSubEntityType =
-  | "alter_names"
   | "map_pins"
   | "map_layers"
   | "nodes"

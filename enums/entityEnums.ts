@@ -1,7 +1,6 @@
 import { TagsRelationTables } from "../database/types";
 
 export const SubEntityEnum = [
-  "alter_names",
   "blueprint_instances",
   "map_pins",
   "character_map_pins",

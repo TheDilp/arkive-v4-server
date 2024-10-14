@@ -33,13 +33,7 @@ export async function readDocument(
         TagQuery(eb, "_documentsTotags", "documents", permissions.is_project_owner, permissions.user_id),
       );
     }
-    if (body?.relations?.alter_names) {
-      query = query.select((eb) => {
-        return jsonArrayFrom(
-          eb.selectFrom("alter_names").select(["alter_names.id", "alter_names.title"]).where("parent_id", "=", params.id),
-        ).as("alter_names");
-      });
-    }
+
     if (body?.relations?.image) {
       query = query.select((eb) => {
         let image_query = eb

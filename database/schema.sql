@@ -562,18 +562,6 @@ CREATE TABLE public._project_members (
 
 
 --
--- Name: alter_names; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.alter_names (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    title text DEFAULT 'New Document'::text NOT NULL,
-    project_id uuid NOT NULL,
-    parent_id uuid NOT NULL
-);
-
-
---
 -- Name: blueprint_fields; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2083,14 +2071,6 @@ CREATE TABLE public.words (
 
 
 --
--- Name: alter_names alter_names_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.alter_names
-    ADD CONSTRAINT alter_names_pkey PRIMARY KEY (id);
-
-
---
 -- Name: blueprint_fields blueprint_fields_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3265,13 +3245,6 @@ CREATE INDEX "_project_members_B_index" ON public._project_members USING btree (
 
 
 --
--- Name: alter_names_title_parent_id_key; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX alter_names_title_parent_id_key ON public.alter_names USING btree (title, parent_id);
-
-
---
 -- Name: blueprint_instance_calendars_blueprint_instance_id_blueprin_key; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3862,22 +3835,6 @@ ALTER TABLE ONLY public._project_members
 
 ALTER TABLE ONLY public._project_members
     ADD CONSTRAINT "_project_members_B_fkey" FOREIGN KEY ("B") REFERENCES public.users(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: alter_names alter_names_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.alter_names
-    ADD CONSTRAINT alter_names_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.documents(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: alter_names alter_names_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.alter_names
-    ADD CONSTRAINT alter_names_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -5694,4 +5651,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20241006131359'),
     ('20241011092538'),
     ('20241012100432'),
-    ('20241012103819');
+    ('20241012103819'),
+    ('20241014124831');

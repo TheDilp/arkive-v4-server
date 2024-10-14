@@ -26,7 +26,6 @@ export const ReadDocumentSchema = t.Intersect([
     t.Object({
       relations: t.Optional(
         t.Object({
-          alter_names: t.Optional(t.Boolean()),
           tags: t.Optional(t.Boolean()),
           children: t.Optional(t.Boolean()),
           parents: t.Optional(t.Boolean()),
@@ -64,13 +63,6 @@ export const InsertDocumentSchema = t.Object({
   }),
   relations: t.Optional(
     t.Object({
-      alter_names: t.Optional(
-        t.Array(
-          t.Object({
-            title: t.String(),
-          }),
-        ),
-      ),
       template_fields: t.Optional(
         t.Array(
           t.Object({
@@ -138,13 +130,6 @@ export const UpdateDocumentSchema = t.Object({
   }),
   relations: t.Optional(
     t.Object({
-      alter_names: t.Optional(
-        t.Array(
-          t.Object({
-            title: t.String(),
-          }),
-        ),
-      ),
       tags: t.Optional(
         t.Array(
           t.Object({
