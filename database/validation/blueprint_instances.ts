@@ -29,7 +29,6 @@ export const PublicListBlueprintInstanceSchema = t.Intersect([
 export const ReadBlueprintInstanceSchema = t.Intersect([
   RequestBodySchema,
   t.Object({
-    data: t.Object({ id: t.String() }),
     relations: t.Optional(
       t.Object({
         blueprint_fields: t.Optional(t.Boolean()),
