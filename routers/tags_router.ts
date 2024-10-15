@@ -56,28 +56,29 @@ export function tag_router(app: Elysia) {
       .post(
         "/",
         async ({ body, permissions }) => {
-          const data = await db
+          let query = db
             .selectFrom("tags")
             .where("tags.project_id", "=", body.data.project_id)
             .where("tags.deleted_at", body.arkived ? "is not" : "is", null)
-            .$if(!!body?.filters?.and?.length || !!body?.filters?.or?.length, (qb) => {
-              qb = constructFilter("tags", qb, body.filters);
-              return qb;
-            })
-            .select(body.fields.map((f) => `tags.${f}`) as SelectExpression<DB, "tags">[])
+            .select(body.fields.map((f) => `tags.${f}`) as SelectExpression<DB, "tags">[]);
+          if (!!body?.filters?.and?.length || !!body?.filters?.or?.length) {
+            query = constructFilter("tags", query, body.filters);
+          }
+          query = query
             .limit(body?.pagination?.limit || 10)
-            .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
-            .$if(!!body.orderBy?.length, (qb) => {
-              qb = constructOrdering(body.orderBy, qb);
-              return qb;
-            })
-            .$if(!permissions.is_project_owner, (qb) => {
-              return checkEntityLevelPermission(qb, permissions, "tags");
-            })
-            .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
-              GetRelatedEntityPermissionsAndRoles(qb, permissions, "tags"),
-            )
-            .execute();
+            .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10));
+
+          if (body.orderBy?.length) {
+            query = constructOrdering(body.orderBy, query);
+          }
+          if (!permissions.is_project_owner) {
+            query = checkEntityLevelPermission(query, permissions, "tags");
+          }
+          if (!!body.permissions && !permissions.is_project_owner) {
+            query = GetRelatedEntityPermissionsAndRoles(query, permissions, "tags");
+          }
+
+          const data = await query.execute();
 
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
@@ -86,6 +87,7 @@ export function tag_router(app: Elysia) {
           response: ResponseWithDataSchema,
         },
       )
+
       .post(
         "/:id",
         async ({ params, body, permissions }) => {

@@ -15,6 +15,7 @@ export const ReadProjectSchema = t.Intersect([
           owner: t.Optional(t.Boolean()),
           feature_flags: t.Optional(t.Boolean()),
           game_system: t.Optional(t.Boolean()),
+          tags: t.Optional(t.Boolean()),
         }),
       ),
     }),
