@@ -69,7 +69,7 @@ export function gateway_access_router(app: Elysia) {
                 await redis.SET(
                   `${params.type}_gateway_access_${params.access_id}`,
                   JSON.stringify({ ...gateway_access_data }),
-                  { EX: ttl || 60 * 60 },
+                  { EX: ttl || 6 * 60 * 60 },
                 );
 
                 return { ok: true, message: MessageEnum.success };
