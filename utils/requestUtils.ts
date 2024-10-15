@@ -114,6 +114,7 @@ export function relatedEntityFromEventRelationTable(table: EventRelationTables):
 }
 
 export function getEntityTagTable(type: AvailableEntityType | AvailableSubEntityType): TagsRelationTables | null {
+  if (type === "manuscripts") return "manuscript_tags";
   if (type === "characters") return "_charactersTotags";
   if (type === "blueprint_instances") return "_blueprint_instancesTotags";
   if (type === "documents") return "_documentsTotags";

@@ -200,7 +200,7 @@ export function manuscript_router(app: Elysia) {
               .where("manuscripts.id", "=", params.id)
               .select(body.fields.map((f) => `manuscripts.${f}`) as SelectExpression<DB, "manuscripts">[]);
             if (body?.relations) {
-              if (body?.relations?.tags && permissions.all_permissions?.read_tags) {
+              if (body?.relations?.tags) {
                 query = query.select((eb) =>
                   TagQuery(eb, "manuscript_tags", "manuscripts", permissions.is_project_owner, permissions.user_id),
                 );

@@ -251,18 +251,14 @@ export function bulk_router(app: Elysia) {
           } else {
             const entities = await db
               .selectFrom(
-                params.type as
-                  | "manuscripts"
-                  | "characters"
-                  | "documents"
-                  | "maps"
-                  | "graphs"
-                  | "calendars"
-                  | "dictionaries"
-                  | "tags",
+                params.type as "manuscripts" | "characters" | "documents" | "maps" | "graphs" | "calendars" | "dictionaries",
               )
               .$if(!permissions.is_project_owner, (qb) => {
-                return checkEntityLevelPermission(qb, permissions, "characters");
+                return checkEntityLevelPermission(
+                  qb,
+                  permissions,
+                  params.type as "manuscripts" | "characters" | "documents" | "maps" | "graphs" | "calendars" | "dictionaries",
+                );
               })
               .select("id")
               .where("id", "in", entity_ids)
