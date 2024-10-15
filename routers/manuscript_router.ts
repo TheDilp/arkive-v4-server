@@ -630,7 +630,7 @@ export function manuscript_router(app: Elysia) {
 
                   const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
                     existingIds.map((item) => item.id),
-                    body.relations?.graphs || [],
+                    body.relations?.events || [],
                   );
                   if (idsToRemove.length) await tx.deleteFrom("manuscript_events").where("id", "in", idsToRemove).execute();
 
@@ -670,7 +670,7 @@ export function manuscript_router(app: Elysia) {
 
                   const [idsToRemove, itemsToAdd, itemsToUpdate] = GetRelationsForUpdating(
                     existingIds.map((item) => item.id),
-                    body.relations?.graphs || [],
+                    body.relations?.images || [],
                   );
                   if (idsToRemove.length) await tx.deleteFrom("manuscript_images").where("id", "in", idsToRemove).execute();
 
