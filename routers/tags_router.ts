@@ -10,6 +10,7 @@ import { noRoleAccessErrorHandler } from "../handlers";
 import { PermissionDecorationType, RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructFilter } from "../utils/filterConstructor";
 import { constructOrdering } from "../utils/orderByConstructor";
+import { redisClient } from "../utils/redisClient";
 import {
   CreateEntityPermissions,
   GetRelatedEntityPermissionsAndRoles,
@@ -46,6 +47,9 @@ export function tag_router(app: Elysia) {
             }
             return tags;
           });
+          const redis = await redisClient;
+          redis.DEL(`${permissions.project_id}-all_tags`);
+
           return { data: tags_data, message: `Tags ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },
         {
@@ -116,16 +120,24 @@ export function tag_router(app: Elysia) {
       )
       .post(
         "/update/:id",
-        async ({ params, body }) => {
-          await db.transaction().execute(async (tx) => {
-            await tx.updateTable("tags").where("id", "=", params.id).set(body.data).execute();
+        async ({ params, body, permissions }) => {
+          const permissionCheck = await getHasEntityPermission("tags", params.id, permissions);
+          if (permissionCheck) {
+            await db.transaction().execute(async (tx) => {
+              await tx.updateTable("tags").where("id", "=", params.id).set(body.data).execute();
 
-            if (body?.permissions) {
-              await UpdateEntityPermissions(tx, params.id, body.permissions);
-            }
-          });
+              if (body?.permissions) {
+                await UpdateEntityPermissions(tx, params.id, body.permissions);
+              }
+            });
 
-          return { message: `Tag ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
+            const redis = await redisClient;
+            redis.DEL(`${permissions.project_id}-all_tags`);
+            return { message: `Tag ${MessageEnum.successfully_updated}`, ok: true, role_access: true };
+          } else {
+            noRoleAccessErrorHandler();
+            return { message: "", ok: false, role_access: false };
+          }
         },
         {
           body: UpdateTagSchema,
@@ -144,6 +156,9 @@ export function tag_router(app: Elysia) {
               .set({ deleted_at: new Date().toUTCString() })
               .execute();
 
+            const redis = await redisClient;
+            redis.DEL(`${permissions.project_id}-all_tags`);
+
             return { message: `Tag ${MessageEnum.successfully_arkived}.`, ok: true, role_access: true };
           } else {
             noRoleAccessErrorHandler();
@@ -156,13 +171,17 @@ export function tag_router(app: Elysia) {
       )
       .delete(
         "/:id",
-        async ({ params }) => {
+        async ({ params, permissions }) => {
           const data = await db
             .deleteFrom("tags")
             .where("tags.id", "=", params.id)
             .where("tags.deleted_at", "is not", null)
             .returning(["tags.id", "tags.title", "tags.project_id"])
             .executeTakeFirstOrThrow();
+
+          const redis = await redisClient;
+          redis.DEL(`${permissions.project_id}-all_tags`);
+
           return { data, message: `Tag ${MessageEnum.successfully_deleted}`, ok: true, role_access: true };
         },
         {
