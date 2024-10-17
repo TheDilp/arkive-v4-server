@@ -1425,7 +1425,7 @@ export async function updateCharacter({
   if (body?.permissions) {
     await UpdateEntityPermissions(tx, params.id, body.permissions);
   }
-  if (body.data && Object.keys(body.data).length > 1)
+  if (body.data && Object.keys(body.data).length > 0)
     await tx.updateTable("characters").where("characters.id", "=", params.id).set(body.data).execute();
 }
 
