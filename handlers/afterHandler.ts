@@ -26,8 +26,8 @@ export async function afterHandler(
   const { is_folder, project_id, title, image_id, parent_id } = data || {};
 
   if (headers) {
-    // eslint-disable-next-line prefer-destructuring
-    const name: string = headers["name"];
+    if (headers?.["x-api-key"]) return;
+    const name: string = headers?.["name"];
     const user_id: string = headers["user-id"];
     const image_url: string | undefined = headers["user-image-url"];
     if (project_id) {
