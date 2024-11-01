@@ -10,27 +10,6 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON SCHEMA public IS '';
-
-
---
--- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA public;
-
-
---
--- Name: EXTENSION timescaledb; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION timescaledb IS 'Enables scalable inserts and complex queries for time-series data (Community Edition)';
-
-
---
 -- Name: pger; Type: SCHEMA; Schema: -; Owner: -
 --
 
@@ -38,17 +17,10 @@ CREATE SCHEMA pger;
 
 
 --
--- Name: timescaledb_toolkit; Type: EXTENSION; Schema: -; Owner: -
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
 --
 
-CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA public;
-
-
---
--- Name: EXTENSION timescaledb_toolkit; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION timescaledb_toolkit IS 'Library of analytical hyperfunctions, time-series pipelining, and other SQL utilities';
+COMMENT ON SCHEMA public IS '';
 
 
 --
@@ -332,6 +304,50 @@ $$;
 
 
 --
+-- Name: notify_character_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.notify_character_trigger_function() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    payload JSON;
+BEGIN
+    payload = json_build_object(
+        'entity', TG_TABLE_NAME,
+        'operation', TG_OP,
+        'title', NEW.full_name,
+        'id', NEW.id
+    );
+    PERFORM pg_notify('notification_channel', payload::text);
+    RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: notify_general_trigger_function(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.notify_general_trigger_function() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    payload JSON;
+BEGIN
+    payload = json_build_object(
+        'entity', TG_TABLE_NAME,
+        'operation', TG_OP,
+        'title', NEW.title,
+        'id', NEW.id
+    );
+    PERFORM pg_notify('notification_channel', payload::text);
+    RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: trim_character_text(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -571,7 +587,8 @@ CREATE TABLE public.blueprint_instance_blueprint_instances (
     blueprint_instance_id uuid NOT NULL,
     blueprint_field_id uuid NOT NULL,
     related_id uuid NOT NULL,
-    id uuid DEFAULT gen_random_uuid() NOT NULL
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    sort integer DEFAULT 0
 );
 
 
@@ -601,7 +618,8 @@ CREATE TABLE public.blueprint_instance_characters (
     blueprint_instance_id uuid NOT NULL,
     blueprint_field_id uuid NOT NULL,
     related_id uuid NOT NULL,
-    id uuid DEFAULT gen_random_uuid() NOT NULL
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    sort integer DEFAULT 0
 );
 
 
@@ -613,7 +631,8 @@ CREATE TABLE public.blueprint_instance_documents (
     blueprint_instance_id uuid NOT NULL,
     blueprint_field_id uuid NOT NULL,
     related_id uuid NOT NULL,
-    id uuid DEFAULT gen_random_uuid() NOT NULL
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    sort integer DEFAULT 0
 );
 
 
@@ -625,7 +644,8 @@ CREATE TABLE public.blueprint_instance_events (
     blueprint_instance_id uuid NOT NULL,
     blueprint_field_id uuid NOT NULL,
     related_id uuid NOT NULL,
-    id uuid DEFAULT gen_random_uuid() NOT NULL
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    sort integer DEFAULT 0
 );
 
 
@@ -660,7 +680,8 @@ CREATE TABLE public.blueprint_instance_images (
     blueprint_instance_id uuid NOT NULL,
     blueprint_field_id uuid NOT NULL,
     related_id uuid NOT NULL,
-    id uuid DEFAULT gen_random_uuid() NOT NULL
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    sort integer DEFAULT 0
 );
 
 
@@ -672,7 +693,8 @@ CREATE TABLE public.blueprint_instance_map_pins (
     blueprint_instance_id uuid NOT NULL,
     blueprint_field_id uuid NOT NULL,
     related_id uuid NOT NULL,
-    id uuid DEFAULT gen_random_uuid() NOT NULL
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    sort integer DEFAULT 0
 );
 
 
@@ -767,7 +789,8 @@ CREATE TABLE public.character_blueprint_instance_fields (
     character_id uuid NOT NULL,
     character_field_id uuid NOT NULL,
     related_id uuid NOT NULL,
-    id uuid DEFAULT gen_random_uuid() NOT NULL
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    sort integer DEFAULT 0
 );
 
 
@@ -797,7 +820,8 @@ CREATE TABLE public.character_characters_fields (
     character_id uuid NOT NULL,
     character_field_id uuid NOT NULL,
     related_id uuid NOT NULL,
-    id uuid DEFAULT gen_random_uuid() NOT NULL
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    sort integer DEFAULT 0
 );
 
 
@@ -809,7 +833,8 @@ CREATE TABLE public.character_documents_fields (
     character_id uuid NOT NULL,
     character_field_id uuid NOT NULL,
     related_id uuid NOT NULL,
-    id uuid DEFAULT gen_random_uuid() NOT NULL
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    sort integer DEFAULT 0
 );
 
 
@@ -821,7 +846,8 @@ CREATE TABLE public.character_events_fields (
     character_id uuid NOT NULL,
     character_field_id uuid NOT NULL,
     related_id uuid NOT NULL,
-    id uuid DEFAULT gen_random_uuid() NOT NULL
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    sort integer DEFAULT 0
 );
 
 
@@ -901,7 +927,8 @@ CREATE TABLE public.character_fields_templates (
 CREATE TABLE public.character_images_fields (
     character_id uuid NOT NULL,
     character_field_id uuid NOT NULL,
-    related_id uuid NOT NULL
+    related_id uuid NOT NULL,
+    sort integer DEFAULT 0
 );
 
 
@@ -912,7 +939,8 @@ CREATE TABLE public.character_images_fields (
 CREATE TABLE public.character_locations_fields (
     character_id uuid NOT NULL,
     character_field_id uuid NOT NULL,
-    related_id uuid NOT NULL
+    related_id uuid NOT NULL,
+    sort integer DEFAULT 0
 );
 
 
@@ -1041,7 +1069,6 @@ CREATE TABLE public.document_mentions (
 
 CREATE TABLE public.document_template_fields (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    parent_id uuid NOT NULL,
     key text NOT NULL,
     value text,
     formula text,
@@ -1051,6 +1078,7 @@ CREATE TABLE public.document_template_fields (
     entity_type text NOT NULL,
     sort integer DEFAULT 0 NOT NULL,
     random_count text,
+    parent_id uuid NOT NULL,
     blueprint_id uuid,
     calendar_id uuid,
     map_id uuid,
@@ -1503,7 +1531,9 @@ CREATE TABLE public.images (
     type public."ImageType" DEFAULT 'images'::public."ImageType" NOT NULL,
     is_public boolean,
     owner_id uuid NOT NULL,
-    description text
+    extension text,
+    description text,
+    CONSTRAINT extension_check CHECK ((extension = ANY (ARRAY['jpeg'::text, 'jpg'::text, 'png'::text, 'webp'::text, 'avif'::text, 'gif'::text])))
 );
 
 
@@ -1640,6 +1670,18 @@ CREATE TABLE public.manuscripts (
     project_id uuid NOT NULL,
     is_public boolean,
     icon text
+);
+
+
+--
+-- Name: manuscripts_maps; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.manuscripts_maps (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    related_id uuid NOT NULL,
+    parent_id uuid NOT NULL,
+    sort integer
 );
 
 
@@ -4640,14 +4682,6 @@ ALTER TABLE ONLY public.document_template_fields_maps
 
 
 --
--- Name: document_template_fields document_template_fields_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.document_template_fields
-    ADD CONSTRAINT document_template_fields_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.documents(id) ON DELETE CASCADE;
-
-
---
 -- Name: document_template_fields_random_tables document_template_fields_random_tables_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5200,6 +5234,14 @@ ALTER TABLE ONLY public.manuscript_tags
 
 
 --
+-- Name: manuscripts_maps manuscripts_maps_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.manuscripts_maps
+    ADD CONSTRAINT manuscripts_maps_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.maps(id) ON DELETE CASCADE;
+
+
+--
 -- Name: manuscripts manuscripts_owner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5607,6 +5649,7 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240807090427'),
     ('20240809072046'),
     ('20240809074715'),
+    ('20240821074150'),
     ('20240906120623'),
     ('20240906143112'),
     ('20240906150551'),
@@ -5626,7 +5669,10 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20240923095158'),
     ('20241004072425'),
     ('20241006131359'),
+    ('20241011092538'),
     ('20241012100432'),
     ('20241012103819'),
     ('20241014124831'),
-    ('20241015080438');
+    ('20241015080438'),
+    ('20241101091729'),
+    ('20241101103355');

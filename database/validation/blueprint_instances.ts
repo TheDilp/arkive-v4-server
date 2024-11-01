@@ -54,6 +54,7 @@ export const InsertBlueprintInstanceSchema = t.Object({
             t.Array(
               t.Object({
                 related_id: t.String(),
+                sort: t.Number(),
               }),
             ),
           ),
@@ -61,6 +62,7 @@ export const InsertBlueprintInstanceSchema = t.Object({
             t.Array(
               t.Object({
                 related_id: t.String(),
+                sort: t.Number(),
               }),
             ),
           ),
@@ -68,6 +70,7 @@ export const InsertBlueprintInstanceSchema = t.Object({
             t.Array(
               t.Object({
                 related_id: t.String(),
+                sort: t.Number(),
               }),
             ),
           ),
@@ -75,6 +78,7 @@ export const InsertBlueprintInstanceSchema = t.Object({
             t.Array(
               t.Object({
                 related_id: t.String(),
+                sort: t.Number(),
               }),
             ),
           ),
@@ -82,6 +86,7 @@ export const InsertBlueprintInstanceSchema = t.Object({
             t.Array(
               t.Object({
                 related_id: t.String(),
+                sort: t.Number(),
               }),
             ),
           ),
@@ -89,6 +94,7 @@ export const InsertBlueprintInstanceSchema = t.Object({
             t.Array(
               t.Object({
                 related_id: t.String(),
+                sort: t.Number(),
               }),
             ),
           ),
@@ -169,6 +175,7 @@ export const UpdateBlueprintInstanceSchema = t.Object({
               t.Array(
                 t.Object({
                   related_id: t.String(),
+                  sort: t.Number(),
                 }),
               ),
             ),
@@ -176,6 +183,7 @@ export const UpdateBlueprintInstanceSchema = t.Object({
               t.Array(
                 t.Object({
                   related_id: t.String(),
+                  sort: t.Number(),
                 }),
               ),
             ),
@@ -183,6 +191,7 @@ export const UpdateBlueprintInstanceSchema = t.Object({
               t.Array(
                 t.Object({
                   related_id: t.String(),
+                  sort: t.Number(),
                 }),
               ),
             ),
@@ -190,6 +199,7 @@ export const UpdateBlueprintInstanceSchema = t.Object({
               t.Array(
                 t.Object({
                   related_id: t.String(),
+                  sort: t.Number(),
                 }),
               ),
             ),
@@ -197,6 +207,7 @@ export const UpdateBlueprintInstanceSchema = t.Object({
               t.Array(
                 t.Object({
                   related_id: t.String(),
+                  sort: t.Number(),
                 }),
               ),
             ),
@@ -204,6 +215,7 @@ export const UpdateBlueprintInstanceSchema = t.Object({
               t.Array(
                 t.Object({
                   related_id: t.String(),
+                  sort: t.Number(),
                 }),
               ),
             ),

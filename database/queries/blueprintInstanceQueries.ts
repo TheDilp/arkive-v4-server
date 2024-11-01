@@ -100,6 +100,7 @@ export async function readBlueprintInstance(body: ReadBodyType, params: { id: st
               .where("blueprint_instance_characters.blueprint_instance_id", "=", params.id)
               .select([
                 "blueprint_instance_characters.related_id",
+                "blueprint_instance_characters.sort",
                 (ebbb) =>
                   jsonObjectFrom(
                     ebbb
@@ -128,6 +129,7 @@ export async function readBlueprintInstance(body: ReadBodyType, params: { id: st
               .where("blueprint_instance_blueprint_instances.blueprint_instance_id", "=", params.id)
               .select([
                 "blueprint_instance_blueprint_instances.related_id",
+                "blueprint_instance_blueprint_instances.sort",
                 (ebbb) =>
                   jsonObjectFrom(
                     ebbb
@@ -162,6 +164,7 @@ export async function readBlueprintInstance(body: ReadBodyType, params: { id: st
               .where("blueprint_instance_documents.blueprint_instance_id", "=", params.id)
               .select([
                 "blueprint_instance_documents.related_id",
+                "blueprint_instance_documents.sort",
                 (ebbb) =>
                   jsonObjectFrom(
                     ebbb
@@ -190,6 +193,7 @@ export async function readBlueprintInstance(body: ReadBodyType, params: { id: st
               .where("blueprint_instance_map_pins.blueprint_instance_id", "=", params.id)
               .select([
                 "blueprint_instance_map_pins.related_id",
+                "blueprint_instance_map_pins.sort",
                 (ebbb) =>
                   jsonObjectFrom(
                     ebbb
@@ -245,6 +249,7 @@ export async function readBlueprintInstance(body: ReadBodyType, params: { id: st
               .where("blueprint_instance_events.blueprint_instance_id", "=", params.id)
               .select([
                 "blueprint_instance_events.related_id",
+                "blueprint_instance_events.sort",
                 (ebbb) =>
                   jsonObjectFrom(
                     ebbb
@@ -273,6 +278,7 @@ export async function readBlueprintInstance(body: ReadBodyType, params: { id: st
               .where("blueprint_instance_images.blueprint_instance_id", "=", params.id)
               .select([
                 "blueprint_instance_images.related_id",
+                "blueprint_instance_images.sort",
                 (ebbb) =>
                   jsonObjectFrom(
                     ebbb
@@ -341,6 +347,7 @@ export async function createBlueprintInstance(body: InsertBodyType, permissions:
                   blueprint_field_id: field.id,
                   blueprint_instance_id: newInstance.id,
                   related_id: char.related_id,
+                  sort: char.sort,
                 })),
               )
               .execute();
@@ -351,10 +358,11 @@ export async function createBlueprintInstance(body: InsertBodyType, permissions:
             await tx
               .insertInto("blueprint_instance_blueprint_instances")
               .values(
-                blueprint_instances.map((char) => ({
+                blueprint_instances.map((bpi) => ({
                   blueprint_field_id: field.id,
                   blueprint_instance_id: newInstance.id,
-                  related_id: char.related_id,
+                  related_id: bpi.related_id,
+                  sort: bpi.sort,
                 })),
               )
               .execute();
@@ -369,6 +377,7 @@ export async function createBlueprintInstance(body: InsertBodyType, permissions:
                   blueprint_field_id: field.id,
                   blueprint_instance_id: newInstance.id,
                   related_id: doc.related_id,
+                  sort: doc.sort,
                 })),
               )
               .execute();
@@ -383,6 +392,7 @@ export async function createBlueprintInstance(body: InsertBodyType, permissions:
                   blueprint_field_id: field.id,
                   blueprint_instance_id: newInstance.id,
                   related_id: map_pin.related_id,
+                  sort: map_pin.sort,
                 })),
               )
               .execute();
@@ -397,6 +407,7 @@ export async function createBlueprintInstance(body: InsertBodyType, permissions:
                   blueprint_field_id: field.id,
                   blueprint_instance_id: newInstance.id,
                   related_id: image.related_id,
+                  sort: image.sort,
                 })),
               )
               .execute();

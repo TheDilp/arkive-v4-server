@@ -62,6 +62,7 @@ export const InsertCharacterSchema = t.Object({
             t.Array(
               t.Object({
                 related_id: t.String(),
+                sort: t.Number(),
               }),
             ),
           ),
@@ -69,6 +70,7 @@ export const InsertCharacterSchema = t.Object({
             t.Array(
               t.Object({
                 related_id: t.String(),
+                sort: t.Number(),
               }),
             ),
           ),
@@ -76,6 +78,7 @@ export const InsertCharacterSchema = t.Object({
             t.Array(
               t.Object({
                 related_id: t.String(),
+                sort: t.Number(),
               }),
             ),
           ),
@@ -83,6 +86,7 @@ export const InsertCharacterSchema = t.Object({
             t.Array(
               t.Object({
                 related_id: t.String(),
+                sort: t.Number(),
               }),
             ),
           ),
@@ -90,6 +94,7 @@ export const InsertCharacterSchema = t.Object({
             t.Array(
               t.Object({
                 related_id: t.String(),
+                sort: t.Number(),
               }),
             ),
           ),
@@ -97,6 +102,7 @@ export const InsertCharacterSchema = t.Object({
             t.Array(
               t.Object({
                 related_id: t.String(),
+                sort: t.Number(),
               }),
             ),
           ),
@@ -192,6 +198,7 @@ export const UpdateCharacterSchema = t.Object({
               t.Array(
                 t.Object({
                   related_id: t.String(),
+                  sort: t.Number(),
                 }),
               ),
             ),
@@ -199,6 +206,7 @@ export const UpdateCharacterSchema = t.Object({
               t.Array(
                 t.Object({
                   related_id: t.String(),
+                  sort: t.Number(),
                 }),
               ),
             ),
@@ -206,6 +214,7 @@ export const UpdateCharacterSchema = t.Object({
               t.Array(
                 t.Object({
                   related_id: t.String(),
+                  sort: t.Number(),
                 }),
               ),
             ),
@@ -213,6 +222,7 @@ export const UpdateCharacterSchema = t.Object({
               t.Array(
                 t.Object({
                   related_id: t.String(),
+                  sort: t.Number(),
                 }),
               ),
             ),
@@ -220,6 +230,7 @@ export const UpdateCharacterSchema = t.Object({
               t.Array(
                 t.Object({
                   related_id: t.String(),
+                  sort: t.Number(),
                 }),
               ),
             ),
@@ -227,6 +238,7 @@ export const UpdateCharacterSchema = t.Object({
               t.Array(
                 t.Object({
                   related_id: t.String(),
+                  sort: t.Number(),
                 }),
               ),
             ),

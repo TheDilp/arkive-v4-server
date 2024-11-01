@@ -594,6 +594,7 @@ export function blueprint_instance_router(app: Elysia) {
                                 blueprint_field_id: field.id,
                                 blueprint_instance_id: params.id,
                                 related_id: char.related_id,
+                                sort: char.sort,
                               })
                               .execute(),
                           );
@@ -623,6 +624,7 @@ export function blueprint_instance_router(app: Elysia) {
                                 blueprint_field_id: field.id,
                                 blueprint_instance_id: params.id,
                                 related_id: char.related_id,
+                                sort: char.sort,
                               })
                               .execute(),
                           );
@@ -648,6 +650,7 @@ export function blueprint_instance_router(app: Elysia) {
                                 blueprint_field_id: field.id,
                                 blueprint_instance_id: params.id,
                                 related_id: char.related_id,
+                                sort: char.sort,
                               })
                               .execute(),
                           );
@@ -655,8 +658,11 @@ export function blueprint_instance_router(app: Elysia) {
                       }
                       // ! PERMISSIONS
                       if (field.map_pins) {
-                        await tx
-                          .deleteFrom("blueprint_instance_map_pins")
+                        let query = tx.deleteFrom("blueprint_instance_map_pins");
+                        if (!permissions.is_project_owner) {
+                          query = checkDeletePermissions(query, "blueprint_instance_map_pins.related_id", "read_map_pins");
+                        }
+                        await query
                           .where("blueprint_instance_id", "=", params.id)
                           .where("blueprint_field_id", "=", field.id)
                           .execute();
@@ -668,6 +674,7 @@ export function blueprint_instance_router(app: Elysia) {
                                 blueprint_field_id: field.id,
                                 blueprint_instance_id: params.id,
                                 related_id: char.related_id,
+                                sort: char.sort,
                               })
                               .execute(),
                           );
@@ -692,6 +699,7 @@ export function blueprint_instance_router(app: Elysia) {
                                 blueprint_field_id: field.id,
                                 blueprint_instance_id: params.id,
                                 related_id: char.related_id,
+                                sort: char.sort,
                               })
                               .execute(),
                           );
@@ -717,6 +725,7 @@ export function blueprint_instance_router(app: Elysia) {
                                 blueprint_field_id: field.id,
                                 blueprint_instance_id: params.id,
                                 related_id: char.related_id,
+                                sort: char.sort,
                               })
                               .execute(),
                           );
