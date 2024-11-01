@@ -1033,239 +1033,207 @@ export async function updateCharacter({
   }
 
   if (body.relations?.character_fields) {
-    await Promise.all(
-      body.relations.character_fields.flatMap((field) => {
-        if (field.value || field.value === "") {
-          return tx
-            .insertInto("character_value_fields")
-            .values({
-              character_field_id: field.id,
-              character_id: params.id,
-              value: JSON.stringify(field.value),
-            })
-            .onConflict((oc) =>
-              oc
-                .columns(["character_field_id", "character_id"])
-                .doUpdateSet({ value: JSON.stringify(field.value) })
-                .where("character_value_fields.character_field_id", "=", field.id)
-                .where("character_value_fields.character_id", "=", params.id),
+    body.relations.character_fields.forEach(async (field) => {
+      if (field.value || field.value === "") {
+        await tx
+          .insertInto("character_value_fields")
+          .values({
+            character_field_id: field.id,
+            character_id: params.id,
+            value: JSON.stringify(field.value),
+          })
+          .onConflict((oc) =>
+            oc
+              .columns(["character_field_id", "character_id"])
+              .doUpdateSet({ value: JSON.stringify(field.value) })
+              .where("character_value_fields.character_field_id", "=", field.id)
+              .where("character_value_fields.character_id", "=", params.id),
+          )
+          .execute();
+      } else if (field.id && !field?.value) {
+        await tx
+          .deleteFrom("character_value_fields")
+          .where("character_field_id", "=", field.id)
+          .where("character_id", "=", params.id)
+          .execute();
+      }
+
+      if (field.characters) {
+        await tx
+          .deleteFrom("character_characters_fields")
+          .where("character_id", "=", params.id)
+          .where("character_field_id", "=", field.id)
+          .execute();
+        if (field.characters.length) {
+          await tx
+            .insertInto("character_characters_fields")
+            .values(
+              (field.characters || [])?.map((char) => ({
+                character_field_id: field.id,
+                character_id: params.id,
+                related_id: char.related_id,
+                sort: char.sort,
+              })),
             )
-            .execute();
-        } else if (field.id && !field?.value) {
-          return tx
-            .deleteFrom("character_value_fields")
-            .where("character_field_id", "=", field.id)
-            .where("character_id", "=", params.id)
+            .onConflict((oc) => oc.doNothing())
             .execute();
         }
+      }
 
-        const actions = [];
-        if (field.characters) {
-          actions.push(
-            tx
-              .deleteFrom("character_characters_fields")
-              .where("character_id", "=", params.id)
-              .where("character_field_id", "=", field.id)
-              .execute(),
-          );
-          if (field.characters.length) {
-            actions.push(
-              tx
-                .insertInto("character_characters_fields")
-                .values(
-                  (field.characters || [])?.map((char) => ({
-                    character_field_id: field.id,
-                    character_id: params.id,
-                    related_id: char.related_id,
-                    sort: char.sort,
-                  })),
-                )
-                .onConflict((oc) => oc.doNothing())
-                .execute(),
-            );
-          }
-        }
-
-        if (field.blueprint_instances) {
-          actions.push(
-            tx
-              .deleteFrom("character_blueprint_instance_fields")
-              .where("character_id", "=", params.id)
-              .where("character_field_id", "=", field.id)
-              .execute(),
-          );
-          if (field.blueprint_instances.length) {
-            actions.push(
-              tx
-                .insertInto("character_blueprint_instance_fields")
-                .values(
-                  (field.blueprint_instances || [])?.map((char) => ({
-                    character_field_id: field.id,
-                    character_id: params.id,
-                    related_id: char.related_id,
-                    sort: char.sort,
-                  })),
-                )
-                .onConflict((oc) => oc.doNothing())
-                .execute(),
-            );
-          }
-        }
-        if (field.documents) {
-          actions.push(
-            tx
-              .deleteFrom("character_documents_fields")
-              .where("character_id", "=", params.id)
-              .where("character_field_id", "=", field.id)
-              .execute(),
-          );
-          if (field.documents.length) {
-            actions.push(
-              tx
-                .insertInto("character_documents_fields")
-                .values(
-                  field.documents.map((char) => ({
-                    character_field_id: field.id,
-                    character_id: params.id,
-                    related_id: char.related_id,
-                    sort: char.sort,
-                  })),
-                )
-                .onConflict((oc) => oc.doNothing())
-                .execute(),
-            );
-          }
-        }
-
-        if (field.map_pins) {
-          actions.push(
-            tx
-              .deleteFrom("character_locations_fields")
-              .where("character_id", "=", params.id)
-              .where("character_field_id", "=", field.id)
-              .execute(),
-          );
-          if (field.map_pins?.length) {
-            actions.push(
-              tx
-                .insertInto("character_locations_fields")
-                .values(
-                  field.map_pins.map((mp) => ({
-                    character_field_id: field.id,
-                    character_id: params.id,
-                    related_id: mp.related_id,
-                    sort: mp.sort,
-                  })),
-                )
-                .onConflict((oc) => oc.doNothing())
-                .execute(),
-            );
-          }
-        }
-        if (field.images) {
-          actions.push(
-            tx
-              .deleteFrom("character_images_fields")
-              .where("character_id", "=", params.id)
-              .where("character_field_id", "=", field.id)
-              .execute(),
-          );
-          if (field.images?.length) {
-            actions.push(
-              tx
-                .insertInto("character_images_fields")
-                .values(
-                  field.images.map((img) => ({
-                    character_field_id: field.id,
-                    character_id: params.id,
-                    related_id: img.related_id,
-                    sort: img.sort,
-                  })),
-                )
-                .onConflict((oc) => oc.doNothing())
-                .execute(),
-            );
-          }
-        }
-        if (field.events) {
-          actions.push(
-            tx
-              .deleteFrom("character_events_fields")
-              .where("character_id", "=", params.id)
-              .where("character_field_id", "=", field.id)
-              .execute(),
-          );
-          if (field.events?.length) {
-            actions.push(
-              tx
-                .insertInto("character_events_fields")
-                .values(
-                  field.events.map((event) => ({
-                    character_field_id: field.id,
-                    character_id: params.id,
-                    related_id: event.related_id,
-                    sort: event.sort,
-                  })),
-                )
-                .onConflict((oc) => oc.doNothing())
-                .execute(),
-            );
-          }
-        }
-        if (field.random_table) {
-          actions.push(
-            tx
-              .insertInto("character_random_table_fields")
-              .values({
+      if (field.blueprint_instances) {
+        await tx
+          .deleteFrom("character_blueprint_instance_fields")
+          .where("character_id", "=", params.id)
+          .where("character_field_id", "=", field.id)
+          .execute();
+        if (field.blueprint_instances.length) {
+          await tx
+            .insertInto("character_blueprint_instance_fields")
+            .values(
+              (field.blueprint_instances || [])?.map((char) => ({
                 character_field_id: field.id,
                 character_id: params.id,
-                related_id: field.random_table.related_id,
-                option_id: field.random_table.option_id,
-                suboption_id: field.random_table.suboption_id,
-              })
-              .onConflict((oc) =>
-                oc
-                  .columns(["character_field_id", "character_id", "related_id"])
-                  .doUpdateSet({ option_id: field.random_table?.option_id, suboption_id: field.random_table?.suboption_id }),
-              )
-              .execute(),
-          );
+                related_id: char.related_id,
+                sort: char.sort,
+              })),
+            )
+            .onConflict((oc) => oc.doNothing())
+            .execute();
         }
-        if (field.calendar) {
-          actions.push(
-            tx
-              .insertInto("character_calendar_fields")
-              .values({
+      }
+      if (field.documents) {
+        await tx
+          .deleteFrom("character_documents_fields")
+          .where("character_id", "=", params.id)
+          .where("character_field_id", "=", field.id)
+          .execute();
+        if (field.documents.length) {
+          await tx
+            .insertInto("character_documents_fields")
+            .values(
+              field.documents.map((char) => ({
                 character_field_id: field.id,
                 character_id: params.id,
-                related_id: field.calendar.related_id,
-                start_day: field.calendar.start_day,
-                start_month_id: field.calendar.start_month_id,
-                start_year: field.calendar.start_year,
-                end_day: field.calendar.end_day,
-                end_month_id: field.calendar.end_month_id,
-                end_year: field.calendar.end_year,
-              })
-              .onConflict((oc) =>
-                oc
-                  .columns(["character_field_id", "character_id", "related_id"])
-
-                  .doUpdateSet({
-                    start_day: field.calendar?.start_day,
-                    start_month_id: field.calendar?.start_month_id,
-                    start_year: field.calendar?.start_year,
-                    end_day: field.calendar?.end_day,
-                    end_month_id: field.calendar?.end_month_id,
-                    end_year: field.calendar?.end_year,
-                  }),
-              )
-
-              .execute(),
-          );
+                related_id: char.related_id,
+                sort: char.sort,
+              })),
+            )
+            .onConflict((oc) => oc.doNothing())
+            .execute();
         }
-        return actions;
-      }),
-    );
+      }
+
+      if (field.map_pins) {
+        await tx
+          .deleteFrom("character_locations_fields")
+          .where("character_id", "=", params.id)
+          .where("character_field_id", "=", field.id)
+          .execute();
+        if (field.map_pins?.length) {
+          await tx
+            .insertInto("character_locations_fields")
+            .values(
+              field.map_pins.map((mp) => ({
+                character_field_id: field.id,
+                character_id: params.id,
+                related_id: mp.related_id,
+                sort: mp.sort,
+              })),
+            )
+            .onConflict((oc) => oc.doNothing())
+            .execute();
+        }
+      }
+      if (field.images) {
+        await tx
+          .deleteFrom("character_images_fields")
+          .where("character_id", "=", params.id)
+          .where("character_field_id", "=", field.id)
+          .execute();
+        if (field.images?.length) {
+          await tx
+            .insertInto("character_images_fields")
+            .values(
+              field.images.map((img) => ({
+                character_field_id: field.id,
+                character_id: params.id,
+                related_id: img.related_id,
+                sort: img.sort,
+              })),
+            )
+            .onConflict((oc) => oc.doNothing())
+            .execute();
+        }
+      }
+      if (field.events) {
+        await tx
+          .deleteFrom("character_events_fields")
+          .where("character_id", "=", params.id)
+          .where("character_field_id", "=", field.id)
+          .execute();
+        if (field.events?.length) {
+          await tx
+            .insertInto("character_events_fields")
+            .values(
+              field.events.map((event) => ({
+                character_field_id: field.id,
+                character_id: params.id,
+                related_id: event.related_id,
+                sort: event.sort,
+              })),
+            )
+            .onConflict((oc) => oc.doNothing())
+            .execute();
+        }
+      }
+      if (field.random_table) {
+        await tx
+          .insertInto("character_random_table_fields")
+          .values({
+            character_field_id: field.id,
+            character_id: params.id,
+            related_id: field.random_table.related_id,
+            option_id: field.random_table.option_id,
+            suboption_id: field.random_table.suboption_id,
+          })
+          .onConflict((oc) =>
+            oc
+              .columns(["character_field_id", "character_id", "related_id"])
+              .doUpdateSet({ option_id: field.random_table?.option_id, suboption_id: field.random_table?.suboption_id }),
+          )
+          .execute();
+      }
+      if (field.calendar) {
+        await tx
+          .insertInto("character_calendar_fields")
+          .values({
+            character_field_id: field.id,
+            character_id: params.id,
+            related_id: field.calendar.related_id,
+            start_day: field.calendar.start_day,
+            start_month_id: field.calendar.start_month_id,
+            start_year: field.calendar.start_year,
+            end_day: field.calendar.end_day,
+            end_month_id: field.calendar.end_month_id,
+            end_year: field.calendar.end_year,
+          })
+          .onConflict((oc) =>
+            oc
+              .columns(["character_field_id", "character_id", "related_id"])
+
+              .doUpdateSet({
+                start_day: field.calendar?.start_day,
+                start_month_id: field.calendar?.start_month_id,
+                start_year: field.calendar?.start_year,
+                end_day: field.calendar?.end_day,
+                end_month_id: field.calendar?.end_month_id,
+                end_year: field.calendar?.end_year,
+              }),
+          )
+
+          .execute();
+      }
+    });
   }
 
   if (body.relations?.tags) {
