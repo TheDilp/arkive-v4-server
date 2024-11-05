@@ -102,7 +102,6 @@ export const InsertBlueprintInstanceSchema = t.Object({
             t.Union([
               t.Object({
                 option_id: t.Optional(t.Union([t.Null(), t.String()])),
-                suboption_id: t.Optional(t.Union([t.Null(), t.String()])),
                 related_id: t.String(),
               }),
               t.Null(),
@@ -223,7 +222,6 @@ export const UpdateBlueprintInstanceSchema = t.Object({
               t.Union([
                 t.Object({
                   option_id: t.Optional(t.Union([t.Null(), t.String()])),
-                  suboption_id: t.Optional(t.Union([t.Null(), t.String()])),
                   related_id: t.String(),
                 }),
                 t.Null(),

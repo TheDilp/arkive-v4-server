@@ -124,13 +124,6 @@ export function random_table_router(app: Elysia) {
                         "random_table_options.description",
                         "random_table_options.icon",
                         "random_table_options.icon_color",
-                        (ebb) =>
-                          jsonArrayFrom(
-                            ebb
-                              .selectFrom("random_table_suboptions")
-                              .select(["random_table_suboptions.id", "random_table_suboptions.title"])
-                              .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id"),
-                          ).as("random_table_suboptions"),
                       ])
                       .orderBy(
                         (ob) => sql`NULLIF(regexp_replace(${ob.ref("random_table_options.title")}, '\\D.*', ''), '')::int`,

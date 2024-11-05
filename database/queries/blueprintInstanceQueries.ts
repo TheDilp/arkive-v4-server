@@ -78,7 +78,7 @@ export async function readBlueprintInstance(body: ReadBodyType, params: { id: st
                 .selectFrom("blueprint_instance_random_tables")
                 .whereRef("blueprint_instance_random_tables.blueprint_field_id", "=", "blueprint_fields.id")
                 .where("blueprint_instance_random_tables.blueprint_instance_id", "=", params.id)
-                .select(["blueprint_instance_random_tables.related_id", "option_id", "suboption_id"]);
+                .select(["blueprint_instance_random_tables.related_id", "option_id"]);
               random_table_query = getNestedReadPermission(
                 random_table_query,
                 permissions.is_project_owner,
@@ -422,7 +422,6 @@ export async function createBlueprintInstance(body: InsertBodyType, permissions:
                 blueprint_instance_id: newInstance.id,
                 related_id: random_table.related_id,
                 option_id: random_table?.option_id,
-                suboption_id: random_table?.suboption_id,
               })
               .execute();
             return;

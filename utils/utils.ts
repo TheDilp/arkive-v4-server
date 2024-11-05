@@ -24,23 +24,20 @@ interface GroupedQueries {
 export function chooseRandomTableItems(
   arr: MainRandomPickType[],
   M: number,
-): { id: string; subitem_id?: string; title: string; description?: string | null }[] {
+): { id: string; title: string; description?: string | null }[] {
   if (M > arr.length) {
     return [];
   }
 
-  const randomItems: { id: string; subitem_id?: string; title: string; description?: string | null }[] = [];
+  const randomItems: { id: string; title: string; description?: string | null }[] = [];
 
   for (let i = 0; i < M; i++) {
     const randomIndex = Math.floor(Math.random() * arr.length);
     const selectedItem = arr.splice(randomIndex, 1)[0];
     if (selectedItem?.suboptions?.length) {
-      const randomSubIndex = Math.floor(Math.random() * selectedItem.suboptions.length);
-      const seletedSubItem = selectedItem.suboptions.splice(randomSubIndex)[0];
       randomItems.push({
         id: selectedItem.id,
-        subitem_id: seletedSubItem.id,
-        title: `${selectedItem.title} - ${seletedSubItem.title}`,
+        title: selectedItem.title,
         description: selectedItem?.description || "",
       });
     } else {

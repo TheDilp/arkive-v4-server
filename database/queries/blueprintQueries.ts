@@ -54,17 +54,7 @@ export async function readBlueprint(body: ReadBodyType, params: { id: string }, 
                           ebb
                             .selectFrom("random_table_options")
                             .whereRef("random_tables.id", "=", "random_table_options.parent_id")
-                            .select([
-                              "id",
-                              "title",
-                              (ebbb) =>
-                                jsonArrayFrom(
-                                  ebbb
-                                    .selectFrom("random_table_suboptions")
-                                    .whereRef("random_table_suboptions.parent_id", "=", "random_table_options.id")
-                                    .select(["id", "title"]),
-                                ).as("random_table_suboptions"),
-                            ]),
+                            .select(["id", "title"]),
                         ).as("random_table_options"),
                     ]),
                 ).as("random_table"),

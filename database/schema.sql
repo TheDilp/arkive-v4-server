@@ -665,7 +665,6 @@ CREATE TABLE public.blueprint_instance_field_values (
     start_day integer,
     start_year integer,
     option_id uuid,
-    suboption_id uuid,
     value jsonb,
     type text NOT NULL,
     CONSTRAINT field_type_constraint CHECK ((type = ANY (ARRAY['characters'::text, 'documents'::text, 'map_pins'::text, 'blueprint_instances'::text, 'images'::text, 'events'::text, 'calendars'::text, 'random_tables'::text, 'values'::text])))
@@ -707,7 +706,6 @@ CREATE TABLE public.blueprint_instance_random_tables (
     blueprint_field_id uuid NOT NULL,
     related_id uuid NOT NULL,
     option_id uuid,
-    suboption_id uuid,
     id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
@@ -867,7 +865,6 @@ CREATE TABLE public.character_field_values (
     start_day integer,
     start_year integer,
     option_id uuid,
-    suboption_id uuid,
     value jsonb,
     type text NOT NULL,
     CONSTRAINT field_type_constraint CHECK ((type = ANY (ARRAY['documents'::text, 'map_pins'::text, 'blueprint_instances'::text, 'images'::text, 'events'::text, 'calendars'::text, 'random_tables'::text, 'values'::text])))
@@ -953,7 +950,6 @@ CREATE TABLE public.character_random_table_fields (
     character_field_id uuid NOT NULL,
     related_id uuid NOT NULL,
     option_id uuid,
-    suboption_id uuid,
     id uuid DEFAULT gen_random_uuid() NOT NULL
 );
 
@@ -1889,18 +1885,6 @@ CREATE TABLE public.random_table_options (
 
 
 --
--- Name: random_table_suboptions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.random_table_suboptions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    title text NOT NULL,
-    description text,
-    parent_id uuid NOT NULL
-);
-
-
---
 -- Name: random_tables; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2808,14 +2792,6 @@ ALTER TABLE ONLY public.projects
 
 ALTER TABLE ONLY public.random_table_options
     ADD CONSTRAINT random_table_options_pkey PRIMARY KEY (id);
-
-
---
--- Name: random_table_suboptions random_table_suboptions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.random_table_suboptions
-    ADD CONSTRAINT random_table_suboptions_pkey PRIMARY KEY (id);
 
 
 --
@@ -4106,14 +4082,6 @@ ALTER TABLE ONLY public.blueprint_instance_random_tables
 
 
 --
--- Name: blueprint_instance_random_tables blueprint_instance_random_tables_suboption_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.blueprint_instance_random_tables
-    ADD CONSTRAINT blueprint_instance_random_tables_suboption_id_fkey FOREIGN KEY (suboption_id) REFERENCES public.random_table_suboptions(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
---
 -- Name: blueprint_instance_value blueprint_instance_value_blueprint_field_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4431,14 +4399,6 @@ ALTER TABLE ONLY public.character_random_table_fields
 
 ALTER TABLE ONLY public.character_random_table_fields
     ADD CONSTRAINT character_random_table_fields_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.random_tables(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
--- Name: character_random_table_fields character_random_table_fields_suboption_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.character_random_table_fields
-    ADD CONSTRAINT character_random_table_fields_suboption_id_fkey FOREIGN KEY (suboption_id) REFERENCES public.random_table_suboptions(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 --
@@ -5450,14 +5410,6 @@ ALTER TABLE ONLY public.random_table_options
 
 
 --
--- Name: random_table_suboptions random_table_suboptions_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.random_table_suboptions
-    ADD CONSTRAINT random_table_suboptions_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.random_table_options(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-
---
 -- Name: random_tables random_tables_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5675,4 +5627,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20241014124831'),
     ('20241015080438'),
     ('20241101091729'),
-    ('20241101103355');
+    ('20241101103355'),
+    ('20241105103745'),
+    ('20241105134028');

@@ -453,7 +453,7 @@ export async function readCharacter(
             let random_table_query = ebb
               .selectFrom("character_random_table_fields")
               .where("character_random_table_fields.character_id", "=", params.id)
-              .select(["character_field_id as id", "character_random_table_fields.related_id", "option_id", "suboption_id"]);
+              .select(["character_field_id as id", "character_random_table_fields.related_id", "option_id"]);
 
             random_table_query = getNestedReadPermission(
               random_table_query,
@@ -980,12 +980,11 @@ export async function readCharacter(
         },
       }),
     ),
-    ...(field_random_tables || []).map((d: { id: string; related_id: string; option_id?: string; suboption_id?: string }) => ({
+    ...(field_random_tables || []).map((d: { id: string; related_id: string; option_id?: string }) => ({
       id: d.id,
       random_table: {
         related_id: d.related_id,
         option_id: d.option_id,
-        suboption_id: d.suboption_id,
       },
     })),
   ]);
@@ -1194,12 +1193,11 @@ export async function updateCharacter({
             character_id: params.id,
             related_id: field.random_table.related_id,
             option_id: field.random_table.option_id,
-            suboption_id: field.random_table.suboption_id,
           })
           .onConflict((oc) =>
             oc
               .columns(["character_field_id", "character_id", "related_id"])
-              .doUpdateSet({ option_id: field.random_table?.option_id, suboption_id: field.random_table?.suboption_id }),
+              .doUpdateSet({ option_id: field.random_table?.option_id }),
           )
           .execute();
       }

@@ -136,7 +136,6 @@ export function blueprint_instance_router(app: Elysia) {
                           blueprint_instance_id: newInstance.id,
                           related_id: random_table.related_id,
                           option_id: random_table?.option_id,
-                          suboption_id: random_table?.suboption_id,
                         })
                         .execute();
                       return;
@@ -409,7 +408,7 @@ export function blueprint_instance_router(app: Elysia) {
                         .selectFrom("blueprint_instance_random_tables")
                         .whereRef("blueprint_instance_random_tables.blueprint_field_id", "=", "blueprint_fields.id")
                         .whereRef("blueprint_instance_random_tables.blueprint_instance_id", "=", "blueprint_instances.id")
-                        .select(["blueprint_instance_random_tables.related_id", "option_id", "suboption_id"]);
+                        .select(["blueprint_instance_random_tables.related_id", "option_id"]);
 
                       random_table_query = getNestedReadPermission(
                         random_table_query,
@@ -752,7 +751,6 @@ export function blueprint_instance_router(app: Elysia) {
                             blueprint_instance_id: params.id,
                             related_id: field.random_table.related_id,
                             option_id: field.random_table.option_id,
-                            suboption_id: field.random_table.suboption_id,
                           })
                           .onConflict((oc) => oc.doNothing())
                           .execute();

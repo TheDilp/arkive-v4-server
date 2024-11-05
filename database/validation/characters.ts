@@ -110,7 +110,6 @@ export const InsertCharacterSchema = t.Object({
             t.Union([
               t.Object({
                 option_id: t.Optional(t.Union([t.Null(), t.String()])),
-                suboption_id: t.Optional(t.Union([t.Null(), t.String()])),
                 related_id: t.String(),
               }),
               t.Null(),
@@ -246,7 +245,6 @@ export const UpdateCharacterSchema = t.Object({
               t.Union([
                 t.Object({
                   option_id: t.Optional(t.Union([t.Null(), t.String()])),
-                  suboption_id: t.Optional(t.Union([t.Null(), t.String()])),
                   related_id: t.String(),
                 }),
                 t.Null(),
