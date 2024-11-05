@@ -1,4 +1,5 @@
 import { TagsRelationTables } from "../database/types";
+import { AvailableEntityType, AvailableSubEntityType } from "../types/entityTypes";
 
 export const SubEntityEnum = [
   "blueprint_instances",
@@ -150,6 +151,10 @@ export const RolePermissionsEnum = [
   "read_random_tables" as const,
   "update_random_tables" as const,
   "delete_random_tables" as const,
+  "create_generators" as const,
+  "read_generators" as const,
+  "update_generators" as const,
+  "delete_generators" as const,
   "create_tags" as const,
   "read_tags" as const,
   "update_tags" as const,
@@ -176,7 +181,12 @@ export const RolePermissionsEnum = [
   "delete_gateway" as const,
 ];
 
-export const EntitiesWithPermissionsEnum = [
+export const EntitiesWithPermissionsEnum: (
+  | AvailableEntityType
+  | AvailableSubEntityType
+  | "assets"
+  | "gateway_configurations"
+)[] = [
   "characters",
   "blueprints",
   "blueprint_instances",
@@ -186,8 +196,11 @@ export const EntitiesWithPermissionsEnum = [
   "calendars",
   "dictionaries",
   "random_tables",
+  "generators",
   "images",
   "assets",
+  "words",
+  "gateway_configurations",
   "tags",
   "character_fields_templates",
 ];
@@ -266,4 +279,12 @@ export const ProjectOwnerAllPermissionsEnum = {
   read_assets: true,
   update_assets: true,
   delete_assets: true,
+  create_manuscripts: true,
+  read_manuscripts: true,
+  update_manuscripts: true,
+  delete_manuscripts: true,
+  create_gateway: true,
+  read_gateway: true,
+  update_gateway: true,
+  delete_gateway: true,
 };
