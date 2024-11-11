@@ -73,7 +73,7 @@ export function random_table_router(app: Elysia) {
           async ({ body, permissions }) => {
             const data = await db
               .selectFrom("random_tables")
-              .where("project_id", "=", body.data.project_id)
+              .where("project_id", "=", permissions.project_id)
               .where("random_tables.deleted_at", body.arkived ? "is not" : "is", null)
               .$if(!body.fields?.length, (qb) => qb.selectAll())
               .$if(!!body.fields?.length, (qb) =>

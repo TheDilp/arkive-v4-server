@@ -327,7 +327,7 @@ export function document_router(app: Elysia) {
             .distinctOn(
               body.orderBy?.length ? (["documents.id", ...body.orderBy.map((order) => order.field)] as any) : "documents.id",
             )
-            .where("documents.project_id", "=", body?.data?.project_id)
+            .where("documents.project_id", "=", permissions?.project_id)
             .where("documents.deleted_at", body.arkived ? "is not" : "is", null)
             .limit(body?.pagination?.limit || 10)
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10));

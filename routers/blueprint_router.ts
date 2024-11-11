@@ -81,7 +81,7 @@ export function blueprint_router(app: Elysia) {
                   ? (["blueprints.id", ...body.orderBy.map((order) => order.field)] as any)
                   : "blueprints.id",
               )
-              .where("blueprints.project_id", "=", body.data.project_id)
+              .where("blueprints.project_id", "=", permissions?.project_id)
               .where("blueprints.deleted_at", body.arkived ? "is not" : "is", null)
               .limit(body?.pagination?.limit || 10)
               .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))

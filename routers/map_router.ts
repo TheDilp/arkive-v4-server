@@ -72,7 +72,7 @@ export function map_router(app: Elysia) {
               .selectFrom("maps")
               .select(body.fields.map((f) => `maps.${f}`) as SelectExpression<DB, "maps">[])
               .distinctOn(body.orderBy?.length ? (["maps.id", ...body.orderBy.map((order) => order.field)] as any) : "maps.id")
-              .where("project_id", "=", body.data.project_id)
+              .where("project_id", "=", permissions.project_id)
               .where("maps.deleted_at", body.arkived ? "is not" : "is", null)
               .limit(body?.pagination?.limit || 10)
               .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10));

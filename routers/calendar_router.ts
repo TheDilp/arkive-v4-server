@@ -82,7 +82,7 @@ export function calendar_router(app: Elysia) {
         async ({ body, permissions }) => {
           let query = db
             .selectFrom("calendars")
-            .where("calendars.project_id", "=", body?.data?.project_id)
+            .where("calendars.project_id", "=", permissions?.project_id)
             .where("calendars.deleted_at", body.arkived ? "is not" : "is", null)
             .limit(body?.pagination?.limit || 10)
             .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))

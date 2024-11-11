@@ -68,7 +68,7 @@ export function dictionary_router(app: Elysia) {
             .$if(!!body.permissions && !permissions.is_project_owner, (qb) =>
               GetRelatedEntityPermissionsAndRoles(qb, permissions, "dictionaries"),
             )
-            .where("project_id", "=", body.data.project_id)
+            .where("project_id", "=", permissions.project_id)
             .where("dictionaries.deleted_at", body.arkived ? "is not" : "is", null)
             .execute();
 

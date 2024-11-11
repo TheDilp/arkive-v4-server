@@ -152,7 +152,6 @@ export function character_router(app: Elysia) {
                 return qb;
               });
             const data = await result.execute();
-
             return {
               data,
               message: MessageEnum.success,

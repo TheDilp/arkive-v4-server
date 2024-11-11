@@ -163,7 +163,7 @@ export function manuscript_router(app: Elysia) {
                   ? (["manuscripts.id", ...body.orderBy.map((order) => order.field)] as any)
                   : "manuscripts.id",
               )
-              .where("manuscripts.project_id", "=", body?.data?.project_id)
+              .where("manuscripts.project_id", "=", permissions?.project_id)
               .where("manuscripts.deleted_at", body.arkived ? "is not" : "is", null)
               .limit(body?.pagination?.limit || 10)
               .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10));
