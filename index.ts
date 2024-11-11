@@ -117,6 +117,10 @@ export const app = new Elysia({ name: "Editor.Router" })
     }
     return { message: "There was an error with your request.", ok: false, role_access: false };
   })
+  .onRequest(({ set }) => {
+    set.headers[process.env.NODE_ENV === "development" ? "Content-Security-Policy-Report-Only" : "Content-Security-Policy"] =
+      "default-src 'self'; script-src 'self' https://the-arkive-v3.nyc3.digitaloceanspaces.com; style-src 'self';";
+  })
   .group("/api/v1" as any, (server) =>
     server.guard(
       {
@@ -179,6 +183,7 @@ export const app = new Elysia({ name: "Editor.Router" })
             throw new UnauthorizedError(ErrorEnums.unauthorized);
           }
         },
+
         // @ts-ignore
         afterHandle: async (context, response) => {
           await tempAfterHandle(context, response);
