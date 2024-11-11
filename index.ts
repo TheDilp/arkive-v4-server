@@ -9,6 +9,7 @@ import { ErrorEnums, NicknameInUse, NoPublicAccess, NoRoleAccess, UnauthorizedEr
 import { tempAfterHandle } from "./handlers";
 import {
   asset_router,
+  auth_router,
   blueprint_instance_router,
   blueprint_router,
   bulk_router,
@@ -122,6 +123,8 @@ export const app = new Elysia({ name: "Editor.Router" })
     set.headers[process.env.NODE_ENV === "development" ? "Content-Security-Policy-Report-Only" : "Content-Security-Policy"] =
       "default-src 'self'; script-src 'self' https://the-arkive-v3.nyc3.digitaloceanspaces.com; style-src 'self';";
   })
+  .use(auth_router)
+
   .use(
     cors({
       exposeHeaders: ["content-disposition", "content-security-policy", "content-security-policy-report-only"],

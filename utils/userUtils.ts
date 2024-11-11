@@ -124,7 +124,7 @@ export async function verifyGatewayJWT({
   }
 }
 
-function getCookies(access: string, refresh: string) {
+export function getCookies(access: string, refresh: string) {
   const additional_cookie_params = process.env.NODE_ENV === "production" ? "domain=.thearkive.app; Secure; SameSite=None;" : "";
   if (access === "None" || refresh === "None") return [];
   return [
