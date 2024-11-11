@@ -1,6 +1,7 @@
 import { cors } from "@elysiajs/cors";
 import { cron } from "@elysiajs/cron";
 import { Elysia } from "elysia";
+import { rateLimit } from "elysia-rate-limit";
 
 import { db } from "./database/db";
 // Accepts the same connection config object that the "pg" package would take
@@ -121,6 +122,21 @@ export const app = new Elysia({ name: "Editor.Router" })
     set.headers[process.env.NODE_ENV === "development" ? "Content-Security-Policy-Report-Only" : "Content-Security-Policy"] =
       "default-src 'self'; script-src 'self' https://the-arkive-v3.nyc3.digitaloceanspaces.com; style-src 'self';";
   })
+  .use(
+    cors({
+      exposeHeaders: ["content-disposition", "content-security-policy", "content-security-policy-report-only"],
+      origin:
+        process.env.NODE_ENV === "development"
+          ? true
+          : [
+              process.env.EDITOR_CLIENT_URL as string,
+              process.env.HOME_CLIENT_URL as string,
+              process.env.GATEWAY_CLIENT_URL as string,
+            ],
+      methods: ["GET", "POST", "DELETE"],
+    }),
+  )
+  .use(rateLimit({ duration: 10000, max: 20 }))
   .group("/api/v1" as any, (server) =>
     server.guard(
       {
@@ -236,20 +252,6 @@ export const app = new Elysia({ name: "Editor.Router" })
   .use(websocket_router)
   .use(interaction_router)
   .use(health_check_router)
-  .use(
-    cors({
-      exposeHeaders: ["content-disposition"],
-      origin:
-        process.env.NODE_ENV === "development"
-          ? true
-          : [
-              process.env.EDITOR_CLIENT_URL as string,
-              process.env.HOME_CLIENT_URL as string,
-              process.env.GATEWAY_CLIENT_URL as string,
-            ],
-      methods: ["GET", "POST", "DELETE"],
-    }),
-  )
   .use(
     cron({
       name: "heartbeat",
