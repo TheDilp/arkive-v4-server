@@ -110,9 +110,9 @@ export const app = new Elysia({ name: "Editor.Router" })
       console.error(error);
 
       return {
-        message: "This entity could not be found or you do not have permission to view it.",
+        message: "This entity could not be found.",
         ok: true,
-        role_access: false,
+        role_access: true,
       };
     }
     return { message: "There was an error with your request.", ok: false, role_access: false };
