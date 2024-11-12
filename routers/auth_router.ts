@@ -4,7 +4,10 @@ export function auth_router(app: Elysia) {
   return app.group("/auth", (server) =>
     server
       .get("/signin/discord", async ({ request, redirect, set }) => {
+        console.info("START DISCORD AUTH");
         const url = request.url.replace(process.env.ARKIVE_SERVER_URL || "", process.env.AUTH_SERVICE_URL || "");
+        console.info("URL ----------->", url);
+
         const res = await fetch(
           url,
           // @ts-ignore
@@ -19,6 +22,8 @@ export function auth_router(app: Elysia) {
         // @ts-ignore
         set.headers = res.headers;
         set.status = res.status;
+        console.info("STATUS ----------->", res.status);
+
         if (res.status < 400) {
           return redirect(`${process.env.EDITOR_CLIENT_URL}/projects` || "thearkive.app", 307);
         }
