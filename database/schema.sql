@@ -2805,23 +2805,6 @@ ALTER TABLE ONLY public.user_roles
 ALTER TABLE ONLY public.projects
     ADD CONSTRAINT projects_pkey PRIMARY KEY (id);
 
-
---
--- Name: random_table_option_graphs random_table_option_graphs_parent_id_related_id_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.random_table_option_graphs
-    ADD CONSTRAINT random_table_option_graphs_parent_id_related_id_key UNIQUE (parent_id, related_id);
-
-
---
--- Name: random_table_option_graphs random_table_option_graphs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.random_table_option_graphs
-    ADD CONSTRAINT random_table_option_graphs_pkey PRIMARY KEY (id);
-
-
 --
 -- Name: random_table_options random_table_options_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --

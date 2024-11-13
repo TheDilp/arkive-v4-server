@@ -4,6 +4,7 @@ import { DB } from "kysely-codegen";
 import groupBy from "lodash.groupby";
 
 import { db } from "../database/db";
+import { getRandomTableOptionRelatedData } from "../database/queries";
 import {
   InsertRandomTableOptionSchema,
   ListRandomTableOptionRandomManySchema,
@@ -77,7 +78,7 @@ export function random_table_option_router(app: Elysia) {
       .post(
         "/:id",
         async ({ params }) => {
-          const data = await db
+          let query = db
 
             .selectFrom("random_table_options")
             .where("random_table_options.id", "=", params.id)
@@ -87,8 +88,12 @@ export function random_table_option_router(app: Elysia) {
               "random_table_options.description",
               "random_table_options.icon",
               "random_table_options.parent_id",
-            ])
-            .executeTakeFirstOrThrow();
+            ]);
+
+          // @ts-expect-error changing the original type causes ts to complain
+          query = getRandomTableOptionRelatedData(query);
+
+          const data = await query.executeTakeFirst();
 
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
