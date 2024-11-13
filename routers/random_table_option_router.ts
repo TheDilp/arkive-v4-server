@@ -22,12 +22,10 @@ export function random_table_option_router(app: Elysia) {
       .post(
         "/create",
         async ({ body }) => {
-          await db.transaction().execute(async (tx) => {
-            await tx
-              .insertInto("random_table_options")
-              .values(body.data.map((opt) => opt.data))
-              .execute();
-          });
+          await db
+            .insertInto("random_table_options")
+            .values(body.data.map((opt) => opt.data))
+            .execute();
 
           return { message: `Random table options ${MessageEnum.successfully_created}`, ok: true, role_access: true };
         },

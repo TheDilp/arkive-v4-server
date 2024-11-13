@@ -21,6 +21,15 @@ export const InsertRandomTableOptionItemSchema = t.Object({
   description: t.Optional(t.Union([t.String(), t.Null()])),
   icon: t.Optional(t.Union([t.String(), t.Null()])),
   icon_color: t.Optional(t.Union([t.String(), t.Null()])),
+  character_id: t.Optional(t.Union([t.String(), t.Null()])),
+  blueprint_instance_id: t.Optional(t.Union([t.String(), t.Null()])),
+  document_id: t.Optional(t.Union([t.String(), t.Null()])),
+  map_id: t.Optional(t.Union([t.String(), t.Null()])),
+  map_pin_id: t.Optional(t.Union([t.String(), t.Null()])),
+  graph_id: t.Optional(t.Union([t.String(), t.Null()])),
+  event_id: t.Optional(t.Union([t.String(), t.Null()])),
+  word_id: t.Optional(t.Union([t.String(), t.Null()])),
+  image_id: t.Optional(t.Union([t.String(), t.Null()])),
 });
 
 export const InsertRandomTableOptionSchema = t.Object({
@@ -34,5 +43,14 @@ export const UpdateRandomTableOptionSchema = t.Object({
     description: t.Optional(t.Union([t.String(), t.Null()])),
     icon: t.Optional(t.Union([t.String(), t.Null()])),
     icon_color: t.Optional(t.Union([t.String(), t.Null()])),
+    character_id: t.Optional(t.Union([t.String(), t.Null()])),
+    blueprint_instance_id: t.Optional(t.Union([t.String(), t.Null()])),
+    document_id: t.Optional(t.Union([t.String(), t.Null()])),
+    map_id: t.Optional(t.Union([t.String(), t.Null()])),
+    map_pin_id: t.Optional(t.Union([t.String(), t.Null()])),
+    graph_id: t.Optional(t.Union([t.String(), t.Null()])),
+    event_id: t.Optional(t.Union([t.String(), t.Null()])),
+    word_id: t.Optional(t.Union([t.String(), t.Null()])),
+    image_id: t.Optional(t.Union([t.String(), t.Null()])),
   }),
 });
