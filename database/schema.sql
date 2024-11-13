@@ -1871,6 +1871,17 @@ CREATE TABLE public.projects (
 
 
 --
+-- Name: random_table_option_graphs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.random_table_option_graphs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    parent_id uuid NOT NULL,
+    related_id uuid NOT NULL
+);
+
+
+--
 -- Name: random_table_options; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1880,7 +1891,16 @@ CREATE TABLE public.random_table_options (
     description text,
     parent_id uuid NOT NULL,
     icon text,
-    icon_color text
+    icon_color text,
+    character_id uuid,
+    blueprint_instance_id uuid,
+    document_id uuid,
+    map_id uuid,
+    map_pin_id uuid,
+    graph_id uuid,
+    event_id uuid,
+    word_id uuid,
+    image_id uuid
 );
 
 
@@ -2784,6 +2804,22 @@ ALTER TABLE ONLY public.user_roles
 
 ALTER TABLE ONLY public.projects
     ADD CONSTRAINT projects_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: random_table_option_graphs random_table_option_graphs_parent_id_related_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.random_table_option_graphs
+    ADD CONSTRAINT random_table_option_graphs_parent_id_related_id_key UNIQUE (parent_id, related_id);
+
+
+--
+-- Name: random_table_option_graphs random_table_option_graphs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.random_table_option_graphs
+    ADD CONSTRAINT random_table_option_graphs_pkey PRIMARY KEY (id);
 
 
 --
@@ -5402,11 +5438,99 @@ ALTER TABLE ONLY public.projects
 
 
 --
+-- Name: random_table_option_graphs random_table_option_graphs_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.random_table_option_graphs
+    ADD CONSTRAINT random_table_option_graphs_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.random_table_options(id) ON DELETE CASCADE;
+
+
+--
+-- Name: random_table_option_graphs random_table_option_graphs_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.random_table_option_graphs
+    ADD CONSTRAINT random_table_option_graphs_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.graphs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: random_table_options random_table_options_blueprint_instance_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.random_table_options
+    ADD CONSTRAINT random_table_options_blueprint_instance_id_fkey FOREIGN KEY (blueprint_instance_id) REFERENCES public.blueprint_instances(id) ON DELETE SET NULL;
+
+
+--
+-- Name: random_table_options random_table_options_character_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.random_table_options
+    ADD CONSTRAINT random_table_options_character_id_fkey FOREIGN KEY (character_id) REFERENCES public.characters(id) ON DELETE SET NULL;
+
+
+--
+-- Name: random_table_options random_table_options_document_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.random_table_options
+    ADD CONSTRAINT random_table_options_document_id_fkey FOREIGN KEY (document_id) REFERENCES public.documents(id) ON DELETE SET NULL;
+
+
+--
+-- Name: random_table_options random_table_options_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.random_table_options
+    ADD CONSTRAINT random_table_options_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id) ON DELETE SET NULL;
+
+
+--
+-- Name: random_table_options random_table_options_graph_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.random_table_options
+    ADD CONSTRAINT random_table_options_graph_id_fkey FOREIGN KEY (graph_id) REFERENCES public.graphs(id) ON DELETE SET NULL;
+
+
+--
+-- Name: random_table_options random_table_options_image_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.random_table_options
+    ADD CONSTRAINT random_table_options_image_id_fkey FOREIGN KEY (image_id) REFERENCES public.images(id) ON DELETE SET NULL;
+
+
+--
+-- Name: random_table_options random_table_options_map_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.random_table_options
+    ADD CONSTRAINT random_table_options_map_id_fkey FOREIGN KEY (map_id) REFERENCES public.maps(id) ON DELETE SET NULL;
+
+
+--
+-- Name: random_table_options random_table_options_map_pin_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.random_table_options
+    ADD CONSTRAINT random_table_options_map_pin_id_fkey FOREIGN KEY (map_pin_id) REFERENCES public.map_pins(id) ON DELETE SET NULL;
+
+
+--
 -- Name: random_table_options random_table_options_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.random_table_options
     ADD CONSTRAINT random_table_options_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.random_tables(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: random_table_options random_table_options_word_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.random_table_options
+    ADD CONSTRAINT random_table_options_word_id_fkey FOREIGN KEY (word_id) REFERENCES public.words(id) ON DELETE SET NULL;
 
 
 --
@@ -5629,4 +5753,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20241101091729'),
     ('20241101103355'),
     ('20241105103745'),
-    ('20241105134028');
+    ('20241105134028'),
+    ('20241112143849');

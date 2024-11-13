@@ -32,7 +32,19 @@ export const InsertRandomTableSchema = t.Object({
     t.Object({
       random_table_options: t.Array(
         t.Object({
-          data: t.Object({ title: t.String(), description: t.Optional(t.Union([t.String(), t.Null()])) }),
+          data: t.Object({
+            title: t.String(),
+            description: t.Optional(t.Union([t.String(), t.Null()])),
+            character_id: t.Optional(t.Union([t.String(), t.Null()])),
+            blueprint_instance_id: t.Optional(t.Union([t.String(), t.Null()])),
+            document_id: t.Optional(t.Union([t.String(), t.Null()])),
+            map_id: t.Optional(t.Union([t.String(), t.Null()])),
+            map_pin_id: t.Optional(t.Union([t.String(), t.Null()])),
+            graph_id: t.Optional(t.Union([t.String(), t.Null()])),
+            event_id: t.Optional(t.Union([t.String(), t.Null()])),
+            word_id: t.Optional(t.Union([t.String(), t.Null()])),
+            image_id: t.Optional(t.Union([t.String(), t.Null()])),
+          }),
         }),
       ),
     }),
@@ -72,7 +84,20 @@ export const UpdateRandomTableSchema = t.Object({
     t.Object({
       random_table_options: t.Array(
         t.Object({
-          data: t.Object({ id: t.String(), title: t.String(), description: t.Optional(t.Union([t.String(), t.Null()])) }),
+          data: t.Object({
+            id: t.String(),
+            title: t.String(),
+            description: t.Optional(t.Union([t.String(), t.Null()])),
+            character_id: t.Optional(t.Union([t.String(), t.Null()])),
+            blueprint_instance_id: t.Optional(t.Union([t.String(), t.Null()])),
+            document_id: t.Optional(t.Union([t.String(), t.Null()])),
+            map_id: t.Optional(t.Union([t.String(), t.Null()])),
+            map_pin_id: t.Optional(t.Union([t.String(), t.Null()])),
+            graph_id: t.Optional(t.Union([t.String(), t.Null()])),
+            event_id: t.Optional(t.Union([t.String(), t.Null()])),
+            word_id: t.Optional(t.Union([t.String(), t.Null()])),
+            image_id: t.Optional(t.Union([t.String(), t.Null()])),
+          }),
         }),
       ),
     }),
