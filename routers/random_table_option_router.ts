@@ -40,9 +40,10 @@ export function random_table_option_router(app: Elysia) {
         async ({ body }) => {
           let query = db
             .selectFrom("random_table_options")
-            .select(body.fields as SelectExpression<DB, "random_table_options">[])
+            .select(body.fields.map((f) => `random_table_options.${f}`) as SelectExpression<DB, "random_table_options">[])
             .where("random_table_options.parent_id", "=", body.data.parent_id);
-
+          // @ts-expect-error changing the original type causes ts to complain
+          query = getRandomTableOptionRelatedData(query);
           if (body.orderBy?.length && body.orderBy[0].field === "title") {
             if (body.orderBy[0].sort === "asc") {
               query = query
