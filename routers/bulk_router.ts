@@ -407,7 +407,7 @@ export function bulk_router(app: Elysia) {
               console.error("ATTEMPTED BULK DELETE WITH UNALLOWED TYPE", params.type);
               throw new Error("INTERNAL_SERVER_ERROR");
             }
-            if (params.type === "images" && !body.data.project_id) {
+            if (params.type === "images" && !permissions.project_id) {
               console.error("ATTEMPTED BULK DELETE FOR IMAGES WITH NO PROJECT ID", params.type);
               throw new Error("INTERNAL_SERVER_ERROR");
             }

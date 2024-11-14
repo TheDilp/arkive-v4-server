@@ -73,7 +73,7 @@ export function graph_router(app: Elysia) {
               .distinctOn(
                 body.orderBy?.length ? (["graphs.id", ...body.orderBy.map((order) => order.field)] as any) : "graphs.id",
               )
-              .where("graphs.project_id", "=", body.data.project_id)
+              .where("graphs.project_id", "=", permissions.project_id)
               .where("graphs.deleted_at", body.arkived ? "is not" : "is", null)
 
               .select(body.fields.map((f) => `graphs.${f}`) as SelectExpression<DB, "graphs">[])

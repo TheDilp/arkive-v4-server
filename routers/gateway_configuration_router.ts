@@ -129,11 +129,11 @@ export function gateway_configuration_router(app: Elysia) {
       )
       .post(
         "/",
-        async ({ body }) => {
+        async ({ body, permissions }) => {
           let query = db
             .selectFrom("gateway_configurations")
             .select(body.fields as SelectExpression<DB, "gateway_configurations">[])
-            .where("project_id", "=", body.data.project_id)
+            .where("project_id", "=", permissions.project_id)
             .orderBy("title");
 
           if (body.relations?.entities) {

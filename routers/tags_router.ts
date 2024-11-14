@@ -62,7 +62,7 @@ export function tag_router(app: Elysia) {
         async ({ body, permissions }) => {
           let query = db
             .selectFrom("tags")
-            .where("tags.project_id", "=", body.data.project_id)
+            .where("tags.project_id", "=", permissions.project_id)
             .where("tags.deleted_at", body.arkived ? "is not" : "is", null)
             .select(body.fields.map((f) => `tags.${f}`) as SelectExpression<DB, "tags">[]);
           if (!!body?.filters?.and?.length || !!body?.filters?.or?.length) {

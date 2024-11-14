@@ -37,7 +37,7 @@ export function user_router(app: Elysia) {
       )
       .post(
         "/:id",
-        async ({ params, body }) => {
+        async ({ params, permissions, body }) => {
           const data = await db
             .selectFrom("users")
             .select(body.fields as SelectExpression<DB, "users">[])
@@ -48,12 +48,12 @@ export function user_router(app: Elysia) {
                 ).as("webhooks"),
               ),
             )
-            .$if(!!body.relations?.roles && !!body.data.project_id, (qb) =>
+            .$if(!!body.relations?.roles && !!permissions.project_id, (qb) =>
               qb.select((eb) =>
                 jsonObjectFrom(
                   eb
                     .selectFrom("user_roles")
-                    .where("user_roles.project_id", "=", body.data.project_id as string)
+                    .where("user_roles.project_id", "=", permissions.project_id as string)
                     .whereRef("user_roles.user_id", "=", "users.id")
                     .select([
                       "user_roles.role_id as id",
@@ -134,41 +134,43 @@ export function user_router(app: Elysia) {
 
       .post(
         "/invite",
-        async ({ body }) => {
-          const user = await db.selectFrom("users").select(["id"]).where("email", "=", body.data.email).executeTakeFirst();
-          if (user) {
-            await db.insertInto("_project_members").values({ A: body.data.project_id, B: user.id }).execute();
-            await db
-              .insertInto("user_project_feature_flags")
-              .values({
-                project_id: body.data.project_id,
-                user_id: user.id,
-                feature_flags: JSON.stringify(DefaultProjectFeatureFlags),
-              })
-              .execute();
-          } else {
-            return { ok: false, role_access: true, message: "User must already have an account on the Arkive." };
-            // const newUser = await db.insertInto("users").values({ email: body.data.email }).returning("id").executeTakeFirst();
-            // if (newUser) {
-            //   await db.insertInto("_project_members").values({ A: body.data.project_id, B: newUser.id }).execute();
-            //   await db
-            //     .insertInto("user_project_feature_flags")
-            //     .values({
-            //       project_id: body.data.project_id,
-            //       user_id: newUser.id,
-            //       feature_flags: JSON.stringify(DefaultProjectFeatureFlags),
-            //     })
-            //     .execute();
-            // }
+        async ({ body, permissions }) => {
+          if (permissions.project_id) {
+            const user = await db.selectFrom("users").select(["id"]).where("email", "=", body.data.email).executeTakeFirst();
+            if (user) {
+              await db.insertInto("_project_members").values({ A: permissions.project_id, B: user.id }).execute();
+              await db
+                .insertInto("user_project_feature_flags")
+                .values({
+                  project_id: permissions.project_id,
+                  user_id: user.id,
+                  feature_flags: JSON.stringify(DefaultProjectFeatureFlags),
+                })
+                .execute();
+            } else {
+              return { ok: false, role_access: true, message: "User must already have an account on the Arkive." };
+              // const newUser = await db.insertInto("users").values({ email: body.data.email }).returning("id").executeTakeFirst();
+              // if (newUser) {
+              //   await db.insertInto("_project_members").values({ A: permissions.project_id, B: newUser.id }).execute();
+              //   await db
+              //     .insertInto("user_project_feature_flags")
+              //     .values({
+              //       project_id: permissions.project_id,
+              //       user_id: newUser.id,
+              //       feature_flags: JSON.stringify(DefaultProjectFeatureFlags),
+              //     })
+              //     .execute();
+              // }
+            }
           }
           const { title, image_id } = await db
             .selectFrom("projects")
-            .where("id", "=", body.data.project_id)
+            .where("id", "=", permissions.project_id)
             .select(["title", "image_id"])
             .executeTakeFirstOrThrow();
 
           // Send invite via email
-          const image = `https://${process.env.DO_SPACES_NAME}.${process.env.DO_SPACES_CDN_ENDPOINT}/assets/${body.data.project_id}/images/${image_id}.webp`;
+          const image = `https://${process.env.DO_SPACES_NAME}.${process.env.DO_SPACES_CDN_ENDPOINT}/assets/${permissions.project_id}/images/${image_id}.webp`;
           await resend.emails.send({
             from: "The Arkive <emails@thearkive.app>",
             to: [body.data.email],
@@ -320,10 +322,10 @@ export function user_router(app: Elysia) {
       )
       .post(
         "/kick",
-        async ({ body }) => {
+        async ({ body, permissions }) => {
           await db
             .deleteFrom("_project_members")
-            .where("A", "=", body.data.project_id)
+            .where("A", "=", permissions.project_id)
             .where("B", "=", body.data.user_id)
             .execute();
           const user = await db.selectFrom("users").select(["email"]).where("id", "=", body.data.user_id).executeTakeFirst();
@@ -331,11 +333,11 @@ export function user_router(app: Elysia) {
             const project = await db
               .selectFrom("projects")
               .select(["title", "image_id"])
-              .where("id", "=", body.data.project_id)
+              .where("id", "=", permissions.project_id)
               .executeTakeFirst();
 
             const image = project?.image_id
-              ? `https://${process.env.DO_SPACES_NAME}.${process.env.DO_SPACES_CDN_ENDPOINT}/assets/${body.data.project_id}/images/${project.image_id}.webp`
+              ? `https://${process.env.DO_SPACES_NAME}.${process.env.DO_SPACES_CDN_ENDPOINT}/assets/${permissions.project_id}/images/${project.image_id}.webp`
               : "";
             await resend.emails.send({
               from: "The Arkive <emails@thearkive.app>",

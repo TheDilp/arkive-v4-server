@@ -5,7 +5,7 @@ import { db } from "../database/db";
 import { InsertRoleSchema, ListRoleSchema, ReadRoleSchema, UpdateRoleSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { beforeProjectOwnerHandler } from "../handlers";
-import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 import { constructOrdering } from "../utils/orderByConstructor";
 import { sendNotification } from "../utils/websocketUtils";
 
@@ -17,20 +17,31 @@ export function role_router(app: Elysia) {
     } as { project_id: string | null; user_id: string | null })
     .group("/roles", (server) =>
       server
+        .decorate("permissions", {
+          user_id: "",
+          project_id: null,
+          is_project_owner: false,
+          role_access: false,
+          role_id: null,
+          permission_id: null,
+          all_permissions: {},
+        } as PermissionDecorationType)
         .post(
           "/create",
-          async ({ body }) => {
+          async ({ body, permissions }) => {
             await db.transaction().execute(async (tx) => {
-              const newRole = await tx
-                .insertInto("roles")
-                .values({ title: body.data.title, project_id: body.data.project_id, icon: body.data.icon })
-                .returning("id")
-                .executeTakeFirstOrThrow();
+              if (permissions.project_id) {
+                const newRole = await tx
+                  .insertInto("roles")
+                  .values({ title: body.data.title, project_id: permissions.project_id, icon: body.data.icon })
+                  .returning("id")
+                  .executeTakeFirstOrThrow();
 
-              return await tx
-                .insertInto("role_permissions")
-                .values(body.data.permissions.map((perm) => ({ role_id: newRole.id, permission_id: perm })))
-                .execute();
+                return await tx
+                  .insertInto("role_permissions")
+                  .values(body.data.permissions.map((perm) => ({ role_id: newRole.id, permission_id: perm })))
+                  .execute();
+              }
             });
 
             return { message: `Role ${MessageEnum.successfully_created}`, ok: true, role_access: true };
@@ -74,8 +85,8 @@ export function role_router(app: Elysia) {
         )
         .post(
           "/",
-          async ({ body }) => {
-            let query = db.selectFrom("roles").where("project_id", "=", body.data.project_id).select(["id", "title", "icon"]);
+          async ({ body, permissions }) => {
+            let query = db.selectFrom("roles").where("project_id", "=", permissions.project_id).select(["id", "title", "icon"]);
 
             if (body.relations?.permissions) {
               query = query.select([

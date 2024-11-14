@@ -3,11 +3,20 @@ import { Elysia } from "elysia";
 import { db } from "../database/db";
 import { InsertMapPinTypeSchema, ListMapPinTypeSchema, UpdateMapPinTypeSchema } from "../database/validation/map_pin_types";
 import { MessageEnum } from "../enums";
-import { ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
+import { PermissionDecorationType, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
 
 export function map_pin_types_router(app: Elysia) {
   return app.group("/map_pin_types", (server) =>
     server
+      .decorate("permissions", {
+        user_id: "",
+        project_id: null,
+        is_project_owner: false,
+        role_access: false,
+        role_id: null,
+        permission_id: null,
+        all_permissions: {},
+      } as PermissionDecorationType)
       .post(
         "/create",
         async ({ body }) => {
@@ -22,10 +31,10 @@ export function map_pin_types_router(app: Elysia) {
       )
       .post(
         "/",
-        async ({ body }) => {
+        async ({ permissions }) => {
           const data = await db
             .selectFrom("map_pin_types")
-            .where("project_id", "=", body.data.project_id)
+            .where("project_id", "=", permissions.project_id)
             .select(["id", "title", "default_icon", "default_icon_color"])
             .execute();
 

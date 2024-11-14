@@ -68,7 +68,7 @@ export function conversation_router(app: Elysia) {
           async ({ body, permissions }) => {
             let query = db
               .selectFrom("conversations")
-              .where("project_id", "=", body.data.project_id)
+              .where("project_id", "=", permissions.project_id)
               .limit(body?.pagination?.limit || 10)
               .offset((body?.pagination?.page ?? 0) * (body?.pagination?.limit || 10))
               .select(body.fields as SelectExpression<DB, "conversations">[]);

@@ -220,10 +220,10 @@ export function blueprint_instance_router(app: Elysia) {
             if (body.data?.parent_id) {
               query = query.where("blueprint_instances.parent_id", "=", body.data.parent_id);
             }
-            if (body.data.project_id) {
+            if (permissions.project_id) {
               query = query
                 .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
-                .where("blueprints.project_id", "=", body.data.project_id);
+                .where("blueprints.project_id", "=", permissions.project_id);
             }
             if (body.relations?.blueprint_fields) {
               query = query.select([
