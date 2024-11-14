@@ -7,7 +7,13 @@ import uniq from "lodash.uniq";
 import uniqBy from "lodash.uniqby";
 
 import { db } from "../database/db";
-import { checkEntityLevelPermission, getHasEntityPermission, getNestedReadPermission, readDocument } from "../database/queries";
+import {
+  checkEntityLevelPermission,
+  getHasEntityPermission,
+  getNestedReadPermission,
+  getRandomTableOptionRelatedData,
+  readDocument,
+} from "../database/queries";
 import { DBKeys } from "../database/types";
 import {
   AutolinkerSchema,
@@ -184,7 +190,6 @@ export function document_router(app: Elysia) {
             await db.transaction().execute(async (tx) => {
               for (let index = 0; index < (template?.relations?.template_fields?.length || 0); index += 1) {
                 const field = template?.relations?.template_fields?.[index];
-
                 // Generate randomized fields
                 if (
                   (field.is_randomized || field.entity_type === "random_tables") &&
@@ -192,23 +197,27 @@ export function document_router(app: Elysia) {
                 ) {
                   const max = getRandomTemplateCount(field.random_count || "single");
                   const limit = clamp(field?.related?.length || 0, max - (field?.related?.length || 0), max);
-                  if (field.entity_type === "random_tables" && field.value) {
+
+                  if (field.entity_type === "random_tables" && field?.related?.[0]) {
                     let query = tx
                       .selectFrom("random_tables")
                       .select([
-                        (eb) =>
-                          jsonArrayFrom(
-                            eb
-                              .selectFrom("random_table_options")
-                              .select(["title"])
-                              .whereRef("parent_id", "=", "random_tables.id")
-                              .limit(limit),
-                          ).as("random_table_options"),
-                      ])
-                      .where("id", "in", field.related)
-                      .where("project_id", "=", permissions.project_id);
+                        (eb) => {
+                          let rto_query = eb
+                            .selectFrom("random_table_options")
+                            .select(["random_table_options.title"])
+                            .whereRef("random_table_options.parent_id", "=", "random_tables.id")
+                            .limit(limit);
 
-                    const related = await query.executeTakeFirst();
+                          // @ts-expect-error changing the original type causes ts to complain
+                          rto_query = getRandomTableOptionRelatedData(rto_query);
+
+                          return jsonArrayFrom(rto_query).as("random_table_options");
+                        },
+                      ])
+                      .where("random_tables.id", "=", field?.related?.[0]);
+
+                    const related = await query.executeTakeFirstOrThrow();
 
                     if (related && related.random_table_options.length > 0) {
                       const result_string = related.random_table_options.map((r) => r.title).join(", ");
@@ -530,7 +539,7 @@ export function document_router(app: Elysia) {
               .executeTakeFirstOrThrow();
             return { data: { id }, message: `Document ${MessageEnum.successfully_created}`, ok: true, role_access: true };
           }
-          if (params.type === "conversations" && body.data.parent_id) {
+          if (params.type === "conversations" && body.data.parent_id && permissions.project_id) {
             const messages = await db
               .selectFrom("messages")
               .leftJoin("characters", "characters.id", "messages.sender_id")
@@ -550,7 +559,7 @@ export function document_router(app: Elysia) {
                         name: "characters",
                         label: getCharacterFullName(msg.first_name, undefined, msg.last_name),
                         alterId: null,
-                        projectId: body.data.project_id,
+                        projectId: permissions.project_id,
                       },
                     });
                   }
@@ -564,7 +573,7 @@ export function document_router(app: Elysia) {
 
             const { id } = await db
               .insertInto("documents")
-              .values({ title: body.data.title, project_id: body.data.project_id, content, owner_id: permissions.user_id })
+              .values({ title: body.data.title, project_id: permissions.project_id, content, owner_id: permissions.user_id })
               .returning("id")
               .executeTakeFirstOrThrow();
             return { data: { id }, message: `Document ${MessageEnum.successfully_created}`, ok: true, role_access: true };
@@ -601,25 +610,27 @@ export function document_router(app: Elysia) {
             .select(body.data.type === "blueprint_instances" ? fields : fields.map((f) => `${body.data.type}.${f}`));
 
           if (body.data.type === "map_pins") {
-            query = query.leftJoin("maps", "maps.id", "map_pins.parent_id").where("maps.project_id", "=", body.data.project_id);
+            query = query
+              .leftJoin("maps", "maps.id", "map_pins.parent_id")
+              .where("maps.project_id", "=", permissions.project_id);
           } else if (body.data.type === "words") {
             query = query
               .leftJoin("dictionaries", "dictionaries.id", "words.parent_id")
-              .where("dictionaries.project_id", "=", body.data.project_id);
+              .where("dictionaries.project_id", "=", permissions.project_id);
           } else if (body.data.type === "events") {
             query = query
               .leftJoin("calendars", "calendars.id", "events.parent_id")
-              .where("calendars.project_id", "=", body.data.project_id);
+              .where("calendars.project_id", "=", permissions.project_id);
           } else if (body.data.type === "blueprint_instances") {
             query = query
               .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
-              .where("blueprints.project_id", "=", body.data.project_id);
+              .where("blueprints.project_id", "=", permissions.project_id);
             // BPI have permissions
             query = checkEntityLevelPermission(query, permissions, body.data.type as EntitiesWithPermissionCheck);
           }
           // If it is not one of these entities add project_id WHERE clause
           else {
-            query = query.where("project_id", "=", body.data.project_id);
+            query = query.where("project_id", "=", permissions.project_id);
             query = checkEntityLevelPermission(query, permissions, body.data.type as EntitiesWithPermissionCheck);
           }
 
