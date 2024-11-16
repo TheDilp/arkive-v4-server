@@ -1756,7 +1756,7 @@ FROM
     return base;
   });
 
-  const edges = uniqBy(initialEdges, (edge) => [edge.source_id, edge.target_id]);
+  const edges = uniqBy(initialEdges, (edge) => `${edge.source_id}-${edge.target_id}`);
   // Get ids of main branch/parent characters and their generations
 
   return { data: { nodes, edges }, ok: true, message: MessageEnum.success, role_access: true };
