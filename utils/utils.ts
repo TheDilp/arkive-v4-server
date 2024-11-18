@@ -435,3 +435,10 @@ export function clamp(min: number, value: number, max: number): number {
   if (value > max) return max;
   return value;
 }
+
+export function closestDivisibleBy50(x: number, y: number): [number, number] {
+  const closestX = Math.round(x / 50) * 50;
+  const closestY = Math.round(y / 50) * 50;
+
+  return [closestX, closestY];
+}

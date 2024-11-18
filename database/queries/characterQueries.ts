@@ -1,9 +1,10 @@
 import { randomUUID } from "crypto";
+import { ElkNode, LayoutOptions } from "elkjs";
+import Elk from "elkjs/lib/elk-api";
 import { SelectExpression, sql, Transaction } from "kysely";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
-import { DB } from "kysely-codegen";
+import { DB, Edges } from "kysely-codegen";
 import omit from "lodash.omit";
-import uniq from "lodash.uniq";
 import uniqBy from "lodash.uniqby";
 
 import { MessageEnum } from "../../enums";
@@ -18,7 +19,7 @@ import {
   UpdateEntityPermissions,
   UpdateTagRelations,
 } from "../../utils/relationalQueryHelpers";
-import { getEntityWithOwnerId, groupCharacterFields } from "../../utils/utils";
+import { closestDivisibleBy50, getEntityWithOwnerId, groupCharacterFields } from "../../utils/utils";
 import { db } from "../db";
 import { InsertCharacterSchema, ReadCharacterSchema, UpdateCharacterSchema } from "../validation";
 import { checkEntityLevelPermission, getNestedReadPermission } from ".";
@@ -1438,6 +1439,66 @@ export async function updateCharacter({
   if (body.data && Object.keys(body.data).length > 0)
     await tx.updateTable("characters").where("characters.id", "=", params.id).set(body.data).execute();
 }
+type FormattedNodeType = {
+  id: string;
+  character_id: string;
+  label: string | null;
+  width: number;
+  height: number;
+  image_id: string | never[];
+  is_locked: boolean;
+  x: number;
+  y: number;
+};
+type FormattedEdgeType = Pick<Omit<Edges, "id">, "source_id" | "target_id"> & { id: string };
+
+const layoutOptions: LayoutOptions = {
+  "elk.algorithm": "layered",
+  "elk.direction": "DOWN",
+  "elk.layered.spacing.nodeNodeBetweenLayers": "100",
+  "elk.spacing.nodeNode": "100",
+  "elk.layered.crossingMinimization.strategy": "LAYER_SWEEP",
+  // "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+  // "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
+  "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+  "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+  "elk.layered.crossingMinimization.forceNodeModelOrder": "false",
+  // "elk.layered.crossingMinimization.greedySwitch.type": "ONE_SIDED",
+};
+
+const elk = new Elk({
+  defaultLayoutOptions: layoutOptions,
+  // eslint-disable-next-line no-undef
+  workerFactory: () => new Worker("elkjs/lib/elk-worker.min.js"),
+});
+
+async function layoutFamilyTree(nodes: FormattedNodeType[], edges: FormattedEdgeType[]): Promise<FormattedNodeType[]> {
+  // Convert your nodes and edges to the ELK graph structure
+  const elkGraph: ElkNode = {
+    id: "root",
+    children: nodes.map((n) => ({
+      ...n,
+      targetPosition: "top",
+      sourcePosition: "bottom",
+    })),
+    edges: edges.map((edge) => {
+      return {
+        id: edge.id,
+        sources: [edge.source_id],
+        targets: [edge.target_id],
+      };
+    }),
+  };
+
+  // Perform the layout computation
+  const result = await elk.layout(elkGraph);
+
+  return (result.children || [])?.map((node) => {
+    const [x, y] = closestDivisibleBy50(node.x || 0, node.y || 0);
+
+    return { ...node, x, y };
+  }) as FormattedNodeType[];
+}
 
 export async function getCharacterFamily(
   params: { id: string; relation_type_id: string; count: string },
@@ -1569,6 +1630,7 @@ export async function getCharacterFamily(
   const baseCharacterRelationships = await sql<{
     character_a_id: string;
     character_b_id: string;
+    depth: number;
   }>`
   WITH RECURSIVE
   related_characters (character_a_id, character_b_id, depth) AS (
@@ -1579,9 +1641,7 @@ export async function getCharacterFamily(
     FROM
       characters_relationships
     WHERE
-     ( character_a_id = ${id}
-      OR character_b_id = ${id})
-      AND relation_type_id = ${relation_type_id}
+      (character_a_id = ${id} OR character_b_id = ${id}) AND relation_type_id = ${relation_type_id}
     UNION
     SELECT
       cr.character_a_id,
@@ -1592,15 +1652,18 @@ export async function getCharacterFamily(
       INNER JOIN related_characters rc ON cr.character_a_id = rc.character_b_id
       OR cr.character_b_id = rc.character_a_id
     WHERE
-      cr.relation_type_id = ${relation_type_id} AND
+      cr.relation_type_id = ${relation_type_id}
+        AND
       depth < ${Number(count || 1) - (Number(count) <= 2 ? 0 : 1)}
+
   )
 SELECT
   *
 FROM
   related_characters;
   `.execute(db);
-  const ids = uniq(baseCharacterRelationships.rows.flatMap((r) => [r.character_a_id, r.character_b_id]));
+
+  const ids = Array.from(new Set(baseCharacterRelationships.rows.flatMap((r) => [r.character_a_id, r.character_b_id])));
   if (ids.length === 0) {
     return { data: { nodes: [], edges: [] }, ok: true, message: MessageEnum.success, role_access: true };
   }
@@ -1693,19 +1756,28 @@ FROM
   const withParents = permittedCharacters
     .filter((char) => (isPublic ? char.is_public : true))
     .map((char) => {
-      const parents = baseCharacterRelationships.rows
-        .filter((r) => r.character_a_id === char.id)
-        .map((p) => p.character_b_id)
-        .concat(additionalChars.filter((c) => c.character_a_id === char.id).map((c) => c.id as string));
-      const children = baseCharacterRelationships.rows
-        .filter((r) => r.character_b_id === char.id)
-        .map((p) => p.character_a_id)
-        .concat(additionalCharsChildren.filter((c) => c.character_b_id === char.id).map((c) => c.id as string));
+      const parents = Array.from(
+        new Set(
+          baseCharacterRelationships.rows
+            .filter((r) => r.character_a_id === char.id)
+            .map((p) => p.character_b_id)
+            .concat(additionalChars.filter((c) => c.character_a_id === char.id).map((c) => c.id as string)),
+        ),
+      );
+      const children = Array.from(
+        new Set(
+          baseCharacterRelationships.rows
+            .filter((r) => r.character_b_id === char.id)
+            .map((p) => p.character_a_id)
+            .concat(additionalCharsChildren.filter((c) => c.character_b_id === char.id).map((c) => c.id as string)),
+        ),
+      );
       return { ...char, parents, children };
     });
+
   const uniqueChars = uniqBy(withParents, "id");
 
-  const nodes = uniqueChars.map((c) => ({
+  const nodes: FormattedNodeType[] = uniqueChars.map((c) => ({
     id: c.id,
     character_id: c.id,
     label: c.full_name,
@@ -1713,17 +1785,26 @@ FROM
     height: 50,
     image_id: c.portrait_id ?? [],
     is_locked: false,
+    x: 0,
+    y: 0,
   }));
 
-  const initialEdges = uniqueChars.flatMap((c) => {
+  const edges = uniqueChars.flatMap((c) => {
     const base = [];
+    const existingParents: string[] = [];
+    const existingChildren: string[] = [];
     if ("parents" in c && c?.parents.length) {
       const filteredParents = isPublic
         ? c.parents.filter((parent_id) => uniqueChars.some((char) => char.id === parent_id))
         : c.parents;
       if (filteredParents.length) {
         for (let index = 0; index < filteredParents.length; index++) {
-          if (permittedIds.includes(c.parents[index]) && permittedIds.includes(c.id))
+          if (
+            permittedIds.includes(c.parents[index]) &&
+            permittedIds.includes(c.id) &&
+            !existingParents.includes(`${c.parents[index]}-${c.id}`)
+          ) {
+            existingParents.push(`${c.parents[index]}-${c.id}`);
             base.push({
               id: randomUUID(),
               source_id: c.parents[index],
@@ -1732,6 +1813,7 @@ FROM
               curve_style: curveStyle,
               taxi_direction: "downward",
             });
+          }
         }
       }
     }
@@ -1742,7 +1824,13 @@ FROM
         : c.children;
 
       for (let index = 0; index < filteredChildren.length; index++) {
-        if (permittedIds.includes(c.children[index]) && permittedIds.includes(c.id))
+        if (
+          permittedIds.includes(c.children[index]) &&
+          permittedIds.includes(c.id) &&
+          !existingChildren.includes(`${c.id}${c.children[index]}`)
+        ) {
+          existingChildren.push(`${c.id}${c.children[index]}`);
+
           base.push({
             id: randomUUID(),
             source_id: c.id,
@@ -1751,13 +1839,20 @@ FROM
             curve_style: curveStyle,
             taxi_direction: "downward",
           });
+        }
       }
     }
     return base;
   });
 
-  const edges = uniqBy(initialEdges, (edge) => `${edge.source_id}-${edge.target_id}`);
-  // Get ids of main branch/parent characters and their generations
-
-  return { data: { nodes, edges }, ok: true, message: MessageEnum.success, role_access: true };
+  const layoutNodes = await layoutFamilyTree(nodes || [], edges || []);
+  return {
+    data: {
+      nodes: layoutNodes,
+      edges,
+    },
+    ok: true,
+    message: MessageEnum.success,
+    role_access: true,
+  };
 }
