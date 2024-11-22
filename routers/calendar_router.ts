@@ -216,7 +216,7 @@ export function calendar_router(app: Elysia) {
           if (permissionCheck) {
             await db.transaction().execute(async (tx) => {
               await tx.updateTable("calendars").where("calendars.id", "=", params.id).set(body.data).execute();
-              if (body.relations.leap_days) {
+              if (body?.relations?.leap_days) {
                 const existingLeapDays = await tx
                   .selectFrom("leap_days")
                   .where("leap_days.parent_id", "=", params.id)
@@ -257,7 +257,7 @@ export function calendar_router(app: Elysia) {
                 }
               }
 
-              if (body.relations.months) {
+              if (body?.relations?.months) {
                 const existingMonths = await tx
                   .selectFrom("months")
                   .where("months.parent_id", "=", params.id)
@@ -293,7 +293,7 @@ export function calendar_router(app: Elysia) {
                 }
               }
 
-              if (body.relations.eras) {
+              if (body?.relations?.eras) {
                 const existingEras = await tx
                   .selectFrom("eras")
                   .where("eras.parent_id", "=", params.id)

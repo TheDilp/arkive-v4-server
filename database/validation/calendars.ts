@@ -143,12 +143,14 @@ export const UpdateCalendarSchema = t.Object({
     owner_id: t.Optional(t.String()),
     starts_on_day: t.Optional(t.Union([t.Number(), t.Null()])),
   }),
-  relations: t.Object({
-    eras: t.Union([t.Array(UpdateEraSchema)]),
-    months: t.Union([t.Array(UpdateMonthSchema, { minItems: 1 })]),
-    tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
-    leap_days: t.Optional(t.Union([t.Array(UpdateLeapDaySchema)])),
-  }),
+  relations: t.Optional(
+    t.Object({
+      eras: t.Union([t.Array(UpdateEraSchema)]),
+      months: t.Union([t.Array(UpdateMonthSchema, { minItems: 1 })]),
+      tags: t.Optional(t.Array(t.Object({ id: t.String() }))),
+      leap_days: t.Optional(t.Union([t.Array(UpdateLeapDaySchema)])),
+    }),
+  ),
   permissions: t.Optional(
     t.Array(
       t.Intersect([

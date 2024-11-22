@@ -87,6 +87,7 @@ export const InsertGraphSchema = t.Object({
 export const UpdateGraphSchema = t.Object({
   data: t.Object({
     id: t.Optional(t.String()),
+    deleted_at: t.Optional(t.Union([t.String(), t.Null()])),
     parent_id: t.Optional(t.Union([t.String(), t.Null()])),
     title: t.Optional(t.String()),
     is_folder: t.Optional(t.Union([t.Boolean(), t.Null()])),

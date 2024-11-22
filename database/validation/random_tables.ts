@@ -71,7 +71,7 @@ export const InsertRandomTableSchema = t.Object({
 });
 export const UpdateRandomTableSchema = t.Object({
   data: t.Object({
-    title: t.String(),
+    title: t.Optional(t.String()),
     deleted_at: t.Optional(t.Union([t.String(), t.Null()])),
     description: t.Optional(t.Union([t.String(), t.Null()])),
     parent_id: t.Optional(t.Union([t.String(), t.Null()])),
