@@ -29,7 +29,6 @@ import {
   gateway_configuration_router,
   graph_router,
   health_check_router,
-  interaction_router,
   manuscript_router,
   map_pin_router,
   map_pin_types_router,
@@ -253,7 +252,6 @@ export const app = new Elysia({ name: "Editor.Router" })
   )
   .use(gateway_access_router)
   .use(websocket_router)
-  .use(interaction_router)
   .use(health_check_router)
   .use(
     cron({

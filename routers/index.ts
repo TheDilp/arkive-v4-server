@@ -19,7 +19,6 @@ export * from "./gateway_access_router";
 export * from "./gateway_configuration_router";
 export * from "./graph_router";
 export * from "./health_check";
-export * from "./interaction_router";
 export * from "./manuscript_router";
 export * from "./map_pin_router";
 export * from "./map_pin_types_router";
