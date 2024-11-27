@@ -1,5 +1,5 @@
 # Stage 1: Build stage
-FROM oven/bun:1.1.20 AS builder
+FROM oven/bun:latest AS builder
 WORKDIR /usr/src/app
 ENV HUSKY=0
 ENV NODE_ENV=production
@@ -8,7 +8,7 @@ RUN bun install --production
 RUN bun build ./index.ts --outdir ./dist --target bun
 
 # Stage 2: Production stage
-FROM oven/bun:1.1.20
+FROM oven/bun:latest
 WORKDIR /usr/src/app
 ENV NODE_ENV=production
 COPY --from=builder /usr/src/app ./
