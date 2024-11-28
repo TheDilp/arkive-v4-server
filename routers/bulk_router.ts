@@ -182,7 +182,6 @@ export function bulk_router(app: Elysia) {
               ids.push(permitted_ids[index].id);
             }
           }
-
           if (ids.length) {
             // If there is an entry with actual permission changes
             if (body.data.permissions.some((p) => !!p.permission_id || !!p.role_id || !!p.permission_id)) {
@@ -201,19 +200,17 @@ export function bulk_router(app: Elysia) {
                   role_id: string;
                 }[];
 
-                // @ts-ignore
-                tx.deleteFrom("entity_permissions").where("related_id", "in", ids).execute();
-
+                await tx.deleteFrom("entity_permissions").where("related_id", "in", ids).execute();
                 if (userPermissions.length) {
-                  // @ts-ignore
-                  tx.insertInto("entity_permissions")
+                  await tx
+                    .insertInto("entity_permissions")
                     .values(userPermissions)
                     .onConflict((oc) => oc.doNothing())
                     .execute();
                 }
                 if (rolePermissions.length) {
-                  // @ts-ignore
-                  tx.insertInto("entity_permissions")
+                  await tx
+                    .insertInto("entity_permissions")
                     .values(rolePermissions)
                     .onConflict((oc) => oc.doNothing())
                     .execute();
