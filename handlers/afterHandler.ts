@@ -110,7 +110,7 @@ export async function tempAfterHandle(context: any, response: any) {
               redis,
             );
           } else if (entity === "tags") {
-            const { project_id } = context.body.data[0];
+            const { project_id } = context.response.data[0];
 
             const tags = context.response.data;
 
