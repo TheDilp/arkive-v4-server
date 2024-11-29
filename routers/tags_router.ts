@@ -32,20 +32,26 @@ export function tag_router(app: Elysia) {
         "/create",
         async ({ body, permissions }) => {
           const tags_data = await db.transaction().execute(async (tx) => {
-            const tags = await tx
-              .insertInto("tags")
-              .values(
-                Array.isArray(body.data)
-                  ? getEntitiesWithOwnerId(body.data, permissions.user_id)
-                  : getEntityWithOwnerId(body.data, permissions.user_id),
-              )
-              .returning(["id", "title"])
-              .execute();
+            if (permissions.project_id) {
+              const tags = await tx
+                .insertInto("tags")
+                .values(
+                  Array.isArray(body.data)
+                    ? getEntitiesWithOwnerId(
+                        body.data.map((tag) => ({ ...tag, project_id: permissions.project_id as string })),
+                        permissions.user_id,
+                      )
+                    : getEntityWithOwnerId({ ...body.data, project_id: permissions.project_id }, permissions.user_id),
+                )
+                .returning(["id", "title", "color", "project_id"])
+                .execute();
 
-            if (body.permissions?.length) {
-              await Promise.all(tags.map((t) => CreateEntityPermissions(tx, t.id, body.permissions)));
+              if (body.permissions?.length) {
+                await Promise.all(tags.map((t) => CreateEntityPermissions(tx, t.id, body.permissions)));
+              }
+              return tags;
             }
-            return tags;
+            return [];
           });
           const redis = await redisClient;
           redis.DEL(`${permissions.project_id}-all_tags`);

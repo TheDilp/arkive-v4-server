@@ -5,13 +5,11 @@ export const InsertTagSchema = t.Object({
     t.Object({
       title: t.String(),
       color: t.String(),
-      project_id: t.String(),
     }),
     t.Array(
       t.Object({
         title: t.String(),
         color: t.String(),
-        project_id: t.String(),
       }),
     ),
   ]),
