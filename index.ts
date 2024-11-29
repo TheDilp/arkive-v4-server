@@ -82,6 +82,8 @@ export const app = new Elysia({ name: "Editor.Router" })
 
       return { message: "UNAUTHORIZED", ok: false, role_access: false };
     }
+    console.error(error);
+
     if (code === "NO_PUBLIC_ACCESS") {
       set.status = 403;
       return { message: "NO_PUBLIC_ACCESS", ok: false, role_access: false };
@@ -91,6 +93,7 @@ export const app = new Elysia({ name: "Editor.Router" })
       return { message: "Route not found.", ok: false, role_access: false };
     }
     if (code === "INTERNAL_SERVER_ERROR") {
+      console.error(error);
       set.status = 500;
       return { message: "There was an error with your request.", ok: false, role_access: false };
     }
