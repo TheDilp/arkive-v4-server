@@ -3,7 +3,7 @@ import { SelectExpression } from "kysely";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { checkEntityLevelPermission, getHasEntityPermission } from "../database/queries";
+import { checkEntityLevelPermission, getAllProjectTags, getHasEntityPermission } from "../database/queries";
 import { EntityListSchema, InsertTagSchema, UpdateTagSchema } from "../database/validation";
 import { MessageEnum } from "../enums/requestEnums";
 import { noRoleAccessErrorHandler } from "../handlers";
@@ -97,7 +97,37 @@ export function tag_router(app: Elysia) {
           response: ResponseWithDataSchema,
         },
       )
+      .post(
+        "/all",
+        async ({ permissions }) => {
+          if (!permissions.project_id)
+            return { data: [], ok: false, role_access: true, message: "There was an error with your request." };
+          const redis = await redisClient;
+          const all_tags = await redis.get(`${permissions.project_id}-all_tags`);
+          if (all_tags) {
+            try {
+              const data = JSON.parse(all_tags);
+              return { data, ok: true, role_access: true, message: MessageEnum.success };
+            } catch (error) {
+              console.error(`Could not parse cached tags for project - ${permissions.project_id}`);
+              const fetchedTags = await getAllProjectTags(permissions.project_id, permissions);
 
+              // Cache tags
+              redis.SET(`${permissions.project_id}-all_tags`, JSON.stringify(fetchedTags), { EX: 24 * 60 * 60 });
+              return { data: fetchedTags, ok: true, role_access: true, message: MessageEnum.success };
+            }
+          } else {
+            // Fetch only if no cached tags available
+            const fetchedTags = await getAllProjectTags(permissions.project_id, permissions);
+            // Cache tags
+            redis.SET(`${permissions.project_id}-all_tags`, JSON.stringify(fetchedTags), { EX: 24 * 60 * 60 });
+            return { data: fetchedTags, ok: true, role_access: true, message: MessageEnum.success };
+          }
+        },
+        {
+          response: ResponseWithDataSchema,
+        },
+      )
       .post(
         "/:id",
         async ({ params, body, permissions }) => {

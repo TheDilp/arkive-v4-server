@@ -379,7 +379,13 @@ export function bulk_router(app: Elysia) {
           }
           const redis = await redisClient;
 
-          if (redis) redis.del(`${permissions.project_id}_${permissions.user_id}_stats`);
+          if (redis) {
+            redis.del(`${permissions.project_id}_${permissions.user_id}_stats`);
+
+            if (params.type === "tags") {
+              redis.DEL(`${permissions.project_id}-all_tags`);
+            }
+          }
           return {
             message: `Many ${params.type.replaceAll("_", " ")} ${MessageEnum.successfully_arkived}`,
             ok: true,
@@ -436,7 +442,13 @@ export function bulk_router(app: Elysia) {
           }
           const redis = await redisClient;
 
-          if (redis) redis.del(`${permissions.project_id}_${permissions.user_id}_stats`);
+          if (redis) {
+            redis.del(`${permissions.project_id}_${permissions.user_id}_stats`);
+
+            if (params.type === "tags") {
+              redis.DEL(`${permissions.project_id}-all_tags`);
+            }
+          }
           return {
             message: MessageEnum.success,
             ok: true,

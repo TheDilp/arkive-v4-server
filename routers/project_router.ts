@@ -4,13 +4,11 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { DB } from "kysely-codegen";
 
 import { db } from "../database/db";
-import { getAllProjectTags } from "../database/queries";
 import { AssignRoleSchema } from "../database/validation";
 import { DashboardSchema, InsertProjectSchema, ReadProjectSchema, UpdateProjectSchema } from "../database/validation/projects";
 import { DefaultProjectFeatureFlags } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
 import { PermissionDecorationType, RequestBodySchema, ResponseSchema, ResponseWithDataSchema } from "../types/requestTypes";
-import { redisClient } from "../utils/redisClient";
 import { getEntityWithOwnerId } from "../utils/utils";
 import { sendNotification } from "../utils/websocketUtils";
 
@@ -191,30 +189,6 @@ export function project_router(app: Elysia) {
               .select(["feature_flags"]);
           }
           const data = await query.executeTakeFirstOrThrow();
-
-          if (body?.relations?.tags) {
-            const redis = await redisClient;
-            const all_tags = await redis.get(`${params.id}-all_tags`);
-            if (all_tags) {
-              try {
-                data.tags = JSON.parse(all_tags);
-              } catch (error) {
-                console.error(`Could not parse cached tags for project - ${params.id}`);
-                const fetchedTags = await getAllProjectTags(params.id, permissions);
-                data.tags = fetchedTags;
-
-                // Cache tags
-                redis.SET(`${params.id}-all_tags`, JSON.stringify(fetchedTags), { EX: 24 * 60 * 60 });
-              }
-            } else {
-              // Fetch only if no cached tags available
-              const fetchedTags = await getAllProjectTags(params.id, permissions);
-              data.tags = fetchedTags;
-
-              // Cache tags
-              redis.SET(`${params.id}-all_tags`, JSON.stringify(fetchedTags), { EX: 24 * 60 * 60 });
-            }
-          }
 
           return { data, message: MessageEnum.success, ok: true, role_access: true };
         },
