@@ -138,6 +138,7 @@ export function map_router(app: Elysia) {
                     "map_pins.color",
                     "map_pins.character_id",
                     "map_pins.doc_id",
+                    "map_pins.image_id",
                     "map_pins.icon",
                     "map_pins.title",
                     "map_pins.parent_id",
