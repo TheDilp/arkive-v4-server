@@ -7,13 +7,7 @@ import uniq from "lodash.uniq";
 import { db } from "../database/db";
 import { checkEntityLevelPermission } from "../database/queries";
 import { DBKeys } from "../database/types";
-import {
-  InsertNodeSchema,
-  InsertRandomTableOptionItemSchema,
-  UpdateEdgeSchema,
-  UpdateEventSchema,
-  UpdateNodeSchema,
-} from "../database/validation";
+import { InsertNodeSchema, InsertRandomTableOptionItemSchema } from "../database/validation";
 import { BulkUpdateAccess } from "../database/validation/bulk";
 import { BulkArkiveEntitiesEnum, BulkDeleteEntitiesEnum, newTagTables } from "../enums";
 import { MessageEnum } from "../enums/requestEnums";
@@ -75,7 +69,6 @@ export function bulk_router(app: Elysia) {
         async ({ params, body, permissions }) => {
           await db.transaction().execute(async (tx) => {
             const sent_ids = body.data.map((item) => item.data.id);
-
             const d = await db
 
               // @ts-ignore
@@ -126,7 +119,6 @@ export function bulk_router(app: Elysia) {
                 );
             } else {
               const ids = permissions.is_project_owner ? sent_ids : d.map((item) => item.id);
-
               await Promise.all(
                 body.data
                   .filter((item) => ids.includes(item.data.id))
@@ -149,7 +141,16 @@ export function bulk_router(app: Elysia) {
           return { message: MessageEnum.success, ok: true, role_access: true };
         },
         {
-          body: t.Object({ data: t.Array(t.Union([UpdateEventSchema, UpdateNodeSchema, UpdateEdgeSchema])) }),
+          body: t.Object({
+            data: t.Array(
+              t.Intersect([
+                t.Record(t.Literal("data"), t.Record(t.String(), t.Any())),
+                t.Object({
+                  relations: t.Optional(t.Record(t.String(), t.Any())),
+                }),
+              ]),
+            ),
+          }),
           response: ResponseSchema,
         },
       )
