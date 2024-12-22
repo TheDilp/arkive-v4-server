@@ -5,7 +5,6 @@ node_modules
 schema.prisma
 *.dump
 dumpfile_data.sql
-backup.dump
 dist
 database/migrations/*
 .vscode

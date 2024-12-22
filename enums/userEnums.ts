@@ -1,4 +1,5 @@
 export const DefaultProjectFeatureFlags = {
+  // Enabled entities
   manuscripts_enabled: true,
   documents_enabled: true,
   blueprints_enabled: true,
@@ -9,12 +10,15 @@ export const DefaultProjectFeatureFlags = {
   dictionaries_enabled: true,
   random_tables_enabled: true,
   document_templates_enabled: true,
+  // Misc
   show_eras_in_calendars: false,
   show_eras_in_timelines: true,
+  sort_tags_alphabetically: true,
+  default_project_font: "Lato",
+  // Notifications
   maps_create_notification: true,
   maps_delete_notification: true,
   maps_update_notification: true,
-  sort_tags_alphabetically: true,
   tags_create_notification: true,
   tags_delete_notification: true,
   tags_update_notification: true,
@@ -52,9 +56,6 @@ export const DefaultProjectFeatureFlags = {
   characters_create_notification: true,
   characters_delete_notification: true,
   characters_update_notification: true,
-  map_layers_create_notification: true,
-  map_layers_delete_notification: true,
-  map_layers_update_notification: true,
   dictionaries_create_notification: true,
   dictionaries_delete_notification: true,
   dictionaries_update_notification: true,
