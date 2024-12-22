@@ -1866,18 +1866,9 @@ CREATE TABLE public.projects (
     is_public boolean DEFAULT false,
     description text,
     api_key text,
-    game_system_id uuid
-);
-
-
---
--- Name: random_table_option_graphs; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.random_table_option_graphs (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    parent_id uuid NOT NULL,
-    related_id uuid NOT NULL
+    game_system_id uuid,
+    default_project_font text DEFAULT 'Lato'::text,
+    CONSTRAINT default_project_font_check CHECK ((default_project_font = ANY (ARRAY['Arial'::text, 'Courier New'::text, 'Comic Sans'::text, 'Fantasy'::text, 'Garamond'::text, 'Georgia'::text, 'Lato'::text, 'Merriweather'::text, 'Tahoma'::text, 'Times New Roman'::text, 'Trebuchet MS'::text, 'Verdana'::text])))
 );
 
 
@@ -2804,6 +2795,7 @@ ALTER TABLE ONLY public.user_roles
 
 ALTER TABLE ONLY public.projects
     ADD CONSTRAINT projects_pkey PRIMARY KEY (id);
+
 
 --
 -- Name: random_table_options random_table_options_pkey; Type: CONSTRAINT; Schema: public; Owner: -
@@ -5421,22 +5413,6 @@ ALTER TABLE ONLY public.projects
 
 
 --
--- Name: random_table_option_graphs random_table_option_graphs_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.random_table_option_graphs
-    ADD CONSTRAINT random_table_option_graphs_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.random_table_options(id) ON DELETE CASCADE;
-
-
---
--- Name: random_table_option_graphs random_table_option_graphs_related_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.random_table_option_graphs
-    ADD CONSTRAINT random_table_option_graphs_related_id_fkey FOREIGN KEY (related_id) REFERENCES public.graphs(id) ON DELETE CASCADE;
-
-
---
 -- Name: random_table_options random_table_options_blueprint_instance_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5737,4 +5713,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20241101103355'),
     ('20241105103745'),
     ('20241105134028'),
-    ('20241112143849');
+    ('20241112143849'),
+    ('20241222082444');

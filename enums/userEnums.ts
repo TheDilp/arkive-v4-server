@@ -14,7 +14,6 @@ export const DefaultProjectFeatureFlags = {
   show_eras_in_calendars: false,
   show_eras_in_timelines: true,
   sort_tags_alphabetically: true,
-  default_project_font: "Lato",
   // Notifications
   maps_create_notification: true,
   maps_delete_notification: true,

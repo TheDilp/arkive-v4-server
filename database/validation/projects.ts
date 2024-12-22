@@ -2,6 +2,24 @@ import { t } from "elysia";
 
 import { RequestBodySchema } from "../../types/requestTypes";
 
+const ProjectFontSchema = t.Union(
+  [
+    t.Literal("Arial"),
+    t.Literal("Courier New"),
+    t.Literal("Comic Sans"),
+    t.Literal("Fantasy"),
+    t.Literal("Garamond"),
+    t.Literal("Georgia"),
+    t.Literal("Lato"),
+    t.Literal("Merriweather"),
+    t.Literal("Tahoma"),
+    t.Literal("Times New Roman"),
+    t.Literal("Trebuchet MS"),
+    t.Literal("Verdana"),
+  ],
+  { default: "Lato" },
+);
+
 export const ReadProjectSchema = t.Intersect([
   RequestBodySchema,
   t.Optional(
@@ -23,7 +41,11 @@ export const ReadProjectSchema = t.Intersect([
 ]);
 
 export const InsertProjectSchema = t.Object({
-  data: t.Object({ title: t.String(), description: t.Optional(t.Union([t.Null(), t.String()])) }),
+  data: t.Object({
+    title: t.String(),
+    description: t.Optional(t.Union([t.Null(), t.String()])),
+    default_project_font: ProjectFontSchema,
+  }),
 });
 
 export const UpdateProjectSchema = t.Object({
@@ -37,6 +59,7 @@ export const UpdateProjectSchema = t.Object({
     default_dice_color: t.Optional(t.Union([t.String(), t.Null()])),
     show_image_folder_view: t.Optional(t.Union([t.Boolean(), t.Null()])),
     show_image_table_view: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    default_project_font: ProjectFontSchema,
   }),
 });
 
