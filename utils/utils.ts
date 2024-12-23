@@ -11,7 +11,6 @@ type MainRandomPickType = {
   id: string;
   title: string;
   description?: string | null;
-  suboptions?: { id: string; title: string }[];
 };
 
 export type GroupedQueryFilter = RequestFilterType & { type: "AND" | "OR" };
@@ -34,15 +33,7 @@ export function chooseRandomTableItems(
   for (let i = 0; i < M; i++) {
     const randomIndex = Math.floor(Math.random() * arr.length);
     const selectedItem = arr.splice(randomIndex, 1)[0];
-    if (selectedItem?.suboptions?.length) {
-      randomItems.push({
-        id: selectedItem.id,
-        title: selectedItem.title,
-        description: selectedItem?.description || "",
-      });
-    } else {
-      randomItems.push({ id: selectedItem.id, title: selectedItem.title, description: selectedItem?.description });
-    }
+    randomItems.push({ id: selectedItem.id, title: selectedItem.title, description: selectedItem?.description });
   }
 
   return randomItems;

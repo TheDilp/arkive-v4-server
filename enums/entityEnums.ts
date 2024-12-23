@@ -10,7 +10,6 @@ export const SubEntityEnum = [
   "edges",
   "events",
   "random_table_options",
-  "random_table_suboptions",
   "words",
 ];
 
