@@ -61,7 +61,7 @@ export const app = new Elysia({ name: "Editor.Router" })
     NO_ROLE_ACCESS: NoRoleAccess,
     NICKNAME_IN_USE: NicknameInUse,
   })
-  .onError(({ code, error, set, cookie }) => {
+  .onError(({ code, error, set, cookie, route }) => {
     if (code === "UNAUTHORIZED") {
       const environment = process.env.NODE_ENV;
       set.status = 401;
@@ -82,7 +82,7 @@ export const app = new Elysia({ name: "Editor.Router" })
 
       return { message: "UNAUTHORIZED", ok: false, role_access: false };
     }
-    console.error(error);
+    console.error(error, `ROUTE: ${route}`);
 
     if (code === "NO_PUBLIC_ACCESS") {
       set.status = 403;
