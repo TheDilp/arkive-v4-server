@@ -51,7 +51,7 @@ export const InsertProjectSchema = t.Object({
 export const UpdateProjectSchema = t.Object({
   data: t.Object({
     id: t.Optional(t.String()),
-    game_system_id: t.Optional(t.String()),
+    game_system_id: t.Optional(t.Union([t.String(), t.Null()])),
     title: t.Optional(t.String()),
     image_id: t.Optional(t.Union([t.String(), t.Null()])),
     is_public: t.Optional(t.Union([t.Null(), t.Boolean()])),
