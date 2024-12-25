@@ -10,8 +10,7 @@
     "email": "email dev",
     "generate-schema": "bunx dbmate migrate && bun run kysely-codegen",
     "lint": "eslint '*.{ts,tsx}' --fix --report-unused-disable-directives --max-warnings 0",
-    "prepare": "husky install  || echo Skipping schema build",
-    "precommit": "lint-staged"
+    "prepare": "husky install  || echo Skipping schema build"
   },
   "keywords": [],
   "author": "",
