@@ -44,14 +44,13 @@ export function auth_router(app: Elysia) {
       })
       .get("/signout", async ({ headers, set, cookie }) => {
         try {
-          console.info(cookie);
           const res = await fetch(`${process.env.AUTH_SERVICE_URL}/auth/signout`, {
             // @ts-ignore
             headers,
             method: "GET",
           });
           if (cookie?.access) {
-            cookie?.access?.update?.({
+            cookie?.access?.set?.({
               path: "/",
               value: "",
               maxAge: 0,
@@ -61,7 +60,7 @@ export function auth_router(app: Elysia) {
             });
           }
           if (cookie?.refresh) {
-            cookie?.refresh?.update?.({
+            cookie?.refresh?.set?.({
               path: "/",
               value: "",
               maxAge: 0,
