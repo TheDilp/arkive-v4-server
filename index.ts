@@ -146,7 +146,7 @@ export const app = new Elysia({ name: "Editor.Router" })
       methods: ["GET", "POST", "DELETE"],
     }),
   )
-  .use(rateLimit({ duration: 10000, max: 20 }))
+  .use(rateLimit({ duration: 10000, max: 200 }))
   .use(auth_router)
 
   .group("/api/v1" as any, (server) =>
