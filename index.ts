@@ -129,7 +129,13 @@ export const app = new Elysia({ name: "Editor.Router" })
 
   .use(
     cors({
-      exposeHeaders: ["content-disposition", "content-security-policy", "content-security-policy-report-only"],
+      exposeHeaders: [
+        "content-disposition",
+        "content-security-policy",
+        "content-security-policy-report-only",
+        "set-cookie",
+        "access-control-allow-origin",
+      ],
       origin:
         process.env.NODE_ENV === "development"
           ? true
