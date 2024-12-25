@@ -49,8 +49,7 @@ export function auth_router(app: Elysia) {
             headers,
             method: "GET",
           });
-          set.headers["Set-Cookie"] = "access=; Max-Age=0; Path=/";
-          set.headers["Set-Cookie"] += "refresh=; Max-Age=0; Path=/";
+          set.headers["Set-Cookie"] = headers["Set-Cookie"] || "access=;refresh=;";
           set.status = res.status;
         } catch (error) {
           console.error("AUTH SIGNOUT ERROR - ", error);
