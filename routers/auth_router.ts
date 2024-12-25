@@ -50,13 +50,26 @@ export function auth_router(app: Elysia) {
             method: "GET",
           });
           if (cookie?.access) {
-            cookie?.access?.remove?.();
+            cookie?.access?.update?.({
+              path: "/",
+              value: "",
+              maxAge: 0,
+              secure: true,
+              httpOnly: true,
+              priority: "high",
+            });
           }
           if (cookie?.refresh) {
-            cookie?.refresh?.remove?.();
+            cookie?.refresh?.update?.({
+              path: "/",
+              value: "",
+              maxAge: 0,
+              secure: true,
+              httpOnly: true,
+              priority: "high",
+            });
           }
 
-          set.headers["Set-Cookie"] = res.headers.get("Set-Cookie") as string;
           set.status = res.status;
         } catch (error) {
           console.error("AUTH SIGNOUT ERROR - ", error);
