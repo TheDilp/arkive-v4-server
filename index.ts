@@ -125,7 +125,6 @@ export const app = new Elysia({ name: "Editor.Router" })
     set.headers[process.env.NODE_ENV === "development" ? "Content-Security-Policy-Report-Only" : "Content-Security-Policy"] =
       "default-src 'self'; script-src 'self' https://the-arkive-v3.nyc3.digitaloceanspaces.com; style-src 'self';";
   })
-  .use(auth_router)
 
   .use(
     cors({
@@ -148,6 +147,8 @@ export const app = new Elysia({ name: "Editor.Router" })
     }),
   )
   .use(rateLimit({ duration: 10000, max: 20 }))
+  .use(auth_router)
+
   .group("/api/v1" as any, (server) =>
     server.guard(
       {
