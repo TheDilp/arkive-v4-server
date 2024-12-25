@@ -43,6 +43,7 @@ export function auth_router(app: Elysia) {
         }
       })
       .get("/signout", async ({ headers, set, cookie }) => {
+        console.info("AUTH SERVICE URL =================>", process.env.AUTH_SERVICE_URL);
         const res = await fetch(`${process.env.AUTH_SERVICE_URL}/auth/signout`, {
           // @ts-ignore
           headers,
