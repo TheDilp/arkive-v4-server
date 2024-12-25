@@ -49,7 +49,7 @@ export function auth_router(app: Elysia) {
           method: "GET",
         });
         // @ts-ignore
-        set.headers["set-cookie"] = res.headers.get("set-cookie");
+        set.headers["set-cookie"] = "access=None; refresh=None;";
         set.status = res.status;
 
         return "UNAUTHORIZED";
