@@ -1,5 +1,7 @@
 import { Elysia } from "elysia";
 
+import { getCookies } from "../utils/userUtils";
+
 export function auth_router(app: Elysia) {
   return app.group("/auth", (server) =>
     server
@@ -42,34 +44,15 @@ export function auth_router(app: Elysia) {
           return "UNAUTHORIZED";
         }
       })
-      .get("/signout", async ({ headers, set, cookie }) => {
+      .get("/signout", async ({ headers, set }) => {
         try {
           const res = await fetch(`${process.env.AUTH_SERVICE_URL}/auth/signout`, {
             // @ts-ignore
             headers,
             method: "GET",
           });
-          if (cookie?.access) {
-            cookie?.access?.set?.({
-              path: "/",
-              value: "",
-              maxAge: 0,
-              secure: true,
-              httpOnly: true,
-              priority: "high",
-            });
-          }
-          if (cookie?.refresh) {
-            cookie?.refresh?.set?.({
-              path: "/",
-              value: "",
-              maxAge: 0,
-              secure: true,
-              httpOnly: true,
-              priority: "high",
-            });
-          }
 
+          set.headers["set-cookie"] = getCookies("None", "None");
           set.status = res.status;
         } catch (error) {
           console.error("AUTH SIGNOUT ERROR - ", error);
