@@ -42,13 +42,20 @@ export function auth_router(app: Elysia) {
           return "UNAUTHORIZED";
         }
       })
-      .get("/signout", async ({ headers, set }) => {
+      .get("/signout", async ({ headers, set, cookie }) => {
         try {
           const res = await fetch(`${process.env.AUTH_SERVICE_URL}/auth/signout`, {
             // @ts-ignore
             headers,
             method: "GET",
           });
+          if (cookie?.access) {
+            cookie?.access?.remove?.();
+          }
+          if (cookie?.refresh) {
+            cookie?.refresh?.remove?.();
+          }
+
           set.headers["Set-Cookie"] = res.headers.get("Set-Cookie") as string;
           set.status = res.status;
         } catch (error) {
