@@ -36,8 +36,7 @@
     "react": "^18.2.0",
     "react-email": "^2.0.0",
     "redis": "^4.6.13",
-    "resend": "^1.1.0",
-    "tweetnacl": "^1.0.3"
+    "resend": "^1.1.0"
   },
   "trustedDependencies": [
     "elysia"
