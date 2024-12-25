@@ -43,19 +43,18 @@ export function auth_router(app: Elysia) {
         }
       })
       .get("/signout", async ({ headers, set, cookie }) => {
-        console.log(headers, cookie);
-        const res = await fetch(`${process.env.AUTH_SERVICE_URL}/auth/signout`, {
-          // @ts-ignore
-          headers,
-          method: "GET",
-        });
         try {
+          const res = await fetch(`${process.env.AUTH_SERVICE_URL}/auth/signout`, {
+            // @ts-ignore
+            headers,
+            method: "GET",
+          });
           cookie.access.remove();
           cookie.refresh.remove();
+          set.status = res.status;
         } catch (error) {
-          console.error("COOKIE REMOVE ERROR - ", error);
+          console.error("AUTH SIGNOUT ERROR - ", error);
         }
-        set.status = res.status;
 
         return "UNAUTHORIZED";
       }),
