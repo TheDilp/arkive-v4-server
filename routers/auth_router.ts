@@ -43,14 +43,18 @@ export function auth_router(app: Elysia) {
         }
       })
       .get("/signout", async ({ headers, set }) => {
-        const res = await fetch(`${process.env.AUTH_SERVICE_URL}/auth/signout`, {
+        await fetch(`${process.env.AUTH_SERVICE_URL}/auth/signout`, {
           // @ts-ignore
           headers,
           method: "GET",
         });
-        // @ts-ignore
-        set.headers["set-cookie"] = res.headers.get("set-cookie") as string;
-        set.status = 401;
+
+        const additional_cookie_params =
+          process.env.NODE_ENV === "production" ? "domain=.thearkive.app; Secure; SameSite=None; Priority=High;" : "";
+        set.headers["set-cookie"] = [
+          `access=None; HttpOnly; Path=/; ${additional_cookie_params} Max-Age=43200`,
+          `refresh=None; HttpOnly; Path=/; ${additional_cookie_params} Max-Age=86400`,
+        ];
 
         return "UNAUTHORIZED";
       }),
