@@ -125,7 +125,8 @@ export async function verifyGatewayJWT({
 }
 
 export function getCookies(access: string, refresh: string) {
-  const additional_cookie_params = process.env.NODE_ENV === "production" ? "domain=.thearkive.app; Secure; SameSite=None;" : "";
+  const additional_cookie_params =
+    process.env.NODE_ENV === "production" ? "domain=.thearkive.app; Secure; SameSite=None; Priority=High;" : "";
   if (access === "None" || refresh === "None") return [];
   return [
     `access=${access}; HttpOnly; Path=/; ${additional_cookie_params} Max-Age=43200`,
