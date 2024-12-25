@@ -48,8 +48,12 @@ export function auth_router(app: Elysia) {
           headers,
           method: "GET",
         });
-        cookie.access.remove();
-        cookie.refresh.remove();
+        try {
+          cookie.access.remove();
+          cookie.refresh.remove();
+        } catch (error) {
+          console.error("COOKIE REMOVE ERROR - ", error);
+        }
         set.status = res.status;
 
         return "UNAUTHORIZED";
