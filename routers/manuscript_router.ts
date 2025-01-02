@@ -211,7 +211,7 @@ export function manuscript_router(app: Elysia) {
                     eb
                       .selectFrom("manuscript_characters")
                       .where("manuscript_characters.parent_id", "=", params.id)
-                      .leftJoin("characters", "characters.id", "manuscript_characters.related_id")
+                      .innerJoin("characters", "characters.id", "manuscript_characters.related_id")
                       .select([
                         "manuscript_characters.id",
                         "manuscript_characters.parent_id",
@@ -228,7 +228,7 @@ export function manuscript_router(app: Elysia) {
                     eb
                       .selectFrom("manuscript_blueprint_instances")
                       .where("manuscript_blueprint_instances.parent_id", "=", params.id)
-                      .leftJoin("blueprint_instances", "blueprint_instances.id", "manuscript_blueprint_instances.related_id")
+                      .innerJoin("blueprint_instances", "blueprint_instances.id", "manuscript_blueprint_instances.related_id")
                       .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
                       .select([
                         "manuscript_blueprint_instances.id",
@@ -246,7 +246,7 @@ export function manuscript_router(app: Elysia) {
                     eb
                       .selectFrom("manuscript_documents")
                       .where("manuscript_documents.parent_id", "=", params.id)
-                      .leftJoin("documents", "documents.id", "manuscript_documents.related_id")
+                      .innerJoin("documents", "documents.id", "manuscript_documents.related_id")
                       .select([
                         "manuscript_documents.id",
                         "manuscript_documents.parent_id",
@@ -264,7 +264,7 @@ export function manuscript_router(app: Elysia) {
                     eb
                       .selectFrom("manuscript_maps")
                       .where("manuscript_maps.parent_id", "=", params.id)
-                      .leftJoin("maps", "maps.id", "manuscript_maps.related_id")
+                      .innerJoin("maps", "maps.id", "manuscript_maps.related_id")
                       .select([
                         "manuscript_maps.id",
                         "manuscript_maps.parent_id",
@@ -282,7 +282,7 @@ export function manuscript_router(app: Elysia) {
                     eb
                       .selectFrom("manuscript_map_pins")
                       .where("manuscript_map_pins.parent_id", "=", params.id)
-                      .leftJoin("map_pins", "map_pins.id", "manuscript_map_pins.related_id")
+                      .innerJoin("map_pins", "map_pins.id", "manuscript_map_pins.related_id")
                       .select([
                         "manuscript_map_pins.id",
                         "manuscript_map_pins.parent_id",
@@ -300,7 +300,7 @@ export function manuscript_router(app: Elysia) {
                     eb
                       .selectFrom("manuscript_graphs")
                       .where("manuscript_graphs.parent_id", "=", params.id)
-                      .leftJoin("graphs", "graphs.id", "manuscript_graphs.related_id")
+                      .innerJoin("graphs", "graphs.id", "manuscript_graphs.related_id")
                       .select([
                         "manuscript_graphs.id",
                         "manuscript_graphs.parent_id",
@@ -318,7 +318,7 @@ export function manuscript_router(app: Elysia) {
                     eb
                       .selectFrom("manuscript_events")
                       .where("manuscript_events.parent_id", "=", params.id)
-                      .leftJoin("events", "events.id", "manuscript_events.related_id")
+                      .innerJoin("events", "events.id", "manuscript_events.related_id")
                       .select([
                         "manuscript_events.id",
                         "manuscript_events.parent_id",
@@ -335,7 +335,7 @@ export function manuscript_router(app: Elysia) {
                     eb
                       .selectFrom("manuscript_images")
                       .where("manuscript_images.parent_id", "=", params.id)
-                      .leftJoin("images", "images.id", "manuscript_images.related_id")
+                      .innerJoin("images", "images.id", "manuscript_images.related_id")
                       .select([
                         "manuscript_images.id",
                         "manuscript_images.parent_id",
