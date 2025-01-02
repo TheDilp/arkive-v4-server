@@ -227,7 +227,7 @@ export function manuscript_router(app: Elysia) {
                   jsonArrayFrom(
                     eb
                       .selectFrom("manuscript_blueprint_instances")
-                      .distinctOn("blueprint_instances.id")
+                      .distinctOn("manuscript_blueprint_instances.id")
                       .where("manuscript_blueprint_instances.parent_id", "=", params.id)
                       .innerJoin("blueprint_instances", "blueprint_instances.id", "manuscript_blueprint_instances.related_id")
                       .innerJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
