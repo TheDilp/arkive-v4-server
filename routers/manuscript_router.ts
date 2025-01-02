@@ -229,7 +229,7 @@ export function manuscript_router(app: Elysia) {
                       .selectFrom("manuscript_blueprint_instances")
                       .where("manuscript_blueprint_instances.parent_id", "=", params.id)
                       .innerJoin("blueprint_instances", "blueprint_instances.id", "manuscript_blueprint_instances.related_id")
-                      .leftJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
+                      .innerJoin("blueprints", "blueprints.id", "blueprint_instances.parent_id")
                       .select([
                         "manuscript_blueprint_instances.id",
                         "manuscript_blueprint_instances.parent_id",
